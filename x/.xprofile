@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+# Autostart programs on startup
+
+# Handle pluging in monitors
+autorandr --change --default mobile &
+
+# Allow for locking the screen
+light-locker --lock-on-lid &
+
+# Load the polkit agent
+/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 & eval $(gnome-keyring-daemon -s --components=pkcs11,secrets,ssh,gpg) &
+
+# Use the super key
+xcape -e 'Super_L=Alt_L|space' &
+
+# Set keyboard layout
+setxkbmap fr &
+
+# Load xfce settings
+xfsettingsd &
+
+# Handle touchpad gestures
+fusuma -d &
+
+# Launch torrents daemon
+transmission-daemon &
+
+# Network manager
+nm-applet &
+
+# Bluetooth manager
+blueman-applet &
+
+# Launch Flameshot daemon
+flameshot &
+
+# Set environment variables
+
+# XDG Paths
+export XDG_CONFIG_HOME="$HOME/.config"
+export XDG_CACHE_HOME="$HOME/.cache"
+export XDG_DATA_HOME="$HOME/.local/share"
+
+# Qt applications style
+export QT_STYLE_OVERRIDE=kvantum
+export QT_QPA_PLATFORMTHEME=qt5ct
+
+# Common environment variables
+export EDITOR="/usr/bin/nvim"
+export ZDOTDIR="$HOME/.config/zsh"

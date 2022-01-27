@@ -1,0 +1,36 @@
+* {
+  icon-theme:     "Tela blue dark";
+  font:           "Roboto 12";
+  nerd-font:      "FiraCode Nerd Font Mono 18";
+
+  foreground:     #F8F8F2;
+  background:     #282A36;
+  transparent:    #00000000;
+
+  black:          #21212c;
+  dark-gray:      #4D4D4D;
+
+  dark-red:       #FF5555;
+  light-red:      #FF6E67;
+
+  dark-green:     #50FA7B;
+  light-green:    #5AF78E;
+
+  dark-yellow:    #F1FA8C;
+  light-yellow:   #F4F99D;
+
+  dark-blue:      #BD93F9;
+  light-blue:     #CAA9FA;
+
+  dark-magenta:   #FF79C6;
+  light-magenta:  #FF92D0;
+
+  dark-cyan:      #8BE9FD;
+  light-cyan:     #9AEDFE;
+
+  light-gray:     #BFBFBF;
+  white:          #E6E6E6;
+
+  primary:        #BD93F9;
+  highlight:      #4D4D4D66;
+}

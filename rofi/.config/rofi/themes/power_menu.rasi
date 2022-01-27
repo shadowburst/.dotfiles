@@ -1,0 +1,48 @@
+@import "theme.rasi"
+
+* {
+  background-color: @transparent;
+  text-color:       @foreground;
+}
+
+prompt,
+inputbar,
+entry,
+textbox-prompt-colon {
+  enabled: false;
+}
+
+window {
+  background-color: @background;
+	border:						4px;
+	border-color:			@primary;
+  border-radius:    12px;
+  children:         [mainbox];
+}
+
+mainbox {
+  // margin:   75px calc(50% - 402px);
+  expand:   false;
+  children: [listview];
+}
+
+listview {
+  layout:   horizontal;
+  children: [element];
+}
+
+element {
+  border-radius: 48px;
+  padding:       20px 50px;
+  cursor:        pointer;
+  children:      [element-text];
+}
+
+element.selected {
+  background-color: @highlight;
+}
+
+element-text {
+  font:   "FiraCode Nerd Font Mono 72";
+  cursor: inherit;
+}

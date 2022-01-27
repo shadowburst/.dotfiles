@@ -1,0 +1,23 @@
+swipe:
+  3: 
+    left: 
+      command: 'xdotool key alt+Right'
+    right: 
+      command: 'xdotool key alt+Left'
+    up: 
+      command: "awesome-client \"require('awful').tag.viewnext()\""
+    down: 
+      command: "awesome-client \"require('awful').tag.viewprev()\""
+  4: 
+    left: 
+      command: "awesome-client \"require('awful').client.focus.byidx(1)\""
+    right: 
+      command: "awesome-client \"require('awful').client.focus.byidx(-1)\""
+
+threshold:
+  swipe: 0.3
+  pinch: 0.2
+
+interval:
+  swipe: 0.5
+  pinch: 0.2
