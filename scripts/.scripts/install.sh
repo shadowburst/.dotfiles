@@ -80,6 +80,7 @@ pacman=(
   docker
   docker-compose
   exa
+  ffmpegthumbnailer
   flameshot
   gamemode
   gimp

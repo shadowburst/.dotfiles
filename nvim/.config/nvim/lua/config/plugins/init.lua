@@ -60,6 +60,7 @@ packer.startup(function(use)
   use("folke/which-key.nvim")
   use("karb94/neoscroll.nvim")
   use("phaazon/hop.nvim")
+  use("lambdalisue/suda.vim")
 
   -- Colorschemes
   -- use "lunarvim/colorschemes" -- A bunch of colorschemes you can try out

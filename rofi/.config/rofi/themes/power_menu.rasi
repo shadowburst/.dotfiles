@@ -17,11 +17,12 @@ window {
 	border:						4px;
 	border-color:			@primary;
   border-radius:    12px;
+  padding:          75px;
+  width:            calc(60% - 190px);
   children:         [mainbox];
 }
 
 mainbox {
-  // margin:   75px calc(50% - 402px);
   expand:   false;
   children: [listview];
 }
