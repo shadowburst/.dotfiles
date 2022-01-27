@@ -7,6 +7,8 @@
 # Load ZSH plugin manager
 . "${HOME}/.zgenom/zgenom.zsh"
 
+zgenom autoupdate
+
 if ! zgenom saved; then
 
     zgenom load jeffreytse/zsh-vi-mode
@@ -22,7 +24,7 @@ zstyle ':completion:*' menu select
 setopt complete_aliases
 
 # Keep history
-HISTFILE=~/.zsh_history
+HISTFILE="$ZDOTDIR/.zsh_history"
 SAVEHIST=1000
 HISTSIZE=999
 setopt APPEND_HISTORY

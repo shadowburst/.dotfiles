@@ -48,4 +48,3 @@ export QT_QPA_PLATFORMTHEME=qt5ct
 
 # Common environment variables
 export EDITOR="/usr/bin/nvim"
-export ZDOTDIR="$HOME/.config/zsh"
