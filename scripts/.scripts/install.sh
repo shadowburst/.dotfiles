@@ -28,11 +28,6 @@ install_zsh() {
   git clone https://github.com/jandamm/zgenom.git "${HOME}/.zgenom"
 }
 
-install_nvim() {
-  [ -d ${XDG_CONFIG_HOME:-$HOME/.config}/nvim ] && mv ${XDG_CONFIG_HOME:-$HOME/.config}/nvim ${XDG_CONFIG_HOME:-$HOME/.config}/nvim.bak
-  git clone --depth 1 https://github.com/NTBBloodbath/doom-nvim.git ${XDG_CONFIG_HOME:-$HOME/.config}/nvim
-}
-
 setup_gnome_keyring() {
 	echo "auth optional pam_gnome_keyring.so" >>/etc/pam.d/login
 	echo "session optional pam_gnome_keyring.so auto_start" >>/etc/pam.d/login

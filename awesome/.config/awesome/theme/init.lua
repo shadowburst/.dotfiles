@@ -40,8 +40,8 @@ local theme = {
     dark_blue       = colors.color4,
     light_blue      = colors.color12,
 
-    dark_purple    = colors.color5,
-    light_purple   = colors.color13,
+    dark_magenta    = colors.color5,
+    light_magenta   = colors.color13,
 
     dark_cyan       = colors.color6,
     light_cyan      = colors.color14,
