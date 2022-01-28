@@ -15,7 +15,8 @@ return {
     clock = '',
     layout = {
         max = icons_dir .. 'layout/max.svg',
-        tiled = icons_dir .. 'layout/tiled.svg'
+        tiled = icons_dir .. 'layout/tiled.svg',
+        floating = icons_dir .. 'layout/floating.svg'
     },
     network = {
         wifi = {

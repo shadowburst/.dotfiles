@@ -188,6 +188,7 @@ theme.menu_width        = dpi(200)
 --#region Layout
 theme.layout_max        = theme.icons.layout.max
 theme.layout_dwindle    = theme.icons.layout.tiled
+theme.layout_floating    = theme.icons.layout.floating
 --#endregion
 
 --#region Widgets
