@@ -2,7 +2,7 @@ local awful = require('awful')
 local beautiful = require('beautiful')
 
 local apps = require('configuration.apps')
-local icons = beautiful.icons.tags
+local icons = require('theme.icons').tags
 
 local default_layout = awful.layout.suit.spiral.dwindle
 
@@ -62,7 +62,7 @@ local tags = {
         type = 'media',
         default_app = 'gimp',
         matches = {
-            'Gimp-2.10',
+            'Gimp',
             'kdenlive'
         }
     },

@@ -2,9 +2,9 @@ local awful = require('awful')
 local beautiful = require('beautiful')
 local wibox = require('wibox')
 
+local icons = require('theme.icons').volume
 local widget_container = require('widgets.containers.widget-container')
 
-local icons = beautiful.icons.volume
 local watch = awful.widget.watch
 
 local create_volume_widget = function()

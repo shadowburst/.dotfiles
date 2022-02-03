@@ -5,10 +5,10 @@ local wibox = require('wibox')
 
 local apps  = require('configuration.apps')
 local env   = require('env')
+local icons = require('theme.icons').torrents
 local widget_container = require('widgets.containers.widget-container')
 
 local dpi = beautiful.xresources.apply_dpi
-local icons = beautiful.icons.torrents
 
 local create_torrents_widget = function()
 

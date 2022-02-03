@@ -3,9 +3,8 @@ local beautiful = require('beautiful')
 local gears = require('gears')
 local wibox = require('wibox')
 
+local icons = require('theme.icons').bluetooth
 local widget_container = require('widgets.containers.widget-container')
-
-local icons = beautiful.icons.bluetooth
 
 local create_bluetooth_widget = function()
 

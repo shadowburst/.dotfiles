@@ -23,15 +23,9 @@ local global_keys = awful.util.table.join(
     ),
 
     awful.key(
-        {modkey, 'Control'}, 'q',
-        awesome.quit,
-        { group = 'Awesome', description = 'Quit awesome' }
-    ),
-
-    awful.key(
         {altkey, 'Control'}, 'Delete',
         function()
-            awful.spawn('xkill')
+            awful.spawn.easy_async_with_shell('xkill', function() end)
         end,
         { group = 'Awesome', description = 'Kill a client' }
     ),
@@ -39,7 +33,8 @@ local global_keys = awful.util.table.join(
     awful.key(
         {modkey}, 'x',
         function()
-            awful.spawn.easy_async_with_shell(scripts.power_menu, function () end)
+            local focused = awful.screen.focused()
+            awesome.emit_signal(focused.exit_screen.visible and 'module::exit_screen:hide' or 'module::exit_screen:show')
         end,
         { group = 'Awesome', description = 'Toggle exit screen' }
     ),

@@ -2,10 +2,9 @@ local awful = require('awful')
 local beautiful = require('beautiful')
 local wibox = require('wibox')
 
+local icons = require('theme.icons').power
 local scripts = require('scripts')
 local widget_container = require('widgets.containers.widget-container')
-
-local icons = beautiful.icons
 
 local create_power_widget = function()
 
@@ -20,7 +19,7 @@ local create_power_widget = function()
 
     local power_widget = widget_container(
         {
-            text   = icons.power,
+            text   = icons.poweroff,
             font   = beautiful.nerd_font .. ' 20',
             align  = 'center',
             valign = 'center',

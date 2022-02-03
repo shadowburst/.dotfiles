@@ -1,5 +1,6 @@
 local awful = require('awful')
 local beautiful = require('beautiful')
+local gears = require('gears')
 local ruled = require('ruled')
 
 local client_buttons = require('configuration.buttons').client_buttons
@@ -40,7 +41,7 @@ ruled.client.connect_signal("request::rules", function()
 		},
 		properties = {
 			round_corners = true,
-			shape = beautiful.client_shape_rounded,
+			shape = beautiful.rounded_rect
 		},
 	})
 
@@ -94,7 +95,7 @@ ruled.client.connect_signal("request::rules", function()
 			name = { "Discord Updater" },
 		},
 		properties = {
-			round_corners = false,
+			round_corners = true,
 			floating = true,
 			above = true,
 			skip_decoration = true,
@@ -159,6 +160,8 @@ ruled.client.connect_signal("request::rules", function()
 				"Authy Desktop",
 				"Xfce4-power-manager-settings",
 				"Gnome-calculator",
+				"Rofi",
+				"Nm-connection-editor"
 			},
 			role = {
 				"AlarmWindow",
@@ -173,6 +176,20 @@ ruled.client.connect_signal("request::rules", function()
 			focus = awful.client.focus.filter,
 			raise = true,
 			placement = awful.placement.centered,
+		},
+	})
+
+	ruled.client.append_rule({
+		id = "rofi",
+		rule = {
+			class = "Rofi",
+		},
+		properties = {
+			above = true,
+			floating = true,
+			sticky = true,
+			focusable = true,
+			placement = awful.placement.top,
 		},
 	})
 end)

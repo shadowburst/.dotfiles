@@ -4,10 +4,10 @@ local wibox = require('wibox')
 
 local apps = require('configuration.apps')
 local env = require('env')
+local icons = require('theme.icons')
 local widget_container = require('widgets.containers.widget-container')
 
 local dpi = beautiful.xresources.apply_dpi
-local icons = beautiful.icons
 local watch = awful.widget.watch
 
 local create_updates_widget = function()

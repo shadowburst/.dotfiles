@@ -5,13 +5,17 @@ local update_client = function(c)
 	-- Set client's shape based on its tag's layout and status (floating, maximized, etc.)
 	local current_layout = awful.tag.getproperty(c.first_tag, 'layout')
 	if current_layout == awful.layout.suit.max and (not c.floating) then
-		c.shape = beautiful.client_shape_rectangle
+		c.shape = beautiful.rect
 	elseif c.maximized or c.fullscreen then
-		c.shape = beautiful.client_shape_rectangle
+		c.shape = beautiful.rect
 	elseif (not c.round_corners) then
-		c.shape = beautiful.client_shape_rectangle
+		c.shape = beautiful.rect
 	else
-		c.shape = beautiful.client_shape_rounded
+		if c.class == 'Rofi' then
+			c.shape = beautiful.partially_rounded_rect
+		else
+			c.shape = beautiful.rounded_rect
+		end
 	end
 end
 
@@ -45,6 +49,15 @@ client.connect_signal(
 	end
 )
 
+client.connect_signal(
+	'unfocus',
+	function(c)
+		if c.class == 'Rofi' then
+			c:kill()
+		end
+	end
+)
+
 -- Enable sloppy focus, so that focus follows mouse then raises it.
 client.connect_signal(
 	'mouse::enter',
@@ -64,7 +77,7 @@ client.connect_signal(
 	'property::fullscreen',
 	function(c)
 		if c.fullscreen then
-			c.shape = beautiful.client_shape_rectangle
+			c.shape = beautiful.rect
 		else
 			update_client(c)
 		end

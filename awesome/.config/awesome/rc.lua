@@ -9,9 +9,6 @@ beautiful.init(require('theme'))
 require('layout')
 require('configuration')
 require('module')
-local scripts = require('scripts')
-
-awful.spawn.with_shell(scripts.autostart)
 
 screen.connect_signal(
 	'request::wallpaper',

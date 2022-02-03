@@ -2,9 +2,8 @@ local awful = require('awful')
 local beautiful = require('beautiful')
 local wibox = require('wibox')
 
+local icons = require('theme.icons').systray
 local widget_container = require('widgets.containers.widget-container')
-
-local icons = beautiful.icons.systray
 
 local create_systray_widget = function()
 

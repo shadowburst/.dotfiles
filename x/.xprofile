@@ -2,6 +2,12 @@
 
 # Autostart programs on startup
 
+# Start compositor
+picom -b --experimental-backends --dbus &
+
+# Load custom colors
+xrdb "$HOME/.Xresources" &
+
 # Handle pluging in monitors
 autorandr --change --default mobile &
 

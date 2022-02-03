@@ -29,7 +29,14 @@ return {
         },
         ethernet = ''
     },
-    power = '',
+    power = {
+        suspend = '',
+        logout = '',
+        lock = '',
+        reboot = '',
+        poweroff = ''
+    },
+    rpower = '',
     systray = {
         open = '',
         close = '',

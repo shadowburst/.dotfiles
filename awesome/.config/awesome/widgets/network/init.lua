@@ -4,11 +4,10 @@ local gears = require('gears')
 local wibox = require('wibox')
 
 local env = require('env')
+local icons = require('theme.icons').network
 local widget_container = require('widgets.containers.widget-container')
 
-local icons = beautiful.icons.network
 local interfaces = env.network_interfaces
-
 
 local create_network_widget = function()
 

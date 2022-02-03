@@ -1,12 +1,12 @@
 @import "theme.rasi"
 
 configuration {
-  background-color:    @transparent;
-  display-drun:        "";
+  background-color: @transparent;
+  display-drun: "";
   drun-display-format: "{name} [<span weight='light' size='small'><i>({comment})</i></span>]";
-  show-icons:          true;
-  sidebar-mode:        false;
-  text-color:          @foreground;
+  show-icons: true;
+  sidebar-mode: false;
+  text-color: @foreground;
 }
 
 window {
@@ -33,7 +33,7 @@ inputbar {
 
 prompt {
   background-color: inherit;
-  enabled:          true;
+  enabled:           true;
   font:             @nerd-font;
   padding:          5px;
   text-color:       inherit;
@@ -52,7 +52,12 @@ entry {
 
 mainbox {
   background-color: inherit;
+	border:						0% 0% 0% 0%;
+	border-color:			@primary;
+  border-radius:    0% 0% 0% 0%;
   children:         [ inputbar, listview ];
+  padding:          0%;
+  spacing:          0%;
 }
 
 listview {
@@ -75,7 +80,7 @@ element-icon {
   background-color: transparent;
   border:           0px;
   horizontal-align: 0.5;
-  margin:           0 10px;
+  margin: 0 10px;
   size:             32px;
   text-color:       inherit;
   vertical-align:   0.5;
@@ -84,9 +89,9 @@ element-icon {
 element-text {
   background-color: @transparent;
   expand:           true;
-  highlight:        bold;
   text-color:       inherit;
   vertical-align:   0.5;
+  highlight:        bold;
 }
 
 element.selected {

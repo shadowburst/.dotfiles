@@ -51,12 +51,6 @@ local theme = {
     --#endregion
 }
 
-local shapes = {
-    rounded_rect = function (cr, w, h)
-        return gears.shape.rounded_rect(cr, w, h, dpi(6))
-    end
-}
-
 --#region Color Theme
 theme.primary       = theme.dark_blue
 theme.success       = theme.dark_green
@@ -83,10 +77,11 @@ theme.press_event   = theme.white .. '15'
 --#endregion
 
 --#region Fonts
-theme.base_font = 'Roboto Regular'
-theme.font      = theme.base_font .. ' 10'
-theme.font_bold = 'Roboto Bold 10'
-theme.nerd_font = 'FiraCode Nerd Font Mono'
+theme.base_font      = 'Roboto Regular'
+theme.font           = theme.base_font .. ' 10'
+theme.base_font_bold = 'Roboto Bold'
+theme.font_bold      = theme.base_font_bold .. ' 10'
+theme.nerd_font      = 'FiraCode Nerd Font Mono'
 --#endregion
 
 --#region Borders
@@ -134,13 +129,25 @@ theme.systray_icon_spacing  = dpi(10)
 
 --#endregion
 
+--#region Shapes
+theme.rect = function (cr, w, h)
+    return gears.shape.partially_rounded_rect(cr, w, h, false, false, false, false, 0)
+end
+theme.rounded_rect = function (cr, w, h)
+    return gears.shape.rounded_rect(cr, w, h, dpi(12))
+end
+theme.partially_rounded_rect = function (cr, w, h)
+    return gears.shape.partially_rounded_rect(cr, w, h, false, false, true, true, dpi(12))
+end
+--#endregion
+
 --#region Tooltips
 theme.tooltip_bg_color      = theme.background
 theme.tooltip_border_color  = theme.highlight
 theme.tooltip_border_width  = dpi(2)
 theme.tooltip_fg_color      = theme.foreground
 theme.tooltip_font          = theme.nerd_font .. ' 10'
-theme.tooltip_shape         = shapes.rounded_rect
+theme.tooltip_shape         = theme.rounded_rect
 theme.tooltip_delay         = 0.3
 --#endregion
 
@@ -154,7 +161,7 @@ theme.hotkeys_font              = theme.font_bold
 theme.hotkeys_modifiers_fg      = theme.foreground
 theme.hotkeys_group_margin      = dpi(20)
 theme.hotkeys_opacity           = theme.opacity
-theme.hotkeys_shape             = shapes.rounded_rect
+theme.hotkeys_shape             = theme.rounded_rect
 --#endregion
 
 --#region Notifications
@@ -167,7 +174,7 @@ theme.notification_icon_resize_strategy = 'center'
 theme.notification_icon_size            = dpi(32)
 theme.notification_margin               = dpi(5)
 theme.notification_position             = 'top_right'
-theme.notification_shape                = shapes.rounded_rect
+theme.notification_shape                = theme.rect
 theme.notification_spacing              = dpi(5)
 --#endregion
 
