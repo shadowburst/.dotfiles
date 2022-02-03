@@ -182,13 +182,11 @@
   "vim.insertModeKeyBindings": [
     {
       "before": ["k", "j"],
-      "after": ["<Esc>"],
-      "commands": ["workbench.action.files.save"]
+      "after": ["<Esc>"]
     },
     {
       "before": ["j", "k"],
-      "after": ["<Esc>"],
-      "commands": ["workbench.action.files.save"]
+      "after": ["<Esc>"]
     }
   ],
   "vim.visualModeKeyBindings": [
