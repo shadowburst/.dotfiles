@@ -10,51 +10,40 @@ local widget_container = require('widgets.containers.widget-container')
 local interfaces = env.network_interfaces
 
 local create_network_widget = function()
-
 	local properties = {
 		disabled = false,
 		mode = 'none',
-		healthy_connection = true
+		healthy_connection = true,
 	}
 
 	local text_widget = wibox.widget({
-		text   = '',
-		widget = wibox.widget.textbox
+		text = '',
+		widget = wibox.widget.textbox,
 	})
 
 	local buttons = awful.util.table.join(
-		awful.button(
-			{}, 1,
-			function()
-				awful.spawn('nm-connection-editor')
-			end
-		),
-		awful.button(
-			{}, 3,
-			function()
-				awful.spawn.easy_async_with_shell(
-					properties.disabled and 'rfkill unblock wlan' or 'rfkill block wlan',
-					function()
-					end
-				)
-			end
-		)
+		awful.button({}, 1, function()
+			awful.spawn('nm-connection-editor')
+		end),
+		awful.button({}, 3, function()
+			awful.spawn.easy_async_with_shell(
+				properties.disabled and 'rfkill unblock wlan' or 'rfkill block wlan',
+				function() end
+			)
+		end)
 	)
 
-	local network_widget = widget_container(
+	local network_widget = widget_container({
+		id = 'network_layout',
+		layout = wibox.layout.fixed.horizontal,
+		spacing = beautiful.widget_spacing,
 		{
-			id 		= 'network_layout',
-			layout	= wibox.layout.fixed.horizontal,
-			spacing = beautiful.widget_spacing,
-			{
-				id	   = 'icon',
-				markup = '',
-				font   = beautiful.nerd_font .. ' 18',
-				widget = wibox.widget.textbox
-			}
+			id = 'icon',
+			markup = '',
+			font = beautiful.nerd_font .. ' 18',
+			widget = wibox.widget.textbox,
 		},
-		buttons
-	)
+	}, buttons)
 
 	local update_icon = function()
 		local icon = properties.disabled and icons.wifi.off or icons.wifi.on
@@ -127,11 +116,8 @@ local create_network_widget = function()
 		end
 	end
 
-	awesome.connect_signal(
-		'widgets::network',
-		function()
-			awful.spawn.easy_async_with_shell(
-				[=[
+	awesome.connect_signal('widgets::network', function()
+		awful.spawn.easy_async_with_shell([=[
 					wireless="]=] .. interfaces.wlan .. [=["
 					wired="]=] .. interfaces.lan .. [=["
 					net="/sys/class/net/"
@@ -175,20 +161,14 @@ local create_network_widget = function()
 					}
 
 					print_network_mode
-				]=],
-				function(mode_stdout)
-					properties.mode = mode_stdout:gsub('%\n', '')
-					awful.spawn.easy_async_with_shell(
-						'rfkill list wlan',
-						function(status_stdout)
-							properties.disabled = status_stdout:match('Soft blocked: yes')
-							update_widget()
-						end
-					)
-				end
-			)
-		end
-	)
+				]=], function(mode_stdout)
+			properties.mode = mode_stdout:gsub('%\n', '')
+			awful.spawn.easy_async_with_shell('rfkill list wlan', function(status_stdout)
+				properties.disabled = status_stdout:match('Soft blocked: yes')
+				update_widget()
+			end)
+		end)
+	end)
 
 	gears.timer({
 		timeout = 5,
@@ -196,10 +176,10 @@ local create_network_widget = function()
 		autostart = true,
 		callback = function()
 			awesome.emit_signal('widgets::network')
-		end
+		end,
 	})
 
 	return network_widget
 end
 
-return create_network_widget()
+return create_network_widget

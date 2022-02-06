@@ -12,6 +12,27 @@ telescope.setup {
     selection_caret = " ",
     path_display = { "smart" },
 
+    vimgrep_arguments = {
+      "rg",
+      "--color=never",
+      "--no-heading",
+      "--with-filename",
+      "--line-number",
+      "--column",
+      "--hidden",
+      "--smart-case"
+    },
+
+    selection_strategy = "reset",
+    file_ignore_patterns = {
+      "%.git/.*",
+      "%.vim/.*",
+      "node_modules/.*",
+      "%.idea/.*",
+      "%.vscode/.*",
+      "%.history/.*"
+    },
+
     mappings = {
       i = {
         ["<C-n>"] = actions.cycle_history_next,
@@ -36,8 +57,8 @@ telescope.setup {
         ["<PageUp>"] = actions.results_scrolling_up,
         ["<PageDown>"] = actions.results_scrolling_down,
 
-        ["<Tab>"] = actions.toggle_selection + actions.move_selection_worse,
-        ["<S-Tab>"] = actions.toggle_selection + actions.move_selection_better,
+        ["<Tab>"] = actions.move_selection_worse,
+        ["<S-Tab>"] = actions.move_selection_better,
         ["<C-q>"] = actions.send_to_qflist + actions.open_qflist,
         ["<M-q>"] = actions.send_selected_to_qflist + actions.open_qflist,
         ["<C-l>"] = actions.complete_tag,
@@ -51,8 +72,8 @@ telescope.setup {
         ["<C-v>"] = actions.select_vertical,
         ["<C-t>"] = actions.select_tab,
 
-        ["<Tab>"] = actions.toggle_selection + actions.move_selection_worse,
-        ["<S-Tab>"] = actions.toggle_selection + actions.move_selection_better,
+        ["<Tab>"] = actions.move_selection_worse,
+        ["<S-Tab>"] = actions.move_selection_better,
         ["<C-q>"] = actions.send_to_qflist + actions.open_qflist,
         ["<M-q>"] = actions.send_selected_to_qflist + actions.open_qflist,
 
@@ -78,6 +99,9 @@ telescope.setup {
     },
   },
   pickers = {
+    find_files = {
+      hidden = true
+    },
     -- Default configuration for builtin pickers goes here:
     -- picker_name = {
     --   picker_config_key = value,

@@ -133,7 +133,7 @@ local global_keys = awful.util.table.join(
             local s = awful.screen.focused()
             awful.spawn(s.selected_tag.default_app, {tag = s.selected_tag})
         end,
-        { group = 'Apps', description = 'Open default app' }
+        { group = 'Apps', description = "Open tag's default app" }
     ),
 
     awful.key(

@@ -4,7 +4,6 @@ local wibox = require('wibox')
 local dpi = beautiful.xresources.apply_dpi
 
 local top_panel = function(s)
-
 	local panel = wibox({
 		ontop = true,
 		screen = s,
@@ -22,13 +21,13 @@ local top_panel = function(s)
 		left = 0,
 		top = dpi(35),
 		right = 0,
-		bottom = 0
+		bottom = 0,
 	})
 
 	local battery = require('widgets.battery')
 	local bluetooth = require('widgets.bluetooth')
 	local clock = require('widgets.clock')()
-	local network = require('widgets.network')
+	local network = require('widgets.network')()
 	local power = require('widgets.power')
 	local search = require('widgets.search')
 	local torrents = require('widgets.torrents')
@@ -53,7 +52,7 @@ local top_panel = function(s)
 				spacing = beautiful.widget_spacing,
 				search,
 				s.tag_list,
-				s.layout_box
+				s.layout_box,
 			},
 			s.task_list,
 			{
@@ -67,13 +66,12 @@ local top_panel = function(s)
 				volume,
 				battery,
 				clock,
-				power
-			}
-		}
+				power,
+			},
+		},
 	})
 
 	return panel
 end
-
 
 return top_panel
