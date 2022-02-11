@@ -1,14 +1,14 @@
 return {
 	settings = {
-
 		Lua = {
 			diagnostics = {
-				globals = { "vim" },
+				globals = { 'vim' },
 			},
 			workspace = {
 				library = {
-					[vim.fn.expand("$VIMRUNTIME/lua")] = true,
-					[vim.fn.stdpath("config") .. "/lua"] = true,
+					[vim.fn.expand('$VIMRUNTIME/lua')] = true, -- Vim library
+					[vim.fn.stdpath('config') .. '/lua'] = true, -- Custom vim files
+					['/usr/share/awesome/lib'] = true, -- Awesome library
 				},
 			},
 		},

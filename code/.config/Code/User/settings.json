@@ -86,14 +86,12 @@
   "vim.easymotion": true,
   "vim.foldfix": true,
   "vim.handleKeys": {
-    "<C-a>": false,
     "<C-b>": false,
     "<C-c>": false,
     "<C-f>": false,
     "<C-r>": false,
     "<C-o>": false,
     "<C-w>": false,
-    "<C-x>": false,
     "<C-y>": false,
     "<C-z>": false
   },
