@@ -85,16 +85,13 @@ local mappings = {
 	['a'] = { '<cmd>Alpha<cr>', 'Start screen' },
 	['b'] = {
 		name = '+Buffers',
-		['c'] = {
-			name = '+Close',
-			['c'] = { '<cmd>bdelete<cr>', 'Close current' },
-			['h'] = { '<cmd>BufferLineCloseLeft<cr>', 'Close all to the left' },
-			['l'] = { '<cmd>BufferLineCloseRight<cr>', 'Close all to the right' },
-			['o'] = { '<cmd>%bd|e#<cr>', 'Close all but current' },
-			['p'] = { '<cmd>BufferLinePickClose<cr>', 'Close pick' },
-		},
+		['c'] = { '<cmd>Bdelete<cr>', 'Close current' },
 		['f'] = { '<cmd>Telescope buffers<cr>', 'Find' },
+		['h'] = { '<cmd>BufferLineCloseLeft<cr>', 'Close all to the left' },
 		['j'] = { '<cmd>BufferLinePick<cr>', 'Jump' },
+		['l'] = { '<cmd>BufferLineCloseRight<cr>', 'Close all to the right' },
+		['o'] = { '<cmd>%bd|e#<cr>', 'Close others' },
+		['p'] = { '<cmd>BufferLinePickClose<cr>', 'Close pick' },
 		['s'] = { '<cmd>wa!<cr>', 'Save all' },
 	},
 	['e'] = { '<cmd>NvimTreeToggle<CR>', 'Explorer' },
@@ -177,7 +174,7 @@ local mappings = {
 		['s'] = { '<C-W>s', 'Split window below' },
 		['v'] = { '<C-W>v', 'Split window right' },
 	},
-	['x'] = { '<cmd>bdelete<cr>', 'Close current buffer' },
+	['x'] = { '<cmd>Bdelete<cr>', 'Close current buffer' },
 }
 
 which_key.setup(setup)

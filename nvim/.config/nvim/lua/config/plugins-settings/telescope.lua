@@ -102,9 +102,6 @@ telescope.setup({
 		find_files = {
 			hidden = true,
 		},
-		projects = {
-			hidden = true,
-		},
 		-- Default configuration for builtin pickers goes here:
 		-- picker_name = {
 		--   picker_config_key = value,
