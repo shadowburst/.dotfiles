@@ -189,7 +189,9 @@ ruled.client.connect_signal("request::rules", function()
 			floating = true,
 			sticky = true,
 			focusable = true,
-			placement = awful.placement.top,
+			placement = function (c)
+				return awful.placement.top(c, {honor_workarea = false})
+			end
 		},
 	})
 end)

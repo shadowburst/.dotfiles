@@ -26,7 +26,7 @@ inputbar {
   border-radius:    0px;
 	children: 				[prompt, entry];
   expand:           false;
-  margin:           0% 0% 0% 0%;
+  margin:           0 0 0 0;
   padding:          5px;
   text-color:       @foreground;
 }
@@ -44,8 +44,8 @@ entry {
   blink:             true;
   expand:            true;
   horizontal-align:  0;
-  padding:           0.7% 0% 0% 0%;
-  placeholder:       "Search";
+  padding:           10px 0 0 0;
+  placeholder:       "Search...";
   placeholder-color: @light-grey;
   text-color:        inherit;
 }

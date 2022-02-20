@@ -5,7 +5,7 @@ local dpi = beautiful.xresources.apply_dpi
 
 local top_panel = function(s)
 	local panel = wibox({
-		ontop = true,
+		ontop = false,
 		screen = s,
 		type = 'dock',
 		height = dpi(35),

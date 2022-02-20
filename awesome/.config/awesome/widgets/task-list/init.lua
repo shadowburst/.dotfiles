@@ -39,7 +39,7 @@ return function(s)
             },
             widget_template = widget_container({
                 widget = wibox.container.constraint,
-                width  = 500,
+                width  = 400,
                 {
                     layout = wibox.layout.fixed.horizontal,
                     {
