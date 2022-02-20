@@ -13,7 +13,7 @@ local top_panel = function(s)
 		x = s.geometry.x,
 		y = s.geometry.y,
 		stretch = false,
-		bg = beautiful.background,
+		bg = beautiful.transparent,
 		fg = beautiful.fg_normal,
 	})
 
@@ -24,15 +24,15 @@ local top_panel = function(s)
 		bottom = 0,
 	})
 
-	local battery = require('widgets.battery')
-	local bluetooth = require('widgets.bluetooth')
+	local battery = require('widgets.battery')()
+	local bluetooth = require('widgets.bluetooth')()
 	local clock = require('widgets.clock')()
 	local network = require('widgets.network')()
-	local power = require('widgets.power')
-	local search = require('widgets.search')
-	local torrents = require('widgets.torrents')
-	local updates = require('widgets.updates')
-	local volume = require('widgets.volume')
+	local power = require('widgets.power')()
+	local search = require('widgets.search')()
+	local torrents = require('widgets.torrents')()
+	local updates = require('widgets.updates')()
+	local volume = require('widgets.volume')()
 
 	s.layout_box = require('widgets.layout-box')(s)
 	if s == screen.primary then

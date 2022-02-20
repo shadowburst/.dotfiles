@@ -143,4 +143,4 @@ local create_volume_widget = function()
 	return volume_widget
 end
 
-return create_volume_widget()
+return create_volume_widget

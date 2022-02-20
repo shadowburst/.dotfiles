@@ -16,7 +16,7 @@ window {
   transparency:     "real";
   width:            60%;
   x-offset:         0;
-  y-offset:         35;
+  y-offset:         0;
 }
 
 inputbar {

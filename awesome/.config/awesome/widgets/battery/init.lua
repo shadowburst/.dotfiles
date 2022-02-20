@@ -76,4 +76,4 @@ local create_battery_widget = function()
 	return battery_widget
 end
 
-return create_battery_widget()
+return create_battery_widget

@@ -31,4 +31,4 @@ local create_search_widget = function()
     return search_widget
 end
 
-return create_search_widget()
+return create_search_widget

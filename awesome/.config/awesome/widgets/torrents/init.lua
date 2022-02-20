@@ -116,4 +116,4 @@ local create_torrents_widget = function()
     return torrents_widget
 end
 
-return create_torrents_widget()
+return create_torrents_widget

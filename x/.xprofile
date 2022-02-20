@@ -12,7 +12,7 @@ xrdb "$HOME/.Xresources" &
 autorandr --change --default mobile &
 
 # Allow for locking the screen
-light-locker --lock-on-lid &
+light-locker --no-lock-on-suspend --lock-on-lid &
 
 # Load the polkit agent
 /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 & eval $(gnome-keyring-daemon -s --components=pkcs11,secrets,ssh,gpg) &

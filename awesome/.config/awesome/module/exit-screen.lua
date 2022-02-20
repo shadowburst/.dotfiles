@@ -130,7 +130,7 @@ end
 
 local lock_command = function()
 	awesome.emit_signal('module::exit_screen:hide')
-	awful.spawn('light-locker-command -l', false)
+	awful.spawn.with_shell('light-locker-command -l')
 end
 
 

@@ -30,4 +30,4 @@ local create_power_widget = function()
     return power_widget
 end
 
-return create_power_widget()
+return create_power_widget

@@ -21,7 +21,7 @@ return function(widget, buttons)
             buttons = buttons,
             widget = clickable_container
         },
-        bg 	   = beautiful.highlight,
+        bg 	   = beautiful.background,
         shape  = gears.shape.rounded_rect,
         widget = wibox.container.background
     })

@@ -123,7 +123,7 @@ theme.tasklist_fg_urgent       = theme.foreground
 --#endregion
 
 --#region System tray
-theme.bg_systray            = '#3f4044'
+theme.bg_systray            = '#37383f'
 theme.systray_icon_spacing  = dpi(10)
 --#endregion
 

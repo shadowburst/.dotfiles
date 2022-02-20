@@ -74,4 +74,4 @@ local create_bluetooth_widget = function()
 	return bluetooth_widget
 end
 
-return create_bluetooth_widget()
+return create_bluetooth_widget

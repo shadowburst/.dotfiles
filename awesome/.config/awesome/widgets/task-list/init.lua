@@ -3,7 +3,8 @@ local beautiful = require('beautiful')
 local gears = require('gears')
 local wibox = require('wibox')
 
-local clickable_container = require('widgets.containers.clickable-container')
+local widget_container = require('widgets.containers.widget-container')
+-- local clickable_container = require('widgets.containers.clickable-container')
 
 local dpi = beautiful.xresources.apply_dpi
 
@@ -36,31 +37,24 @@ return function(s)
                     end
                 )
             },
-            widget_template = {
-                id     = 'background_role',
-                widget = clickable_container,
+            widget_template = widget_container({
+                widget = wibox.container.constraint,
+                width  = 500,
                 {
-                    widget = wibox.container.margin,
-                    top    = dpi(3),
-                    left   = dpi(10),
-                    right   = dpi(10),
-                    bottom = dpi(3),
+                    layout = wibox.layout.fixed.horizontal,
                     {
-                        layout = wibox.layout.fixed.horizontal,
+                        widget  = wibox.container.margin,
+                        right = dpi(5),
                         {
-                            widget  = wibox.container.margin,
-                            right = dpi(5),
-                            {
-                                id      = 'icon_role',
-                                widget  = wibox.widget.imagebox
-                            },
+                            id      = 'icon_role',
+                            widget  = wibox.widget.imagebox
                         },
-                        {
-                            id     = 'text_role',
-                            widget = wibox.widget.textbox,
-                        },
-                    }
+                    },
+                    {
+                        id     = 'text_role',
+                        widget = wibox.widget.textbox,
+                    },
                 }
-            }
+            })
         })
 end

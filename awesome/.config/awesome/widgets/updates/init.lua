@@ -95,4 +95,4 @@ local create_updates_widget = function()
 	return updates_widget
 end
 
-return create_updates_widget()
+return create_updates_widget
