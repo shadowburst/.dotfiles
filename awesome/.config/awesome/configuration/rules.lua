@@ -160,7 +160,6 @@ ruled.client.connect_signal("request::rules", function()
 				"Authy Desktop",
 				"Xfce4-power-manager-settings",
 				"Gnome-calculator",
-				"Rofi",
 				"Nm-connection-editor"
 			},
 			role = {
@@ -176,22 +175,6 @@ ruled.client.connect_signal("request::rules", function()
 			focus = awful.client.focus.filter,
 			raise = true,
 			placement = awful.placement.centered,
-		},
-	})
-
-	ruled.client.append_rule({
-		id = "rofi",
-		rule = {
-			class = "Rofi",
-		},
-		properties = {
-			above = true,
-			floating = true,
-			sticky = true,
-			focusable = true,
-			placement = function (c)
-				return awful.placement.top(c, {honor_workarea = false})
-			end
 		},
 	})
 end)
