@@ -17,10 +17,6 @@ local servers = {
 		opts = {},
 	},
 	{
-		name = 'grammarly',
-		opts = {}
-	},
-	{
 		name = 'html',
 		opts = {},
 	},

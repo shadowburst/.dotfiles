@@ -8,7 +8,7 @@ local top_panel = function(s)
 		ontop = false,
 		screen = s,
 		type = 'dock',
-		height = dpi(35),
+		height = dpi(32),
 		width = s.geometry.width,
 		x = s.geometry.x,
 		y = s.geometry.y,
@@ -19,7 +19,7 @@ local top_panel = function(s)
 
 	panel:struts({
 		left = 0,
-		top = dpi(35),
+		top = dpi(32),
 		right = 0,
 		bottom = 0,
 	})
@@ -43,7 +43,9 @@ local top_panel = function(s)
 
 	panel:setup({
 		widget = wibox.container.margin,
-		margins = dpi(4),
+		left = dpi(4),
+		right = dpi(4),
+		top = dpi(4),
 		{
 			layout = wibox.layout.align.horizontal,
 			expand = 'none',

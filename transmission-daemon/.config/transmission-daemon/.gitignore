@@ -1,5 +1,5 @@
-*
-!.gitignore
-
-!settings.json
-!scripts/
+dht.dat
+stats.json
+torrents/
+resume/
+blocklists
