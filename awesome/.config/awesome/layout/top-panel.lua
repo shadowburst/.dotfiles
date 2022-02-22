@@ -11,7 +11,7 @@ local top_panel = function(s)
 		height = dpi(32),
 		width = s.geometry.width,
 		x = s.geometry.x,
-		y = s.geometry.y,
+		y = s.geometry.y + dpi(4),
 		stretch = false,
 		bg = beautiful.transparent,
 		fg = beautiful.fg_normal,
@@ -19,7 +19,7 @@ local top_panel = function(s)
 
 	panel:struts({
 		left = 0,
-		top = dpi(32),
+		top = dpi(36),
 		right = 0,
 		bottom = 0,
 	})
@@ -51,7 +51,6 @@ local top_panel = function(s)
 			expand = 'none',
 			{
 				layout = wibox.layout.fixed.horizontal,
-				spacing = beautiful.widget_spacing,
 				search,
 				s.tag_list,
 				s.layout_box,
@@ -59,7 +58,6 @@ local top_panel = function(s)
 			s.task_list,
 			{
 				layout = wibox.layout.fixed.horizontal,
-				spacing = beautiful.widget_spacing,
 				s.systray,
 				torrents,
 				updates,

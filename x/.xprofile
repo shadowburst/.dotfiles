@@ -18,7 +18,7 @@ light-locker --no-lock-on-suspend --lock-on-lid &
 /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 & eval $(gnome-keyring-daemon -s --components=pkcs11,secrets,ssh,gpg) &
 
 # Use the super key
-xcape -e 'Super_L=Alt_L|space' &
+xcape -e 'Super_L=Super_L|space' &
 
 # Set keyboard layout
 setxkbmap fr &

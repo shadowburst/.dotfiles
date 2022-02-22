@@ -4,11 +4,10 @@ local gears = require('gears')
 local wibox = require('wibox')
 
 local widget_container = require('widgets.containers.widget-container')
--- local clickable_container = require('widgets.containers.clickable-container')
 
 local dpi = beautiful.xresources.apply_dpi
 
-return function(s)
+local create_tasklist_widget = function(s)
         return awful.widget.tasklist({
             screen  = s,
             filter  = awful.widget.tasklist.filter.focused,
@@ -58,3 +57,5 @@ return function(s)
             })
         })
 end
+
+return create_tasklist_widget

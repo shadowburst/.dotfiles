@@ -7,7 +7,7 @@ local clickable_container = require('widgets.containers.clickable-container')
 
 local dpi = beautiful.xresources.apply_dpi
 
-return function(s)
+local create_taglist_widget = function(s)
 	local taglist = awful.widget.taglist({
 		screen  = s,
 		filter  = awful.widget.taglist.filter.all,
@@ -62,9 +62,16 @@ return function(s)
 	})
 
 	return wibox.widget({
-		bg 	   = beautiful.background,
-		shape  = gears.shape.rounded_rect,
-		widget = wibox.container.background,
-		taglist
+		widget = wibox.container.margin,
+		left = dpi(4),
+		right = dpi(4),
+		{
+			widget = wibox.container.background,
+			shape  = gears.shape.rounded_rect,
+			bg 	   = beautiful.background,
+			taglist
+		}
 	})
 end
+
+return create_taglist_widget

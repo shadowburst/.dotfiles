@@ -9,21 +9,26 @@ local dpi = beautiful.xresources.apply_dpi
 return function(widget, buttons)
 
     local container = wibox.widget({
+        widget = wibox.container.margin,
+        left = dpi(3),
+        right = dpi(3),
         {
+            widget = wibox.container.background,
+            shape  = gears.shape.rounded_rect,
+            bg 	   = beautiful.background,
             {
-                widget,
-                top	   = dpi(3),
-                bottom = dpi(3),
-                left   = dpi(10),
-                right  = dpi(10),
-                widget = wibox.container.margin
+                widget = clickable_container,
+                buttons = buttons,
+                {
+                    widget,
+                    widget = wibox.container.margin,
+                    top	   = dpi(3),
+                    bottom = dpi(3),
+                    left   = dpi(10),
+                    right  = dpi(10),
+                },
             },
-            buttons = buttons,
-            widget = clickable_container
-        },
-        bg 	   = beautiful.background,
-        shape  = gears.shape.rounded_rect,
-        widget = wibox.container.background
+        }
     })
 
     return container
