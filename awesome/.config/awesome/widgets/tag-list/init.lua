@@ -9,68 +9,51 @@ local dpi = beautiful.xresources.apply_dpi
 
 local create_taglist_widget = function(s)
 	local taglist = awful.widget.taglist({
-		screen  = s,
-		filter  = awful.widget.taglist.filter.all,
+		screen = s,
+		filter = awful.widget.taglist.filter.all,
 		buttons = {
-			awful.button(
-				{}, 1,
-				function(t)
-					t:view_only()
+			awful.button({}, 1, function(t)
+				t:view_only()
+			end),
+			awful.button({}, 2, function(t)
+				for _, client in pairs(t:clients()) do
+					client:kill()
 				end
-			),
-			awful.button(
-				{}, 2,
-				function(t)
-					for _, client in pairs(t:clients()) do
-						client:kill()
-					end
-				end
-			),
+			end),
 			awful.button({}, 3, awful.tag.viewtoggle),
-			awful.button(
-				{}, 4,
-				function(t)
-					awful.tag.viewprev(t.screen)
-				end
-			),
-			awful.button(
-				{}, 5,
-				function(t)
-					awful.tag.viewnext(t.screen)
-				end
-			)
+			awful.button({}, 4, function(t)
+				awful.tag.viewprev(t.screen)
+			end),
+			awful.button({}, 5, function(t)
+				awful.tag.viewnext(t.screen)
+			end),
 		},
 		style = {
 			shape = gears.shape.rounded_rect,
 		},
 		widget_template = {
-			id 	   = 'background_role',
+			id = 'background_role',
 			widget = wibox.container.background,
 			{
 				widget = clickable_container,
 				{
 					widget = wibox.container.margin,
-					left   = dpi(8),
-					right   = dpi(8),
+					left = dpi(8),
+					right = dpi(8),
 					{
-						id     = 'text_role',
-						widget = wibox.widget.textbox
-					}
-				}
-			}
-		}
+						id = 'text_role',
+						widget = wibox.widget.textbox,
+					},
+				},
+			},
+		},
 	})
 
 	return wibox.widget({
-		widget = wibox.container.margin,
-		left = dpi(4),
-		right = dpi(4),
-		{
-			widget = wibox.container.background,
-			shape  = gears.shape.rounded_rect,
-			bg 	   = beautiful.background,
-			taglist
-		}
+		widget = wibox.container.background,
+		shape = gears.shape.rounded_rect,
+		bg = beautiful.background,
+		taglist,
 	})
 end
 

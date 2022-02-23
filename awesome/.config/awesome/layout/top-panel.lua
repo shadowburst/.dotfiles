@@ -27,6 +27,7 @@ local top_panel = function(s)
 	local battery = require('widgets.battery')()
 	local bluetooth = require('widgets.bluetooth')()
 	local clock = require('widgets.clock')()
+	local media = require('widgets.media')()
 	local network = require('widgets.network')()
 	local power = require('widgets.power')()
 	local search = require('widgets.search')()
@@ -51,13 +52,16 @@ local top_panel = function(s)
 			expand = 'none',
 			{
 				layout = wibox.layout.fixed.horizontal,
+				spacing = beautiful.widget_spacing,
 				search,
 				s.tag_list,
 				s.layout_box,
+				media,
 			},
 			s.task_list,
 			{
 				layout = wibox.layout.fixed.horizontal,
+				spacing = beautiful.widget_spacing,
 				s.systray,
 				torrents,
 				updates,

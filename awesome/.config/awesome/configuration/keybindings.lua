@@ -131,16 +131,24 @@ local global_keys = awful.util.table.join(
 
 	--#region Media
 	awful.key({}, 'XF86AudioPrev', function()
-		awful.spawn.easy_async_with_shell('playerctl previous', function() end)
+		awful.spawn.easy_async_with_shell('playerctl previous', function()
+			awesome.emit_signal('widgets::media')
+		end)
 	end, { group = 'Tools', description = 'Previous/next music' }),
 	awful.key({}, 'XF86AudioNext', function()
-		awful.spawn.easy_async_with_shell('playerctl next', function() end)
+		awful.spawn.easy_async_with_shell('playerctl next', function()
+			awesome.emit_signal('widgets::media')
+		end)
 	end, { group = 'Tools', description = 'Previous/next music' }),
 	awful.key({}, 'XF86AudioPlay', function()
-		awful.spawn.easy_async_with_shell('playerctl play-pause', function() end)
+		awful.spawn.easy_async_with_shell('playerctl play-pause', function()
+			awesome.emit_signal('widgets::media')
+		end)
 	end, { group = 'Tools', description = 'Play/pause music' }),
 	awful.key({}, 'XF86AudioPause', function()
-		awful.spawn.easy_async_with_shell('playerctl play-pause', function() end)
+		awful.spawn.easy_async_with_shell('playerctl play-pause', function()
+			awesome.emit_signal('widgets::media')
+		end)
 	end, { group = 'Tools', description = 'Play/pause music' }),
 	--#endregion
 
