@@ -52,3 +52,7 @@ client.connect_signal('property::fullscreen', function(c)
 		update_client(c)
 	end
 end)
+
+client.connect_signal('property::floating', function(c)
+	c.ontop = c.floating
+end)

@@ -55,15 +55,15 @@ local global_keys = awful.util.table.join(
 	--#endregion
 
 	--#region Layouts
-	awful.key({ modkey }, 'Escape', function()
+	awful.key({ modkey }, 'f', function()
 		awful.layout.inc(1)
 	end, { group = 'Layouts', description = 'Select next layout' }),
 
-	awful.key({ modkey }, 'KP_Subtract', function()
+	awful.key({ modkey }, 'Left', function()
 		awful.tag.incncol(-1, nil, true)
 	end, { group = 'Layouts', description = 'Decrease/increase the number of columns' }),
 
-	awful.key({ modkey }, 'KP_Add', function()
+	awful.key({ modkey }, 'Right', function()
 		awful.tag.incncol(1, nil, true)
 	end, { group = 'Layouts', description = 'Decrease/increase the number of columns' }),
 	--#endregion

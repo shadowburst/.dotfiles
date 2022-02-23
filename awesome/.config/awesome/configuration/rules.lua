@@ -7,10 +7,10 @@ local client_buttons = require('configuration.buttons').client_buttons
 local client_keys = require('configuration.keybindings').client_keys
 local tags = require('configuration.tags')
 
-ruled.client.connect_signal("request::rules", function()
+ruled.client.connect_signal('request::rules', function()
 	-- All clients will match this rule.
 	ruled.client.append_rule({
-		id = "global",
+		id = 'global',
 		rule = {},
 		properties = {
 			titlebars_enabled = false,
@@ -32,29 +32,29 @@ ruled.client.connect_signal("request::rules", function()
 	})
 
 	ruled.client.append_rule({
-		id = "round_clients",
+		id = 'round_clients',
 		rule_any = {
 			type = {
-				"normal",
-				"dialog",
+				'normal',
+				'dialog',
 			},
 		},
 		properties = {
 			round_corners = true,
-			shape = beautiful.rounded_rect
+			shape = beautiful.rounded_rect,
 		},
 	})
 
 	-- Dialogs
 	ruled.client.append_rule({
-		id = "dialog",
+		id = 'dialog',
 		rule_any = {
-			type = { "dialog" },
-			class = { "Wicd-client.py", "calendar.google.com" },
+			type = { 'dialog' },
+			class = { 'Wicd-client.py', 'calendar.google.com' },
 		},
 		properties = {
 			floating = true,
-			above = true,
+			ontop = true,
 			skip_decoration = true,
 			placement = awful.placement.centered,
 		},
@@ -62,13 +62,13 @@ ruled.client.connect_signal("request::rules", function()
 
 	-- Modals
 	ruled.client.append_rule({
-		id = "modal",
+		id = 'modal',
 		rule_any = {
-			type = { "modal" },
+			type = { 'modal' },
 		},
 		properties = {
 			floating = true,
-			above = true,
+			ontop = true,
 			skip_decoration = true,
 			placement = awful.placement.centered,
 		},
@@ -76,9 +76,9 @@ ruled.client.connect_signal("request::rules", function()
 
 	-- Utilities
 	ruled.client.append_rule({
-		id = "utility",
+		id = 'utility',
 		rule_any = {
-			type = { "utility" },
+			type = { 'utility' },
 		},
 		properties = {
 			floating = true,
@@ -89,10 +89,10 @@ ruled.client.connect_signal("request::rules", function()
 
 	-- Splash
 	ruled.client.append_rule({
-		id = "splash",
+		id = 'splash',
 		rule_any = {
-			type = { "splash" },
-			name = { "Discord Updater" },
+			type = { 'splash' },
+			name = { 'Discord Updater' },
 		},
 		properties = {
 			round_corners = true,
@@ -113,59 +113,59 @@ ruled.client.connect_signal("request::rules", function()
 			floating = true,
 			ontop = true,
 			is_fixed = false,
-			placement = awful.placement.bottom_right
-		}
+			placement = awful.placement.bottom_right,
+		},
 	})
 
 	-- Fullscreen
 	ruled.client.append_rule({
 		id = 'fullscreen',
 		rule_any = {
-			class = { 'mpv' }
+			class = { 'mpv' },
 		},
 		properties = {
 			fullscreen = true,
-		}
+		},
 	})
 
 	for _, tag in pairs(tags) do
 		ruled.client.append_rule({
 			id = tag.type,
 			rule_any = {
-				class = tag.matches
+				class = tag.matches,
 			},
 			properties = {
 				tag = tag.name,
-				switch_to_tags = true
-			}
+				switch_to_tags = true,
+			},
 		})
 	end
 
 	-- Floating
 	ruled.client.append_rule({
-		id = "floating",
+		id = 'floating',
 		rule_any = {
 			instance = {
-				"file_progress",
-				"Popup",
+				'file_progress',
+				'Popup',
 			},
 			class = {
 				'Pavucontrol',
-				"scrcpy",
-				"Mugshot",
-				"Pulseeffects",
-				"Blueman-adapters",
-				"Blueman-manager",
-				"Xephyr",
-				"Authy Desktop",
-				"Xfce4-power-manager-settings",
-				"Gnome-calculator",
-				"Nm-connection-editor"
+				'scrcpy',
+				'Mugshot',
+				'Pulseeffects',
+				'Blueman-adapters',
+				'Blueman-manager',
+				'Xephyr',
+				'Authy Desktop',
+				'Xfce4-power-manager-settings',
+				'Gnome-calculator',
+				'Nm-connection-editor',
 			},
 			role = {
-				"AlarmWindow",
-				"ConfigManager",
-				"pop-up",
+				'AlarmWindow',
+				'ConfigManager',
+				'pop-up',
 			},
 		},
 		properties = {
