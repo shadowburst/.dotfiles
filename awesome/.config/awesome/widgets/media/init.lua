@@ -80,7 +80,7 @@ local create_media_widget = function()
 
 	awesome.connect_signal('widgets::media', function()
 		awful.spawn.easy_async_with_shell('playerctl status', function(status_stdout)
-			local visible = env.debug or not status_stdout:match('No players found')
+			local visible = env.debug or status_stdout:match('Playing') or status_stdout:match('Paused')
 			local playing = status_stdout:match('Playing')
 
 			if media_widget.visible ~= visible then
