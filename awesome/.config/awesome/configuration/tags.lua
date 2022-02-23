@@ -4,7 +4,7 @@ local beautiful = require('beautiful')
 local apps = require('configuration.apps')
 local icons = require('theme.icons').tags
 
-local default_layout = awful.layout.suit.spiral.dwindle
+local default_layout = awful.layout.suit.tile
 
 local tags = {
 	{
@@ -79,7 +79,7 @@ local tags = {
 tag.connect_signal('request::default_layouts', function()
 	awful.layout.append_default_layouts({
 		-- awful.layout.suit.floating,
-		-- awful.layout.suit.tile,
+		awful.layout.suit.tile,
 		-- awful.layout.suit.tile.left,
 		-- awful.layout.suit.tile.right,
 		-- awful.layout.suit.tile.bottom,
@@ -87,7 +87,7 @@ tag.connect_signal('request::default_layouts', function()
 		-- awful.layout.suit.fair,
 		-- awful.layout.suit.fair.horizontal,
 		-- awful.layout.suit.spiral,
-		awful.layout.suit.spiral.dwindle,
+		-- awful.layout.suit.spiral.dwindle,
 		-- awful.layout.suit.max,
 		awful.layout.suit.max.fullscreen,
 		-- awful.layout.suit.magnifier,
@@ -139,6 +139,11 @@ end
 
 -- Change tag's client's shape and gap on change
 tag.connect_signal('property::layout', function(t)
+	update_gap_and_shape(t)
+end)
+
+-- Change tag's client's shape and gap on tagged
+tag.connect_signal('tagged', function(t)
 	update_gap_and_shape(t)
 end)
 
