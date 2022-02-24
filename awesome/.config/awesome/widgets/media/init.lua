@@ -66,8 +66,11 @@ local create_media_widget = function()
 				left = beautiful.widget_spacing,
 				right = beautiful.widget_spacing * 2,
 				{
-					widget = wibox.container.constraint,
-					width = dpi(200),
+					widget = wibox.container.scroll.horizontal,
+					fps = 30,
+					speed = 30,
+					max_size = dpi(200),
+					extra_space = beautiful.widget_spacing,
 					{
 						id = 'title',
 						widget = wibox.widget.textbox,
@@ -94,7 +97,7 @@ local create_media_widget = function()
 				[[ bash -c "playerctl metadata | grep title | awk -F 'title' '{print(\$2)}'" ]],
 				function(metadata_stdout)
 					local title = metadata_stdout:gsub('^%s*(.-)%s*$', '%1')
-					media_widget:get_children_by_id('title')[1]:set_text(title)
+					media_widget:get_children_by_id('title')[1]:set_text('   ' .. title)
 					play_button_widget:get_children_by_id('play')[1]:set_text(playing and icons.pause or icons.play)
 				end
 			)

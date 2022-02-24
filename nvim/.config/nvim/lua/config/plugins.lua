@@ -64,6 +64,7 @@ packer.startup(function(use)
 	use('lambdalisue/suda.vim')
 	use('tpope/vim-surround')
 	use('norcalli/nvim-colorizer.lua')
+	use('vigoux/LanguageTool.nvim')
 
 	-- Colorschemes
 	-- use "lunarvim/colorschemes" -- A bunch of colorschemes you can try out

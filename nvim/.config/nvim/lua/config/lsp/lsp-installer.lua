@@ -32,10 +32,6 @@ local servers = {
 		name = 'sumneko_lua',
 		opts = require('config.lsp.settings.sumneko_lua'),
 	},
-	-- {
-	-- 	name = 'remark_ls',
-	-- 	opts = {},
-	-- },
 	{
 		name = 'yamlls',
 		opts = {},
