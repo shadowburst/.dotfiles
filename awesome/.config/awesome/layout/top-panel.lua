@@ -44,8 +44,7 @@ local top_panel = function(s)
 
 	panel:setup({
 		widget = wibox.container.margin,
-		left = dpi(4),
-		right = dpi(4),
+		left = dpi(12),
 		top = dpi(4),
 		{
 			layout = wibox.layout.align.horizontal,
