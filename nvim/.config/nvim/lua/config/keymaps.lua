@@ -20,7 +20,7 @@ vim.g.maplocalleader = ' '
 keymap('n', '<cr>', '<cmd>nohlsearch<cr><cr>', opts)
 
 -- Toggle terminal
-keymap('n', '`', '<cmd>lua _TOGGLE_TERMINAL()<cr>', opts)
+keymap('n', '`', '<cmd>ToggleTerm direction=horizontal<cr>', opts)
 
 -- Easy save
 keymap('n', '<C-s>', '<cmd>w<cr>', opts)

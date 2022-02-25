@@ -94,6 +94,7 @@ local mappings = {
 		['p'] = { '<cmd>BufferLinePickClose<cr>', 'Close pick' },
 		['s'] = { '<cmd>wa!<cr>', 'Save all' },
 	},
+	['d'] = { '<cmd>lua _LAZYDOCKER_TOGGLE()<cr>', 'Open LazyDocker' },
 	['e'] = { '<cmd>NvimTreeToggle<CR>', 'Explorer' },
 	['g'] = {
 		name = '+Git',
@@ -155,13 +156,7 @@ local mappings = {
 		['u'] = { '<cmd>PackerUpdate<cr>', 'Update' },
 	},
 	['q'] = { '<cmd>qa<CR>', 'Quit' },
-	['t'] = {
-		name = '+Terminal',
-		['d'] = { '<cmd>lua _LAZYDOCKER_TOGGLE()<cr>', 'Open LazyDocker' },
-		['g'] = { '<cmd>lua _LAZYGIT_TOGGLE()<cr>', 'Open LazyGit' },
-		['r'] = { '<cmd>lua _RANGER_TOGGLE()<cr>', 'Open Ranger' },
-		['t'] = { '<cmd>lua _TOGGLE_TERMINAL()<cr>', 'Open Terminal' },
-	},
+	['t'] = { '<cmd>ToggleTerm direction=horizontal<cr>', 'Open Terminal' },
 	['w'] = {
 		name = '+Windows',
 		['w'] = { '<C-W>p', 'Other window' },
