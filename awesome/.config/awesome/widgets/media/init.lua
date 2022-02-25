@@ -66,6 +66,7 @@ local create_media_widget = function()
 				left = dpi(5),
 				right = dpi(10),
 				{
+					id = 'title_scroll',
 					widget = wibox.container.scroll.horizontal,
 					fps = 30,
 					speed = 30,
@@ -98,6 +99,14 @@ local create_media_widget = function()
 					local title = metadata_stdout:gsub('^%s*(.-)%s*$', '%1')
 					media_widget:get_children_by_id('title')[1]:set_text('   ' .. title .. '   ')
 					play_button_widget:get_children_by_id('play')[1]:set_text(playing and icons.pause or icons.play)
+
+					local scroll = media_widget:get_children_by_id('title_scroll')[1]
+					if playing then
+						scroll:continue()
+					else
+						scroll:reset_scrolling()
+						scroll:pause()
+					end
 				end
 			)
 		end)
