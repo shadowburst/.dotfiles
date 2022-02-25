@@ -104,8 +104,8 @@ local create_media_widget = function()
 					if playing then
 						scroll:continue()
 					else
-						scroll:reset_scrolling()
 						scroll:pause()
+						scroll:reset_scrolling()
 					end
 				end
 			)
