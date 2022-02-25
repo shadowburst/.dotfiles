@@ -24,6 +24,7 @@ keymap('n', '`', '<cmd>lua _TOGGLE_TERMINAL()<cr>', opts)
 
 -- Easy save
 keymap('n', '<C-s>', '<cmd>w<cr>', opts)
+keymap('i', '<C-s>', '<esc><cmd>w<cr>', opts)
 
 -- Better window navigation
 keymap('n', '<C-h>', '<C-w>h', opts)
