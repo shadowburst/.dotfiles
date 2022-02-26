@@ -74,7 +74,6 @@ pacman=(
   discord
   docker
   docker-compose
-  exa
   ffmpegthumbnailer
   flameshot
   gamemode

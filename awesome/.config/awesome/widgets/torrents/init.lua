@@ -59,9 +59,7 @@ local create_torrents_widget = function()
 		text = 'None',
 		delay_show = beautiful.tooltip_delay,
 		mode = 'outside',
-		align = 'bottom',
-		margin_leftright = dpi(8),
-		margin_topbottom = dpi(8),
+		margins = beautiful.tooltip_margins,
 		preferred_positions = { 'right', 'left', 'top', 'bottom' },
 	})
 

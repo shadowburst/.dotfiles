@@ -139,13 +139,15 @@ end
 --#endregion
 
 --#region Tooltips
+theme.tooltip_align = 'bottom'
 theme.tooltip_bg_color = theme.background
 theme.tooltip_border_color = theme.highlight
 theme.tooltip_border_width = dpi(2)
+theme.tooltip_delay = 1
 theme.tooltip_fg_color = theme.foreground
 theme.tooltip_font = theme.nerd_font .. ' 10'
+theme.tooltip_margins = dpi(8)
 theme.tooltip_shape = theme.rounded_rect
-theme.tooltip_delay = 0.3
 --#endregion
 
 --#region Hotkeys
