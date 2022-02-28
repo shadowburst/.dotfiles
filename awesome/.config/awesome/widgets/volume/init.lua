@@ -8,12 +8,6 @@ local widget_container = require('widgets.containers.widget-container')
 local watch = awful.widget.watch
 
 local create_volume_widget = function()
-	local properties = {
-		volume = 0,
-		muted = false,
-		disabled = false,
-	}
-
 	local icon_markup = function(mute)
 		local color = mute and beautiful.disabled or beautiful.primary
 		local icon = mute and icons.off or icons.on

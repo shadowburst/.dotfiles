@@ -4,24 +4,25 @@ local wibox = require('wibox')
 local dpi = beautiful.xresources.apply_dpi
 
 local top_panel = function(s)
+	local panel_height = dpi(36)
+	local offsetx = dpi(11)
+	local offsety = dpi(8)
+
 	local panel = wibox({
 		ontop = false,
 		screen = s,
 		type = 'dock',
-		height = dpi(32),
-		width = s.geometry.width,
-		x = s.geometry.x,
-		y = s.geometry.y + dpi(4),
+		height = panel_height - offsety,
+		width = s.geometry.width - offsetx,
+		x = s.geometry.x + offsetx,
+		y = s.geometry.y + offsety,
 		stretch = false,
 		bg = beautiful.transparent,
 		fg = beautiful.fg_normal,
 	})
 
 	panel:struts({
-		left = 0,
-		top = dpi(36),
-		right = 0,
-		bottom = 0,
+		top = panel_height,
 	})
 
 	local battery = require('widgets.battery')()
@@ -43,34 +44,29 @@ local top_panel = function(s)
 	s.task_list = require('widgets.task-list')(s)
 
 	panel:setup({
-		widget = wibox.container.margin,
-		left = dpi(12),
-		top = dpi(4),
+		layout = wibox.layout.align.horizontal,
+		expand = 'none',
 		{
-			layout = wibox.layout.align.horizontal,
-			expand = 'none',
-			{
-				layout = wibox.layout.fixed.horizontal,
-				spacing = beautiful.widget_spacing,
-				search,
-				s.tag_list,
-				s.layout_box,
-				media,
-			},
-			s.task_list,
-			{
-				layout = wibox.layout.fixed.horizontal,
-				spacing = beautiful.widget_spacing,
-				s.systray,
-				torrents,
-				updates,
-				bluetooth,
-				network,
-				volume,
-				battery,
-				clock,
-				power,
-			},
+			layout = wibox.layout.fixed.horizontal,
+			spacing = beautiful.widget_spacing,
+			search,
+			s.tag_list,
+			s.layout_box,
+			media,
+		},
+		s.task_list,
+		{
+			layout = wibox.layout.fixed.horizontal,
+			spacing = beautiful.widget_spacing,
+			s.systray,
+			torrents,
+			updates,
+			bluetooth,
+			network,
+			volume,
+			battery,
+			clock,
+			power,
 		},
 	})
 
