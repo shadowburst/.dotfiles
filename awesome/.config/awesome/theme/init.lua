@@ -213,7 +213,8 @@ theme.layout_cornerse = theme.icons.layout.tiled
 --#endregion
 
 --#region Widgets
-theme.widget_spacing = dpi(7)
+theme.widget_spacing = dpi(3)
+theme.icon_spacing = dpi(7)
 --#endregion
 
 return theme

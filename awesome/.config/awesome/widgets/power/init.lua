@@ -16,7 +16,7 @@ local create_power_widget = function()
 		align = 'center',
 		valign = 'center',
 		widget = wibox.widget.textbox,
-	}, buttons)
+	}, buttons, true)
 
 	return power_widget
 end

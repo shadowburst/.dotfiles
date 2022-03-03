@@ -50,10 +50,15 @@ local create_taglist_widget = function(s)
 	})
 
 	return wibox.widget({
-		widget = wibox.container.background,
-		shape = gears.shape.rounded_rect,
-		bg = beautiful.background,
-		taglist,
+		widget = wibox.container.margin,
+		left = beautiful.widget_spacing,
+		right = beautiful.widget_spacing,
+		{
+			widget = wibox.container.background,
+			shape = gears.shape.rounded_rect,
+			bg = beautiful.background,
+			taglist,
+		},
 	})
 end
 

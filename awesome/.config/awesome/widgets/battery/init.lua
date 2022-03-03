@@ -23,7 +23,7 @@ local create_battery_widget = function()
 
 	local battery_widget = widget_container({
 		layout = wibox.layout.fixed.horizontal,
-		spacing = beautiful.widget_spacing,
+		spacing = beautiful.icon_spacing,
 		{
 			id = 'icon',
 			font = beautiful.nerd_font .. ' 18',
@@ -35,7 +35,7 @@ local create_battery_widget = function()
 			text = '100%',
 			widget = wibox.widget.textbox,
 		},
-	}, buttons)
+	}, buttons, true)
 
 	local update_battery = function(status)
 		awful.spawn.easy_async_with_shell(

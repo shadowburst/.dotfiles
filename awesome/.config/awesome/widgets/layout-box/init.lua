@@ -20,7 +20,7 @@ return function(s)
 		awful.widget.layoutbox({ screen = s }),
 		margins = dpi(3),
 		widget = wibox.container.margin,
-	}, buttons)
+	}, buttons, true)
 
 	return layoutbox
 end

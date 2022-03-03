@@ -17,7 +17,7 @@ local create_search_widget = function()
 		align = 'center',
 		valign = 'center',
 		widget = wibox.widget.textbox,
-	}, buttons)
+	}, buttons, true)
 
 	return search_widget
 end

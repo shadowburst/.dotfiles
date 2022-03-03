@@ -75,7 +75,9 @@ pacman=(
   docker
   docker-compose
   ffmpegthumbnailer
+  filelight
   flameshot
+  fnm
   gamemode
   gimp
   gnome-calculator
@@ -98,7 +100,6 @@ pacman=(
   mpc
   mpv
   mugshot
-  nvm
   numlockx
   onlyoffice-desktopeditors
   pavucontrol
@@ -130,6 +131,7 @@ pacman=(
   xcape
   xclip
   xdotool
+  xfce4-power-manager
   xfce4-settings
   xsane-gimp
   yarn

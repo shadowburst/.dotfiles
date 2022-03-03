@@ -36,9 +36,9 @@ local create_volume_widget = function()
 			widget = wibox.widget.textbox,
 		},
 		id = 'volume_layout',
-		spacing = beautiful.widget_spacing,
+		spacing = beautiful.icon_spacing,
 		layout = wibox.layout.fixed.horizontal,
-	}, buttons)
+	}, buttons, true)
 
 	local update_widget = function(args)
 		local volume_layout = volume_widget:get_children_by_id('volume_layout')[1]

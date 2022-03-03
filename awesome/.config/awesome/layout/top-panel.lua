@@ -4,16 +4,16 @@ local wibox = require('wibox')
 local dpi = beautiful.xresources.apply_dpi
 
 local top_panel = function(s)
-	local panel_height = dpi(36)
-	local offsetx = dpi(11)
+	local panel_height = dpi(28)
+	local offsetx = dpi(5)
 	local offsety = dpi(8)
 
 	local panel = wibox({
 		ontop = false,
 		screen = s,
 		type = 'dock',
-		height = panel_height - offsety,
-		width = s.geometry.width - offsetx,
+		height = panel_height,
+		width = s.geometry.width - offsetx * 2,
 		x = s.geometry.x + offsetx,
 		y = s.geometry.y + offsety,
 		stretch = false,
@@ -22,7 +22,7 @@ local top_panel = function(s)
 	})
 
 	panel:struts({
-		top = panel_height,
+		top = panel_height + offsety,
 	})
 
 	local battery = require('widgets.battery')()
@@ -48,7 +48,6 @@ local top_panel = function(s)
 		expand = 'none',
 		{
 			layout = wibox.layout.fixed.horizontal,
-			spacing = beautiful.widget_spacing,
 			search,
 			s.tag_list,
 			s.layout_box,
@@ -57,7 +56,6 @@ local top_panel = function(s)
 		s.task_list,
 		{
 			layout = wibox.layout.fixed.horizontal,
-			spacing = beautiful.widget_spacing,
 			s.systray,
 			torrents,
 			updates,

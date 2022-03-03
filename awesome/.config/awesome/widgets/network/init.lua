@@ -36,14 +36,14 @@ local create_network_widget = function()
 	local network_widget = widget_container({
 		id = 'network_layout',
 		layout = wibox.layout.fixed.horizontal,
-		spacing = beautiful.widget_spacing,
+		spacing = beautiful.icon_spacing,
 		{
 			id = 'icon',
 			markup = '',
 			font = beautiful.nerd_font .. ' 18',
 			widget = wibox.widget.textbox,
 		},
-	}, buttons)
+	}, buttons, true)
 
 	local update_icon = function()
 		local icon = properties.disabled and icons.wifi.off or icons.wifi.on

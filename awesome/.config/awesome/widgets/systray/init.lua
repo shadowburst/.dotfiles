@@ -12,7 +12,7 @@ local create_systray_widget = function()
 
 	local systray_widget = wibox.widget({
 		widget = wibox.container.margin,
-		right = beautiful.widget_spacing,
+		right = beautiful.icon_spacing,
 		{
 			visible = true,
 			horizontal = true,
@@ -36,7 +36,7 @@ local create_systray_widget = function()
 		layout = wibox.layout.fixed.horizontal,
 		spacing = 0,
 		toggle_button,
-	})
+	}, {}, true)
 
 	awesome.connect_signal('widgets::systray', function()
 		local systray_layout = systray_container_widget:get_children_by_id('systray_layout')[1]

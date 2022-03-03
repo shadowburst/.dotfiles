@@ -23,10 +23,10 @@ local create_torrents_widget = function()
 
 	local torrents_widget = widget_container({
 		layout = wibox.layout.fixed.horizontal,
-		spacing = dpi(14),
+		spacing = beautiful.icon_spacing * 2,
 		{
 			layout = wibox.layout.fixed.horizontal,
-			spacing = dpi(7),
+			spacing = beautiful.icon_spacing,
 			{
 				markup = '<span color="' .. beautiful.success .. '">' .. icons.download .. '</span>',
 				font = beautiful.nerd_font .. ' 18',
@@ -40,7 +40,7 @@ local create_torrents_widget = function()
 		},
 		{
 			layout = wibox.layout.fixed.horizontal,
-			spacing = dpi(7),
+			spacing = beautiful.icon_spacing,
 			{
 				markup = '<span color="' .. beautiful.warning .. '">' .. icons.upload .. '</span>',
 				font = beautiful.nerd_font .. ' 18',
@@ -52,7 +52,7 @@ local create_torrents_widget = function()
 				widget = wibox.widget.textbox,
 			},
 		},
-	}, buttons)
+	}, buttons, true)
 
 	local torrents_tooltip = awful.tooltip({
 		objects = { torrents_widget },

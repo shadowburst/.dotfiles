@@ -19,7 +19,7 @@ local create_updates_widget = function()
 
 	local updates_widget = widget_container({
 		layout = wibox.layout.fixed.horizontal,
-		spacing = beautiful.widget_spacing,
+		spacing = beautiful.icon_spacing,
 		{
 			id = 'icon',
 			markup = '<span color="' .. beautiful.success .. '">' .. icons.updates .. '</span>',
@@ -31,7 +31,7 @@ local create_updates_widget = function()
 			text = '',
 			widget = wibox.widget.textbox,
 		},
-	}, buttons)
+	}, buttons, true)
 
 	local updates_tooltip = awful.tooltip({
 		objects = { updates_widget },

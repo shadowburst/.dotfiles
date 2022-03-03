@@ -30,7 +30,7 @@ local create_bluetooth_widget = function()
 		markup = '',
 		font = beautiful.nerd_font .. ' 12',
 		widget = wibox.widget.textbox,
-	}, buttons)
+	}, buttons, true)
 
 	local update_widget = function()
 		local color = properties.disabled and beautiful.disabled or beautiful.primary

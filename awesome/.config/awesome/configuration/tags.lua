@@ -29,10 +29,10 @@ local tags = {
 	{
 		name = icons.chat,
 		type = 'social',
-		default_app = 'discord',
+		default_app = 'ferdi',
 		matches = {
 			'discord',
-			'ferdi',
+			'Ferdi',
 			'slack',
 		},
 	},
