@@ -57,7 +57,7 @@ theme.success = theme.dark_green
 theme.danger = theme.dark_red
 theme.warning = theme.dark_yellow
 theme.disabled = theme.foreground .. theme.opacity
-theme.highlight = theme.dark_gray .. theme.opacity
+theme.highlight = theme.light_gray .. 28
 
 theme.bg_focus = theme.background
 theme.bg_minimize = theme.background
@@ -123,7 +123,7 @@ theme.tasklist_fg_urgent = theme.foreground
 --#endregion
 
 --#region System tray
-theme.bg_systray = '#37383f'
+theme.bg_systray = '#242c39'
 theme.systray_icon_spacing = dpi(10)
 --#endregion
 

@@ -3,34 +3,34 @@
   font:           "Roboto 12";
   nerd-font:      "FiraCode Nerd Font Mono 18";
 
-  foreground:     #F8F8F2;
-  background:     #282A36;
+  foreground:     #ABB2BF;
+  background:     #1A212E;
   transparent:    #00000000;
 
-  black:          #21212c;
-  dark-gray:      #4D4D4D;
+  black:          #141B24;
+  dark-gray:      #21283B;
 
-  dark-red:       #FF5555;
-  light-red:      #FF6E67;
+  dark-red:       #E06C75;
+  light-red:      #E06C75;
 
-  dark-green:     #50FA7B;
-  light-green:    #5AF78E;
+  dark-green:     #98C379;
+  light-green:    #98C379;
 
-  dark-yellow:    #F1FA8C;
-  light-yellow:   #F4F99D;
+  dark-yellow:    #E5C07B;
+  light-yellow:   #E5C07B;
 
-  dark-blue:      #BD93F9;
-  light-blue:     #CAA9FA;
+  dark-blue:      #61AFEF;
+  light-blue:     #61AFEF;
 
-  dark-magenta:   #FF79C6;
-  light-magenta:  #FF92D0;
+  dark-magenta:   #C678DD;
+  light-magenta:  #C678DD;
 
-  dark-cyan:      #8BE9FD;
-  light-cyan:     #9AEDFE;
+  dark-cyan:      #56B6C2;
+  light-cyan:     #56B6C2;
 
-  light-gray:     #BFBFBF;
-  white:          #E6E6E6;
+  light-gray:     #5C6370;
+  white:          #ABB2BF;
 
-  primary:        #BD93F9;
-  highlight:      #4D4D4D66;
+  primary:        #61AFEF;
+  highlight:      #5C637028;
 }

@@ -72,8 +72,8 @@ local create_media_widget = function()
 					{
 						id = 'title_scroll',
 						widget = wibox.container.scroll.horizontal,
-						fps = 30,
-						speed = 30,
+						fps = 20,
+						speed = 20,
 						max_size = dpi(200),
 						{
 							id = 'title',

@@ -66,10 +66,7 @@ packer.startup(function(use)
 	use('norcalli/nvim-colorizer.lua')
 	use('vigoux/LanguageTool.nvim')
 
-	-- Colorschemes
-	-- use "lunarvim/colorschemes" -- A bunch of colorschemes you can try out
-	--   use "lunarvim/darkplus.nvim"
-	use('Mofiqul/dracula.nvim')
+	use('navarasu/onedark.nvim')
 
 	-- cmp plugins
 	use('hrsh7th/nvim-cmp') -- The completion plugin
@@ -129,3 +126,4 @@ require('config.plugins-settings.autocommands')
 require('config.plugins-settings.neoscroll')
 require('config.plugins-settings.hop')
 require('config.plugins-settings.colorizer')
+require('config.plugins-settings.onedark')

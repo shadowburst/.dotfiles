@@ -21,7 +21,6 @@ vim.g.nvim_tree_icons = {
 	},
 }
 
-vim.g.nvim_tree_quit_on_open = 1
 vim.g.nvim_tree_git_hl = 1
 
 local status_ok, nvim_tree = pcall(require, 'nvim-tree')
@@ -101,8 +100,25 @@ nvim_tree.setup({
 		cmd = 'trash',
 		require_confirm = true,
 	},
-	quit_on_open = 1,
 	git_hl = 1,
+	actions = {
+		change_dir = {
+			enable = true,
+			global = false,
+		},
+		open_file = {
+			quit_on_open = true,
+			resize_window = false,
+			window_picker = {
+				enable = true,
+				chars = 'hjkl',
+				exclude = {
+					filetype = { 'notify', 'packer', 'qf', 'diff', 'fugitive', 'fugitiveblame' },
+					buftype = { 'nofile', 'terminal', 'help' },
+				},
+			},
+		},
+	},
 	disable_window_picker = 0,
 	root_folder_modifier = ':t',
 	show_icons = {
