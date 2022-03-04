@@ -58,7 +58,7 @@ local create_battery_widget = function()
 
 	-- Watch status if charging, discharging, fully-charged
 	watch(
-		[[ bash -c " upower -i $(upower -e | grep BAT) | grep state | awk '{print \$2}' | tr -d '\n'" ]],
+		[[ bash -c "upower -i $(upower -e | grep BAT) | grep state | awk '{print \$2}' | tr -d '\n'" ]],
 		5,
 		function(_, stdout)
 			local status = stdout:gsub('%\n', '')
