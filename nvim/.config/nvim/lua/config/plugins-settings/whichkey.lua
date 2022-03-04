@@ -147,6 +147,7 @@ local mappings = {
 		['u'] = { '<cmd>PackerUpdate<cr>', 'Update' },
 	},
 	['q'] = { '<cmd>qa<CR>', 'Quit' },
+	['r'] = { '<cmd>lua _RANGER_TOGGLE()<CR>', 'Open Ranger' },
 	['t'] = { '<cmd>ToggleTerm direction=horizontal<cr>', 'Open Terminal' },
 	['w'] = {
 		name = '+Windows',

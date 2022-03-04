@@ -49,6 +49,8 @@ function init_keymaps() {
 zvm_after_init_commands+=(init_keymaps)
 
 export EDITOR="/usr/bin/nvim"
+export PAGER="/usr/bin/nvim"
+export VISUAL="/usr/bin/nvim"
 
 # Enable gnome-keyring-daemon for ssh
 if [ -n "$DESKTOP_SESSION" ];then

@@ -1,4 +1,4 @@
-local status_ok, lsp_installer_servers = pcall(require, 'nvim-lsp-installer.servers')
+local status_ok, lsp_installer = pcall(require, 'nvim-lsp-installer')
 if not status_ok then
 	return
 end
@@ -39,7 +39,7 @@ local servers = {
 }
 
 for _, configured_server in pairs(servers) do
-	local server_available, server = lsp_installer_servers.get_server(configured_server.name)
+	local server_available, server = lsp_installer.get_server(configured_server.name)
 	if server_available then
 		server:on_ready(function()
 			local opts = {
