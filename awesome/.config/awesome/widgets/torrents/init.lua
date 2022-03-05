@@ -45,8 +45,10 @@ local create_torrents_widget = function()
 		awful.button({}, 1, function()
 			awful.spawn(apps.terminal .. ' -e tremc')
 		end),
-		awful.button({}, 2, function()
-			awful.spawn.easy_async(scripts.clear_torrents, function() end)
+		awful.button({}, 3, function()
+			awful.spawn.easy_async_with_shell(scripts.clear_torrents, function()
+				check_updates()
+			end)
 		end),
 	}
 
