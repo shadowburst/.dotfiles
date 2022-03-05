@@ -39,7 +39,7 @@ local create_battery_widget = function()
 
 	local update_battery = function(status)
 		awful.spawn.easy_async_with_shell(
-			[[ bash -c "upower -i $(upower -e | grep BAT) | grep percentage | awk '{print \$2}' | tr -d '\n%'" ]],
+			[[ bash -c "upower -i $(upower -e | awk '/BAT/') | grep percentage | awk '{print \$2}' | tr -d '\n%'" ]],
 			function(stdout)
 				local battery_percentage = tonumber(stdout)
 
@@ -58,7 +58,7 @@ local create_battery_widget = function()
 
 	-- Watch status if charging, discharging, fully-charged
 	watch(
-		[[ bash -c "upower -i $(upower -e | grep BAT) | grep state | awk '{print \$2}' | tr -d '\n'" ]],
+		[[ bash -c "upower -i $(upower -e | awk '/BAT/') | grep state | awk '{print \$2}' | tr -d '\n'" ]],
 		5,
 		function(_, stdout)
 			local status = stdout:gsub('%\n', '')
