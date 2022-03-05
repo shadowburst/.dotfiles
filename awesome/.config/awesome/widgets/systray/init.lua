@@ -22,13 +22,15 @@ local create_systray_widget = function()
 	})
 
 	local toggle_button = wibox.widget({
-		text = '',
+		text = icons.open,
 		font = beautiful.nerd_font .. ' 18',
 		widget = wibox.widget.textbox,
-		buttons = awful.util.table.join(awful.button({}, 1, function()
-			properties.visible = not properties.visible
-			awesome.emit_signal('widgets::systray')
-		end)),
+		buttons = {
+			awful.button({}, 1, function()
+				properties.visible = not properties.visible
+				awesome.emit_signal('widgets::systray')
+			end),
+		},
 	})
 
 	local systray_container_widget = widget_container({
@@ -63,8 +65,6 @@ local create_systray_widget = function()
 		properties.visible = false
 		awesome.emit_signal('widgets::systray')
 	end)
-
-	awesome.emit_signal('widgets::systray')
 
 	return systray_container_widget
 end

@@ -1,37 +1,41 @@
 local awful = require('awful')
 local beautiful = require('beautiful')
+local gears = require('gears')
 local wibox = require('wibox')
 
 local icons = require('theme.icons').volume
 local widget_container = require('widgets.containers.widget-container')
 
-local watch = awful.widget.watch
+local properties = {
+	mute = true,
+	volume = 0,
+}
 
 local create_volume_widget = function()
-	local icon_markup = function(mute)
-		local color = mute and beautiful.disabled or beautiful.primary
-		local icon = mute and icons.off or icons.on
-		return '<span color="' .. color .. '">' .. icon .. '</span>'
-	end
-
 	local percentage_widget = wibox.widget({
 		text = '0%',
 		widget = wibox.widget.textbox,
 	})
 
-	local buttons = awful.util.table.join(
+	local buttons = {
 		awful.button({}, 1, function()
 			awful.spawn('pavucontrol')
 		end),
 		awful.button({}, 3, function()
-			awesome.emit_signal('widgets::volume', { toggle_mute = true })
-		end)
-	)
+			awesome.emit_signal('widgets::volume::mute::toggle')
+		end),
+		awful.button({}, 4, function()
+			awesome.emit_signal('widgets::volume::decrement')
+		end),
+		awful.button({}, 5, function()
+			awesome.emit_signal('widgets::volume::increment')
+		end),
+	}
 
 	local volume_widget = widget_container({
 		{
 			id = 'icon',
-			markup = icon_markup(true),
+			markup = '',
 			font = beautiful.nerd_font .. ' 18',
 			widget = wibox.widget.textbox,
 		},
@@ -40,11 +44,21 @@ local create_volume_widget = function()
 		layout = wibox.layout.fixed.horizontal,
 	}, buttons, true)
 
-	local update_widget = function(args)
+	awesome.connect_signal('widgets::volume', function(args)
+		if args then
+			properties = args
+		end
+
+		local color = properties.mute and beautiful.disabled or beautiful.primary
+		local icon = properties.mute and icons.off or icons.on
+
+		volume_widget:get_children_by_id('icon')[1]:set_markup('<span color="' .. color .. '">' .. icon .. '</span>')
+		percentage_widget:set_text(properties.volume .. '%')
+
 		local volume_layout = volume_widget:get_children_by_id('volume_layout')[1]
 		local percentage_index = volume_layout:index(percentage_widget)
 
-		if args.mute then
+		if properties.mute then
 			if percentage_index then
 				volume_layout:remove(percentage_index)
 			end
@@ -52,60 +66,75 @@ local create_volume_widget = function()
 			if not percentage_index then
 				volume_layout:add(percentage_widget)
 			end
-			percentage_widget:set_text(args.volume .. '%')
+		end
+	end)
+
+	awesome.connect_signal('widgets::volume::decrement', function()
+		properties.volume = math.max(0, properties.volume - 5)
+
+		if properties.mute then
+			properties.mute = false
+
+			awful.spawn.easy_async('amixer -D pulse set Master 1+ on', function() end)
 		end
 
-		volume_widget:get_children_by_id('icon')[1]:set_markup(icon_markup(args.mute))
-	end
-
-	local on_volume_change = function(args)
-		update_widget(args)
-		awesome.emit_signal('module::volume_osd', args)
-		awesome.emit_signal('module::volume_osd:show', true)
-	end
-
-	awesome.connect_signal('widgets::volume', function(args)
-		awful.spawn.easy_async_with_shell('amixer -D pulse sget Master', function(stdout)
-			local volume = args.volume or (tonumber(string.match(stdout, '(%d?%d?%d)%%')) + (args.diff or 0))
-			local new_args = {
-				volume = math.max(math.min(volume, 100), 0),
-				mute = stdout:match('off'),
-			}
-
-			awful.spawn.easy_async_with_shell('amixer -D pulse sset Master ' .. volume .. '%', function()
-				if args.toggle_mute then
-					awful.spawn.easy_async_with_shell('amixer -D pulse set Master 1+ toggle', function()
-						new_args.mute = not new_args.mute
-						on_volume_change(new_args)
-					end)
-				else
-					if args.diff then
-						awful.spawn.easy_async_with_shell('amixer -D pulse set Master 1+ on', function()
-							new_args.mute = false
-							on_volume_change(new_args)
-						end)
-					else
-						awful.spawn.easy_async_with_shell(
-							'amixer -D pulse set Master 1+ ' .. args.mute and 'off' or 'on',
-							function()
-								new_args.mute = args.mute
-								on_volume_change(new_args)
-							end
-						)
-					end
-				end
-			end)
+		awful.spawn.easy_async('amixer -D pulse sset Master ' .. properties.volume .. '%', function()
+			awesome.emit_signal('widgets::volume')
+			awesome.emit_signal('module::volume_osd', properties)
+			awesome.emit_signal('module::volume_osd:show', true)
 		end)
 	end)
 
-	watch('amixer -D pulse sget Master', 1, function(_, stdout)
-		update_widget({
-			volume = tonumber(stdout:match('(%d?%d?%d)%%')),
-			mute = stdout:match('off'),
-		})
+	awesome.connect_signal('widgets::volume::increment', function()
+		properties.volume = math.min(100, properties.volume + 5)
+
+		if properties.mute then
+			properties.mute = false
+
+			awful.spawn.easy_async('amixer -D pulse set Master 1+ on', function() end)
+		end
+
+		awful.spawn.easy_async('amixer -D pulse sset Master ' .. properties.volume .. '%', function()
+			awesome.emit_signal('widgets::volume')
+			awesome.emit_signal('module::volume_osd', properties)
+			awesome.emit_signal('module::volume_osd:show', true)
+		end)
+	end)
+
+	awesome.connect_signal('widgets::volume::mute::toggle', function()
+		properties.mute = not properties.mute
+
+		awful.spawn.easy_async('amixer -D pulse set Master 1+ ' .. (properties.mute and 'off' or 'on'), function()
+			awesome.emit_signal('widgets::volume')
+			awesome.emit_signal('module::volume_osd', properties)
+			awesome.emit_signal('module::volume_osd:show', true)
+		end)
 	end)
 
 	return volume_widget
 end
+
+gears.timer({
+	timeout = 5,
+	call_now = true,
+	autostart = true,
+	callback = function()
+		local args = {
+			mute = true,
+			volume = 0,
+		}
+
+		awful.spawn.easy_async('amixer -D pulse sget Master', function(stdout)
+			args.volume = tonumber(string.match(stdout, '(%d?%d?%d)%%'))
+			args.mute = stdout:match('off')
+
+			if args.mute == properties.mute and args.volume == properties.volume then
+				return
+			end
+
+			awesome.emit_signal('widgets::volume', args)
+		end)
+	end,
+})
 
 return create_volume_widget

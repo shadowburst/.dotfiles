@@ -9,29 +9,30 @@ local widget_container = require('widgets.containers.widget-container')
 
 local interfaces = env.network_interfaces
 
-local create_network_widget = function()
-	local properties = {
-		disabled = false,
-		mode = 'none',
-		healthy_connection = true,
-	}
+local properties = {
+	disabled = false,
+	healthy_connection = true,
+	mode = 'none',
+	ssid = '',
+}
 
-	local text_widget = wibox.widget({
+local create_network_widget = function()
+	local ssid_widget = wibox.widget({
 		text = '',
 		widget = wibox.widget.textbox,
 	})
 
-	local buttons = awful.util.table.join(
+	local buttons = {
 		awful.button({}, 1, function()
 			awful.spawn('nm-connection-editor')
 		end),
 		awful.button({}, 3, function()
-			awful.spawn.easy_async_with_shell(
-				properties.disabled and 'rfkill unblock wlan' or 'rfkill block wlan',
-				function() end
-			)
-		end)
-	)
+			awful.spawn.easy_async(properties.disabled and 'rfkill unblock wlan' or 'rfkill block wlan', function()
+				properties.disabled = not properties.disabled
+				awesome.emit_signal('widgets::network')
+			end)
+		end),
+	}
 
 	local network_widget = widget_container({
 		id = 'network_layout',
@@ -45,7 +46,11 @@ local create_network_widget = function()
 		},
 	}, buttons, true)
 
-	local update_icon = function()
+	awesome.connect_signal('widgets::network', function(args)
+		if args then
+			properties = args
+		end
+
 		local icon = properties.disabled and icons.wifi.off or icons.wifi.on
 		local color = beautiful.disabled
 
@@ -55,70 +60,48 @@ local create_network_widget = function()
 		end
 
 		network_widget:get_children_by_id('icon')[1]:set_markup('<span color="' .. color .. '">' .. icon .. '</span>')
-	end
 
-	local update_text = function(text)
-		text_widget:set_text(text or '')
+		ssid_widget:set_text(properties.ssid or '')
 
 		local network_layout = network_widget:get_children_by_id('network_layout')[1]
-		local text_index = network_layout:index(text_widget)
+		local ssid_index = network_layout:index(ssid_widget)
+
 		if properties.mode == 'none' or properties.disabled then
-			if text_index then
-				network_layout:remove(text_index)
+			if ssid_index then
+				network_layout:remove(ssid_index)
 			end
 		else
-			if not text_index then
-				network_layout:add(text_widget)
+			if not ssid_index then
+				network_layout:add(ssid_widget)
 			end
 		end
-	end
+	end)
 
-	local update_widget = function()
-		local interface = properties.mode == 'wired' and interfaces.lan or interfaces.wlan
+	return network_widget
+end
 
-		if not properties.disabled then
-			if properties.mode == 'wired' then
-				update_text('ethernet')
-			else
-				awful.spawn.easy_async_with_shell(
-					[[ bash -c "iw dev ]] .. interface .. [[ link | awk '/SSID:/{print(\$2)}'" ]],
-					function(stdout)
-						update_text(stdout)
-					end
-				)
+gears.timer({
+	timeout = 5,
+	call_now = true,
+	autostart = true,
+	callback = function()
+		local args = {
+			disabled = false,
+			healthy_connection = true,
+			mode = 'none',
+			ssid = '',
+		}
+
+		awful.spawn.easy_async('rfkill list wlan', function(status)
+			args.disabled = not status:match('Soft blocked: no')
+
+			if args.disabled and not properties.disabled then
+				awesome.emit_signal('widgets::network', args)
+				return
 			end
 
-			awful.spawn.easy_async_with_shell(
-				[=[
-					status_ping=0
-
-					packets="$(ping -q -w2 -c2 1.1.1.1 | grep -o "100% packet loss")"
-					if [ ! -z "${packets}" ];
-					then
-						status_ping=0
-					else
-						status_ping=1
-					fi
-
-					if [ $status_ping -eq 0 ];
-					then
-						echo 'Connected but no internet'
-					fi
-				]=],
-				function(stdout)
-					properties.healthy_connection = not stdout:match('Connected but no internet')
-					update_icon()
-				end
-			)
-		else
-			update_text()
-			update_icon()
-		end
-	end
-
-	awesome.connect_signal('widgets::network', function()
-		awful.spawn.easy_async_with_shell([=[
-					wireless="]=] .. interfaces.wlan .. [=["
+			awful.spawn.easy_async_with_shell([=[
+          wireless="]=] .. interfaces.wlan .. [=["
 					wired="]=] .. interfaces.lan .. [=["
 					net="/sys/class/net/"
 
@@ -161,25 +144,51 @@ local create_network_widget = function()
 					}
 
 					print_network_mode
-				]=], function(mode_stdout)
-			properties.mode = mode_stdout:gsub('%\n', '')
-			awful.spawn.easy_async_with_shell('rfkill list wlan', function(status_stdout)
-				properties.disabled = status_stdout:match('Soft blocked: yes')
-				update_widget()
+				]=], function(mode)
+				args.mode = mode:gsub('%\n', '')
+
+				local interface = properties.mode == 'wired' and interfaces.lan or interfaces.wlan
+				awful.spawn.easy_async(
+					[[ bash -c "iw dev ]] .. interface .. [[ link | awk '/SSID:/{print(\$2)}'" ]],
+					function(ssid)
+						args.ssid = args.mode == 'wired' and 'ethernet' or ssid
+
+						awful.spawn.easy_async_with_shell(
+							[=[
+                status_ping=0
+
+                packets="$(ping -q -w2 -c2 1.1.1.1 | grep -o "100% packet loss")"
+                if [ ! -z "${packets}" ];
+                then
+                  status_ping=0
+                else
+                  status_ping=1
+                fi
+
+                if [ $status_ping -eq 0 ];
+                then
+                  echo 'Connected but no internet'
+                fi
+              ]=],
+							function(stdout)
+								args.healthy_connection = not stdout:match('Connected but no internet')
+
+								if
+									args.ssid == properties.ssid
+									and args.mode == properties.mode
+									and args.healthy_connection == properties.healthy_connection
+								then
+									return
+								end
+
+								awesome.emit_signal('widgets::network', args)
+							end
+						)
+					end
+				)
 			end)
 		end)
-	end)
-
-	gears.timer({
-		timeout = 5,
-		call_now = true,
-		autostart = true,
-		callback = function()
-			awesome.emit_signal('widgets::network')
-		end,
-	})
-
-	return network_widget
-end
+	end,
+})
 
 return create_network_widget

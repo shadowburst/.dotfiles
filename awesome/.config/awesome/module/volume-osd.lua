@@ -3,6 +3,8 @@ local beautiful = require('beautiful')
 local gears = require('gears')
 local wibox = require('wibox')
 
+local icons = require('theme.icons').volume
+
 local dpi = beautiful.xresources.apply_dpi
 
 local osd_header = wibox.widget({
@@ -41,25 +43,10 @@ local slider_osd = wibox.widget({
 
 local vol_osd_slider = slider_osd.vol_osd_slider
 
-vol_osd_slider:connect_signal('property::value', function()
-	local volume_level = vol_osd_slider:get_value()
-	awful.spawn('amixer -D pulse sset Master ' .. volume_level .. '%', false)
-
-	-- Update textbox widget text
-	osd_value.text = volume_level .. '%'
-
-	-- Update the volume slider if values here change
-	awesome.emit_signal('widget::volume:update', volume_level)
-
-	if awful.screen.focused().show_vol_osd then
-		awesome.emit_signal('module::volume_osd:show', true)
-	end
-end)
-
 local icon = wibox.widget({
 	{
 		id = 'icon_text',
-		text = '婢',
+		text = '',
 		font = beautiful.nerd_font .. ' 120',
 		widget = wibox.widget.textbox,
 	},
@@ -76,7 +63,7 @@ local osd_margin = dpi(10)
 awesome.connect_signal('module::volume_osd', function(args)
 	vol_osd_slider:set_value(args.volume)
 	osd_value:set_text(args.volume .. '%')
-	icon.icon_text:set_text(args.mute and '婢' or '墳')
+	icon.icon_text:set_text(args.mute and icons.off or icons.on)
 
 	if awful.screen.focused().show_vol_osd then
 		awesome.emit_signal('module::volume_osd:show', true)

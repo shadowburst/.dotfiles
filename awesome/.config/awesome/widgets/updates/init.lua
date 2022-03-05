@@ -1,5 +1,6 @@
 local awful = require('awful')
 local beautiful = require('beautiful')
+local gears = require('gears')
 local wibox = require('wibox')
 
 local apps = require('configuration.apps')
@@ -8,14 +9,19 @@ local icons = require('theme.icons')
 local widget_container = require('widgets.containers.widget-container')
 
 local dpi = beautiful.xresources.apply_dpi
-local watch = awful.widget.watch
+
+local properties = {
+	visible = true,
+	update_count = 0,
+	tooltip_text = '',
+}
 
 local create_updates_widget = function()
-	local buttons = awful.util.table.join(awful.button({}, 1, function()
-		awful.spawn.easy_async_with_shell(apps.terminal .. ' -e yay -Syu', function(stdout)
-			require('gears').debug.dump(stdout)
-		end)
-	end))
+	local buttons = {
+		awful.button({}, 1, function()
+			awful.spawn.easy_async_with_shell(apps.terminal .. ' -e yay -Syu', function() end)
+		end),
+	}
 
 	local updates_widget = widget_container({
 		layout = wibox.layout.fixed.horizontal,
@@ -35,7 +41,7 @@ local create_updates_widget = function()
 
 	local updates_tooltip = awful.tooltip({
 		objects = { updates_widget },
-		text = 'Your system is up-to-date.',
+		text = 'Your system is up-to-date',
 		delay_show = beautiful.tooltip_delay,
 		mode = 'outside',
 		align = 'bottom',
@@ -44,39 +50,61 @@ local create_updates_widget = function()
 		preferred_positions = { 'right', 'left', 'top', 'bottom' },
 	})
 
-	local update_widget = function(args)
-		local number_of_updates = args.number_of_updates or 0
-
-		local visible = env.debug or number_of_updates ~= 0
-		if updates_widget.visible ~= visible then
-			updates_widget:set_visible(visible)
-		end
-		if not visible then
-			return
+	awesome.connect_signal('widgets::updates', function(args)
+		if args then
+			properties = args
 		end
 
 		local text = ' update'
-		if number_of_updates ~= 1 then
+		if properties.update_count ~= 1 then
 			text = text .. 's'
 		end
 
-		updates_widget:get_children_by_id('updates_count')[1]:set_text(number_of_updates .. text)
+		updates_widget:get_children_by_id('updates_count')[1]:set_text(properties.update_count .. text)
 		if args.tooltip_text then
 			updates_tooltip:set_text(args.tooltip_text)
 		end
-	end
-	update_widget({ number_of_updates = 0 })
+	end)
 
-	watch('pamac checkupdates', 60, function(_, stdout)
-		local number_of_updates = tonumber(stdout:match('.-\n'):match('%d*')) or 0
+	awesome.connect_signal('widgets::updates::hide', function()
+		properties.visible = false
+		updates_widget:set_visible(false)
+	end)
 
-		update_widget({
-			number_of_updates = number_of_updates,
-			tooltip_text = stdout,
-		})
+	awesome.connect_signal('widgets::media::show', function()
+		properties.visible = true
+		updates_widget:set_visible(true)
 	end)
 
 	return updates_widget
 end
+
+gears.timer({
+	timeout = 60,
+	call_now = true,
+	autostart = true,
+	callback = function()
+		local args = {
+			visible = true,
+			update_count = 0,
+			tooltip_text = '',
+		}
+
+		awful.spawn.easy_async('pamac checkupdates', function(updates)
+			args.update_count = tonumber(updates:match('.-\n'):match('%d*')) or 0
+			args.visible = env.debug or args.update_count > 0
+
+			if args.visible ~= properties.visible then
+				awesome.emit_signal('widgets::updates::' .. (args.visible and 'show' or 'hide'))
+			end
+			if not args.visible then
+				return
+			end
+
+			args.tooltip_text = updates
+			awesome.emit_signal('widgets::updates', args)
+		end)
+	end,
+})
 
 return create_updates_widget

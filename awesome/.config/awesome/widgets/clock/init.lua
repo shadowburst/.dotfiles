@@ -6,14 +6,12 @@ local icons = require('theme.icons')
 local widget_container = require('widgets.containers.widget-container')
 
 local create_clock_widget = function()
-	local function widget_markup(content)
-		return '<span font="' .. beautiful.font .. '">' .. content .. '</span>'
-	end
+	local time_widget = wibox.widget.textclock('<span font="' .. beautiful.font .. '">%H:%M</span>')
+	local calendar_widget = wibox.widget.textclock('<span font="' .. beautiful.font .. '">%d/%m/%y</span>')
 
-	local time_widget = wibox.widget.textclock(widget_markup('%H:%M'))
-	local calendar_widget = wibox.widget.textclock(widget_markup('%d/%m/%y'))
-
-	local buttons = awful.util.table.join(awful.button({}, 1, function() end))
+	local buttons = {
+		awful.button({}, 1, function() end),
+	}
 
 	local clock_widget = widget_container({
 		id = 'clock_layout',

@@ -9,17 +9,22 @@ local icons = require('theme.icons').torrents
 local scripts = require('scripts')
 local widget_container = require('widgets.containers.widget-container')
 
-local dpi = beautiful.xresources.apply_dpi
+local properties = {
+	visible = true,
+	download_count = 0,
+	upload_cound = 0,
+	tooltip_text = '',
+}
 
 local create_torrents_widget = function()
-	local buttons = awful.util.table.join(
+	local buttons = {
 		awful.button({}, 1, function()
 			awful.spawn(apps.terminal .. ' -e tremc')
 		end),
 		awful.button({}, 2, function()
 			awful.spawn.easy_async_with_shell(scripts.clear_torrents, function() end)
-		end)
-	)
+		end),
+	}
 
 	local torrents_widget = widget_container({
 		layout = wibox.layout.fixed.horizontal,
@@ -34,7 +39,7 @@ local create_torrents_widget = function()
 			},
 			{
 				id = 'download_count',
-				text = '0',
+				text = properties.download_count,
 				widget = wibox.widget.textbox,
 			},
 		},
@@ -48,7 +53,7 @@ local create_torrents_widget = function()
 			},
 			{
 				id = 'upload_count',
-				text = '0',
+				text = properties.upload_cound,
 				widget = wibox.widget.textbox,
 			},
 		},
@@ -63,46 +68,69 @@ local create_torrents_widget = function()
 		preferred_positions = { 'right', 'left', 'top', 'bottom' },
 	})
 
-	local count = function(str, pattern)
-		return select(2, str:gsub(pattern, pattern))
-	end
+	awesome.connect_signal('widgets::torrents', function(args)
+		if args then
+			properties = args
+		end
 
-	awesome.connect_signal('widgets::torrents', function()
-		awful.spawn.easy_async_with_shell('transmission-remote -l', function(stdout)
-			local total = count(stdout, '\n') - 2
-			local upload_count = count(stdout, '100%%')
-			local download_count = total - upload_count
+		if properties.download_count then
+			torrents_widget:get_children_by_id('download_count')[1]:set_text(properties.download_count)
+		end
 
-			local visible = env.debug or total > 0
-			if torrents_widget.visible ~= visible then
-				torrents_widget:set_visible(visible)
-			end
-			if not visible then
-				return
-			end
+		if properties.upload_count then
+			torrents_widget:get_children_by_id('upload_count')[1]:set_text(properties.upload_count)
+		end
 
-			if download_count then
-				torrents_widget:get_children_by_id('download_count')[1]:set_text(download_count)
-			end
-
-			if upload_count then
-				torrents_widget:get_children_by_id('upload_count')[1]:set_text(upload_count)
-			end
-
-			torrents_tooltip:set_text(stdout)
-		end)
+		torrents_tooltip:set_text(properties.tooltip_text)
 	end)
 
-	gears.timer({
-		timeout = 5,
-		call_now = true,
-		autostart = true,
-		callback = function()
-			awesome.emit_signal('widgets::torrents')
-		end,
-	})
+	awesome.connect_signal('widgets::torrents::hide', function()
+		properties.visible = false
+		torrents_widget:set_visible(false)
+	end)
+
+	awesome.connect_signal('widgets::torrents::show', function()
+		properties.visible = true
+		torrents_widget:set_visible(true)
+	end)
 
 	return torrents_widget
 end
+
+local count = function(str, pattern)
+	return select(2, str:gsub(pattern, pattern))
+end
+
+gears.timer({
+	timeout = 5,
+	call_now = true,
+	autostart = true,
+	callback = function()
+		local args = {
+			visible = true,
+			download_count = 0,
+			upload_cound = 0,
+			tooltip_text = '',
+		}
+
+		awful.spawn.easy_async_with_shell('transmission-remote -l', function(stdout)
+			local total = count(stdout, '\n') - 2
+
+			args.visible = env.debug or total > 0
+			if args.visible ~= properties.visible then
+				awesome.emit_signal('widgets::torrents::' .. (args.visible and 'show' or 'hide'))
+			end
+			if not args.visible then
+				return
+			end
+
+			args.upload_count = count(stdout, '100%%')
+			args.download_count = total - args.upload_count
+			args.tooltip_text = stdout
+
+			awesome.emit_signal('widgets::torrents', args)
+		end)
+	end,
+})
 
 return create_torrents_widget

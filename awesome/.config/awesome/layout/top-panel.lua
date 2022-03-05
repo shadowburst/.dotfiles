@@ -1,6 +1,19 @@
 local beautiful = require('beautiful')
 local wibox = require('wibox')
 
+local create_battery = require('widgets.battery')
+local create_bluetooth = require('widgets.bluetooth')
+local create_brightness = require('widgets.brightness')
+local create_clock = require('widgets.clock')
+local create_layoutbox = require('widgets.layout-box')
+local create_media = require('widgets.media')
+local create_network = require('widgets.network')
+local create_power = require('widgets.power')
+local create_search = require('widgets.search')
+local create_torrents = require('widgets.torrents')
+local create_updates = require('widgets.updates')
+local create_volume = require('widgets.volume')
+
 local dpi = beautiful.xresources.apply_dpi
 
 local top_panel = function(s)
@@ -25,18 +38,19 @@ local top_panel = function(s)
 		top = panel_height + offsety,
 	})
 
-	local battery = require('widgets.battery')()
-	local bluetooth = require('widgets.bluetooth')()
-	local clock = require('widgets.clock')()
-	local media = require('widgets.media')()
-	local network = require('widgets.network')()
-	local power = require('widgets.power')()
-	local search = require('widgets.search')()
-	local torrents = require('widgets.torrents')()
-	local updates = require('widgets.updates')()
-	local volume = require('widgets.volume')()
+	local battery = create_battery()
+	local bluetooth = create_bluetooth()
+	local brightness = create_brightness()
+	local clock = create_clock()
+	local media = create_media()
+	local network = create_network()
+	local power = create_power()
+	local search = create_search()
+	local torrents = create_torrents()
+	local updates = create_updates()
+	local volume = create_volume()
 
-	s.layout_box = require('widgets.layout-box')(s)
+	s.layout_box = create_layoutbox(s)
 	if s == screen.primary then
 		s.systray = require('widgets.systray')()
 	end
@@ -63,6 +77,7 @@ local top_panel = function(s)
 			network,
 			volume,
 			battery,
+			brightness,
 			clock,
 			power,
 		},

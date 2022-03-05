@@ -95,37 +95,25 @@ local global_keys = awful.util.table.join(
 
 	--#region Brightness
 	awful.key({}, 'XF86MonBrightnessDown', function()
-		awful.spawn.easy_async_with_shell('light -G', function(stdout)
-			local brightness = math.floor(math.max(tonumber(stdout) - 5, 5))
-			awful.spawn.easy_async_with_shell('light -S ' .. brightness, function()
-				awesome.emit_signal('module::brightness_osd', brightness)
-				awesome.emit_signal('module::brightness_osd:show', true)
-			end)
-		end)
+		awesome.emit_signal('widgets::brightness::decrement')
 	end, { group = 'Tools', description = 'Decrease/increase brightness' }),
 
 	awful.key({}, 'XF86MonBrightnessUp', function()
-		awful.spawn.easy_async_with_shell('light -G', function(stdout)
-			local brightness = math.floor(math.min(tonumber(stdout) + 5, 100))
-			awful.spawn.easy_async_with_shell('light -S ' .. brightness, function()
-				awesome.emit_signal('module::brightness_osd', brightness)
-				awesome.emit_signal('module::brightness_osd:show', true)
-			end)
-		end)
+		awesome.emit_signal('widgets::brightness::increment')
 	end, { group = 'Tools', description = 'Decrease/increase brightness' }),
 	--#endregion
 
 	--#region Volume
 	awful.key({}, 'XF86AudioLowerVolume', function()
-		awesome.emit_signal('widgets::volume', { diff = -5 })
+		awesome.emit_signal('widgets::volume::decrement')
 	end, { group = 'Tools', description = 'Decrease/increase volume' }),
 
 	awful.key({}, 'XF86AudioRaiseVolume', function()
-		awesome.emit_signal('widgets::volume', { diff = 5 })
+		awesome.emit_signal('widgets::volume::increment')
 	end, { group = 'Tools', description = 'Decrease/increase volume' }),
 
 	awful.key({}, 'XF86AudioMute', function()
-		awesome.emit_signal('widgets::volume', { toggle_mute = true })
+		awesome.emit_signal('widgets::volume::mute::toggle')
 	end, { group = 'Tools', description = 'Toggle mute' }),
 	--#endregion
 

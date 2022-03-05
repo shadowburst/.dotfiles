@@ -12,6 +12,7 @@ return {
 		off = '',
 		on = '',
 	},
+	brightness = '',
 	clock = '',
 	layout = {
 		max = icons_dir .. 'layout/max.svg',
