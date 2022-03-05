@@ -10,6 +10,22 @@ local properties = {
 	disabled = false,
 }
 
+local check_updates = function()
+	local args = {
+		disabled = false,
+	}
+
+	awful.spawn.easy_async('rfkill list bluetooth', function(stdout)
+		args.disabled = stdout:match('Soft blocked: yes')
+
+		if args.disabled == properties.disabled then
+			return
+		end
+
+		awesome.emit_signal('widgets::bluetooth', args)
+	end)
+end
+
 local create_bluetooth_widget = function()
 	local buttons = {
 		awful.button({}, 1, function()
@@ -41,28 +57,16 @@ local create_bluetooth_widget = function()
 		bluetooth_widget:get_children_by_id('icon')[1]:set_markup('<span color="' .. color .. '">' .. icon .. '</span>')
 	end)
 
+	check_updates()
+
 	return bluetooth_widget
 end
 
 gears.timer({
 	timeout = 5,
-	call_now = true,
+	call_now = false,
 	autostart = true,
-	callback = function()
-		local args = {
-			disabled = false,
-		}
-
-		awful.spawn.easy_async('rfkill list bluetooth', function(stdout)
-			args.disabled = stdout:match('Soft blocked: yes')
-
-			if args.disabled == properties.disabled then
-				return
-			end
-
-			awesome.emit_signal('widgets::bluetooth', args)
-		end)
-	end,
+	callback = check_updates,
 })
 
 return create_bluetooth_widget

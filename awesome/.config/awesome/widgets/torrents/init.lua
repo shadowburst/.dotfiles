@@ -9,12 +9,36 @@ local icons = require('theme.icons').torrents
 local scripts = require('scripts')
 local widget_container = require('widgets.containers.widget-container')
 
+local count = function(str, pattern)
+	return select(2, str:gsub(pattern, pattern))
+end
+
 local properties = {
-	visible = true,
+	visible = false,
 	download_count = 0,
 	upload_cound = 0,
 	tooltip_text = '',
 }
+
+local check_updates = function()
+	local args = {
+		visible = false,
+		download_count = 0,
+		upload_cound = 0,
+		tooltip_text = '',
+	}
+
+	awful.spawn.easy_async_with_shell('transmission-remote -l', function(stdout)
+		local total = count(stdout, '\n') - 2
+
+		args.visible = env.debug or total > 0
+		args.upload_count = count(stdout, '100%%')
+		args.download_count = total - args.upload_count
+		args.tooltip_text = stdout
+
+		awesome.emit_signal('widgets::torrents', args)
+	end)
+end
 
 local create_torrents_widget = function()
 	local buttons = {
@@ -22,7 +46,7 @@ local create_torrents_widget = function()
 			awful.spawn(apps.terminal .. ' -e tremc')
 		end),
 		awful.button({}, 2, function()
-			awful.spawn.easy_async_with_shell(scripts.clear_torrents, function() end)
+			awful.spawn.easy_async(scripts.clear_torrents, function() end)
 		end),
 	}
 
@@ -69,8 +93,11 @@ local create_torrents_widget = function()
 	})
 
 	awesome.connect_signal('widgets::torrents', function(args)
-		if args then
-			properties = args
+		properties = args or properties
+
+		torrents_widget:set_visible(properties.visible)
+		if not properties.visible then
+			return
 		end
 
 		if properties.download_count then
@@ -84,53 +111,16 @@ local create_torrents_widget = function()
 		torrents_tooltip:set_text(properties.tooltip_text)
 	end)
 
-	awesome.connect_signal('widgets::torrents::hide', function()
-		properties.visible = false
-		torrents_widget:set_visible(false)
-	end)
-
-	awesome.connect_signal('widgets::torrents::show', function()
-		properties.visible = true
-		torrents_widget:set_visible(true)
-	end)
+	check_updates()
 
 	return torrents_widget
 end
 
-local count = function(str, pattern)
-	return select(2, str:gsub(pattern, pattern))
-end
-
 gears.timer({
 	timeout = 5,
-	call_now = true,
+	call_now = false,
 	autostart = true,
-	callback = function()
-		local args = {
-			visible = true,
-			download_count = 0,
-			upload_cound = 0,
-			tooltip_text = '',
-		}
-
-		awful.spawn.easy_async_with_shell('transmission-remote -l', function(stdout)
-			local total = count(stdout, '\n') - 2
-
-			args.visible = env.debug or total > 0
-			if args.visible ~= properties.visible then
-				awesome.emit_signal('widgets::torrents::' .. (args.visible and 'show' or 'hide'))
-			end
-			if not args.visible then
-				return
-			end
-
-			args.upload_count = count(stdout, '100%%')
-			args.download_count = total - args.upload_count
-			args.tooltip_text = stdout
-
-			awesome.emit_signal('widgets::torrents', args)
-		end)
-	end,
+	callback = check_updates,
 })
 
 return create_torrents_widget

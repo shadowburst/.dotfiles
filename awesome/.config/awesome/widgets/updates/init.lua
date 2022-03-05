@@ -11,10 +11,26 @@ local widget_container = require('widgets.containers.widget-container')
 local dpi = beautiful.xresources.apply_dpi
 
 local properties = {
-	visible = true,
+	visible = false,
 	update_count = 0,
 	tooltip_text = '',
 }
+
+local check_updates = function()
+	local args = {
+		visible = false,
+		update_count = 0,
+		tooltip_text = '',
+	}
+
+	awful.spawn.easy_async('pamac checkupdates', function(updates)
+		args.update_count = tonumber(updates:match('.-\n'):match('%d*')) or 0
+		args.visible = env.debug or args.update_count > 0
+		args.tooltip_text = updates
+
+		awesome.emit_signal('widgets::updates', args)
+	end)
+end
 
 local create_updates_widget = function()
 	local buttons = {
@@ -51,8 +67,11 @@ local create_updates_widget = function()
 	})
 
 	awesome.connect_signal('widgets::updates', function(args)
-		if args then
-			properties = args
+		properties = args or properties
+
+		updates_widget:set_visible(properties.visible)
+		if not properties.visible then
+			return
 		end
 
 		local text = ' update'
@@ -66,45 +85,16 @@ local create_updates_widget = function()
 		end
 	end)
 
-	awesome.connect_signal('widgets::updates::hide', function()
-		properties.visible = false
-		updates_widget:set_visible(false)
-	end)
-
-	awesome.connect_signal('widgets::media::show', function()
-		properties.visible = true
-		updates_widget:set_visible(true)
-	end)
+	check_updates()
 
 	return updates_widget
 end
 
 gears.timer({
 	timeout = 60,
-	call_now = true,
+	call_now = false,
 	autostart = true,
-	callback = function()
-		local args = {
-			visible = true,
-			update_count = 0,
-			tooltip_text = '',
-		}
-
-		awful.spawn.easy_async('pamac checkupdates', function(updates)
-			args.update_count = tonumber(updates:match('.-\n'):match('%d*')) or 0
-			args.visible = env.debug or args.update_count > 0
-
-			if args.visible ~= properties.visible then
-				awesome.emit_signal('widgets::updates::' .. (args.visible and 'show' or 'hide'))
-			end
-			if not args.visible then
-				return
-			end
-
-			args.tooltip_text = updates
-			awesome.emit_signal('widgets::updates', args)
-		end)
-	end,
+	callback = check_updates,
 })
 
 return create_updates_widget

@@ -6,9 +6,11 @@ local icons = require('theme.icons').power
 local widget_container = require('widgets.containers.widget-container')
 
 local create_power_widget = function()
-	local buttons = awful.util.table.join(awful.button({}, 1, function()
-		awesome.emit_signal('module::exit_screen:show')
-	end))
+	local buttons = {
+		awful.button({}, 1, function()
+			awesome.emit_signal('module::exit_screen:show')
+		end),
+	}
 
 	local power_widget = widget_container({
 		text = icons.logout,

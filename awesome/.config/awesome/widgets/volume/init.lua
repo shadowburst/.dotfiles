@@ -11,6 +11,24 @@ local properties = {
 	volume = 0,
 }
 
+local check_updates = function()
+	local args = {
+		mute = true,
+		volume = 0,
+	}
+
+	awful.spawn.easy_async('amixer -D pulse sget Master', function(stdout)
+		args.volume = tonumber(string.match(stdout, '(%d?%d?%d)%%'))
+		args.mute = stdout:match('off')
+
+		if args.mute == properties.mute and args.volume == properties.volume then
+			return
+		end
+
+		awesome.emit_signal('widgets::volume', args)
+	end)
+end
+
 local create_volume_widget = function()
 	local percentage_widget = wibox.widget({
 		text = '0%',
@@ -45,9 +63,7 @@ local create_volume_widget = function()
 	}, buttons, true)
 
 	awesome.connect_signal('widgets::volume', function(args)
-		if args then
-			properties = args
-		end
+		properties = args or properties
 
 		local color = properties.mute and beautiful.disabled or beautiful.primary
 		local icon = properties.mute and icons.off or icons.on
@@ -111,30 +127,16 @@ local create_volume_widget = function()
 		end)
 	end)
 
+	check_updates()
+
 	return volume_widget
 end
 
 gears.timer({
-	timeout = 5,
-	call_now = true,
+	timeout = 60,
+	call_now = false,
 	autostart = true,
-	callback = function()
-		local args = {
-			mute = true,
-			volume = 0,
-		}
-
-		awful.spawn.easy_async('amixer -D pulse sget Master', function(stdout)
-			args.volume = tonumber(string.match(stdout, '(%d?%d?%d)%%'))
-			args.mute = stdout:match('off')
-
-			if args.mute == properties.mute and args.volume == properties.volume then
-				return
-			end
-
-			awesome.emit_signal('widgets::volume', args)
-		end)
-	end,
+	callback = check_updates,
 })
 
 return create_volume_widget

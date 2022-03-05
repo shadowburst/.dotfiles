@@ -29,7 +29,7 @@ local create_tasklist_widget = function(s)
 		},
 		widget_template = widget_container({
 			widget = wibox.container.constraint,
-			width = dpi(400),
+			width = dpi(350),
 			{
 				layout = wibox.layout.fixed.horizontal,
 				{

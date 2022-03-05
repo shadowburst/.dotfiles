@@ -15,6 +15,37 @@ local properties = {
 	title = '',
 }
 
+local check_updates = function()
+	local args = {
+		visible = true,
+		playing = false,
+		title = '',
+	}
+
+	awful.spawn.easy_async('playerctl status', function(status)
+		args.playing = status:match('Playing')
+		args.visible = env.debug or args.playing or status:match('Paused')
+
+		if not args.visible then
+			awesome.emit_signal('widgets::media', args)
+			return
+		end
+
+		awful.spawn.easy_async(
+			[[ bash -c "playerctl metadata | grep title | awk -F 'title' '{print(\$2)}'" ]],
+			function(metadata)
+				args.title = metadata:gsub('^%s*(.-)%s*$', '%1')
+
+				if args.playing == properties.playing and args.title == properties.title then
+					return
+				end
+
+				awesome.emit_signal('widgets::media', args)
+			end
+		)
+	end)
+end
+
 local create_media_widget = function()
 	local previous_button_widget = widget_container({
 		id = 'previous',
@@ -89,6 +120,11 @@ local create_media_widget = function()
 	awesome.connect_signal('widgets::media', function(args)
 		properties = args or properties
 
+		media_widget:set_visible(properties.visible)
+		if not properties.visible then
+			return
+		end
+
 		media_widget:get_children_by_id('title')[1]:set_text('   ' .. properties.title .. '   ')
 		play_button_widget:get_children_by_id('play')[1]:set_text(properties.playing and icons.pause or icons.play)
 
@@ -101,55 +137,16 @@ local create_media_widget = function()
 		end
 	end)
 
-	awesome.connect_signal('widgets::media::hide', function()
-		properties.visible = false
-		media_widget:set_visible(false)
-	end)
-
-	awesome.connect_signal('widgets::media::show', function()
-		properties.visible = true
-		media_widget:set_visible(true)
-	end)
+	check_updates()
 
 	return media_widget
 end
 
 gears.timer({
 	timeout = 5,
-	call_now = true,
+	call_now = false,
 	autostart = true,
-	callback = function()
-		local args = {
-			visible = true,
-			playing = false,
-			title = '',
-		}
-
-		awful.spawn.easy_async('playerctl status', function(status)
-			args.playing = status:match('Playing')
-			args.visible = env.debug or args.playing or status:match('Paused')
-
-			if args.visible ~= properties.visible then
-				awesome.emit_signal('widgets::media::' .. (args.visible and 'show' or 'hide'))
-			end
-			if not args.visible then
-				return
-			end
-
-			awful.spawn.easy_async(
-				[[ bash -c "playerctl metadata | grep title | awk -F 'title' '{print(\$2)}'" ]],
-				function(metadata)
-					args.title = metadata:gsub('^%s*(.-)%s*$', '%1')
-
-					if args.playing == properties.playing and args.title == properties.title then
-						return
-					end
-
-					awesome.emit_signal('widgets::media', args)
-				end
-			)
-		end)
-	end,
+	callback = check_updates,
 })
 
 return create_media_widget

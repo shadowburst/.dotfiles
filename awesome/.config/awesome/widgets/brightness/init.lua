@@ -10,6 +10,22 @@ local properties = {
 	brightness = 0,
 }
 
+local check_updates = function()
+	local args = {
+		brightness = 0,
+	}
+
+	awful.spawn.easy_async('light -G', function(brightness)
+		args.brightness = math.floor(tonumber(brightness))
+
+		if args.brightness == properties.brightness then
+			return
+		end
+
+		awesome.emit_signal('widgets::brightness', args)
+	end)
+end
+
 local create_brightness_widget = function()
 	local buttons = {
 		awful.button({}, 4, function()
@@ -63,28 +79,16 @@ local create_brightness_widget = function()
 		end)
 	end)
 
+	check_updates()
+
 	return brightness_widget
 end
 
 gears.timer({
 	timeout = 5,
-	call_now = true,
+	call_now = false,
 	autostart = true,
-	callback = function()
-		local args = {
-			brightness = 0,
-		}
-
-		awful.spawn.easy_async('light -G', function(brightness)
-			args.brightness = math.floor(tonumber(brightness))
-
-			if args.brightness == properties.brightness then
-				return
-			end
-
-			awesome.emit_signal('widgets::brightness', args)
-		end)
-	end,
+	callback = check_updates,
 })
 
 return create_brightness_widget

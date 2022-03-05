@@ -11,6 +11,37 @@ local properties = {
 	percentage = 0,
 }
 
+local check_updates = function()
+	local args = {
+		charging = false,
+		percentage = 0,
+	}
+
+	awful.spawn.easy_async(
+		[[ bash -c "upower -i $(upower -e | awk '/BAT/') | awk '/state/ {print \$2}' | tr -d '\n'" ]],
+		function(status)
+			args.charging = status:gsub('%\n', '') == 'charging'
+
+			awful.spawn.easy_async(
+				[[ bash -c "upower -i $(upower -e | awk '/BAT/') | awk '/percentage/ {print \$2}' | tr -d '\n%'" ]],
+				function(percentage)
+					args.percentage = tonumber(percentage)
+
+					if not args.percentage or args.percentage < 0 then
+						return
+					end
+
+					if args.charging == properties.charging and args.percentage == properties.percentage then
+						return
+					end
+
+					awesome.emit_signal('widgets::battery', args)
+				end
+			)
+		end
+	)
+end
+
 local create_battery_widget = function()
 	local buttons = {
 		awful.button({}, 1, function()
@@ -47,43 +78,16 @@ local create_battery_widget = function()
 		battery_widget:get_children_by_id('battery_percentage')[1]:set_text(properties.percentage .. '%')
 	end)
 
+	check_updates()
+
 	return battery_widget
 end
 
 gears.timer({
 	timeout = 5,
-	call_now = true,
+	call_now = false,
 	autostart = true,
-	callback = function()
-		local args = {
-			charging = false,
-			percentage = 0,
-		}
-
-		awful.spawn.easy_async(
-			[[ bash -c "upower -i $(upower -e | awk '/BAT/') | awk '/state/ {print \$2}' | tr -d '\n'" ]],
-			function(status)
-				args.charging = status:gsub('%\n', '') == 'charging'
-
-				awful.spawn.easy_async(
-					[[ bash -c "upower -i $(upower -e | awk '/BAT/') | awk '/percentage/ {print \$2}' | tr -d '\n%'" ]],
-					function(percentage)
-						args.percentage = tonumber(percentage)
-
-						if not args.percentage or args.percentage < 0 then
-							return
-						end
-
-						if args.charging == properties.charging and args.percentage == properties.percentage then
-							return
-						end
-
-						awesome.emit_signal('widgets::battery', args)
-					end
-				)
-			end
-		)
-	end,
+	callback = check_updates,
 })
 
 return create_battery_widget
