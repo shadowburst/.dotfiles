@@ -52,9 +52,7 @@ local create_brightness_widget = function()
 	}, buttons, true)
 
 	awesome.connect_signal('widgets::brightness', function(args)
-		if args then
-			properties = args
-		end
+		properties = args or properties
 
 		brightness_widget:get_children_by_id('percentage')[1]:set_text(properties.brightness .. '%')
 	end)

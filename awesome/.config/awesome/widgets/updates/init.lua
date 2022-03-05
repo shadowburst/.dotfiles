@@ -35,7 +35,9 @@ end
 local create_updates_widget = function()
 	local buttons = {
 		awful.button({}, 1, function()
-			awful.spawn.easy_async_with_shell(apps.terminal .. ' -e yay -Syu', function() end)
+			awful.spawn.easy_async_with_shell(apps.terminal .. ' -e yay -Syu', function()
+				awesome.emit_signal('widgets::updates')
+			end)
 		end),
 	}
 
@@ -80,8 +82,8 @@ local create_updates_widget = function()
 		end
 
 		updates_widget:get_children_by_id('updates_count')[1]:set_text(properties.update_count .. text)
-		if args.tooltip_text then
-			updates_tooltip:set_text(args.tooltip_text)
+		if properties.tooltip_text then
+			updates_tooltip:set_text(properties.tooltip_text)
 		end
 	end)
 
