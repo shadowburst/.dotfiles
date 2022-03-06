@@ -2,7 +2,7 @@ local awful = require('awful')
 local beautiful = require('beautiful')
 
 local apps = require('configuration.apps')
-local icons = require('theme.icons').tags
+local icons = require('theme.icons')
 
 local default_layout = awful.layout.suit.tile
 
@@ -13,7 +13,7 @@ local tags = {
 		default_app = apps.browser,
 		matches = {
 			'firefox',
-			'brave-browser',
+			'Brave-browser',
 		},
 	},
 	{

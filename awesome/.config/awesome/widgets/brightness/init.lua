@@ -41,7 +41,7 @@ local create_brightness_widget = function()
 		spacing = beautiful.icon_spacing,
 		{
 			markup = '<span color="' .. beautiful.primary .. '">' .. icons.brightness .. '</span>',
-			font = beautiful.nerd_font .. ' 18',
+			font = beautiful.nerd_font .. ' 20',
 			widget = wibox.widget.textbox,
 		},
 		{
@@ -83,7 +83,7 @@ awesome.connect_signal('widgets::brightness::increment', function()
 end)
 
 gears.timer({
-	timeout = 5,
+	timeout = 60,
 	call_now = false,
 	autostart = true,
 	callback = check_updates,

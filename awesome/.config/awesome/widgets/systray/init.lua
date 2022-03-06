@@ -2,7 +2,7 @@ local awful = require('awful')
 local beautiful = require('beautiful')
 local wibox = require('wibox')
 
-local icons = require('theme.icons').systray
+local icons = require('theme.icons')
 local widget_container = require('widgets.containers.widget-container')
 
 local create_systray_widget = function()
@@ -22,7 +22,7 @@ local create_systray_widget = function()
 	})
 
 	local toggle_button = wibox.widget({
-		text = icons.open,
+		text = icons.chevron_right,
 		font = beautiful.nerd_font .. ' 18',
 		widget = wibox.widget.textbox,
 		buttons = {
@@ -53,7 +53,7 @@ local create_systray_widget = function()
 				systray_layout:remove(systray_index)
 			end
 		end
-		toggle_button:set_text(properties.visible and icons.close or icons.open)
+		toggle_button:set_text(properties.visible and icons.chevron_left or icons.chevron_right)
 	end)
 
 	systray_container_widget:connect_signal('mouse::enter', function()

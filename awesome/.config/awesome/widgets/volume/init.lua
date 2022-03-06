@@ -3,7 +3,7 @@ local beautiful = require('beautiful')
 local gears = require('gears')
 local wibox = require('wibox')
 
-local icons = require('theme.icons').volume
+local icons = require('theme.icons')
 local widget_container = require('widgets.containers.widget-container')
 
 local properties = {
@@ -54,7 +54,7 @@ local create_volume_widget = function()
 		{
 			id = 'icon',
 			markup = '',
-			font = beautiful.nerd_font .. ' 18',
+			font = beautiful.nerd_font .. ' 20',
 			widget = wibox.widget.textbox,
 		},
 		id = 'volume_layout',
@@ -65,8 +65,8 @@ local create_volume_widget = function()
 	awesome.connect_signal('widgets::volume', function(args)
 		properties = args or properties
 
+		local icon = properties.mute and icons.volume_off or icons.volume_on
 		local color = properties.mute and beautiful.disabled or beautiful.primary
-		local icon = properties.mute and icons.off or icons.on
 
 		volume_widget:get_children_by_id('icon')[1]:set_markup('<span color="' .. color .. '">' .. icon .. '</span>')
 		percentage_widget:set_text(properties.volume .. '%')

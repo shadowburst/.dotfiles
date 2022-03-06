@@ -75,6 +75,3 @@ fi
 
 # Load Node.js manager
 eval "$(fnm env --use-on-cd)"
-
-# Reset the prompt
-clear

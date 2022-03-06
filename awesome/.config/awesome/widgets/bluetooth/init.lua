@@ -3,7 +3,7 @@ local beautiful = require('beautiful')
 local gears = require('gears')
 local wibox = require('wibox')
 
-local icons = require('theme.icons').bluetooth
+local icons = require('theme.icons')
 local widget_container = require('widgets.containers.widget-container')
 
 local properties = {
@@ -51,8 +51,8 @@ local create_bluetooth_widget = function()
 	awesome.connect_signal('widgets::bluetooth', function(args)
 		properties = args or properties
 
+		local icon = properties.disabled and icons.bluetooth_off or icons.bluetooth_on
 		local color = properties.disabled and beautiful.disabled or beautiful.primary
-		local icon = properties.disabled and icons.off or icons.on
 
 		bluetooth_widget:get_children_by_id('icon')[1]:set_markup('<span color="' .. color .. '">' .. icon .. '</span>')
 	end)

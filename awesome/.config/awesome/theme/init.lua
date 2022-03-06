@@ -80,7 +80,6 @@ theme.press_event = theme.white .. '15'
 theme.base_font = 'Roboto Regular'
 theme.font = theme.base_font .. ' 10'
 theme.base_font_bold = 'Roboto Bold'
-theme.font_bold = theme.base_font_bold .. ' 10'
 theme.nerd_font = 'FiraCode Nerd Font Mono'
 --#endregion
 
@@ -192,23 +191,23 @@ theme.menu_width = dpi(200)
 --#endregion
 
 --#region Layout
-theme.layout_floating = theme.icons.layout.floating
-theme.layout_fullscreen = theme.icons.layout.max
-theme.layout_max = theme.icons.layout.max
-theme.layout_dwindle = theme.icons.layout.tiled
-theme.layout_tile = theme.icons.layout.tiled
-theme.layout_tileleft = theme.icons.layout.tiled
-theme.layout_tileright = theme.icons.layout.tiled
-theme.layout_tilebottom = theme.icons.layout.tiled
-theme.layout_tiletop = theme.icons.layout.tiled
-theme.layout_fairv = theme.icons.layout.tiled
-theme.layout_fairh = theme.icons.layout.tiled
-theme.layout_spiral = theme.icons.layout.tiled
-theme.layout_magnifier = theme.icons.layout.tiled
-theme.layout_cornernw = theme.icons.layout.tiled
-theme.layout_cornerne = theme.icons.layout.tiled
-theme.layout_cornersw = theme.icons.layout.tiled
-theme.layout_cornerse = theme.icons.layout.tiled
+theme.layout_floating = theme.icons.layout_floating
+theme.layout_fullscreen = theme.icons.layout_max
+theme.layout_max = theme.icons.layout_max
+theme.layout_dwindle = theme.icons.layout_tiled
+theme.layout_tile = theme.icons.layout_tiled
+theme.layout_tileleft = theme.icons.layout_tiled
+theme.layout_tileright = theme.icons.layout_tiled
+theme.layout_tilebottom = theme.icons.layout_tiled
+theme.layout_tiletop = theme.icons.layout_tiled
+theme.layout_fairv = theme.icons.layout_tiled
+theme.layout_fairh = theme.icons.layout_tiled
+theme.layout_spiral = theme.icons.layout_tiled
+theme.layout_magnifier = theme.icons.layout_tiled
+theme.layout_cornernw = theme.icons.layout_tiled
+theme.layout_cornerne = theme.icons.layout_tiled
+theme.layout_cornersw = theme.icons.layout_tiled
+theme.layout_cornerse = theme.icons.layout_tiled
 
 --#endregion
 

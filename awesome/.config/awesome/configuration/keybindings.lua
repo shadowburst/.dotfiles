@@ -71,27 +71,27 @@ local global_keys = awful.util.table.join(
 	--#region Apps
 	awful.key({ modkey }, 'd', function()
 		local s = awful.screen.focused()
-		awful.spawn(s.selected_tag.default_app, { tag = s.selected_tag })
+		awful.spawn.with_shell(s.selected_tag.default_app)
 	end, { group = 'Apps', description = "Open tag's default app" }),
 
 	awful.key({ modkey }, 'Return', function()
-		awful.spawn(apps.terminal)
+		awful.spawn.with_shell(apps.terminal)
 	end, { group = 'Apps', description = 'Open default terminal' }),
 
 	awful.key({ modkey }, 'e', function()
-		awful.spawn(apps.file_manager)
+		awful.spawn.with_shell(apps.file_manager)
 	end, { group = 'Apps', description = 'Open default file manager' }),
 
 	awful.key({ modkey }, 'b', function()
-		awful.spawn(apps.browser)
+		awful.spawn.with_shell(apps.browser)
 	end, { group = 'Apps', description = 'Open default web browser' }),
 
 	awful.key({}, 'XF86Calculator', function()
-		awful.spawn('gnome-calculator')
+		awful.spawn.with_shell('gnome-calculator')
 	end, { group = 'Apps', description = 'Open calculator' }),
 
 	awful.key({ 'Control', 'Shift' }, 'Escape', function()
-		awful.spawn(apps.terminal .. ' -e gtop')
+		awful.spawn.with_shell(apps.terminal .. ' -e gtop')
 	end, { group = 'Apps', description = 'Open system monitor' }),
 	--#endregion
 

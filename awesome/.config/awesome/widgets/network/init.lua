@@ -4,7 +4,7 @@ local gears = require('gears')
 local wibox = require('wibox')
 
 local env = require('env')
-local icons = require('theme.icons').network
+local icons = require('theme.icons')
 local widget_container = require('widgets.containers.widget-container')
 
 local interfaces = env.network_interfaces
@@ -147,7 +147,7 @@ local create_network_widget = function()
 		{
 			id = 'icon',
 			markup = '',
-			font = beautiful.nerd_font .. ' 18',
+			font = beautiful.nerd_font .. ' 20',
 			widget = wibox.widget.textbox,
 		},
 	}, buttons, true)
@@ -155,11 +155,11 @@ local create_network_widget = function()
 	awesome.connect_signal('widgets::network', function(args)
 		properties = args or properties
 
-		local icon = properties.disabled and icons.wifi.off or icons.wifi.on
+		local icon = properties.disabled and icons.wifi_off or icons.wifi_on
 		local color = beautiful.disabled
 
 		if not properties.disabled and properties.mode ~= 'none' then
-			icon = properties.mode == 'wired' and icons.ethernet or icons.wifi.on
+			icon = properties.mode == 'wired' and icons.ethernet or icons.wifi_on
 			color = properties.healthy_connection and beautiful.primary or beautiful.warning
 		end
 

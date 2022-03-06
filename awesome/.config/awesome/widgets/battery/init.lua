@@ -3,7 +3,7 @@ local beautiful = require('beautiful')
 local gears = require('gears')
 local wibox = require('wibox')
 
-local icons = require('theme.icons').battery
+local icons = require('theme.icons')
 local widget_container = require('widgets.containers.widget-container')
 
 local properties = {
@@ -68,7 +68,7 @@ local create_battery_widget = function()
 	awesome.connect_signal('widgets::battery', function(args)
 		properties = args or properties
 
-		local icon = properties.charging and icons.charging or icons.discharging
+		local icon = properties.charging and icons.battery_charging or icons.battery_discharging
 		local color = properties.charging and beautiful.primary or beautiful.foreground
 		if properties.percentage and properties.percentage <= 20 then
 			color = beautiful.danger

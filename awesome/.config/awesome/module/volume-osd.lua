@@ -3,7 +3,7 @@ local beautiful = require('beautiful')
 local gears = require('gears')
 local wibox = require('wibox')
 
-local icons = require('theme.icons').volume
+local icons = require('theme.icons')
 
 local dpi = beautiful.xresources.apply_dpi
 
@@ -63,7 +63,7 @@ local osd_margin = dpi(10)
 awesome.connect_signal('module::volume_osd', function(args)
 	vol_osd_slider:set_value(args.volume)
 	osd_value:set_text(args.volume .. '%')
-	icon.icon_text:set_text(args.mute and icons.off or icons.on)
+	icon.icon_text:set_text(args.mute and icons.volume_off or icons.volume_on)
 
 	if awful.screen.focused().show_vol_osd then
 		awesome.emit_signal('module::volume_osd:show', true)

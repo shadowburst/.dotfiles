@@ -14,7 +14,7 @@ local create_search_widget = function()
 	}
 
 	local search_widget = widget_container({
-		text = icons.arch,
+		text = icons.menu,
 		font = beautiful.nerd_font .. ' 20',
 		align = 'center',
 		valign = 'center',

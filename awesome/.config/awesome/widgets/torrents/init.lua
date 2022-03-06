@@ -5,7 +5,7 @@ local wibox = require('wibox')
 
 local apps = require('configuration.apps')
 local env = require('env')
-local icons = require('theme.icons').torrents
+local icons = require('theme.icons')
 local scripts = require('scripts')
 local widget_container = require('widgets.containers.widget-container')
 

@@ -18,7 +18,7 @@ local dpi = beautiful.xresources.apply_dpi
 
 local top_panel = function(s)
 	local panel_height = dpi(28)
-	local offsetx = dpi(5)
+	local offsetx = dpi(11)
 	local offsety = dpi(8)
 
 	local panel = wibox({

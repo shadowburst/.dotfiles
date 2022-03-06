@@ -4,7 +4,7 @@ local gears = require('gears')
 local wibox = require('wibox')
 
 local env = require('env')
-local icons = require('theme.icons').media
+local icons = require('theme.icons')
 local widget_container = require('widgets.containers.widget-container')
 
 local dpi = beautiful.xresources.apply_dpi
@@ -50,8 +50,8 @@ local create_media_widget = function()
 	local previous_button_widget = widget_container({
 		id = 'previous',
 		widget = wibox.widget.textbox,
-		text = icons.previous,
-		font = beautiful.nerd_font .. ' 16',
+		text = icons.skip_previous,
+		font = beautiful.nerd_font .. ' 18',
 	}, {
 		awful.button({}, 1, function()
 			awful.spawn.easy_async_with_shell('playerctl previous', function() end)
@@ -62,7 +62,7 @@ local create_media_widget = function()
 		id = 'play',
 		widget = wibox.widget.textbox,
 		text = icons.pause,
-		font = beautiful.nerd_font .. ' 16',
+		font = beautiful.nerd_font .. ' 18',
 	}, {
 		awful.button({}, 1, function()
 			awful.spawn.easy_async_with_shell('playerctl play-pause', function()
@@ -75,8 +75,8 @@ local create_media_widget = function()
 	local next_button_widget = widget_container({
 		id = 'next',
 		widget = wibox.widget.textbox,
-		text = icons.next,
-		font = beautiful.nerd_font .. ' 16',
+		text = icons.skip_next,
+		font = beautiful.nerd_font .. ' 18',
 	}, {
 		awful.button({}, 1, function()
 			awful.spawn.easy_async_with_shell('playerctl next', function() end)
@@ -125,8 +125,8 @@ local create_media_widget = function()
 			return
 		end
 
-		media_widget:get_children_by_id('title')[1]:set_text('   ' .. properties.title .. '   ')
 		play_button_widget:get_children_by_id('play')[1]:set_text(properties.playing and icons.pause or icons.play)
+		media_widget:get_children_by_id('title')[1]:set_text('   ' .. properties.title .. '   ')
 
 		local scroll = media_widget:get_children_by_id('title_scroll')[1]
 		if properties.playing then
