@@ -85,52 +85,52 @@ local create_volume_widget = function()
 		end
 	end)
 
-	awesome.connect_signal('widgets::volume::decrement', function()
-		properties.volume = math.max(0, properties.volume - 5)
-
-		if properties.mute then
-			properties.mute = false
-
-			awful.spawn.easy_async('amixer -D pulse set Master 1+ on', function() end)
-		end
-
-		awful.spawn.easy_async('amixer -D pulse sset Master ' .. properties.volume .. '%', function()
-			awesome.emit_signal('widgets::volume')
-			awesome.emit_signal('module::volume_osd', properties)
-			awesome.emit_signal('module::volume_osd:show', true)
-		end)
-	end)
-
-	awesome.connect_signal('widgets::volume::increment', function()
-		properties.volume = math.min(100, properties.volume + 5)
-
-		if properties.mute then
-			properties.mute = false
-
-			awful.spawn.easy_async('amixer -D pulse set Master 1+ on', function() end)
-		end
-
-		awful.spawn.easy_async('amixer -D pulse sset Master ' .. properties.volume .. '%', function()
-			awesome.emit_signal('widgets::volume')
-			awesome.emit_signal('module::volume_osd', properties)
-			awesome.emit_signal('module::volume_osd:show', true)
-		end)
-	end)
-
-	awesome.connect_signal('widgets::volume::mute::toggle', function()
-		properties.mute = not properties.mute
-
-		awful.spawn.easy_async('amixer -D pulse set Master 1+ ' .. (properties.mute and 'off' or 'on'), function()
-			awesome.emit_signal('widgets::volume')
-			awesome.emit_signal('module::volume_osd', properties)
-			awesome.emit_signal('module::volume_osd:show', true)
-		end)
-	end)
-
 	check_updates()
 
 	return volume_widget
 end
+
+awesome.connect_signal('widgets::volume::decrement', function()
+	properties.volume = math.max(0, properties.volume - 5)
+
+	if properties.mute then
+		properties.mute = false
+
+		awful.spawn.easy_async('amixer -D pulse set Master 1+ on', function() end)
+	end
+
+	awful.spawn.easy_async('amixer -D pulse sset Master ' .. properties.volume .. '%', function()
+		awesome.emit_signal('widgets::volume')
+		awesome.emit_signal('module::volume_osd', properties)
+		awesome.emit_signal('module::volume_osd:show', true)
+	end)
+end)
+
+awesome.connect_signal('widgets::volume::increment', function()
+	properties.volume = math.min(100, properties.volume + 5)
+
+	if properties.mute then
+		properties.mute = false
+
+		awful.spawn.easy_async('amixer -D pulse set Master 1+ on', function() end)
+	end
+
+	awful.spawn.easy_async('amixer -D pulse sset Master ' .. properties.volume .. '%', function()
+		awesome.emit_signal('widgets::volume')
+		awesome.emit_signal('module::volume_osd', properties)
+		awesome.emit_signal('module::volume_osd:show', true)
+	end)
+end)
+
+awesome.connect_signal('widgets::volume::mute::toggle', function()
+	properties.mute = not properties.mute
+
+	awful.spawn.easy_async('amixer -D pulse set Master 1+ ' .. (properties.mute and 'off' or 'on'), function()
+		awesome.emit_signal('widgets::volume')
+		awesome.emit_signal('module::volume_osd', properties)
+		awesome.emit_signal('module::volume_osd:show', true)
+	end)
+end)
 
 gears.timer({
 	timeout = 60,

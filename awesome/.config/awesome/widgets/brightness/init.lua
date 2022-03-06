@@ -57,30 +57,30 @@ local create_brightness_widget = function()
 		brightness_widget:get_children_by_id('percentage')[1]:set_text(properties.brightness .. '%')
 	end)
 
-	awesome.connect_signal('widgets::brightness::decrement', function()
-		properties.brightness = math.max(5, properties.brightness - 5)
-
-		awful.spawn.easy_async('light -S ' .. properties.brightness, function()
-			awesome.emit_signal('widgets::brightness')
-			awesome.emit_signal('module::brightness_osd', properties)
-			awesome.emit_signal('module::brightness_osd:show', true)
-		end)
-	end)
-
-	awesome.connect_signal('widgets::brightness::increment', function()
-		properties.brightness = math.min(100, properties.brightness + 5)
-
-		awful.spawn.easy_async('light -S ' .. properties.brightness, function()
-			awesome.emit_signal('widgets::brightness')
-			awesome.emit_signal('module::brightness_osd', properties)
-			awesome.emit_signal('module::brightness_osd:show', true)
-		end)
-	end)
-
 	check_updates()
 
 	return brightness_widget
 end
+
+awesome.connect_signal('widgets::brightness::decrement', function()
+	properties.brightness = math.max(5, properties.brightness - 5)
+
+	awful.spawn.easy_async('light -S ' .. properties.brightness, function()
+		awesome.emit_signal('widgets::brightness')
+		awesome.emit_signal('module::brightness_osd', properties)
+		awesome.emit_signal('module::brightness_osd:show', true)
+	end)
+end)
+
+awesome.connect_signal('widgets::brightness::increment', function()
+	properties.brightness = math.min(100, properties.brightness + 5)
+
+	awful.spawn.easy_async('light -S ' .. properties.brightness, function()
+		awesome.emit_signal('widgets::brightness')
+		awesome.emit_signal('module::brightness_osd', properties)
+		awesome.emit_signal('module::brightness_osd:show', true)
+	end)
+end)
 
 gears.timer({
 	timeout = 5,
