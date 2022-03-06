@@ -86,6 +86,10 @@ local global_keys = awful.util.table.join(
 		awful.spawn(apps.browser)
 	end, { group = 'Apps', description = 'Open default web browser' }),
 
+	awful.key({}, 'XF86Calculator', function()
+		awful.spawn('gnome-calculator')
+	end, { group = 'Apps', description = 'Open calculator' }),
+
 	awful.key({ 'Control', 'Shift' }, 'Escape', function()
 		awful.spawn(apps.terminal .. ' -e gtop')
 	end, { group = 'Apps', description = 'Open system monitor' }),
