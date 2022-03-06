@@ -43,10 +43,10 @@ local create_volume_widget = function()
 			awesome.emit_signal('widgets::volume::mute::toggle')
 		end),
 		awful.button({}, 4, function()
-			awesome.emit_signal('widgets::volume::decrement')
+			awesome.emit_signal('widgets::volume::increment')
 		end),
 		awful.button({}, 5, function()
-			awesome.emit_signal('widgets::volume::increment')
+			awesome.emit_signal('widgets::volume::decrement')
 		end),
 	}
 

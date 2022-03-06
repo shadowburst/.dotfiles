@@ -29,10 +29,10 @@ end
 local create_brightness_widget = function()
 	local buttons = {
 		awful.button({}, 4, function()
-			awesome.emit_signal('widgets::brightness::decrement')
+			awesome.emit_signal('widgets::brightness::increment')
 		end),
 		awful.button({}, 5, function()
-			awesome.emit_signal('widgets::brightness::increment')
+			awesome.emit_signal('widgets::brightness::decrement')
 		end),
 	}
 
