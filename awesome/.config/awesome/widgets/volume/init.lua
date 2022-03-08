@@ -134,7 +134,7 @@ awesome.connect_signal('widgets::volume::mute::toggle', function()
 end)
 
 gears.timer({
-	timeout = 60,
+	timeout = 5,
 	call_now = false,
 	autostart = true,
 	callback = check_updates,
