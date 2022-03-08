@@ -6,6 +6,7 @@ local wibox = require('wibox')
 local apps = require('configuration.apps')
 local env = require('env')
 local icons = require('theme.icons')
+local helpers = require('helpers')
 local scripts = require('scripts')
 local widget_container = require('widgets.containers.widget-container')
 
@@ -59,7 +60,7 @@ local create_torrents_widget = function()
 			layout = wibox.layout.fixed.horizontal,
 			spacing = beautiful.icon_spacing,
 			{
-				markup = '<span color="' .. beautiful.success .. '">' .. icons.download .. '</span>',
+				markup = helpers.colorize_text(icons.download, beautiful.success),
 				font = beautiful.nerd_font .. ' 18',
 				widget = wibox.widget.textbox,
 			},
@@ -73,7 +74,7 @@ local create_torrents_widget = function()
 			layout = wibox.layout.fixed.horizontal,
 			spacing = beautiful.icon_spacing,
 			{
-				markup = '<span color="' .. beautiful.warning .. '">' .. icons.upload .. '</span>',
+				markup = helpers.colorize_text(icons.upload, beautiful.warning),
 				font = beautiful.nerd_font .. ' 18',
 				widget = wibox.widget.textbox,
 			},

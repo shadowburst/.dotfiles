@@ -6,7 +6,7 @@ return {
 	arrow_down = 'ﰬ',
 	arrow_up = 'ﰵ',
 	battery_charging = '',
-	battery_discharging = '',
+	battery_discharging = '',
 	bluetooth_off = '',
 	bluetooth_on = '',
 	brightness = '',

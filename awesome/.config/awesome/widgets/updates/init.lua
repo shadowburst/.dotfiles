@@ -6,6 +6,7 @@ local wibox = require('wibox')
 local apps = require('configuration.apps')
 local env = require('env')
 local icons = require('theme.icons')
+local helpers = require('helpers')
 local widget_container = require('widgets.containers.widget-container')
 
 local dpi = beautiful.xresources.apply_dpi
@@ -46,13 +47,13 @@ local create_updates_widget = function()
 		spacing = beautiful.icon_spacing,
 		{
 			id = 'icon',
-			markup = '<span color="' .. beautiful.success .. '">' .. icons.updates .. '</span>',
+			markup = helpers.colorize_text(icons.updates, beautiful.success),
 			font = beautiful.nerd_font .. ' 18',
 			widget = wibox.widget.textbox,
 		},
 		{
 			id = 'updates_count',
-			text = '',
+			text = properties.update_count .. ' updates',
 			widget = wibox.widget.textbox,
 		},
 	}, buttons, true)

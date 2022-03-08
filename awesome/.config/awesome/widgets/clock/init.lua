@@ -3,6 +3,7 @@ local beautiful = require('beautiful')
 local wibox = require('wibox')
 
 local icons = require('theme.icons')
+local helpers = require('helpers')
 local widget_container = require('widgets.containers.widget-container')
 
 local create_clock_widget = function()
@@ -18,7 +19,7 @@ local create_clock_widget = function()
 		layout = wibox.layout.fixed.horizontal,
 		spacing = beautiful.icon_spacing,
 		{
-			markup = '<span color="' .. beautiful.primary .. '">' .. icons.clock .. '</span>',
+			markup = helpers.colorize_text(icons.clock, beautiful.primary),
 			font = beautiful.nerd_font .. ' 18',
 			widget = wibox.widget.textbox,
 		},

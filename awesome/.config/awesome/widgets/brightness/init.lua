@@ -4,6 +4,7 @@ local gears = require('gears')
 local wibox = require('wibox')
 
 local icons = require('theme.icons')
+local helpers = require('helpers')
 local widget_container = require('widgets.containers.widget-container')
 
 local properties = {
@@ -40,13 +41,13 @@ local create_brightness_widget = function()
 		layout = wibox.layout.fixed.horizontal,
 		spacing = beautiful.icon_spacing,
 		{
-			markup = '<span color="' .. beautiful.primary .. '">' .. icons.brightness .. '</span>',
+			markup = helpers.colorize_text(icons.brightness, beautiful.primary),
 			font = beautiful.nerd_font .. ' 20',
 			widget = wibox.widget.textbox,
 		},
 		{
 			id = 'percentage',
-			text = '0%',
+			text = properties.brightness .. '%',
 			widget = wibox.widget.textbox,
 		},
 	}, buttons, true)

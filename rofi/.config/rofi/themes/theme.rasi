@@ -1,5 +1,4 @@
 * {
-  icon-theme:     "Tela purple dark";
   font:           "Roboto 12";
   nerd-font:      "FiraCode Nerd Font Mono 18";
 
@@ -33,4 +32,8 @@
 
   primary:        #61AFEF;
   highlight:      #5C637028;
+}
+
+configuration {
+  icon-theme:     "Tela dark";
 }

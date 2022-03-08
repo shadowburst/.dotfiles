@@ -4,6 +4,7 @@ local gears = require('gears')
 local wibox = require('wibox')
 
 local icons = require('theme.icons')
+local helpers = require('helpers')
 local widget_container = require('widgets.containers.widget-container')
 
 local properties = {
@@ -55,12 +56,12 @@ local create_battery_widget = function()
 		{
 			id = 'icon',
 			font = beautiful.nerd_font .. ' 18',
-			markup = '',
+			markup = helpers.colorize_text(icons.battery_discharging, beautiful.foreground),
 			widget = wibox.widget.textbox,
 		},
 		{
 			id = 'battery_percentage',
-			text = '',
+			text = properties.percentage .. '%',
 			widget = wibox.widget.textbox,
 		},
 	}, buttons, true)
@@ -74,7 +75,7 @@ local create_battery_widget = function()
 			color = beautiful.danger
 		end
 
-		battery_widget:get_children_by_id('icon')[1]:set_markup('<span color="' .. color .. '">' .. icon .. '</span>')
+		battery_widget:get_children_by_id('icon')[1]:set_markup(helpers.colorize_text(icon, color))
 		battery_widget:get_children_by_id('battery_percentage')[1]:set_text(properties.percentage .. '%')
 	end)
 

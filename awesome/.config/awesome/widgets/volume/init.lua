@@ -4,6 +4,7 @@ local gears = require('gears')
 local wibox = require('wibox')
 
 local icons = require('theme.icons')
+local helpers = require('helpers')
 local widget_container = require('widgets.containers.widget-container')
 
 local properties = {
@@ -53,7 +54,7 @@ local create_volume_widget = function()
 	local volume_widget = widget_container({
 		{
 			id = 'icon',
-			markup = '',
+			markup = helpers.colorize_text(icons.volume_off, beautiful.disabled),
 			font = beautiful.nerd_font .. ' 20',
 			widget = wibox.widget.textbox,
 		},
@@ -68,7 +69,7 @@ local create_volume_widget = function()
 		local icon = properties.mute and icons.volume_off or icons.volume_on
 		local color = properties.mute and beautiful.disabled or beautiful.primary
 
-		volume_widget:get_children_by_id('icon')[1]:set_markup('<span color="' .. color .. '">' .. icon .. '</span>')
+		volume_widget:get_children_by_id('icon')[1]:set_markup(helpers.colorize_text(icon, color))
 		percentage_widget:set_text(properties.volume .. '%')
 
 		local volume_layout = volume_widget:get_children_by_id('volume_layout')[1]

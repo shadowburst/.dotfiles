@@ -150,10 +150,11 @@ yay=(
   lazygit
   light-git
   luacheck
-  otf-nerd-fonts-fira-code
+  material-black-colors-theme
   picom-jonaburg-git
   ruby-fusuma
   stylua
+  tela-icon-theme
   tremc
   visual-studio-code-bin
   youtube-dl-gui

@@ -5,6 +5,7 @@ local wibox = require('wibox')
 
 local env = require('env')
 local icons = require('theme.icons')
+local helpers = require('helpers')
 local widget_container = require('widgets.containers.widget-container')
 
 local interfaces = env.network_interfaces
@@ -146,7 +147,7 @@ local create_network_widget = function()
 		spacing = beautiful.icon_spacing,
 		{
 			id = 'icon',
-			markup = '',
+			markup = helpers.colorize_text(icons.wifi_on, beautiful.disabled),
 			font = beautiful.nerd_font .. ' 20',
 			widget = wibox.widget.textbox,
 		},
@@ -163,7 +164,7 @@ local create_network_widget = function()
 			color = properties.healthy_connection and beautiful.primary or beautiful.warning
 		end
 
-		network_widget:get_children_by_id('icon')[1]:set_markup('<span color="' .. color .. '">' .. icon .. '</span>')
+		network_widget:get_children_by_id('icon')[1]:set_markup(helpers.colorize_text(icon, color))
 
 		ssid_widget:set_text(properties.ssid or '')
 
