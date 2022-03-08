@@ -1,1 +1,4 @@
 plugins
+
+colorschemes/__pycache__
+colorschemes/__init__.py
