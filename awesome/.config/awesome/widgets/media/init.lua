@@ -32,8 +32,9 @@ local check_updates = function()
 		end
 
 		awful.spawn.easy_async(
-			[[ bash -c "playerctl metadata | grep title | awk -F 'title' '{print(\$2)}'" ]],
+			[[ bash -c "playerctl metadata | awk -F ':title' '/:title/ {print(\$2)}'" ]],
 			function(metadata)
+				-- Trim spaces from title
 				args.title = metadata:gsub('^%s*(.-)%s*$', '%1')
 
 				if args.playing == properties.playing and args.title == properties.title then
@@ -54,7 +55,7 @@ local create_media_widget = function()
 		font = beautiful.nerd_font .. ' 18',
 	}, {
 		awful.button({}, 1, function()
-			awful.spawn.easy_async_with_shell('playerctl previous', function() end)
+			awesome.emit_signal('widgets::media::previous')
 		end),
 	})
 
@@ -65,10 +66,7 @@ local create_media_widget = function()
 		font = beautiful.nerd_font .. ' 18',
 	}, {
 		awful.button({}, 1, function()
-			awful.spawn.easy_async_with_shell('playerctl play-pause', function()
-				properties.playing = not properties.playing
-				awesome.emit_signal('widgets::media')
-			end)
+			awesome.emit_signal('widgets::media::play-pause')
 		end),
 	})
 
@@ -79,7 +77,7 @@ local create_media_widget = function()
 		font = beautiful.nerd_font .. ' 18',
 	}, {
 		awful.button({}, 1, function()
-			awful.spawn.easy_async_with_shell('playerctl next', function() end)
+			awesome.emit_signal('widgets::media::next')
 		end),
 	})
 
@@ -141,6 +139,27 @@ local create_media_widget = function()
 
 	return media_widget
 end
+
+awesome.connect_signal('widgets::media::play-pause', function()
+	awful.spawn.easy_async_with_shell('playerctl play-pause', function()
+		properties.playing = not properties.playing
+		awesome.emit_signal('widgets::media')
+	end)
+end)
+
+awesome.connect_signal('widgets::media::next', function()
+	awful.spawn.easy_async_with_shell('playerctl next', function()
+		properties.title = 'Loading...'
+		awesome.emit_signal('widgets::media')
+	end)
+end)
+
+awesome.connect_signal('widgets::media::previous', function()
+	awful.spawn.easy_async_with_shell('playerctl previous', function()
+		properties.title = 'Loading...'
+		awesome.emit_signal('widgets::media')
+	end)
+end)
 
 gears.timer({
 	timeout = 5,
