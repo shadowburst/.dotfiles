@@ -1,8 +1,14 @@
+
 #   _____  _____ __  ______  ______
 #  /__  / / ___// / / / __ \/ ____/
 #    / /  \__ \/ /_/ / /_/ / /
 #   / /_____/ / __  / _, _/ /___
 #  /____/____/_/ /_/_/ |_|\____/
+
+# Load theme
+if [ -f ~/.config/zsh/.zsh_theme ]; then
+    . ~/.config/zsh/.zsh_theme
+fi
 
 # Load ZSH plugin manager
 . "${HOME}/.zgenom/zgenom.zsh"
@@ -15,7 +21,7 @@ if ! zgenom saved; then
     zgenom load zsh-users/zsh-autosuggestions
     zgenom load zsh-users/zsh-syntax-highlighting
     zgenom load zsh-users/zsh-history-substring-search
-    zgenom load spaceship-prompt/spaceship-prompt spaceship
+    zgenom load romkatv/powerlevel10k powerlevel10k
 
     zgenom save
 fi
@@ -68,10 +74,6 @@ if [ -f ~/.config/zsh/.zsh_functions ]; then
     . ~/.config/zsh/.zsh_functions
 fi
 
-# Load theme
-if [ -f ~/.config/zsh/.zsh_theme ]; then
-    . ~/.config/zsh/.zsh_theme
-fi
-
 # Load Node.js manager
 eval "$(fnm env --use-on-cd)"
+
