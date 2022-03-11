@@ -32,7 +32,7 @@ local check_updates = function()
 		end
 
 		awful.spawn.easy_async(
-			[[ bash -c "playerctl metadata | awk -F ':title' '/:title/ {print(\$2)}'" ]],
+			[[ bash -c "playerctl metadata | awk -F ':title( )+' '/:title/ {print(\$2)}'" ]],
 			function(metadata)
 				-- Trim spaces from title
 				args.title = metadata:gsub('^%s*(.-)%s*$', '%1')
