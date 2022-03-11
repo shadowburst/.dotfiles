@@ -23,6 +23,7 @@ null_ls.setup({
 	sources = {
 		formatting.prettier.with({ extra_args = { '--single-quote', '--jsx-single-quote' } }),
 		formatting.stylua.with({ extra_args = { '--quote-style', 'AutoPreferSingle' } }),
+		formatting.shfmt.with({ extra_args = { '-fn' } }),
 		-- diagnostics.luacheck,
 	},
 })
