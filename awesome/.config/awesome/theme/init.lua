@@ -16,7 +16,6 @@ local theme = {
 
 	--#region Wallpaper & Icons
 	icons = icons,
-	wallpaper = theme_dir .. 'wallpaper.jpg',
 	--#endregion
 
 	--#region Colors
