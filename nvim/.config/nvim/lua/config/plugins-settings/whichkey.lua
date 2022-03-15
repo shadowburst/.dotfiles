@@ -90,7 +90,7 @@ local mappings = {
 		['h'] = { '<cmd>BufferLineCloseLeft<cr>', 'Close all to the left' },
 		['j'] = { '<cmd>BufferLinePick<cr>', 'Jump' },
 		['l'] = { '<cmd>BufferLineCloseRight<cr>', 'Close all to the right' },
-		['o'] = { '<cmd>%bd|e#<cr>', 'Close others' },
+		['o'] = { '<cmd>%bd|e#|bd#<cr>', 'Close others' },
 		['p'] = { '<cmd>BufferLinePickClose<cr>', 'Close pick' },
 		['s'] = { '<cmd>wa!<cr>', 'Save all' },
 	},
