@@ -4,8 +4,6 @@ local beautiful = require('beautiful')
 local apps = require('configuration.apps')
 local icons = require('theme.icons')
 
-local default_layout = awful.layout.suit.tile
-
 local tags = {
 	{
 		name = icons.chrome,
@@ -29,7 +27,7 @@ local tags = {
 	{
 		name = icons.chat,
 		type = 'social',
-		default_app = 'ferdi',
+		default_app = 'discord',
 		matches = {
 			'discord',
 			'Ferdi',
@@ -96,6 +94,8 @@ tag.connect_signal('request::default_layouts', function()
 end)
 
 screen.connect_signal('request::desktop_decoration', function(s)
+	local default_layout = awful.layout.suit.tile
+
 	for i, tag in pairs(tags) do
 		awful.tag.add(tag.name, {
 			screen = s,
