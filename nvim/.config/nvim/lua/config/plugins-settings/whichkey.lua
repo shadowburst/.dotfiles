@@ -98,16 +98,17 @@ local mappings = {
 	['e'] = { '<cmd>NvimTreeToggle<CR>', 'Explorer' },
 	['g'] = {
 		name = '+Git',
-		['g'] = { '<cmd>lua _LAZYGIT_TOGGLE()<CR>', 'Lazygit' },
-		['l'] = { "<cmd>lua require 'gitsigns'.blame_line()<cr>", 'Blame' },
-		['r'] = { "<cmd>lua require 'gitsigns'.reset_buffer()<cr>", 'Reset Buffer' },
-		['o'] = { '<cmd>Telescope git_status<cr>', 'Open changed file' },
 		['b'] = { '<cmd>Telescope git_branches<cr>', 'Checkout branch' },
 		['c'] = { '<cmd>Telescope git_commits<cr>', 'Checkout commit' },
 		['d'] = {
 			'<cmd>Gitsigns diffthis HEAD<cr>',
 			'Diff',
 		},
+		['g'] = { '<cmd>lua _LAZYGIT_TOGGLE()<CR>', 'Lazygit' },
+		['h'] = { "<cmd>lua require 'gitsigns'.reset_hunk()<cr>", 'Reset Hunk' },
+		['p'] = { "<cmd>lua require 'gitsigns'.preview_hunk()<cr>", 'Preview Hunk' },
+		['o'] = { '<cmd>Telescope git_status<cr>', 'Open changed file' },
+		['r'] = { "<cmd>lua require 'gitsigns'.reset_buffer()<cr>", 'Reset Buffer' },
 	},
 	['l'] = {
 		name = 'LSP',
