@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-# Autostart programs on startup
-
 # Start compositor
 picom -b --experimental-backends --dbus &
 
@@ -15,7 +13,8 @@ autorandr --change --default mobile &
 light-locker --no-lock-on-suspend --lock-on-lid &
 
 # Load the polkit agent
-/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 & eval $(gnome-keyring-daemon -s --components=pkcs11,secrets,ssh,gpg) &
+/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
+eval $(gnome-keyring-daemon -s --components=pkcs11,secrets,ssh,gpg) &
 
 # Use the super key
 xcape -e 'Super_L=Super_L|space' &
@@ -25,7 +24,7 @@ setxkbmap fr &
 
 # Load xfce settings
 xfsettingsd &
-(sleep 5 && xfce4-power-manager)&
+(sleep 5 && xfce4-power-manager) &
 
 # Handle touchpad gestures
 fusuma -d &
