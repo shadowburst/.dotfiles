@@ -31,6 +31,9 @@ if ask "Automatic install ?"; then
 	automatic=true
 fi
 
+sudo pacman-mirrors -f
+sudo pacman -Syyu
+
 if ask "Install official packages ?"; then
 	sudo pacman --needed --ask 4 -Sy - <./packages
 fi

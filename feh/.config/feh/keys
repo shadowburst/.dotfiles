@@ -8,10 +8,10 @@
 # For instance, C-x would be Ctrl+X, or 4-space Mod4+Space
 
 # Examples for vim-like menu bindings on a qwerty keyboard:
+menu_up     k Up
+menu_down   j Down
 menu_parent h Left
 menu_child  l Right
-menu_down   j Down
-menu_up     k Up
 menu_select space Return
 
 # Same for image navigation ...
@@ -19,8 +19,8 @@ next_img j Right space
 prev_img k Left BackSpace
 
 # and image movement
-scroll_up    J C-Up
-scroll_down  K C-Down
+scroll_up    K C-Up
+scroll_down  J C-Down
 scroll_left  H C-Left
 scroll_right L C-Right
 

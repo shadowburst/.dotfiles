@@ -3,7 +3,6 @@ arandr
 autorandr
 bitwarden
 bluez-utils
-calcurse
 discord
 docker
 docker-compose
@@ -11,7 +10,6 @@ feh
 ffmpegthumbnailer
 filelight
 flameshot
-fnm
 gamemode
 gimp
 gnome-calculator
@@ -40,8 +38,6 @@ pavucontrol
 polkit-gnome
 playerctl
 prettier
-python-httplib3
-python-oauth2client
 qemu
 qemu-guest-agent
 qt5ct
