@@ -85,12 +85,13 @@ local mappings = {
 	['a'] = { '<cmd>Alpha<cr>', 'Start screen' },
 	['b'] = {
 		name = '+Buffers',
-		['c'] = { '<cmd>Bdelete<cr>', 'Close current' },
+		['a'] = { '<cmd>BDelete all<cr>', 'Close all' },
+		['c'] = { '<cmd>BDelete this<cr>', 'Close current' },
 		['f'] = { '<cmd>Telescope buffers<cr>', 'Find' },
 		['h'] = { '<cmd>BufferLineCloseLeft<cr>', 'Close all to the left' },
 		['j'] = { '<cmd>BufferLinePick<cr>', 'Jump' },
 		['l'] = { '<cmd>BufferLineCloseRight<cr>', 'Close all to the right' },
-		['o'] = { '<cmd>%bd|e#|Bdelete#<cr>', 'Close others' },
+		['o'] = { '<cmd>BDelete other<cr>', 'Close others' },
 		['p'] = { '<cmd>BufferLinePickClose<cr>', 'Close pick' },
 		['s'] = { '<cmd>wa!<cr>', 'Save all' },
 	},
@@ -162,7 +163,7 @@ local mappings = {
 		['s'] = { '<C-W>s', 'Split window below' },
 		['v'] = { '<C-W>v', 'Split window right' },
 	},
-	['x'] = { '<cmd>Bdelete<cr>', 'Close current buffer' },
+	['x'] = { '<cmd>BDelete this<cr>', 'Close current buffer' },
 }
 
 which_key.setup(setup)

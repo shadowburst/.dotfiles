@@ -44,7 +44,7 @@ packer.startup(function(use)
 	use('wbthomason/packer.nvim') -- Have packer manage itself
 	use('nvim-lua/popup.nvim') -- An implementation of the Popup API from vim in Neovim
 	use('nvim-lua/plenary.nvim') -- Useful lua functions used ny lots of plugins
-	use('moll/vim-bbye') -- Fix killing buffers
+	use('kazhala/close-buffers.nvim')
 	use('ahmedkhalf/project.nvim')
 	use('lewis6991/impatient.nvim')
 
