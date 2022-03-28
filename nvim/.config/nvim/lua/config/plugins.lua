@@ -40,33 +40,48 @@ packer.init({
 
 -- Install your plugins here
 packer.startup(function(use)
-	-- My plugins here
+	-- Global plugins
 	use('wbthomason/packer.nvim') -- Have packer manage itself
 	use('nvim-lua/popup.nvim') -- An implementation of the Popup API from vim in Neovim
 	use('nvim-lua/plenary.nvim') -- Useful lua functions used ny lots of plugins
-	use('windwp/nvim-autopairs') -- Autopairs, integrates with both cmp and treesitter
-	use('windwp/nvim-ts-autotag') -- Autopairs, integrates with both cmp and treesitter
-	use('numToStr/Comment.nvim') -- Easily comment stuff
-	use('kyazdani42/nvim-web-devicons')
-	use('kyazdani42/nvim-tree.lua')
-	use('akinsho/bufferline.nvim')
-	use('moll/vim-bbye')
-	use('nvim-lualine/lualine.nvim')
-	use('akinsho/toggleterm.nvim')
+	use('moll/vim-bbye') -- Fix killing buffers
 	use('ahmedkhalf/project.nvim')
 	use('lewis6991/impatient.nvim')
-	use('lukas-reineke/indent-blankline.nvim')
-	use('goolord/alpha-nvim')
-	use('antoinemadec/FixCursorHold.nvim') -- This is needed to fix lsp doc highlight
-	use('folke/which-key.nvim')
-	use('karb94/neoscroll.nvim')
-	use('ggandor/lightspeed.nvim')
-	use('lambdalisue/suda.vim')
-	use('tpope/vim-surround')
-	use('norcalli/nvim-colorizer.lua')
-	use('vigoux/LanguageTool.nvim')
 
+	-- UI
+	use('folke/which-key.nvim')
+	use('akinsho/toggleterm.nvim')
+	use('nvim-telescope/telescope.nvim')
+	use('kyazdani42/nvim-tree.lua')
+	use('akinsho/bufferline.nvim')
+	use('kyazdani42/nvim-web-devicons')
+	use('goolord/alpha-nvim')
+	use('nvim-lualine/lualine.nvim')
 	use('navarasu/onedark.nvim')
+	use({
+		'nvim-treesitter/nvim-treesitter',
+		run = ':TSUpdate',
+	})
+	use('JoosepAlviste/nvim-ts-context-commentstring')
+	use('norcalli/nvim-colorizer.lua')
+	use('karb94/neoscroll.nvim')
+	use('lewis6991/gitsigns.nvim')
+
+	-- Input
+	use('lambdalisue/suda.vim') -- Save file with sudo
+	use('ggandor/lightspeed.nvim')
+	use('antoinemadec/FixCursorHold.nvim') -- This is needed to fix lsp doc highlight
+	use('windwp/nvim-autopairs')
+	use('windwp/nvim-ts-autotag')
+	use('tpope/vim-surround')
+	use('lukas-reineke/indent-blankline.nvim')
+	use('numToStr/Comment.nvim') -- Easily comment stuff
+
+	-- LSP
+	use('neovim/nvim-lspconfig') -- enable LSP
+	use('williamboman/nvim-lsp-installer') -- simple to use language server installer
+	use('tamago324/nlsp-settings.nvim') -- language server settings defined in json for
+	use('jose-elias-alvarez/null-ls.nvim') -- for formatters and linters
 
 	-- cmp plugins
 	use('hrsh7th/nvim-cmp') -- The completion plugin
@@ -80,25 +95,6 @@ packer.startup(function(use)
 	-- snippets
 	use('L3MON4D3/LuaSnip') --snippet engine
 	use('rafamadriz/friendly-snippets') -- a bunch of snippets to use
-
-	-- LSP
-	use('neovim/nvim-lspconfig') -- enable LSP
-	use('williamboman/nvim-lsp-installer') -- simple to use language server installer
-	use('tamago324/nlsp-settings.nvim') -- language server settings defined in json for
-	use('jose-elias-alvarez/null-ls.nvim') -- for formatters and linters
-
-	-- Telescope
-	use('nvim-telescope/telescope.nvim')
-
-	-- Treesitter
-	use({
-		'nvim-treesitter/nvim-treesitter',
-		run = ':TSUpdate',
-	})
-	use('JoosepAlviste/nvim-ts-context-commentstring')
-
-	-- Git
-	use('lewis6991/gitsigns.nvim')
 
 	-- Automatically set up your configuration after cloning packer.nvim
 	-- Put this at the end after all plugins
