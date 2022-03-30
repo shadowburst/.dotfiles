@@ -163,16 +163,16 @@ theme.hotkeys_shape = theme.rounded_rect
 
 --#region Notifications
 theme.notification_bg = theme.transparent
-theme.notification_border_color = theme.transparent
+theme.notification_border_color = theme.primary
 theme.notification_border_width = dpi(0)
 theme.notification_fg = theme.foreground
 theme.notification_font = theme.font
 theme.notification_icon_resize_strategy = 'center'
 theme.notification_icon_size = dpi(32)
-theme.notification_margin = dpi(5)
+theme.notification_margin = dpi(6)
 theme.notification_position = 'top_right'
 theme.notification_shape = theme.rect
-theme.notification_spacing = dpi(5)
+theme.notification_spacing = dpi(12)
 --#endregion
 
 --#region Menu

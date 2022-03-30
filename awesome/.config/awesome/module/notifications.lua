@@ -11,15 +11,13 @@ local clickable_container = require('widgets.containers.clickable-container')
 
 -- Defaults
 naughty.config.defaults.ontop = true
-naughty.config.defaults.icon_size = dpi(32)
+naughty.config.defaults.icon_size = beautiful.notification_icon_size
 naughty.config.defaults.timeout = 5
 naughty.config.defaults.title = 'System Notification'
-naughty.config.defaults.margin = dpi(16)
-naughty.config.defaults.border_width = 0
-naughty.config.defaults.position = 'top_right'
-naughty.config.defaults.shape = function(cr, w, h)
-	gears.shape.rounded_rect(cr, w, h, dpi(6))
-end
+naughty.config.defaults.margin = beautiful.notification_margin
+naughty.config.defaults.border_width = beautiful.notification_border_width
+naughty.config.defaults.position = beautiful.notification_position
+naughty.config.defaults.shape = beautiful.notification_shape
 
 ruled.notification.connect_signal('request::rules', function()
 	ruled.notification.append_rule({
@@ -41,9 +39,8 @@ naughty.config.padding = dpi(8)
 naughty.config.spacing = dpi(8)
 naughty.config.icon_dirs = {
 	'/usr/share/icons/Tela',
-	'/usr/share/icons/Tela-purple-dark',
+	'/usr/share/icons/Tela-blue-dark',
 	'/usr/share/icons/Papirus/',
-	'/usr/share/icons/la-capitaine-icon-theme/',
 	'/usr/share/icons/gnome/',
 	'/usr/share/icons/hicolor/',
 	'/usr/share/pixmaps/',
@@ -189,11 +186,11 @@ naughty.connect_signal('request::display', function(n)
 						widget = naughty.container.background,
 					},
 					strategy = 'min',
-					width = dpi(160),
+					width = dpi(400),
 					widget = wibox.container.constraint,
 				},
 				strategy = 'max',
-				width = beautiful.notification_max_width or dpi(500),
+				width = beautiful.notification_max_width or dpi(400),
 				widget = wibox.container.constraint,
 			},
 			bg = beautiful.background,

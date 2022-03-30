@@ -3,6 +3,20 @@ if not status_ok then
 	return
 end
 
+local colors = {
+	bg = '#1A212E',
+	fg = '#ABB2BF',
+	yellow = '#E5C07B',
+	cyan = '#56B6C2',
+	darkblue = '#61AFEF',
+	green = '#98C379',
+	orange = '#E06C75',
+	violet = '#C678DD',
+	magenta = '#C678DD',
+	blue = '#61AFEF',
+	red = '#E06C75',
+}
+
 local hide_in_width = function()
 	return vim.fn.winwidth(0) > 80
 end
@@ -12,15 +26,25 @@ local diagnostics = {
 	sources = { 'nvim_diagnostic' },
 	sections = { 'error', 'warn' },
 	symbols = { error = ' ', warn = ' ' },
-	colored = false,
+	colored = true,
+	diagnostics_color = {
+		error = { fg = colors.red },
+		warn = { fg = colors.yellow },
+		info = { fg = colors.cyan },
+	},
 	update_in_insert = false,
 	always_visible = true,
 }
 
 local diff = {
 	'diff',
-	colored = false,
 	symbols = { added = ' ', modified = ' ', removed = ' ' }, -- changes diff symbols
+	colored = true,
+	diff_color = {
+		added = { fg = colors.green },
+		modified = { fg = colors.yellow },
+		removed = { fg = colors.red },
+	},
 	cond = hide_in_width,
 }
 
