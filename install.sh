@@ -53,8 +53,9 @@ if ask "Install configs ?"; then
 	# Load configs
 	stow */
 
-	# Install zgenom to manage zsh plugins
-	git clone https://github.com/jandamm/zgenom.git "${HOME}/.zgenom"
+	# Setup lightdm
+	sudo systemctl enable lightdm
+	sudo cp "$HOME/.wallpapers/current.jpg" /usr/share/backgrounds/
 
 	# Load cron jobs
 	crontab "$HOME/.crontab"
@@ -66,13 +67,4 @@ if ask "Install configs ?"; then
 
 	# Setup auto-cpufreq
 	sudo systemctl enable --now auto-cpufreq
-
-	# Setup ranger
-	mkdir -p "$HOME/.config/ranger/plugins"
-	git clone https://github.com/maximtrp/ranger-archives.git "$HOME/.config/ranger/plugins/ranger-archives"
-	git clone https://github.com/alexanderjeurissen/ranger_devicons "$HOME/.config/ranger/plugins/ranger_devicons"
-
-	# Setup lightdm
-	sudo systemctl enable lightdm
-	sudo cp "$HOME/.wallpapers/current.jpg" /usr/share/backgrounds/
 fi
