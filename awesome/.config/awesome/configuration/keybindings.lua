@@ -42,6 +42,13 @@ local global_keys = awful.util.table.join(
 	awful.key({ modkey }, 'h', awful.tag.viewprev, { group = 'Tags', description = 'View previous/next tag' }),
 
 	awful.key({ modkey }, 'l', awful.tag.viewnext, { group = 'Tags', description = 'View previous/next tag' }),
+
+	awful.key({ modkey, 'Control' }, 'q', function()
+		local t = awful.screen.focused().selected_tag
+		for _, client in pairs(t:clients()) do
+			client:kill()
+		end
+	end, { group = 'Tags', description = 'Close all clients in tag' }),
 	--#endregion
 
 	--#region Clients
