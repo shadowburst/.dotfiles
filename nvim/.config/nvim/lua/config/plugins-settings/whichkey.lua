@@ -150,6 +150,12 @@ local mappings = {
 	},
 	['q'] = { '<cmd>qa<CR>', 'Quit' },
 	['r'] = { '<cmd>lua _RANGER_TOGGLE()<CR>', 'Open Ranger' },
+	['s'] = {
+		name = '+Spell',
+		['e'] = { '<cmd>setlocal spell spelllang=en<cr>', 'Set spell lang to english' },
+		['f'] = { '<cmd>setlocal spell spelllang=fr<cr>', 'Set spell lang to french' },
+		['x'] = { '<cmd>setlocal nospell<cr>', 'Remove spell check' },
+	},
 	['t'] = { '<cmd>ToggleTerm direction=horizontal<cr>', 'Open Terminal' },
 	['w'] = {
 		name = '+Windows',
