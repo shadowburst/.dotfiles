@@ -166,15 +166,24 @@ for i, tag in pairs(tags) do
 			if s.tags[i] then
 				s.tags[i]:view_only()
 			end
-		end, { group = 'Tags', description = 'View tag #' }),
-		awful.key({ modkey, 'Shift' }, '#' .. i + 9, function()
+		end, { group = 'Tags', description = 'View tag' }),
+		awful.key({ modkey, 'Shift', 'Control' }, '#' .. i + 9, function()
 			if client.focus then
 				local s = client.focus.screen
 				if s.tags[i] then
 					client.focus:move_to_tag(s.tags[i])
 				end
 			end
-		end, { group = 'Tags', description = 'Move focused client to tag #' })
+		end, { group = 'Tags', description = 'Move focused client to tag' }),
+		awful.key({ modkey, 'Shift' }, '#' .. i + 9, function()
+			if client.focus then
+				local s = client.focus.screen
+				if s.tags[i] then
+					client.focus:move_to_tag(s.tags[i])
+					s.tags[i]:view_only()
+				end
+			end
+		end, { group = 'Tags', description = 'Move and follow focused client to tag' })
 	)
 end
 
