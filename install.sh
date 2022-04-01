@@ -58,7 +58,7 @@ if ask "Install configs ?"; then
 	sudo cp "$HOME/.wallpapers/current.jpg" /usr/share/backgrounds/
 
 	# Load cron jobs
-	crontab "$HOME/.crontab"
+	crontab ".crontab"
 
 	# Setup gnome keyring
 	echo "auth optional pam_gnome_keyring.so" >>/etc/pam.d/login
