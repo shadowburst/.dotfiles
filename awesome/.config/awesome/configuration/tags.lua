@@ -1,12 +1,13 @@
 local awful = require('awful')
 local beautiful = require('beautiful')
+local gears = require('gears')
 
 local apps = require('configuration.apps')
 local icons = require('theme.icons')
 
 local tags = {
 	{
-		name = icons.chrome,
+		name = icons.firefox,
 		type = 'internet',
 		default_app = apps.browser,
 		matches = {
@@ -115,24 +116,23 @@ local update_gap_and_shape = function(t)
 		-- Set clients gap to 0 and shape to rectangle if maximized
 		t.gap = 0
 		for _, c in ipairs(t:clients()) do
-			if not c.floating or not c.round_corners or c.maximized or c.fullscreen then
-				c.shape = beautiful.rect
-				c.border_width = 0
-			else
+			if c.floating then
 				c.shape = beautiful.rounded_rect
 				c.border_width = beautiful.border_width
+			else
+				c.shape = gears.shape.rectangle
+				c.border_width = 0
 			end
 		end
 	else
 		t.gap = beautiful.useless_gap
 		for _, c in ipairs(t:clients()) do
-			if not c.round_corners or c.maximized or c.fullscreen then
-				c.shape = beautiful.rect
-				c.border_width = 4
+			if c.maximized or c.fullscreen then
+				c.shape = gears.shape.rectangle
 			else
 				c.shape = beautiful.rounded_rect
-				c.border_width = beautiful.border_width
 			end
+			c.border_width = beautiful.border_width
 		end
 	end
 end

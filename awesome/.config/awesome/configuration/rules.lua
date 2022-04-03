@@ -1,6 +1,4 @@
 local awful = require('awful')
-local beautiful = require('beautiful')
-local gears = require('gears')
 local ruled = require('ruled')
 
 local client_buttons = require('configuration.buttons').client_buttons
@@ -28,20 +26,6 @@ ruled.client.connect_signal('request::rules', function()
 			keys = client_keys,
 			screen = awful.screen.focused,
 			placement = awful.placement.no_overlap + awful.placement.no_offscreen,
-		},
-	})
-
-	ruled.client.append_rule({
-		id = 'round_clients',
-		rule_any = {
-			type = {
-				'normal',
-				'dialog',
-			},
-		},
-		properties = {
-			round_corners = true,
-			shape = beautiful.rounded_rect,
 		},
 	})
 
@@ -95,7 +79,6 @@ ruled.client.connect_signal('request::rules', function()
 			name = { 'Discord Updater' },
 		},
 		properties = {
-			round_corners = true,
 			floating = true,
 			above = true,
 			skip_decoration = true,

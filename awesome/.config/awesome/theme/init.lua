@@ -87,7 +87,7 @@ theme.border_focus = theme.primary
 theme.border_marked = theme.background
 theme.border_normal = theme.background
 theme.border_radius = dpi(9)
-theme.border_width = dpi(4)
+theme.border_width = dpi(3)
 theme.useless_gap = dpi(4)
 
 theme.separator_color = theme.foreground
@@ -128,9 +128,6 @@ theme.systray_icon_spacing = dpi(10)
 --#endregion
 
 --#region Shapes
-theme.rect = function(cr, w, h)
-	return gears.shape.partially_rounded_rect(cr, w, h, false, false, false, false, 0)
-end
 theme.rounded_rect = function(cr, w, h)
 	return gears.shape.rounded_rect(cr, w, h, dpi(12))
 end

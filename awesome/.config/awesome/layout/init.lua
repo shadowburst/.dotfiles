@@ -19,9 +19,7 @@ screen.connect_signal('removed', awesome.restart)
 local update_bars_visibility = function()
 	for s in screen do
 		if s.selected_tag and s.top_panel then
-			local fullscreen = s.selected_tag.fullscreen_mode
-			-- Order matter here for shadow
-			s.top_panel.visible = not fullscreen
+			s.top_panel.visible = not s.selected_tag.fullscreen_mode
 		end
 	end
 end
