@@ -1,6 +1,7 @@
 acpilight
 arandr
 autorandr
+bashtop
 bitwarden
 bluez-utils
 discord
@@ -15,7 +16,6 @@ gimp
 gnome-calculator
 gnome-keyring
 gparted
-gtop
 iptables-nft
 iw
 kdenlive

@@ -98,7 +98,7 @@ local global_keys = awful.util.table.join(
 	end, { group = 'Apps', description = 'Open calculator' }),
 
 	awful.key({ 'Control', 'Shift' }, 'Escape', function()
-		awful.spawn.with_shell(apps.terminal .. ' -e gtop')
+		awful.spawn.with_shell(apps.terminal .. ' -e bashtop')
 	end, { group = 'Apps', description = 'Open system monitor' }),
 	--#endregion
 
