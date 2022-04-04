@@ -7,7 +7,7 @@ local icons = require('theme.icons')
 
 local tags = {
 	{
-		name = icons.firefox,
+		name = icons.chrome,
 		type = 'internet',
 		default_app = apps.browser,
 		matches = {
