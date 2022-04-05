@@ -235,7 +235,7 @@ local client_keys = awful.util.table.join(
 		c.maximized = false
 		c.floating = not c.floating
 		c:raise()
-	end, { group = 'Clients', description = 'Toggle ' })
+	end, { group = 'Clients', description = 'Toggle floating client' })
 )
 
 root.keys(global_keys)
