@@ -18,10 +18,10 @@ zgenom autoupdate
 if ! zgenom saved; then
 
     zgenom load jeffreytse/zsh-vi-mode
-    zgenom load zsh-users/zsh-autosuggestions
-    zgenom load zsh-users/zsh-syntax-highlighting
-    zgenom load zsh-users/zsh-history-substring-search
     zgenom load romkatv/powerlevel10k powerlevel10k
+    zgenom load zsh-users/zsh-autosuggestions
+    zgenom load zsh-users/zsh-history-substring-search
+    zgenom load zsh-users/zsh-syntax-highlighting
 
     zgenom save
 fi
@@ -53,10 +53,6 @@ function init_keymaps() {
     bindkey "^[[1;5D" backward-word
 }
 zvm_after_init_commands+=(init_keymaps)
-
-export EDITOR="/usr/bin/nvim"
-# export PAGER="/usr/bin/nvim"
-export VISUAL="/usr/bin/nvim"
 
 # Enable gnome-keyring-daemon for ssh
 if [ -n "$DESKTOP_SESSION" ];then
