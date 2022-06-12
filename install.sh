@@ -15,8 +15,7 @@ set -e
 
 automatic=false
 
-ask()
-{
+ask() {
 	if $automatic; then
 		return 0
 	fi
@@ -67,4 +66,8 @@ if ask "Install configs ?"; then
 
 	# Setup auto-cpufreq
 	sudo systemctl enable --now auto-cpufreq
+
+	# Setup emacs
+	git clone https://github.com/hlissner/doom-emacs ~/.emacs.d
+	~/.emacs.d/bin/doom install
 fi

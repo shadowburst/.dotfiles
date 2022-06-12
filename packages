@@ -7,6 +7,7 @@ bluez-utils
 discord
 docker
 docker-compose
+emacs
 feh
 ffmpegthumbnailer
 filelight
@@ -34,6 +35,7 @@ mpc
 mpv
 mugshot
 numlockx
+otf-font-awesome
 onlyoffice-desktopeditors
 pavucontrol
 polkit-gnome
@@ -44,6 +46,7 @@ qemu-guest-agent
 qt5ct
 ranger
 rclone
+ripgrep
 rofi
 seahorse
 shellcheck

@@ -1,0 +1,1 @@
+(package! dired-open)

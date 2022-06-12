@@ -41,6 +41,9 @@ blueman-applet &
 # Launch Flameshot daemon
 flameshot &
 
+# Start emacs daemon
+emacs --daemon &
+
 # Set environment variables
 
 # XDG Paths
