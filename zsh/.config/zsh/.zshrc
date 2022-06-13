@@ -54,12 +54,6 @@ function init_keymaps() {
 }
 zvm_after_init_commands+=(init_keymaps)
 
-# Enable gnome-keyring-daemon for ssh
-if [ -n "$DESKTOP_SESSION" ];then
-   eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg)
-   export SSH_AUTH_SOCK
-fi
-
 # Load aliases
 if [ -f ~/.config/zsh/.zsh_aliases ]; then
     . ~/.config/zsh/.zsh_aliases
