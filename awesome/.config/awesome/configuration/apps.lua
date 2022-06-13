@@ -1,9 +1,11 @@
 local terminal = 'kitty'
+local emacs = 'emacsclient -c -a "emacs"'
+
 local apps = {
 	terminal = terminal,
 	browser = 'brave',
-	editor = terminal .. ' --class nvim,nvim -e nvim',
-	file_manager = terminal .. ' --class ranger,ranger -e ranger',
+	editor = emacs,
+    file_manager = emacs .. ' --eval "(ranger)"'
 }
 
 return apps
