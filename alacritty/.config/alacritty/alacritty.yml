@@ -1,0 +1,51 @@
+env:
+  WINIT_X11_SCALE_FACTOR: "1.0"
+
+window:
+  padding:
+    x: 4
+    y: 4
+  opacity: 0.8
+font:
+  normal:
+    family: JetBrainsMono Nerd Font Mono
+    style: Regular
+  bold:
+    family: JetBrainsMono Nerd Font Mono
+    style: Bold
+  italic:
+    family: JetBrainsMono Nerd Font Mono
+    style: Italic
+  bold_italic:
+    family: JetBrainsMono Nerd Font Mono
+    style: Bold Italic
+  size: 11.0
+colors:
+  primary:
+    background: "#1A212E"
+    foreground: "#ABB2BF"
+  normal:
+    black: "#141B24"
+    red: "#E06C75"
+    green: "#98C379"
+    yellow: "#E5C07B"
+    blue: "#61AFEF"
+    magenta: "#C678DD"
+    cyan: "#56B6C2"
+    white: "#5C6370"
+  bright:
+    black: "#5C6370"
+    red: "#E06C75"
+    green: "#98C379"
+    yellow: "#E5C07B"
+    blue: "#61AFEF"
+    magenta: "#C678DD"
+    cyan: "#56B6C2"
+    white: "#ABB2BF"
+
+key_bindings:
+  # Fix alt key bindings
+  - { key: J, mods: Alt, chars: "\x1bj" }
+  - { key: K, mods: Alt, chars: "\x1bk" }
+  - { key: H, mods: Alt, chars: "\x1bh" }
+  - { key: L, mods: Alt, chars: "\x1bl" }

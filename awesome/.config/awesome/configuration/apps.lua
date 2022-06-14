@@ -1,4 +1,4 @@
-local terminal = 'kitty'
+local terminal = 'alacritty'
 local emacs = 'emacsclient -c -a "emacs"'
 
 local apps = {
