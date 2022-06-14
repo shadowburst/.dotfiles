@@ -79,7 +79,7 @@ theme.press_event = theme.white .. '15'
 theme.base_font = 'Roboto Regular'
 theme.font = theme.base_font .. ' 10'
 theme.base_font_bold = 'Roboto Bold'
-theme.nerd_font = 'FiraCode Nerd Font Mono'
+theme.nerd_font = 'JetBrainsMono Nerd Font Mono'
 --#endregion
 
 --#region Borders

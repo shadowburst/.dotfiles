@@ -39,12 +39,12 @@ Doom Emacs' default colourscheme is perfect for me, who has always loved Atom's 
 #+end_src
 
 ** Fonts
-These are the fonts that I use. I have Roboto if needed, but mainly I stick with FiraCode all the way. Easy to read, pretty to look at.
+These are the fonts that I use. I have Roboto if needed, but mainly I stick with JetBrainsMono. Easy to read, pretty to look at.
 
 #+begin_src emacs-lisp
-(setq doom-font (font-spec :family "FiraCode Nerd Font Mono" :size 14)
-      doom-big-font (font-spec :family "FiraCode Nerd Font Mono" :size 24)
-      doom-unicode-font (font-spec :family "FiraCode Nerd Font Mono")
+(setq doom-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 14)
+      doom-big-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 24)
+      doom-unicode-font (font-spec :family "JetBrainsMono Nerd Font Mono")
       doom-variable-pitch-font (font-spec :family "Roboto"))
 (after! doom-themes
   (setq doom-themes-enable-bold t
@@ -68,7 +68,9 @@ A couple of extra settings that help me use the text editor.
 
 #+begin_src emacs-lisp
 (setq display-line-numbers-type 'relative)
-(setq evil-escape-unordered-key-sequence t)
+(setq evil-escape-unordered-key-sequence t
+      evil-split-window-below t
+      evil-vsplit-window-right t)
 
 (global-auto-revert-mode 1)
 (setq global-auto-revert-non-file-buffers t)
@@ -118,10 +120,6 @@ Thanks to this package, dired gets a Ranger-like interface that includes file pr
     :ng "a" #'dired-create-empty-file
     :ng "A" #'dired-create-directory
     :ng "l" #'dired-open-file)
-    ;; :ng "l" (cmd!
-    ;;          (if (file-directory-p (ignore-errors (dired-get-file-for-visit)))
-    ;;              (dired-open-file)
-    ;;              (dired-open-xdg))))
 #+end_src
 
 * Org mode

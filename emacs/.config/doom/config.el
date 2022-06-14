@@ -1,8 +1,8 @@
 (setq doom-theme 'doom-one)
 
-(setq doom-font (font-spec :family "FiraCode Nerd Font Mono" :size 14)
-      doom-big-font (font-spec :family "FiraCode Nerd Font Mono" :size 24)
-      doom-unicode-font (font-spec :family "FiraCode Nerd Font Mono")
+(setq doom-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 14)
+      doom-big-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 24)
+      doom-unicode-font (font-spec :family "JetBrainsMono Nerd Font Mono")
       doom-variable-pitch-font (font-spec :family "Roboto"))
 (after! doom-themes
   (setq doom-themes-enable-bold t
@@ -16,7 +16,9 @@
                       (evil-force-normal-state)))
 
 (setq display-line-numbers-type 'relative)
-(setq evil-escape-unordered-key-sequence t)
+(setq evil-escape-unordered-key-sequence t
+      evil-split-window-below t
+      evil-vsplit-window-right t)
 
 (global-auto-revert-mode 1)
 (setq global-auto-revert-non-file-buffers t)
@@ -45,10 +47,6 @@
     :ng "a" #'dired-create-empty-file
     :ng "A" #'dired-create-directory
     :ng "l" #'dired-open-file)
-    ;; :ng "l" (cmd!
-    ;;          (if (file-directory-p (ignore-errors (dired-get-file-for-visit)))
-    ;;              (dired-open-file)
-    ;;              (dired-open-xdg))))
 
 (map! :leader
       :desc "Org babel tangle" "m B" #'org-babel-tangle)

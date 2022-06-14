@@ -55,7 +55,7 @@ local create_battery_widget = function()
 		spacing = beautiful.icon_spacing,
 		{
 			id = 'icon',
-			font = beautiful.nerd_font .. ' 18',
+			font = beautiful.nerd_font .. ' 16',
 			markup = helpers.colorize_text(icons.battery_discharging, beautiful.foreground),
 			widget = wibox.widget.textbox,
 		},
