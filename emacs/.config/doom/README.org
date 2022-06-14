@@ -61,6 +61,8 @@ Some general keybindings that help while using the editor.
 (map! :n  "C-s" #'save-buffer
       :iv "C-s" (cmd! (save-buffer)
                       (evil-force-normal-state)))
+
+(map! :niv "C-²" #'+vterm/toggle)
 #+end_src
 
 ** Other settings

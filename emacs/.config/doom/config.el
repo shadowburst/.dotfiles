@@ -15,6 +15,8 @@
       :iv "C-s" (cmd! (save-buffer)
                       (evil-force-normal-state)))
 
+(map! :niv "C-²" #'+vterm/toggle)
+
 (setq display-line-numbers-type 'relative)
 (setq evil-escape-unordered-key-sequence t
       evil-split-window-below t
