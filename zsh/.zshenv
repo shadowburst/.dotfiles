@@ -1,8 +1,8 @@
 export ZDOTDIR=$HOME/.config/zsh
 
-export EDITOR="/usr/bin/nvim"
-# export PAGER="/usr/bin/nvim"
-export VISUAL="/usr/bin/nvim"
+export EDITOR="nvim"
+export VISUAL="nvim"
+export MANPAGER="nvim -c 'set ft=man' -"
 
-
-. "$ZDOTDIR/.zshrc"
+eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg)
+export SSH_AUTH_SOCK

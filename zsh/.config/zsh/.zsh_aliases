@@ -13,3 +13,7 @@ alias mkdir='mkdir -p'
 
 # Test awesome config
 alias awesome-test="Xephyr -ac -nolisten tcp -br -noreset -screen 1280x800 :1 &; sleep 1; DISPLAY=:1.0 awesome"
+
+# Emacs
+alias emacsclient='emacsclient -c -a "emacs"'
+alias emacsterm='emacs -nw'

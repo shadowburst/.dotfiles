@@ -1,3 +1,7 @@
-#!/usr/bin/env sh
+#!/usr/bin/env zsh
 
-feh --no-fehbg --bg-fill "$HOME/.wallpapers/current.jpg"
+# Set wallpaper
+feh --no-fehbg --bg-fill "$HOME/.wallpapers/current.jpg" &
+
+# Start emacs daemon
+emacs --daemon
