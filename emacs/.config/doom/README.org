@@ -17,6 +17,7 @@
   - [[#dired-open][Dired-open]]
   - [[#ranger][Ranger]]
 - [[#org-mode][Org mode]]
+- [[#rainbow-mode][Rainbow Mode]]
 
 * Introduction
 ** What's this document ?
@@ -150,3 +151,19 @@ Org mode is what has allowed me to write up this config in the first place.
   '(org-level-5 ((t (:inherit outline-5 :height 1.0))))
 )
 #+end_src
+
+* Rainbow Mode
+Hex colors are cool, actual colors are cooler.
+
+#+begin_src emacs-lisp :tangle packages.el
+(package! rainbow-mode)
+#+end_src
+
+I wanted rainbow mode to be enabled everywhere, but that caused the dashboard to have some graphical glitches. To avoid this I avoid it while defining a global minor mode.
+
+#+begin_src emacs-lisp
+(define-globalized-minor-mode global-rainbow-mode rainbow-mode
+  (lambda () (unless (eq major-mode '+doom-dashboard-mode) (rainbow-mode 1))))
+(global-rainbow-mode 1 )
+#+end_src
+
