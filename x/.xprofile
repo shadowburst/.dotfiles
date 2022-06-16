@@ -1,4 +1,19 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
+
+# XDG Paths
+export XDG_CONFIG_HOME="$HOME/.config"
+export XDG_CACHE_HOME="$HOME/.cache"
+export XDG_DATA_HOME="$HOME/.local/share"
+
+# Qt applications style
+export QT_STYLE_OVERRIDE=kvantum
+export QT_QPA_PLATFORMTHEME=qt5ct
+
+# Common environment variables
+export EDITOR="/usr/bin/nvim"
+
+eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg)
+export SSH_AUTH_SOCK
 
 # Start compositor
 picom -b --experimental-backends --dbus &
@@ -40,16 +55,5 @@ blueman-applet &
 # Launch Flameshot daemon
 flameshot &
 
-# Set environment variables
-
-# XDG Paths
-export XDG_CONFIG_HOME="$HOME/.config"
-export XDG_CACHE_HOME="$HOME/.cache"
-export XDG_DATA_HOME="$HOME/.local/share"
-
-# Qt applications style
-export QT_STYLE_OVERRIDE=kvantum
-export QT_QPA_PLATFORMTHEME=qt5ct
-
-# Common environment variables
-export EDITOR="/usr/bin/nvim"
+# Launch emacs daemon
+emacs --daemon &

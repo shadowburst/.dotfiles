@@ -8,7 +8,7 @@
 local awful = require('awful')
 local beautiful = require('beautiful')
 
-local scripts = require('scripts')
+local apps = require('configuration.apps')
 
 require('awful.autofocus')
 
@@ -19,4 +19,4 @@ require('layout')
 require('configuration')
 require('module')
 
-awful.spawn.with_shell(scripts.on_startup)
+awful.spawn.with_shell('feh --no-fehbg --bg-fill "$HOME/.wallpapers/current.jpg"')
