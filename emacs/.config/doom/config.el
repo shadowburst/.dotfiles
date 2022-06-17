@@ -87,10 +87,10 @@
 
 (setq treemacs-default-visit-action 'treemacs-visit-node-close-treemacs
       treemacs-collapse-dirs 5
-      treemacs-show-cursor nil
+      treemacs-show-cursor t
       treemacs-git-mode 'deferred)
 
-(treemacs-tag-follow-mode 1)
+(add-hook! 'projectile-after-switch-project-hook 'treemacs-display-current-project-exclusively)
 
 (map! :leader
       :desc "Open Treemacs" "e" #'treemacs)
