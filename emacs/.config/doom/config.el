@@ -3,7 +3,7 @@
 (setq doom-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 14)
       doom-big-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 24)
       doom-unicode-font (font-spec :family "JetBrainsMono Nerd Font Mono")
-      doom-variable-pitch-font (font-spec :family "Roboto"))
+      doom-variable-pitch-font (font-spec :family "JetBrainsMono Nerd Font Mono"))
 (after! doom-themes
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t))
@@ -42,13 +42,14 @@
 
 (setq ranger-cleanup-eagerly t
       ranger-show-hidden 'hidden
+      ranger-hide-cursor t
       ranger-preview-file nil)
 
 (map! :after dired
     :map (dired-mode-map ranger-mode-map)
-    :ng "a" #'dired-create-empty-file
-    :ng "A" #'dired-create-directory
-    :ng "l" #'dired-open-file)
+    :g "a" #'dired-create-empty-file
+    :g "A" #'dired-create-directory
+    :g "l" #'dired-open-file)
 
 (map! :leader
       :desc "Org babel tangle" "m B" #'org-babel-tangle)
@@ -71,6 +72,30 @@
   '(org-level-5 ((t (:inherit outline-5 :height 1.0))))
 )
 
+(use-package! org-auto-tangle
+  :defer t
+  :hook (org-mode . org-auto-tangle-mode))
+
 (define-globalized-minor-mode global-rainbow-mode rainbow-mode
   (lambda () (unless (eq major-mode '+doom-dashboard-mode) (rainbow-mode 1))))
 (global-rainbow-mode 1 )
+
+(setq doom-themes-treemacs-theme "doom-colors")
+
+(with-eval-after-load 'doom-themes
+  (doom-themes-treemacs-config))
+
+(setq treemacs-default-visit-action 'treemacs-visit-node-close-treemacs
+      treemacs-collapse-dirs 5
+      treemacs-show-cursor nil
+      treemacs-git-mode 'deferred)
+
+(treemacs-tag-follow-mode 1)
+
+(map! :leader
+      :desc "Open Treemacs" "e" #'treemacs)
+
+(map! :after treemacs
+      :map treemacs-mode-map
+      :g "a" #'treemacs-create-file
+      :g "A" #'treemacs-create-dir)
