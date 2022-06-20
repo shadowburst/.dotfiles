@@ -3,7 +3,7 @@
 (setq doom-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 14)
       doom-big-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 24)
       doom-unicode-font (font-spec :family "JetBrainsMono Nerd Font Mono")
-      doom-variable-pitch-font (font-spec :family "JetBrainsMono Nerd Font Mono"))
+      doom-variable-pitch-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 14))
 (after! doom-themes
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t))
@@ -85,10 +85,11 @@
 (with-eval-after-load 'doom-themes
   (doom-themes-treemacs-config))
 
-(setq treemacs-default-visit-action 'treemacs-visit-node-close-treemacs
-      treemacs-collapse-dirs 5
-      treemacs-show-cursor t
-      treemacs-git-mode 'deferred)
+(after! treemacs
+  (setq treemacs-default-visit-action 'treemacs-visit-node-close-treemacs
+        treemacs-collapse-dirs 5
+        treemacs-show-cursor t
+        treemacs-git-mode 'deferred))
 
 (add-hook! 'projectile-after-switch-project-hook 'treemacs-display-current-project-exclusively)
 
