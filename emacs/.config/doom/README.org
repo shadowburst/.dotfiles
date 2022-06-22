@@ -1,7 +1,7 @@
-#+TITLE:   Doom Emacs config
-#+DATE:    June 8, 2022
+#+TITLE: Doom Emacs config
+#+DATE: June 8, 2022
 #+PROPERTY: header-args :tangle config.el
-#+STARTUP: show2levels
+#+STARTUP: fold
 #+auto_tangle: t
 
 * Table of Contents :TOC:
@@ -67,6 +67,16 @@ Some general keybindings that help while using the editor.
                       (evil-force-normal-state)))
 
 (map! :niv "C-²" #'+vterm/toggle)
+#+end_src
+
+Use Alt + j/k to move lines up and down :
+#+begin_src emacs-lisp
+(map! :after evil-org
+      :map evil-org-mode-map
+      :niv "M-j" nil
+      :niv "M-k" nil)
+(map! :niv "M-j" #'drag-stuff-down
+      :niv "M-k" #'drag-stuff-up)
 #+end_src
 
 ** Other settings

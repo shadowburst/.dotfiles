@@ -17,6 +17,13 @@
 
 (map! :niv "C-²" #'+vterm/toggle)
 
+(map! :after evil-org
+      :map evil-org-mode-map
+      :niv "M-j" nil
+      :niv "M-k" nil)
+(map! :niv "M-j" #'drag-stuff-down
+      :niv "M-k" #'drag-stuff-up)
+
 (setq display-line-numbers-type 'relative)
 (setq evil-escape-unordered-key-sequence t
       evil-split-window-below t
