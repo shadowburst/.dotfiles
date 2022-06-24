@@ -15,7 +15,8 @@
       :iv "C-s" (cmd! (save-buffer)
                       (evil-force-normal-state)))
 
-(map! :niv "C-²" #'+vterm/toggle)
+(map! :i "C-S-v" #'evil-paste-after
+      :v "C-S-c" #'evil-yank)
 
 (map! :after evil-org
       :map evil-org-mode-map
@@ -107,3 +108,8 @@
       :map treemacs-mode-map
       :g "a" #'treemacs-create-file
       :g "A" #'treemacs-create-dir)
+
+(map! :niv "C-²" #'+vterm/toggle)
+
+(map! :map vterm-mode-map
+      :i "C-S-v" #'vterm-yank)

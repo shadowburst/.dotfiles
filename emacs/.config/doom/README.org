@@ -1,7 +1,7 @@
 #+TITLE: Doom Emacs config
 #+DATE: June 8, 2022
 #+PROPERTY: header-args :tangle config.el
-#+STARTUP: fold
+#+STARTUP: foldall
 #+auto_tangle: t
 
 * Table of Contents :TOC:
@@ -21,6 +21,7 @@
   - [[#auto-tangle][Auto tangle]]
 - [[#rainbow-mode][Rainbow Mode]]
 - [[#treemacs][Treemacs]]
+- [[#vterm][Vterm]]
 
 * Introduction
 ** What's this document ?
@@ -61,15 +62,20 @@ Monospace + ligatures + patched = happiness.
 ** Keybindings
 Some general keybindings that help while using the editor.
 
+- Easy save
 #+begin_src emacs-lisp
 (map! :n  "C-s" #'save-buffer
       :iv "C-s" (cmd! (save-buffer)
                       (evil-force-normal-state)))
-
-(map! :niv "C-²" #'+vterm/toggle)
 #+end_src
 
-Use Alt + j/k to move lines up and down :
+- Easy copy/paste
+#+begin_src emacs-lisp
+(map! :i "C-S-v" #'evil-paste-after
+      :v "C-S-c" #'evil-yank)
+#+end_src
+
+- Use Alt + j/k to move lines up and down
 #+begin_src emacs-lisp
 (map! :after evil-org
       :map evil-org-mode-map
@@ -219,4 +225,14 @@ A project explorer that is useful for quick file operations that don't merit a f
       :map treemacs-mode-map
       :g "a" #'treemacs-create-file
       :g "A" #'treemacs-create-dir)
+#+end_src
+
+* Vterm
+A clean integrated terminal for emacs. I don't need that much tinkering, just a few keybindings.
+
+#+begin_src emacs-lisp
+(map! :niv "C-²" #'+vterm/toggle)
+
+(map! :map vterm-mode-map
+      :i "C-S-v" #'vterm-yank)
 #+end_src
