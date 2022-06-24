@@ -1,4 +1,4 @@
 export ZDOTDIR=$HOME/.config/zsh
 
-export EDITOR="emacsclient -t"
-export VISUAL="emacsclient -t"
+export EDITOR="emacs -nw"
+export VISUAL="emacs -nw"
