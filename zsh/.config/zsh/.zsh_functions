@@ -1,3 +1,5 @@
+#!/usr/bin/env zsh
+
 # Extract all files based on type
 function extract() {
     if [ -f $1 ] ; then
@@ -17,4 +19,8 @@ function extract() {
     else
         echo "'$1' is not a valid file"
     fi
+}
+
+function test_desktop() {
+    Xephyr -ac -nolisten tcp -br -noreset -screen 1280x800 :1 &; sleep 1; DISPLAY=:1.0 $@
 }

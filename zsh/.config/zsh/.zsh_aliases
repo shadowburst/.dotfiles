@@ -1,18 +1,17 @@
+#!/usr/bin/env zsh
+
 alias grep="grep --color=always"
 
 alias ls='ls --color=always'
 alias ll='ls -ahl --color=always'
 
-alias ssh="kitty +kitten ssh"
-
 # Confirm dangerous actions
 alias cp='cp -i'
 alias mv='mv -i'
 alias rm='rm -i'
-alias mkdir='mkdir -p'
 
-# Test awesome config
-alias awesome-test="Xephyr -ac -nolisten tcp -br -noreset -screen 1280x800 :1 &; sleep 1; DISPLAY=:1.0 awesome"
+# Create directories recursively
+alias mkdir='mkdir -p'
 
 # Emacs
 alias emacsclient='emacsclient -c -a "emacs"'
