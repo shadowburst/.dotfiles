@@ -16,4 +16,4 @@ alias awesome-test="Xephyr -ac -nolisten tcp -br -noreset -screen 1280x800 :1 &;
 
 # Emacs
 alias emacsclient='emacsclient -c -a "emacs"'
-alias emacsterm='emacs -nw'
+alias emacsterm='emacs -t'
