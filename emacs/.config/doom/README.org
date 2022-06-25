@@ -14,6 +14,7 @@
   - [[#fonts][Fonts]]
   - [[#keybindings][Keybindings]]
   - [[#other-settings][Other settings]]
+- [[#avy][Avy]]
 - [[#dired][Dired]]
   - [[#dired-open][Dired-open]]
   - [[#ranger][Ranger]]
@@ -100,6 +101,18 @@ A couple of extra settings that help me use the text editor.
 (setq user-full-name "Peter Baudry")
 #+end_src
 
+* Avy
+Jump to visible text based on input
+
+#+begin_src emacs-lisp
+(setq avy-single-candidate-jump t)
+
+(map! :after evil-snipe
+      :map evil-snipe-mode-map
+      :n "s" nil)
+(map! :n "s" #'evil-avy-goto-char-timer)
+#+end_src
+
 * Dired
 Dired is an awesome file manager that has replaced Ranger as my goto.
 
@@ -139,10 +152,10 @@ Thanks to this package, dired gets a Ranger-like interface that includes file pr
       ranger-preview-file nil)
 
 (map! :after dired
-    :map (dired-mode-map ranger-mode-map)
-    :g "a" #'dired-create-empty-file
-    :g "A" #'dired-create-directory
-    :g "l" #'dired-open-file)
+      :map (dired-mode-map ranger-mode-map)
+      :g "a" #'dired-create-empty-file
+      :g "A" #'dired-create-directory
+      :g "l" #'dired-open-file)
 #+end_src
 
 * Org mode

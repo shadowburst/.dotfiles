@@ -35,6 +35,13 @@
 
 (setq user-full-name "Peter Baudry")
 
+(setq avy-single-candidate-jump t)
+
+(map! :after evil-snipe
+      :map evil-snipe-mode-map
+      :n "s" nil)
+(map! :n "s" #'evil-avy-goto-char-timer)
+
 (add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
 
 (setq delete-by-moving-to-trash t
@@ -54,10 +61,10 @@
       ranger-preview-file nil)
 
 (map! :after dired
-    :map (dired-mode-map ranger-mode-map)
-    :g "a" #'dired-create-empty-file
-    :g "A" #'dired-create-directory
-    :g "l" #'dired-open-file)
+      :map (dired-mode-map ranger-mode-map)
+      :g "a" #'dired-create-empty-file
+      :g "A" #'dired-create-directory
+      :g "l" #'dired-open-file)
 
 (map! :leader
       :desc "Org babel tangle" "m B" #'org-babel-tangle)
