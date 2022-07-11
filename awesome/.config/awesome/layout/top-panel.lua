@@ -64,7 +64,6 @@ local top_panel = function(s)
 			layout = wibox.layout.fixed.horizontal,
 			search,
 			s.tag_list,
-			s.layout_box,
 			media,
 		},
 		s.task_list,

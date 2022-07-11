@@ -44,6 +44,21 @@ ruled.client.connect_signal('request::rules', function()
 		},
 	})
 
+	-- Docks
+	ruled.client.append_rule({
+		id = 'dock',
+		rule_any = {
+			type = { 'dock' },
+		},
+		properties = {
+			floating = true,
+			ontop = true,
+			is_fixed = false,
+            sticky = true,
+			skip_decoration = true,
+		},
+	})
+
 	-- Modals
 	ruled.client.append_rule({
 		id = 'modal',
@@ -97,17 +112,6 @@ ruled.client.connect_signal('request::rules', function()
 			ontop = true,
 			is_fixed = false,
 			placement = awful.placement.bottom_right,
-		},
-	})
-
-	-- Fullscreen
-	ruled.client.append_rule({
-		id = 'fullscreen',
-		rule_any = {
-			class = { 'mpv' },
-		},
-		properties = {
-			fullscreen = true,
 		},
 	})
 
