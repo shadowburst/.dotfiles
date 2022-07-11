@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-notify-send "Transmission-daemon" "$TR_TORRENT_NAME has finished downloaded"
+notify-send -a "Transmission" "$TR_TORRENT_NAME has finished downloading"
