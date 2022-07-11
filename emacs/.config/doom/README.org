@@ -1,7 +1,7 @@
 #+TITLE: Doom Emacs config
 #+DATE: June 8, 2022
 #+PROPERTY: header-args :tangle config.el
-#+STARTUP: foldall
+#+STARTUP: fold
 #+auto_tangle: t
 
 * Table of Contents :TOC:
@@ -15,6 +15,7 @@
   - [[#keybindings][Keybindings]]
   - [[#other-settings][Other settings]]
 - [[#avy][Avy]]
+- [[#company][Company]]
 - [[#dired][Dired]]
   - [[#dired-open][Dired-open]]
   - [[#ranger][Ranger]]
@@ -102,15 +103,28 @@ A couple of extra settings that help me use the text editor.
 #+end_src
 
 * Avy
-Jump to visible text based on input
+Jump to visible text based on input.
 
 #+begin_src emacs-lisp
-(setq avy-single-candidate-jump t)
+(setq avy-all-windows t
+      avy-single-candidate-jump nil)
 
 (map! :after evil-snipe
       :map evil-snipe-mode-map
-      :n "s" nil)
-(map! :n "s" #'evil-avy-goto-char-timer)
+      :n "s" nil
+      :n "S" nil)
+(map! :n "s" #'evil-avy-goto-char-timer
+      :n "S" #'evil-jump-backward)
+#+end_src
+
+* Company
+Code completion, kind of important for a code editor.
+
+#+begin_src emacs-lisp
+(after! sh-script
+  (set-company-backend! 'sh-mode
+    '(company-shell :with company-yasnippet)))
+
 #+end_src
 
 * Dired

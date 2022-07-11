@@ -35,12 +35,19 @@
 
 (setq user-full-name "Peter Baudry")
 
-(setq avy-single-candidate-jump t)
+(setq avy-all-windows t
+      avy-single-candidate-jump nil)
 
 (map! :after evil-snipe
       :map evil-snipe-mode-map
-      :n "s" nil)
-(map! :n "s" #'evil-avy-goto-char-timer)
+      :n "s" nil
+      :n "S" nil)
+(map! :n "s" #'evil-avy-goto-char-timer
+      :n "S" #'evil-jump-backward)
+
+(after! sh-script
+  (set-company-backend! 'sh-mode
+    '(company-shell :with company-yasnippet)))
 
 (add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
 
