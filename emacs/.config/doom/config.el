@@ -25,6 +25,8 @@
 (map! :niv "M-j" #'drag-stuff-down
       :niv "M-k" #'drag-stuff-up)
 
+(add-to-list 'auto-mode-alist '("\\.yuck\\'" . lisp-mode))
+
 (setq display-line-numbers-type 'relative)
 (setq evil-escape-unordered-key-sequence t
       evil-split-window-below t

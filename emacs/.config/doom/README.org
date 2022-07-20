@@ -13,6 +13,7 @@
   - [[#theme][Theme]]
   - [[#fonts][Fonts]]
   - [[#keybindings][Keybindings]]
+  - [[#filetypes][Filetypes]]
   - [[#other-settings][Other settings]]
 - [[#avy][Avy]]
 - [[#company][Company]]
@@ -85,6 +86,13 @@ Some general keybindings that help while using the editor.
       :niv "M-k" nil)
 (map! :niv "M-j" #'drag-stuff-down
       :niv "M-k" #'drag-stuff-up)
+#+end_src
+
+** Filetypes
+Here I add modes to activate based on filetype.
+
+#+begin_src emacs-lisp
+(add-to-list 'auto-mode-alist '("\\.yuck\\'" . lisp-mode))
 #+end_src
 
 ** Other settings
