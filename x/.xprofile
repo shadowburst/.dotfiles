@@ -10,6 +10,8 @@ export QT_STYLE_OVERRIDE=kvantum
 export QT_QPA_PLATFORMTHEME=qt5ct
 
 # Common environment variables
+export TERMINAL="alacritty"
+export BROWSER="brave"
 export EDITOR="/usr/bin/nvim"
 
 eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg)
