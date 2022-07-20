@@ -1,0 +1,186 @@
+(defvar transition-duration "500ms")
+(defvar eww "eww")
+(defvar spacing 10)
+
+(defwidget icon [?class ?style ?label ?reveal]
+  (box :orientation "h"
+       :space-evenly false
+       :class {class ?: "icon"}
+       :style {style ?: ""}
+    (children)
+    (revealer :reveal {reveal}
+              :transition "slideright"
+              :duration "500ms"
+      (label :class "label" :text label))))
+
+;; Button Widget ;;
+(defwidget hover-button [?visible ?class ?tooltip ?onclick ?onmiddleclick ?onrightclick ?onhover ?onhoverlost ?label ?reveal]
+  (eventbox :visible {visible ?: true}
+            :onhover onhover
+            :onhoverlost onhoverlost
+            :tooltip tooltip
+            :cursor "pointer"
+    (button :onclick onclick
+            :onmiddleclick onmiddleclick
+            :onrightclick onrightclick
+            :class {class ?: "button"}
+      (children))))
+
+;; Launcher Widget ;;
+(defwidget launcher []
+  (hover-button :onclick "bar/scripts/open launcher"
+    (icon "")))
+
+;; Media Widget ;;
+(deflisten media-status :initial "Stopped" "playerctl -F status")
+(deflisten media-title :initial "" "playerctl -F metadata title")
+(defwidget media []
+  (box :visible {media-status != "Stopped"}
+       :class "container"
+       :orientation "h"
+       :space-evenly false
+    (hover-button :onclick "playerctl previous"
+      (icon ""))
+    (hover-button :onclick "playerctl play-pause"
+      (icon {media-status == "Playing" ? "" : ""}))
+    (hover-button :onclick "playerctl next"
+      (icon ""))
+    (label :class "media__title"
+           :text media-title)))
+
+;; Workspaces Widget ;;
+(deflisten workspaces-data :initial "[]" "leftwm-state -w 0 -t \"$HOME/.config/leftwm/themes/current/liquid/workspaces.liquid\"")
+(defwidget workspaces []
+  (box :class "container"
+       :orientation "h"
+       :halign "center"
+       :valign "start"
+       :space-evenly "false"
+    (for workspace in workspaces-data
+      (hover-button :class "${workspace['button_class']}"
+                    :onclick "leftwm-command \"SendWorkspaceToTag ${workspace['workspace']} ${workspace['tag']}\""
+        (icon :class "${workspace['icon_class']}"
+          "${workspace['icon']}")))))
+
+;; Updates Widget ;;
+(defpoll updates-count :interval "1m" "yay -Qu | wc -l")
+(defpoll updates-list :interval "1m" "yay -Qu")
+(defwidget updates []
+  (hover-button :onclick "bar/scripts/open updates"
+                :visible {updates-count > 0}
+                :tooltip updates-list
+    (icon :class "icon--success"
+          :label "${updates-count} ${updates-count == 1 ? 'update' : 'updates'}"
+          :reveal true
+      "")))
+
+;; Torrent Widget ;;
+(defpoll torrents-data :interval "5s" "bar/scripts/torrents")
+(defpoll torrents-list :interval "1s" :run-while {torrents-data['total_count'] > 0} "transmission-remote -l")
+(defwidget torrents []
+  (hover-button :onclick "bar/scripts/open torrents"
+                :onrightclick "$HOME/.config/transmission-daemon/scripts/clear-torrents.sh"
+                :visible {torrents-data['total_count'] > 0}
+                :tooltip torrents-list
+    (box :orientation "h"
+         :valign "center"
+         :space-evenly false
+         :spacing spacing
+      (icon :class "icon--success"
+            :label "${torrents-data['download_count']}"
+            :reveal true
+        "")
+      (icon :class "icon--warning"
+            :label "${torrents-data['upload_count']}"
+            :reveal true
+        ""))))
+
+;; Volume Widget ;;
+(deflisten volume-data :initial "[]" "bar/scripts/volume")
+(defwidget volume []
+  (icon :class "${volume-data['class']}"
+        :label "${volume-data['percent']}"
+        :reveal settings-reveal
+    "${volume-data['icon']}"))
+
+;; Wifi Widget ;;
+(deflisten wifi-data :initial "[]" "bar/scripts/wifi")
+(defwidget wifi []
+  (icon :class "${wifi-data['class']}"
+        :label "${wifi-data['connection']}"
+        :reveal settings-reveal
+    "${wifi-data['icon']}"))
+
+;; Battery Widget ;;
+(defpoll battery-percent :interval "30s" "bar/scripts/battery percent")
+(defpoll battery-class :interval "5s" "bar/scripts/battery class")
+(defpoll battery-icon :interval "5s" "bar/scripts/battery icon")
+(defwidget battery []
+  (circular-progress :class battery-class
+                     :tooltip "${battery-percent}%"
+                     :start-at 75
+                     :clockwise false
+                     :thickness 4
+                     :value battery-percent
+    (icon :class battery-class
+      battery-icon)))
+
+(defvar settings-reveal false)
+(defwidget settings []
+  (hover-button :onclick ""
+                :onhover "${eww} update settings-reveal=true"
+                :onhoverlost "${eww} update settings-reveal=false"
+    (box :orentation "h"
+         :halign "right"
+         :valign "center"
+         :hexpand "false"
+         :vexpand "false"
+         :space-evenly false
+         :spacing spacing
+      (volume)
+      (wifi)
+      (battery))))
+
+(defpoll time :interval "1s" "date '+%R'")
+(defpoll date :interval "1h" "date '+%d %B %Y'")
+(defwidget time []
+  (hover-button :tooltip date
+    (label :class "time"
+           :text time)))
+
+;; Bar Widgets ;;
+(defwidget bar []
+  (centerbox :class "eww_bar"
+             :orientation "h"
+       (box :orientation "h"
+            :halign "start"
+            :space-evenly false
+            :spacing {spacing / 2}
+         (launcher)
+         (media))
+       (box :orientation "h"
+            :halign "center"
+            :space-evenly false
+            :spacing {spacing / 2}
+         (workspaces))
+       (box :orientation "h"
+            :halign "end"
+            :space-evenly false
+            :spacing {spacing / 2}
+         (updates)
+         (torrents)
+         (settings)
+         (time))))
+
+(defwindow bar
+  :geometry (geometry :x "0"
+                      :y "0"
+                      :height "36"
+                      :width "100%")
+  :monitor 0
+  :reserve (struts :distance "36"
+                   :side "top")
+  :wm-ignore false
+  :hexpand "false"
+  :vexpand "false"
+(bar))

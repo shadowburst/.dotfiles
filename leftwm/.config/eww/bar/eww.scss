@@ -1,0 +1,128 @@
+* {
+  all: unset;
+}
+
+$foreground: #bbc2cf;
+$background: #282c34;
+
+$black: #1c1f24;
+$red: #ff6c6b;
+$green: #98be65;
+$yellow: #da8548;
+$blue: #51afef;
+$magenta: #c678dd;
+$cyan: #5699af;
+$white: #dfdfdf;
+$grey: #5b6268;
+
+$colors: (
+  primary: $blue,
+  secondary: $magenta,
+  success: $green,
+  warning: $yellow,
+  danger: $red,
+  disabled: $grey,
+);
+
+@function get-color($key) {
+  @return map-get($map: $colors, $key: $key);
+}
+
+tooltip {
+  background-color: $background;
+  color: $foreground;
+  font-family: "JetBrainsMono Nerd Font Mono";
+
+  & label {
+    margin: 0.3rem;
+  }
+}
+
+// EWW BAR
+.eww_bar {
+  background-color: $black;
+  padding: 0 0.5rem;
+}
+
+.rounded {
+  border-radius: 50px;
+}
+
+.container {
+  @extend .rounded;
+  background-color: $background;
+}
+
+.icon {
+  @extend .rounded;
+  color: $foreground;
+  font-family: "JetBrainsMono Nerd Font Mono";
+  font-size: 2rem;
+
+  &--inverted {
+    @extend .icon;
+    color: $background;
+  }
+
+  @each $key, $val in $colors {
+    &--#{$key} {
+      @extend .icon;
+      color: $val;
+    }
+  }
+}
+
+.label {
+  margin-left: 0.5rem;
+  color: $foreground;
+  font-family: "Roboto";
+  font-size: 1rem;
+}
+
+.button {
+  @extend .container;
+  background-color: inherit;
+  padding: 0 0.8rem;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  @each $key, $val in $colors {
+    &--#{$key} {
+      @extend .button;
+      background-color: $val;
+
+      &:hover {
+        background-color: shade($val, 0.85);
+      }
+    }
+  }
+}
+
+.media {
+  &__title {
+    @extend .label;
+    margin-right: 1rem;
+  }
+}
+
+.battery {
+  @extend .icon;
+  padding: 0.7rem;
+  font-size: 1rem;
+
+  @each $key, $val in $colors {
+    &--#{$key} {
+      @extend .battery;
+      color: $val;
+    }
+  }
+}
+
+.time {
+  color: $foreground;
+  font-family: "JetBrainsMono Nerd Font Mono";
+  font-size: 1.5rem;
+  font-weight: bold;
+}

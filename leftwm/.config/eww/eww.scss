@@ -1,0 +1,31 @@
+$foreground: #bbc2cf;
+$background: #282c34;
+
+$black: #1c1f24;
+$red: #ff6c6b;
+$green: #98be65;
+$yellow: #da8548;
+$blue: #51afef;
+$magenta: #c678dd;
+$cyan: #5699af;
+$white: #dfdfdf;
+$grey: #5b6268;
+
+$colors: (
+  primary: $blue,
+  secondary: $magenta,
+  success: $green,
+  warning: $yellow,
+  danger: $red,
+  disabled: $grey,
+);
+
+@function get-color($key) {
+  @return map-get($map: $colors, $key: $key);
+}
+
+* {
+  all: unset;
+}
+
+@import "./bar/eww.scss";

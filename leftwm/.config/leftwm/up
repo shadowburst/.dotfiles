@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+export SCRIPTPATH="$(
+  cd "$(dirname "$0")"
+  pwd -P
+)"
+
+#if path to liblinkt is not not exported do so:
+if [ -z "$LD_LIBRARY_PATH" ]; then
+  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"
+fi
+
+# Down the last running theme
+if [ -f "/tmp/leftwm-down" ]; then
+  /tmp/leftwm-down
+  rm /tmp/leftwm-down
+fi
+ln -s $SCRIPTPATH/down /tmp/leftwm-down
+
+leftwm-command "LoadTheme $SCRIPTPATH/themes/current/theme.toml"
+
+picom --experimental-backends &>/dev/null &
+feh --no-fehbg --bg-fill "$SCRIPTPATH/themes/current/background.jpg" &

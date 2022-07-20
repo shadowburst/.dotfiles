@@ -1,0 +1,59 @@
+super + shift + r
+      leftwm-command "SoftReload"
+
+super + shift + q
+      loginctl kill-session "$XDG_SESSION_ID"
+
+super + Return
+      $TERMINAL
+
+super + b
+      $BROWSER
+
+super + e
+      emacsclient -c -a 'emacs' --eval '(ranger)'
+
+super + d
+      $HOME/.config/leftwm/scripts/launch_default.sh
+
+super + q
+      leftwm-command "CloseWindow"
+
+super + {c, f}
+      leftwm-command {"ToggleFloating", "ToggleFullScreen"}
+
+super + {_, shift} + {ampersand, eacute, quotedbl, apostrophe, parenleft, section, egrave}
+      leftwm-command "{GotoTag, MoveToTag} {1-7}"
+
+super + Escape
+      leftwm-command "NextLayout"
+
+super + Tab
+      leftwm-command "SwapTags"
+
+super + {h, j, k, l}
+      leftwm-command {"FocusPreviousTag", "FocusWindowDown", "FocusWindowUp", "FocusNextTag"}
+
+super + shift + {h, j, k, l}
+      leftwm-command {"MoveWindowToPreviousTag", "MoveWindowDown", "MoveWindowUp", "MoveWindowToNextTag"}
+
+super + control + {h, l}
+      leftwm-command {"FocusWorkspacePrevious", "FocusWorkspaceNext"}
+
+super + shift + control + {h, l}
+      leftwm-command {"MoveWindowToPreviousWorkspace", "MoveWindowToNextWorkspace"}
+
+XF86AudioMute
+   amixer -D pulse set Master 1+ toggle
+
+{XF86AudioLowerVolume, XF86AudioRaiseVolume}
+    amixer -D pulse sset Master 5%{-, +}
+
+{XF86AudioPrev, XF86AudioPlay, XF86AudioPause, XF86AudioNext}
+    playerctl {previous, play-pause, play-pause, next}
+
+{XF86MonBrightnessDown, XF86MonBrightnessUp}
+    light {-U, -A} 10
+
+{_, shift} + Print
+    flameshot {full, gui}

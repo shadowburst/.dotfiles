@@ -1,0 +1,19 @@
+{% assign workspace-json = '{ "button_class": "{BUTTON_CLASS}", "workspace": "{WORKSPACE}", "tag": "{TAG}", "icon_class": "{ICON_CLASS}", "icon": "{ICON}" }' %}
+
+{{ '['  }}
+{% for tag in workspace.tags %}
+    {% assign button_class = 'button' %}
+    {% assign icon_class = 'icon' %}
+    {% if tag.mine %}
+        {% assign button_class = 'button--primary' %}
+        {% assign icon_class = 'icon--inverted' %}
+    {% elsif tag.busy %}
+        {% assign icon_class = 'icon--primary' %}
+    {% endif %}
+
+    {{  workspace-json | replace: '{BUTTON_CLASS}', button_class | replace: '{WORKSPACE}', workspace.index | replace: '{TAG}', tag.index | replace: '{ICON_CLASS}', icon_class | replace: '{ICON}', tag.name }}
+    {% unless forloop.last %}
+       {{ ', ' }}
+    {% endunless %}
+{% endfor %}
+{{ ']'  }}

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+TERMINAL=alacritty
+
+case $1 in
+    "launcher")
+        rofi -no-lazy-grab -show drun -theme themes/app_menu.rasi
+        ;;
+    "torrents")
+        $TERMINAL -e tremc
+        ;;
+    "updates")
+        $TERMINAL -e yay -Syu
+        ;;
+esac

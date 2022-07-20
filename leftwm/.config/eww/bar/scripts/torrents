@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+output="$(transmission-remote -l)"
+total_count="$(($(echo "$output" | wc -l) - 2))"
+download_count="$(($total_count - $(echo "$output" | awk '/100%/' | wc -l)))"
+upload_count="$(($total_count - $download_count))"
+
+echo "{ \"total_count\": \"$total_count\", \"upload_count\": \"$upload_count\", \"download_count\": \"$download_count\" }"

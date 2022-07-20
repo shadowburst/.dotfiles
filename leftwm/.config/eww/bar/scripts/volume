@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+set -e
+
+on_change() {
+    percent="Muted"
+    class="icon--disabled"
+    icon=""
+
+    if [[ $(amixer -D pulse sget Master | awk -F '[][]' '/Left:/{ print $4 }') = "on" ]]; then
+        percent=$(amixer -D pulse sget Master | awk -F '[][]' '/Left:/{ print $2 }' | tr -d %)
+        class="icon--primary"
+
+        if [[ $percent -gt 30 ]]; then
+            icon=""
+        elif [[ $percent -gt 0 ]]; then
+            icon=""
+        fi
+
+        percent="${percent}%"
+    fi
+
+    echo "{ \"percent\": \"$percent\", \"class\": \"$class\", \"icon\": \"$icon\" }"
+}
+
+on_change
+pactl subscribe | while read -r line; do
+    if [[ "$line" = "Event 'change' on sink"* ]]; then
+        on_change
+    fi
+done
