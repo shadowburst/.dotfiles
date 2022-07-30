@@ -24,12 +24,14 @@ local check_updates = function()
 		tooltip_text = '',
 	}
 
-	awful.spawn.easy_async('pamac checkupdates', function(updates)
-		args.update_count = tonumber(updates:match('.-\n'):match('%d*')) or 0
-		args.visible = env.debug or args.update_count > 0
-		args.tooltip_text = updates
+	awful.spawn.easy_async('checkupdates', function ()
+		awful.spawn.easy_async('yay -Qu', function(updates)
+			args.update_count = updates and helpers.count(updates, '\n') or 0
+			args.visible = env.debug or args.update_count > 0
+			args.tooltip_text = updates
 
-		awesome.emit_signal('widgets::updates', args)
+			awesome.emit_signal('widgets::updates', args)
+		end)
 	end)
 end
 

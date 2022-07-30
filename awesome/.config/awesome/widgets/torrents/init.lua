@@ -10,10 +10,6 @@ local helpers = require('helpers')
 local scripts = require('scripts')
 local widget_container = require('widgets.containers.widget-container')
 
-local count = function(str, pattern)
-	return select(2, str:gsub(pattern, pattern))
-end
-
 local properties = {
 	visible = false,
 	download_count = 0,
@@ -30,10 +26,10 @@ local check_updates = function()
 	}
 
 	awful.spawn.easy_async_with_shell('transmission-remote -l', function(stdout)
-		local total = count(stdout, '\n') - 2
+		local total = helpers.count(stdout, '\n') - 2
 
 		args.visible = env.debug or total > 0
-		args.upload_count = count(stdout, '100%%')
+		args.upload_count = helpers.count(stdout, '100%%')
 		args.download_count = total - args.upload_count
 		args.tooltip_text = stdout
 
