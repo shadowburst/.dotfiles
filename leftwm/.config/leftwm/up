@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+export TERMINAL="alacritty"
+export BROWSER="brave"
+
 export SCRIPTPATH="$(
   cd "$(dirname "$0")"
   pwd -P
@@ -21,3 +24,5 @@ leftwm-command "LoadTheme $SCRIPTPATH/themes/current/theme.toml"
 
 picom --experimental-backends &>/dev/null &
 feh --no-fehbg --bg-fill "$SCRIPTPATH/themes/current/background.jpg" &
+sxhkd &
+light -N 5

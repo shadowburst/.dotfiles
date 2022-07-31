@@ -10,7 +10,7 @@
     (children)
     (revealer :reveal {reveal}
               :transition "slideright"
-              :duration "500ms"
+              :duration transition-duration
       (label :class "label" :text label))))
 
 ;; Button Widget ;;
@@ -35,7 +35,7 @@
 (deflisten media-status :initial "Stopped" "playerctl -F status")
 (deflisten media-title :initial "" "playerctl -F metadata title")
 (defwidget media []
-  (box :visible {media-status != "Stopped"}
+  (box :visible {media-status == "Playing" || media-status == "Paused"}
        :class "container"
        :orientation "h"
        :space-evenly false
@@ -63,7 +63,7 @@
           "${workspace['icon']}")))))
 
 ;; Updates Widget ;;
-(defpoll updates-count :interval "1m" "yay -Qu | wc -l")
+(defpoll updates-count :interval "1m" :initial 0 "yay -Qu | wc -l")
 (defpoll updates-list :interval "1m" "yay -Qu")
 (defwidget updates []
   (hover-button :onclick "bar/scripts/open updates"
@@ -75,7 +75,7 @@
       "")))
 
 ;; Torrent Widget ;;
-(defpoll torrents-data :interval "5s" "bar/scripts/torrents")
+(defpoll torrents-data :interval "5s" :initial "{\"total_count\": 0}" "bar/scripts/torrents")
 (defpoll torrents-list :interval "1s" :run-while {torrents-data['total_count'] > 0} "transmission-remote -l")
 (defwidget torrents []
   (hover-button :onclick "bar/scripts/open torrents"
@@ -157,20 +157,20 @@
             :space-evenly false
             :spacing {spacing / 2}
          (launcher)
+         (workspaces)
          (media))
        (box :orientation "h"
             :halign "center"
             :space-evenly false
             :spacing {spacing / 2}
-         (workspaces))
+         (time))
        (box :orientation "h"
             :halign "end"
             :space-evenly false
             :spacing {spacing / 2}
          (updates)
          (torrents)
-         (settings)
-         (time))))
+         (settings))))
 
 (defwindow bar
   :geometry (geometry :x "0"
