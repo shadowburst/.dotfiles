@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-if pgrep -x rofi ; then
+if pgrep -x rofi; then
     pkill rofi
 else
-    rofi -no-lazy-grab -show drun -theme themes/app_menu.rasi
+    rofi -no-lazy-grab -show-icons -show drun
 fi

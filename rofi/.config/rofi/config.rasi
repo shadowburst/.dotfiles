@@ -1,0 +1,10 @@
+configuration {
+    modi: "window,drun,ssh,combi";
+    font: "Roboto Regular 12";
+    combi-modi: "window,drun,ssh";
+    icons-theme: "Tela dark";
+    drun-display-format: "{name}";
+    display-drun: "";
+}
+
+@theme "themes/dmenu.rasi"

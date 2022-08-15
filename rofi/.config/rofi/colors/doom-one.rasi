@@ -1,0 +1,32 @@
+* {
+    foreground:     #BBC2CF;
+    background:     #282C34;
+    transparent:    #00000000;
+
+    black:          #1C1F24;
+    dark-gray:      #202328;
+
+    dark-red:       #FF6C6B;
+    light-red:      #DA8548;
+
+    dark-green:     #98BE65;
+    light-green:    #4DB5BD;
+
+    dark-yellow:    #DA8548;
+    light-yellow:   #ECBE7B;
+
+    dark-blue:      #51AFEF;
+    light-blue:     #2257A0;
+
+    dark-magenta:   #C678DD;
+    light-magenta:  #A9A1E1;
+
+    dark-cyan:      #5699AF;
+    light-cyan:     #46D9FF;
+
+    light-gray:     #5B6268;
+    white:          #DFDFDF;
+
+    primary:        #51AFEF;
+    highlight:      #5C637028;
+}

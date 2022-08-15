@@ -1,0 +1,68 @@
+@import "~/.config/rofi/colors/current.rasi"
+
+* {
+  background-color: @black;
+  text-color: @foreground;
+  height: 36px;
+  font: "Roboto Regular 12";
+  icon-font: "JetBrainsMono Nerd Font Mono 16";
+  prompt-background: @primary;
+  prompt-foreground: @black;
+  selected-entry-background: @background;
+  selected-entry-foreground: @foreground;
+}
+
+#window {
+  anchor: north;
+  location: north;
+  width: 100%;
+  padding: 0px;
+  children: [ horibox ];
+}
+
+#horibox {
+  orientation: horizontal;
+  children: [ prompt, entry, listview ];
+}
+
+#prompt {
+  padding: 0 12px;
+  background-color: @prompt-background;
+  text-color: @prompt-foreground;
+  font: @icon-font;
+  vertical-align: 0.5;
+}
+
+#listview {
+  layout: horizontal;
+  lines: 100;
+}
+
+#entry {
+  padding: 8px;
+  expand: false;
+  width: 10em;
+  vertical-align: 0.5;
+  placeholder: "Search...";
+  placeholder-color: @foreground;
+}
+
+#element {
+  padding: calc((36px - 1em) / 2);
+}
+
+#element selected {
+  background-color: @selected-entry-background;
+  text-color: @selected-entry-foreground;
+}
+
+element-text {
+  background-color: @transparent;
+  text-color: inherit;
+  highlight: bold underline;
+}
+
+element-icon {
+  background-color: @transparent;
+  size: 1em;
+}
