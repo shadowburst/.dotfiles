@@ -44,6 +44,7 @@
       :map evil-snipe-mode-map
       :n "s" nil
       :n "S" nil)
+
 (map! :n "s" #'evil-avy-goto-char-timer
       :n "S" #'evil-jump-backward)
 
@@ -102,7 +103,8 @@
 
 (define-globalized-minor-mode global-rainbow-mode rainbow-mode
   (lambda () (unless (eq major-mode '+doom-dashboard-mode) (rainbow-mode 1))))
-(global-rainbow-mode 1 )
+
+(global-rainbow-mode 1)
 
 (setq doom-themes-treemacs-theme "doom-colors")
 
@@ -112,10 +114,12 @@
 (after! treemacs
   (setq treemacs-default-visit-action 'treemacs-visit-node-close-treemacs
         treemacs-collapse-dirs 5
+        treemacs-expand-after-init nil
+        treemacs-expand-added-projects nil
         treemacs-show-cursor t
         treemacs-git-mode 'deferred))
 
-(add-hook! 'projectile-after-switch-project-hook 'treemacs-display-current-project-exclusively)
+(add-hook! 'projectile-after-switch-project-hook #'treemacs-display-current-project-exclusively #'treemacs)
 
 (map! :leader
       :desc "Open Treemacs" "e" #'treemacs)
