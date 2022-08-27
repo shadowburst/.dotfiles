@@ -129,7 +129,7 @@
       :g "a" #'treemacs-create-file
       :g "A" #'treemacs-create-dir)
 
-(setq vterm-shell "/usr/bin/fish")
+(setq shell-file-name "/usr/bin/fish")
 
 (map! :niv "C-²" #'+vterm/toggle)
 
