@@ -1,29 +1,26 @@
-super + shift + q
-      loginctl kill-session "$XDG_SESSION_ID"
-
 super + space
-      $HOME/.config/rofi/scripts/app_menu.sh
+    $HOME/.config/rofi/scripts/app_menu.sh
 
 super + x
-      $HOME/.config/rofi/scripts/power_menu.sh
+    $HOME/.config/rofi/scripts/powermenu.sh
 
 control + shift + Escape
-      $TERMINAL -e bashtop
+    $TERMINAL -e bashtop
 
 super + Return
-      $TERMINAL
+    $TERMINAL
 
 super + b
-      $BROWSER
+    $BROWSER
 
 super + e
-      emacsclient -c -a 'emacs' --eval '(ranger)'
+    emacsclient -c -a 'emacs' --eval '(ranger)'
 
 super + d
-      $HOME/.config/leftwm/scripts/launch_default.sh
+    $HOME/.config/leftwm/scripts/launch_default.sh
 
 XF86AudioMute
-   amixer -D pulse set Master 1+ toggle
+    amixer -D pulse set Master 1+ toggle
 
 {XF86AudioLowerVolume,XF86AudioRaiseVolume}
     amixer -D pulse sset Master {"5%-","5%+"}
