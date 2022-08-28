@@ -11,7 +11,7 @@
 #+begin_src conf-toml
 workspaces = []
 tags = ['', '', '', '', '', '', '']
-layouts = ["MainAndVertStack", "CenterMainBalanced", "LeftWiderRightStack"]
+layouts = ["MainAndVertStack", "CenterMainBalanced"]
 layout_mode = "Tag"
 insert_behavior = "Bottom"
 scratchpad = []
@@ -53,6 +53,8 @@ keybind = [
 
     { command = "NextLayout", value = "", modifier = ["modkey"], key = "Escape" },
     { command = "SwapTags", value = "", modifier = ["modkey"], key = "Tab" },
+    { command = "IncreaseMainWidth", value = "5", modifier = ["modkey"], key = "Right" },
+    { command = "DecreaseMainWidth", value = "5", modifier = ["modkey"], key = "Left" },
 
     { command = "FocusWorkspaceNext", value = "", modifier = ["modkey", "Control"], key = "l" },
     { command = "FocusWorkspacePrevious", value = "", modifier = ["modkey", "Control"], key = "h" },

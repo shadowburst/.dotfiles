@@ -55,19 +55,27 @@ case ${chosen} in
 		;;
 	$lock)
 		if [[ -x '/usr/bin/i3lock' ]]; then
+			background=00000033
+			foreground=BBC2CFFF
+			primary=51AFEFFF
+			ring=2257A0FF
+			inside=282C34FF
+			wrong=FF6C6BFF
+			font="Roboto"
+
 			i3lock -n --ignore-empty-password \
 				--clock --indicator --screen=1 \
-				--color=00000022 \
-				--inside-color=282C34FF --ring-color=2257A0FF \
-				--insidever-color=282C34FF --ringver-color=51AFEFFF \
-				--insidewrong-color=282C34FF --ringwrong-color=FF6C6BFF \
-				--keyhl-color=51AFEFFF --bshl-color=FF6C6BFF \
-				--separator-color=2257A0FF --line-uses-inside \
-				--modif-color=FF6C6BFF --time-color=51AFEFFF --date-color=51AFEFFF --greeter-color=BBC2CFFF \
+				--color=$background \
+				--inside-color=$inside --ring-color=$ring \
+				--insidever-color=$inside --ringver-color=$primary \
+				--insidewrong-color=$inside --ringwrong-color=$wrong \
+				--keyhl-color=$primary --bshl-color=$wrong \
+				--separator-color=$ring --line-uses-inside \
+				--wrong-color=$wrong --modif-color=$wrong --time-color=$primary --date-color=$primary --greeter-color=$foreground \
 				--verif-text="" --wrong-text="" --greeter-text="Enter password to unlock" \
 				--time-str="%R" --date-str="%a, %d %B" \
-				--time-font="Roboto:style=Bold" --date-font="Roboto" --greeter-font="Roboto" \
-				--time-size=140 --date-size=40 --greeter-size=16 \
+				--wrong-font=$font --time-font="$font:style=Bold" --date-font=$font --greeter-font=$font \
+				--wrong-size=20 --time-size=140 --date-size=40 --greeter-size=16 \
 				--ind-pos="x+w/2:y+h/2" --time-pos="ix:iy-220" --date-pos="tx:ty+50" --greeter-pos="ix:iy+170" \
 				--radius=60 \
 				--pass-media-keys --pass-screen-keys
