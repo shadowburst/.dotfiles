@@ -1,5 +1,5 @@
 super + space
-    $HOME/.config/rofi/scripts/app_menu.sh
+    $HOME/.config/rofi/scripts/appmenu.sh
 
 super + x
     $HOME/.config/rofi/scripts/powermenu.sh

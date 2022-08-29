@@ -17,17 +17,11 @@ export EDITOR="/usr/bin/nvim"
 eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg)
 export SSH_AUTH_SOCK
 
-# Start compositor
-picom -b --experimental-backends --dbus &
-
 # Load custom colors
 xrdb "$HOME/.Xresources" &
 
 # Handle pluging in monitors
 autorandr --change --default mobile &
-
-# Allow for locking the screen
-light-locker --no-lock-on-suspend --lock-on-lid &
 
 # Load the polkit agent
 /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &

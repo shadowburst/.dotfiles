@@ -4,7 +4,7 @@ TERMINAL=alacritty
 
 case $1 in
     "launcher")
-        rofi -no-lazy-grab -show drun -theme themes/app_menu.rasi
+        $HOME/.config/rofi/scripts/appmenu.sh
         ;;
     "torrents")
         $TERMINAL -e tremc

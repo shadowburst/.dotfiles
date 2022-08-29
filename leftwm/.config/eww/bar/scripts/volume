@@ -5,16 +5,18 @@ set -e
 on_change() {
     percent="Muted"
     class="icon--disabled"
-    icon=""
+    icon="婢"
 
     if [[ $(amixer -D pulse sget Master | awk -F '[][]' '/Left:/{ print $4 }') = "on" ]]; then
         percent=$(amixer -D pulse sget Master | awk -F '[][]' '/Left:/{ print $2 }' | tr -d %)
         class="icon--primary"
 
-        if [[ $percent -gt 30 ]]; then
-            icon=""
+        if [[ $percent -gt 50 ]]; then
+            icon="墳"
         elif [[ $percent -gt 0 ]]; then
-            icon=""
+            icon="奔"
+        else
+            icon="奄"
         fi
 
         percent="${percent}%"

@@ -1,7 +1,7 @@
 tooltip {
   background-color: $background;
   color: $foreground;
-  font-family: "JetBrainsMono Nerd Font Mono";
+  font-family: $mono-font;
 
   & label {
     margin: 0.3rem;
@@ -45,7 +45,7 @@ tooltip {
 .label {
   margin-left: 0.5rem;
   color: $foreground;
-  font-family: "Roboto";
+  font-family: $font;
   font-size: 1rem;
 }
 
@@ -92,7 +92,7 @@ tooltip {
 
 .time {
   color: $foreground;
-  font-family: "JetBrainsMono Nerd Font Mono";
+  font-family: $mono-font;
   font-size: 1.5rem;
   font-weight: bold;
 }

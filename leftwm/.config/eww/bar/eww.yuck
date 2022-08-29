@@ -2,11 +2,12 @@
 (defvar eww "eww")
 (defvar spacing 10)
 
-(defwidget icon [?class ?style ?label ?reveal]
+(defwidget icon [?class ?style ?label ?reveal ?tooltip]
   (box :orientation "h"
        :space-evenly false
        :class {class ?: "icon"}
        :style {style ?: ""}
+       :tooltip tooltip
     (children)
     (revealer :reveal {reveal}
               :transition "slideright"
@@ -29,7 +30,21 @@
 ;; Launcher Widget ;;
 (defwidget launcher []
   (hover-button :onclick "bar/scripts/open launcher"
-    (icon "")))
+    (icon "")))
+
+;; Workspaces Widget ;;
+(deflisten workspaces-data :initial "[]" "leftwm-state -w 0 -t \"$HOME/.config/leftwm/themes/current/liquid/workspaces.liquid\"")
+(defwidget workspaces []
+  (box :class "container"
+       :orientation "h"
+       :halign "center"
+       :valign "start"
+       :space-evenly "false"
+    (for workspace in workspaces-data
+      (hover-button :class "${workspace['button_class']}"
+                    :onclick "leftwm-command \"SendWorkspaceToTag ${workspace['workspace']} ${workspace['tag']}\""
+        (icon :class "${workspace['icon_class']}"
+          "${workspace['icon']}")))))
 
 ;; Media Widget ;;
 (deflisten media-status :initial "Stopped" "playerctl -F status")
@@ -48,19 +63,13 @@
     (label :class "media__title"
            :text media-title)))
 
-;; Workspaces Widget ;;
-(deflisten workspaces-data :initial "[]" "leftwm-state -w 0 -t \"$HOME/.config/leftwm/themes/current/liquid/workspaces.liquid\"")
-(defwidget workspaces []
-  (box :class "container"
-       :orientation "h"
-       :halign "center"
-       :valign "start"
-       :space-evenly "false"
-    (for workspace in workspaces-data
-      (hover-button :class "${workspace['button_class']}"
-                    :onclick "leftwm-command \"SendWorkspaceToTag ${workspace['workspace']} ${workspace['tag']}\""
-        (icon :class "${workspace['icon_class']}"
-          "${workspace['icon']}")))))
+;; Date Widget ;;
+(defpoll time :interval "1s" "date '+%R'")
+(defpoll date :interval "1h" "date '+%d %B %Y'")
+(defwidget time []
+  (hover-button :tooltip date
+    (label :class "time"
+           :text time)))
 
 ;; Updates Widget ;;
 (defpoll updates-count :interval "1m" :initial 0 "yay -Qu | wc -l")
@@ -99,16 +108,16 @@
 (deflisten volume-data :initial "[]" "bar/scripts/volume")
 (defwidget volume []
   (icon :class "${volume-data['class']}"
-        :label "${volume-data['percent']}"
-        :reveal settings-reveal
+        :style "font-family: \"JetBrainsMono Nerd Font\"; font-size: 1.7rem;"
+        :tooltip "${volume-data['percent']}"
     "${volume-data['icon']}"))
 
 ;; Wifi Widget ;;
 (deflisten wifi-data :initial "[]" "bar/scripts/wifi")
 (defwidget wifi []
   (icon :class "${wifi-data['class']}"
-        :label "${wifi-data['connection']}"
-        :reveal settings-reveal
+        :style "font-family: \"JetBrainsMono Nerd Font\"; font-size: 1.7rem;"
+        :tooltip "${wifi-data['connection']}"
     "${wifi-data['icon']}"))
 
 ;; Battery Widget ;;
@@ -125,11 +134,8 @@
     (icon :class battery-class
       battery-icon)))
 
-(defvar settings-reveal false)
 (defwidget settings []
   (hover-button :onclick ""
-                :onhover "${eww} update settings-reveal=true"
-                :onhoverlost "${eww} update settings-reveal=false"
     (box :orentation "h"
          :halign "right"
          :valign "center"
@@ -141,19 +147,13 @@
       (wifi)
       (battery))))
 
-(defpoll time :interval "1s" "date '+%R'")
-(defpoll date :interval "1h" "date '+%d %B %Y'")
-(defwidget time []
-  (hover-button :tooltip date
-    (label :class "time"
-           :text time)))
-
 ;; Bar Widgets ;;
 (defwidget bar []
   (centerbox :class "eww_bar"
              :orientation "h"
        (box :orientation "h"
             :halign "start"
+            :valign "center"
             :space-evenly false
             :spacing {spacing / 2}
          (launcher)
@@ -161,11 +161,13 @@
          (media))
        (box :orientation "h"
             :halign "center"
+            :valign "center"
             :space-evenly false
             :spacing {spacing / 2}
          (time))
        (box :orientation "h"
             :halign "end"
+            :valign "center"
             :space-evenly false
             :spacing {spacing / 2}
          (updates)

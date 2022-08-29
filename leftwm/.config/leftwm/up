@@ -22,7 +22,8 @@ ln -s $SCRIPTPATH/down /tmp/leftwm-down
 
 leftwm-command "LoadTheme $SCRIPTPATH/themes/current/theme.toml"
 
-picom --experimental-backends &>/dev/null &
+picom --experimental-backends --dbus &>/dev/null &
 feh --no-fehbg --bg-fill "$SCRIPTPATH/themes/current/background.jpg" &
 sxhkd &
-light -N 5
+dunst &
+light -N 5 &

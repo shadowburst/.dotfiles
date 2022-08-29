@@ -1,9 +1,9 @@
 (setq doom-theme 'doom-one)
 
-(setq doom-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 14)
-      doom-big-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 24)
-      doom-unicode-font (font-spec :family "JetBrainsMono Nerd Font Mono")
-      doom-variable-pitch-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 14))
+(setq doom-font (font-spec :family "JetBrainsMono Nerd Font" :size 14)
+      doom-big-font (font-spec :family "JetBrainsMono Nerd Font" :size 24)
+      doom-unicode-font (font-spec :family "JetBrainsMono Nerd Font")
+      doom-variable-pitch-font (font-spec :family "JetBrainsMono Nerd Font" :size 14))
 (after! doom-themes
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t))

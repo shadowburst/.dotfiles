@@ -55,7 +55,7 @@ case ${chosen} in
 		;;
 	$lock)
 		if [[ -x '/usr/bin/i3lock' ]]; then
-			background=00000033
+			background=00000055
 			foreground=BBC2CFFF
 			primary=51AFEFFF
 			ring=2257A0FF
@@ -72,13 +72,20 @@ case ${chosen} in
 				--keyhl-color=$primary --bshl-color=$wrong \
 				--separator-color=$ring --line-uses-inside \
 				--wrong-color=$wrong --modif-color=$wrong --time-color=$primary --date-color=$primary --greeter-color=$foreground \
-				--verif-text="" --wrong-text="" --greeter-text="Enter password to unlock" \
+				--verif-text="" --wrong-text="" --greeter-text="" --noinput-text="" \
 				--time-str="%R" --date-str="%a, %d %B" \
-				--wrong-font=$font --time-font="$font:style=Bold" --date-font=$font --greeter-font=$font \
-				--wrong-size=20 --time-size=140 --date-size=40 --greeter-size=16 \
-				--ind-pos="x+w/2:y+h/2" --time-pos="ix:iy-220" --date-pos="tx:ty+50" --greeter-pos="ix:iy+170" \
-				--radius=60 \
-				--pass-media-keys --pass-screen-keys
+				--wrong-font=$font --time-font="$font:style=Bold" --date-font=$font --greeter-font="JetBrainsMono Nerd Font" \
+				--wrong-size=20 --time-size=140 --date-size=40 --greeter-size=100 \
+				--ind-pos="x+w/2:y+h/2" --time-pos="ix:iy-220" --date-pos="tx:ty+50" --greeter-pos="ix:iy+r/2-5" \
+				--radius=70 \
+				--pass-media-keys --pass-screen-keys --no-modkey-text &
+
+			sleep 10
+
+			if [[ $(pgrep -x i3lock) ]]; then
+				xset dpms force off
+			fi
+
 		fi
 		;;
 	$suspend)
