@@ -57,6 +57,10 @@
 (setq delete-by-moving-to-trash t
       trash-directory "~/.local/share/Trash/files/")
 
+(defun empty-trash ()
+  (interactive)
+  (shell-command "rm -rf $HOME/.local/share/Trash/files/*"))
+
 (setq dired-open-extensions '(("gif" . "feh")
                               ("jpg" . "feh")
                               ("png" . "feh")
