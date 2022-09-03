@@ -9,7 +9,7 @@
        :style {style ?: ""}
        :tooltip tooltip
     (children)
-    (revealer :reveal {reveal}
+    (revealer :reveal {reveal ?: false}
               :transition "slideright"
               :duration transition-duration
       (label :class "label" :text label))))
@@ -33,8 +33,8 @@
     (icon "")))
 
 ;; Workspaces Widget ;;
-(deflisten workspaces-data :initial "[]" "leftwm-state -w 0 -t \"$HOME/.config/leftwm/themes/current/liquid/workspaces.liquid\"")
-(defwidget workspaces []
+(deflisten workspaces-data :initial "[]" "leftwm-state -t \"$HOME/.config/leftwm/themes/current/liquid/workspaces.liquid\"")
+(defwidget workspaces [monitor]
   (box :class "container"
        :orientation "h"
        :halign "center"
@@ -42,7 +42,8 @@
        :space-evenly "false"
     (for workspace in workspaces-data
       (hover-button :class "${workspace['button_class']}"
-                    :onclick "leftwm-command \"SendWorkspaceToTag ${workspace['workspace']} ${workspace['tag']}\""
+                    :onclick "leftwm-command \"SendWorkspaceToTag ${workspace['index']} ${workspace['tag']}\""
+                    :visible {workspace['index'] == monitor}
         (icon :class "${workspace['icon_class']}"
           "${workspace['icon']}")))))
 
@@ -61,6 +62,7 @@
     (hover-button :onclick "playerctl next"
       (icon ""))
     (label :class "media__title"
+           :limit-width 30
            :text media-title)))
 
 ;; Date Widget ;;
@@ -70,18 +72,6 @@
   (hover-button :tooltip date
     (label :class "time"
            :text time)))
-
-;; Updates Widget ;;
-(defpoll updates-count :interval "1m" :initial 0 "yay -Qu | wc -l")
-(defpoll updates-list :interval "1m" "yay -Qu")
-(defwidget updates []
-  (hover-button :onclick "bar/scripts/open updates"
-                :visible {updates-count > 0}
-                :tooltip updates-list
-    (icon :class "icon--success"
-          :label "${updates-count} ${updates-count == 1 ? 'update' : 'updates'}"
-          :reveal true
-      "")))
 
 ;; Torrent Widget ;;
 (defpoll torrents-data :interval "5s" :initial "{\"total_count\": 0}" "bar/scripts/torrents")
@@ -103,6 +93,18 @@
             :label "${torrents-data['upload_count']}"
             :reveal true
         ""))))
+
+;; Updates Widget ;;
+(defpoll updates-count :interval "1m" :initial 0 "yay -Qu | wc -l")
+(defpoll updates-list :interval "1m" "yay -Qu")
+(defwidget updates []
+  (hover-button :onclick "bar/scripts/open updates"
+                :visible {updates-count > 0}
+                :tooltip updates-list
+    (icon :class "icon--success"
+          :label "${updates-count} ${updates-count == 1 ? 'update' : 'updates'}"
+          :reveal true
+      "")))
 
 ;; Volume Widget ;;
 (deflisten volume-data :initial "[]" "bar/scripts/volume")
@@ -136,8 +138,8 @@
 
 (defwidget settings []
   (hover-button :onclick ""
-    (box :orentation "h"
-         :halign "right"
+    (box :orientation "h"
+         :halign "end"
          :valign "center"
          :hexpand "false"
          :vexpand "false"
@@ -148,7 +150,7 @@
       (battery))))
 
 ;; Bar Widgets ;;
-(defwidget bar []
+(defwidget bar [monitor]
   (centerbox :class "eww_bar"
              :orientation "h"
        (box :orientation "h"
@@ -157,7 +159,7 @@
             :space-evenly false
             :spacing {spacing / 2}
          (launcher)
-         (workspaces)
+         (workspaces :monitor monitor)
          (media))
        (box :orientation "h"
             :halign "center"
@@ -170,19 +172,30 @@
             :valign "center"
             :space-evenly false
             :spacing {spacing / 2}
-         (updates)
          (torrents)
+         (updates)
          (settings))))
 
-(defwindow bar
+(defwindow bar0
   :geometry (geometry :x "0"
                       :y "0"
                       :height "36"
                       :width "100%")
-  :monitor 0
   :reserve (struts :distance "36"
                    :side "top")
   :wm-ignore false
   :hexpand "false"
   :vexpand "false"
-(bar))
+(bar :monitor 0))
+
+(defwindow bar1
+  :geometry (geometry :x "0"
+                      :y "0"
+                      :height "36"
+                      :width "100%")
+  :reserve (struts :distance "36"
+                   :side "top")
+  :wm-ignore false
+  :hexpand "false"
+  :vexpand "false"
+(bar :monitor 1))

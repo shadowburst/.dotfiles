@@ -14,4 +14,8 @@ ln -s $SCRIPTPATH/down /tmp/leftwm-theme-down
 EWW="eww"
 
 # start eww daemon
-$EWW daemon && $EWW open bar
+$EWW daemon
+
+xrandr --listmonitors | tail -n +2 | awk '{print substr($1, 1, length($1)-1)}' | while read -r monitor; do
+  $EWW open --screen $monitor bar$monitor
+done

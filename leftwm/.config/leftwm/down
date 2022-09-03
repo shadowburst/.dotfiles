@@ -3,4 +3,5 @@
 leftwm-command "UnloadTheme"
 
 pkill picom
-killall sxhkd
+pkill sxhkd
+pkill dunst
