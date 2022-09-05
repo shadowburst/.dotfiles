@@ -3,3 +3,4 @@ conf.d
 functions
 themes
 fish_variables
+fishd.tmp*
