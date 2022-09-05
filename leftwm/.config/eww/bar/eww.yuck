@@ -49,21 +49,32 @@
 
 ;; Media Widget ;;
 (deflisten media-status :initial "Stopped" "playerctl -F status")
-(deflisten media-title :initial "" "playerctl -F metadata title")
+(deflisten media-data :initial "{\"title\": \"\", \"position\": 0, \"position_pretty\": \"00:00\", \"duration\": 0, \"duration_pretty\": \"00:00\"}" "bar/scripts/media")
 (defwidget media []
   (box :visible {media-status == "Playing" || media-status == "Paused"}
+       :orientation "v"
        :class "container"
-       :orientation "h"
        :space-evenly false
-    (hover-button :onclick "playerctl previous"
-      (icon ""))
-    (hover-button :onclick "playerctl play-pause"
-      (icon {media-status == "Playing" ? "" : ""}))
-    (hover-button :onclick "playerctl next"
-      (icon ""))
-    (label :class "media__title"
-           :limit-width 30
-           :text media-title)))
+       :width "500px"
+    (box
+         :class "container"
+         :orientation "h"
+         :space-evenly false
+        (hover-button :onclick "playerctl previous"
+            (icon :class "media__icon" ""))
+        (hover-button :onclick "playerctl play-pause"
+            (icon :class "media__icon" {media-status == "Playing" ? "" : ""}))
+        (hover-button :onclick "playerctl next"
+            (icon :class "media__icon" ""))
+        (label :class "media__title"
+            :limit-width 30
+            :text "${media-data['title']}"))
+    (scale :orientation "h"
+           :valign "end"
+           :class {media-status == "Playing" ? "media__slider" : "media__slider--disabled"}
+           :min 0
+           :max {media-data['duration']}
+           :value {media-data['position']})))
 
 ;; Date Widget ;;
 (defpoll time :interval "1s" "date '+%R'")

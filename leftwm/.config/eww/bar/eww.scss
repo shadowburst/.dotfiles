@@ -15,7 +15,7 @@ tooltip {
 }
 
 .rounded {
-  border-radius: 50px;
+  border-radius: 13px;
 }
 
 .container {
@@ -27,7 +27,7 @@ tooltip {
   @extend .rounded;
   color: $foreground;
   font-family: "JetBrainsMono Nerd Font Mono";
-  font-size: 2rem;
+  font-size: $icon-size;
 
   &--inverted {
     @extend .icon;
@@ -69,11 +69,50 @@ tooltip {
     }
   }
 }
-
 .media {
+  $slider-height: 3px;
+
   &__title {
     @extend .label;
     margin-right: 1rem;
+  }
+
+  &__icon {
+    @extend .icon;
+    font-size: calc(#{$icon-size} - #{$slider-height});
+  }
+
+  &__slider {
+    $radius: 50px;
+
+    margin: 0 5px;
+    border-radius: 0 0 $radius $radius;
+    background-color: $disabled;
+    min-height: $slider-height;
+
+    & trough {
+      @extend .media__slider;
+      margin: 0;
+
+      & highlight {
+        border-radius: 0 0 0 $radius;
+        background-color: $primary;
+      }
+    }
+
+    &--disabled {
+      @extend .media__slider;
+
+      & trough {
+        @extend .media__slider;
+        margin: 0;
+
+        & highlight {
+          border-radius: 0 0 0 $radius;
+          background-color: $foreground;
+        }
+      }
+    }
   }
 }
 
