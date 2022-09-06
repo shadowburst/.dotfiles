@@ -27,7 +27,7 @@
 
 #prompt {
   margin: 0 5px;
-  border-radius: 50;
+  border-radius: 13px;
   padding: 0 10px;
   background-color: @prompt-background;
   text-color: @prompt-foreground;
@@ -50,6 +50,7 @@
 }
 
 #element {
+  border-radius: 13px;
   padding: calc((36px - 1em) / 2);
 }
 

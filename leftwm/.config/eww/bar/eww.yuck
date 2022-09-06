@@ -41,36 +41,33 @@
        :valign "start"
        :space-evenly "false"
     (for workspace in workspaces-data
-      (hover-button :class "${workspace['button_class']}"
+      (hover-button :class {workspace['button_class']}
                     :onclick "leftwm-command \"SendWorkspaceToTag ${workspace['index']} ${workspace['tag']}\""
                     :visible {workspace['index'] == monitor}
-        (icon :class "${workspace['icon_class']}"
-          "${workspace['icon']}")))))
+        (icon :class {workspace['icon_class']}
+          {workspace['icon']})))))
 
 ;; Media Widget ;;
 (deflisten media-status :initial "Stopped" "playerctl -F status")
-(deflisten media-data :initial "{\"title\": \"\", \"position\": 0, \"position_pretty\": \"00:00\", \"duration\": 0, \"duration_pretty\": \"00:00\"}" "bar/scripts/media")
+(deflisten media-data :initial "{}" "bar/scripts/media")
 (defwidget media []
   (box :visible {media-status == "Playing" || media-status == "Paused"}
        :orientation "v"
-       :class "container"
        :space-evenly false
-       :width "500px"
-    (box
-         :class "container"
-         :orientation "h"
+       :class "container"
+    (box :orientation "h"
          :space-evenly false
-        (hover-button :onclick "playerctl previous"
-            (icon :class "media__icon" ""))
-        (hover-button :onclick "playerctl play-pause"
-            (icon :class "media__icon" {media-status == "Playing" ? "" : ""}))
-        (hover-button :onclick "playerctl next"
-            (icon :class "media__icon" ""))
-        (label :class "media__title"
-            :limit-width 30
-            :text "${media-data['title']}"))
+         :class "container"
+      (hover-button :onclick "playerctl previous"
+        (icon :class "media__icon" ""))
+      (hover-button :onclick "playerctl play-pause"
+        (icon :class "media__icon" {media-status == "Playing" ? "" : ""}))
+      (hover-button :onclick "playerctl next"
+        (icon :class "media__icon" ""))
+      (label :class "media__title"
+             :limit-width 30
+             :text {media-data['title']}))
     (scale :orientation "h"
-           :valign "end"
            :class {media-status == "Playing" ? "media__slider" : "media__slider--disabled"}
            :min 0
            :max {media-data['duration']}
@@ -97,11 +94,11 @@
          :space-evenly false
          :spacing spacing
       (icon :class "icon--success"
-            :label "${torrents-data['download_count']}"
+            :label {torrents-data['download_count']}
             :reveal true
         "")
       (icon :class "icon--warning"
-            :label "${torrents-data['upload_count']}"
+            :label {torrents-data['upload_count']}
             :reveal true
         ""))))
 
@@ -118,20 +115,18 @@
       "")))
 
 ;; Volume Widget ;;
-(deflisten volume-data :initial "[]" "bar/scripts/volume")
+(deflisten volume-data :initial "{}" "bar/scripts/volume")
 (defwidget volume []
   (icon :class "${volume-data['class']}"
-        :style "font-family: \"JetBrainsMono Nerd Font\"; font-size: 1.7rem;"
         :tooltip "${volume-data['percent']}"
-    "${volume-data['icon']}"))
+    {volume-data['icon']}))
 
 ;; Wifi Widget ;;
 (deflisten wifi-data :initial "[]" "bar/scripts/wifi")
 (defwidget wifi []
   (icon :class "${wifi-data['class']}"
-        :style "font-family: \"JetBrainsMono Nerd Font\"; font-size: 1.7rem;"
-        :tooltip "${wifi-data['connection']}"
-    "${wifi-data['icon']}"))
+        :tooltip {wifi-data['connection']}
+    {wifi-data['icon']}))
 
 ;; Battery Widget ;;
 (defpoll battery-percent :interval "30s" "bar/scripts/battery percent")

@@ -4,12 +4,12 @@ set -e
 
 on_change() {
     percent="Muted"
-    class="icon--disabled"
+    class="icon--disabled--variable"
     icon="婢"
 
     if [[ $(amixer -D pulse sget Master | awk -F '[][]' '/Left:/{ print $4 }') = "on" ]]; then
         percent=$(amixer -D pulse sget Master | awk -F '[][]' '/Left:/{ print $2 }' | tr -d %)
-        class="icon--primary"
+        class="icon--primary--variable"
 
         if [[ $percent -gt 50 ]]; then
             icon="墳"

@@ -8,7 +8,6 @@ tooltip {
   }
 }
 
-// EWW BAR
 .eww_bar {
   background-color: $black;
   padding: 0 0.5rem;
@@ -26,18 +25,38 @@ tooltip {
 .icon {
   @extend .rounded;
   color: $foreground;
-  font-family: "JetBrainsMono Nerd Font Mono";
+  font-family: $nerd-font;
   font-size: $icon-size;
+
+  &--variable {
+    $padding: 0.3rem;
+
+    @extend .rounded;
+    margin: $padding 0;
+    color: $foreground;
+    font-family: $variable-nerd-font;
+    font-size: calc(#{$icon-size} - #{$padding} * 2);
+  }
 
   &--inverted {
     @extend .icon;
     color: $background;
+
+    &--variable {
+      @extend .icon--variable;
+      color: $background;
+    }
   }
 
   @each $key, $val in $colors {
     &--#{$key} {
       @extend .icon;
       color: $val;
+
+      &--variable {
+        @extend .icon--variable;
+        color: $val;
+      }
     }
   }
 }
@@ -55,7 +74,7 @@ tooltip {
   padding: 0 0.8rem;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: rgba(255, 255, 255, 0.03);
   }
 
   @each $key, $val in $colors {
@@ -69,6 +88,7 @@ tooltip {
     }
   }
 }
+
 .media {
   $slider-height: 3px;
 
@@ -109,7 +129,7 @@ tooltip {
 
         & highlight {
           border-radius: 0 0 0 $radius;
-          background-color: $foreground;
+          background-color: $warning;
         }
       }
     }
