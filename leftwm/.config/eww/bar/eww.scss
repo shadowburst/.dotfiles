@@ -1,101 +1,10 @@
-tooltip {
-  background-color: $background;
-  color: $foreground;
-  font-family: $mono-font;
-
-  & label {
-    margin: 0.3rem;
-  }
-}
-
 .eww_bar {
   background-color: $black;
   padding: 0 0.5rem;
 }
 
-.rounded {
-  border-radius: 13px;
-}
-
-.container {
-  @extend .rounded;
-  background-color: $background;
-}
-
-.icon {
-  @extend .rounded;
-  color: $foreground;
-  font-family: $nerd-font;
-  font-size: $icon-size;
-
-  &--variable {
-    $padding: 0.3rem;
-
-    @extend .rounded;
-    margin: $padding 0;
-    color: $foreground;
-    font-family: $variable-nerd-font;
-    font-size: calc(#{$icon-size} - #{$padding} * 2);
-  }
-
-  &--inverted {
-    @extend .icon;
-    color: $background;
-
-    &--variable {
-      @extend .icon--variable;
-      color: $background;
-    }
-  }
-
-  @each $key, $val in $colors {
-    &--#{$key} {
-      @extend .icon;
-      color: $val;
-
-      &--variable {
-        @extend .icon--variable;
-        color: $val;
-      }
-    }
-  }
-}
-
-.label {
-  margin-left: 0.5rem;
-  color: $foreground;
-  font-family: $font;
-  font-size: 1rem;
-}
-
-.button {
-  @extend .container;
-  background-color: inherit;
-  padding: 0 0.8rem;
-
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.03);
-  }
-
-  @each $key, $val in $colors {
-    &--#{$key} {
-      @extend .button;
-      background-color: $val;
-
-      &:hover {
-        background-color: shade($val, 0.85);
-      }
-    }
-  }
-}
-
 .media {
   $slider-height: 3px;
-
-  &__title {
-    @extend .label;
-    margin-right: 1rem;
-  }
 
   &__icon {
     @extend .icon;
@@ -105,14 +14,14 @@ tooltip {
   &__slider {
     $radius: 50px;
 
-    margin: 0 5px;
-    border-radius: 0 0 $radius $radius;
-    background-color: $disabled;
+    margin: 0 0.5rem;
     min-height: $slider-height;
+    border-radius: 0 0 $radius $radius;
 
     & trough {
       @extend .media__slider;
       margin: 0;
+      background-color: $disabled;
 
       & highlight {
         border-radius: 0 0 0 $radius;
@@ -129,10 +38,17 @@ tooltip {
 
         & highlight {
           border-radius: 0 0 0 $radius;
-          background-color: $warning;
+          background-color: $magenta;
         }
       }
     }
+  }
+
+  &__duration {
+    @extend .label;
+    margin: 0 0.5rem;
+    font-size: 0.8rem;
+    color: $foreground;
   }
 }
 
@@ -150,9 +66,8 @@ tooltip {
 }
 
 .time {
+  @extend .mono-label;
   padding: 0.3rem 0;
-  color: $foreground;
-  font-family: $mono-font;
   font-size: 1.5rem;
   font-weight: bold;
 }

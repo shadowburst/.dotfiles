@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+INTERFACE=/sys/class/power_supply/BAT0/
+
+percent="$(cat "$INTERFACE/capacity")"
+class="battery--danger"
+if [[ "$percent" -gt 40 ]]; then
+	class="battery--success"
+elif [[ "$percent" -gt 20 ]]; then
+	class="battery--warning"
+fi
+icon=""
+if [[ "$(cat "$INTERFACE/status")" = "Charging" ]]; then
+	icon=""
+fi
+
+echo "{ \"percent\": \"$percent\", \"class\": \"$class\", \"icon\": \"$icon\" }"

@@ -1,112 +1,80 @@
-(defvar transition-duration "500ms")
-(defvar eww "eww")
-(defvar spacing 10)
-
-(defwidget icon [?class ?style ?label ?reveal ?tooltip]
-  (box :orientation "h"
-       :space-evenly false
-       :class {class ?: "icon"}
-       :style {style ?: ""}
-       :tooltip tooltip
-    (children)
-    (revealer :reveal {reveal ?: false}
-              :transition "slideright"
-              :duration transition-duration
-      (label :class "label" :text label))))
-
-;; Button Widget ;;
-(defwidget hover-button [?visible ?class ?tooltip ?onclick ?onmiddleclick ?onrightclick ?onhover ?onhoverlost ?label ?reveal]
-  (eventbox :visible {visible ?: true}
-            :onhover onhover
-            :onhoverlost onhoverlost
-            :tooltip tooltip
-            :cursor "pointer"
-    (button :onclick onclick
-            :onmiddleclick onmiddleclick
-            :onrightclick onrightclick
-            :class {class ?: "button"}
-      (children))))
 
 ;; Launcher Widget ;;
 (defwidget launcher []
-  (hover-button :onclick "bar/scripts/open launcher"
+  (hover-button :onclick "common/scripts/open launcher"
     (icon "")))
 
 ;; Workspaces Widget ;;
-(deflisten workspaces-data :initial "[]" "leftwm-state -t \"$HOME/.config/leftwm/themes/current/liquid/workspaces.liquid\"")
 (defwidget workspaces [monitor]
   (box :class "container"
        :orientation "h"
        :halign "center"
        :valign "start"
-       :space-evenly "false"
+       :space-evenly false
     (for workspace in workspaces-data
-      (hover-button :class {workspace['button_class']}
+      (hover-button :class {workspace['button-class']}
                     :onclick "leftwm-command \"SendWorkspaceToTag ${workspace['index']} ${workspace['tag']}\""
                     :visible {workspace['index'] == monitor}
-        (icon :class {workspace['icon_class']}
+        (icon :class {workspace['icon-class']}
           {workspace['icon']})))))
 
 ;; Media Widget ;;
-(deflisten media-status :initial "Stopped" "playerctl -F status")
-(deflisten media-data :initial "{}" "bar/scripts/media")
 (defwidget media []
-  (box :visible {media-status == "Playing" || media-status == "Paused"}
-       :orientation "v"
-       :space-evenly false
-       :class "container"
-    (box :orientation "h"
-         :space-evenly false
+    (box :visible {media-data['status'] == "Playing" || media-data['status'] == "Paused"}
          :class "container"
-      (hover-button :onclick "playerctl previous"
-        (icon :class "media__icon" ""))
-      (hover-button :onclick "playerctl play-pause"
-        (icon :class "media__icon" {media-status == "Playing" ? "" : ""}))
-      (hover-button :onclick "playerctl next"
-        (icon :class "media__icon" ""))
-      (label :class "media__title"
-             :limit-width 30
-             :text {media-data['title']}))
-    (scale :orientation "h"
-           :class {media-status == "Playing" ? "media__slider" : "media__slider--disabled"}
-           :min 0
-           :max {media-data['duration']}
-           :value {media-data['position']})))
+        (overlay
+            (box :orientation "v"
+                 :space-evenly false
+                 :valign "end"
+                (label :class "media__duration"
+                       :xalign 1
+                       :text "${media-data['position-pretty']} / ${media-data['duration-pretty']}")
+                (scale :orientation "h"
+                    :width 410
+                    :class {media-data['status'] == "Playing" ? "media__slider" : "media__slider--disabled"}
+                    :min 0
+                    :max {media-data['duration']}
+                    :value {media-data['position']}))
+            (box :orientation "h"
+                 :space-evenly false
+                (hover-button :onclick "playerctl previous"
+                    (icon ""))
+                (hover-button :onclick "playerctl play-pause"
+                    (icon {media-data['status'] == "Playing" ? "" : ""}))
+                (hover-button :onclick "playerctl next"
+                    (icon ""))
+                (label :class "label"
+                    :limit-width 25
+                    :text {media-data['title']})))))
 
 ;; Date Widget ;;
-(defpoll time :interval "1s" "date '+%R'")
-(defpoll date :interval "1h" "date '+%d %B %Y'")
 (defwidget time []
   (hover-button :tooltip date
     (label :class "time"
            :text time)))
 
 ;; Torrent Widget ;;
-(defpoll torrents-data :interval "5s" :initial "{\"total_count\": 0}" "bar/scripts/torrents")
-(defpoll torrents-list :interval "1s" :run-while {torrents-data['total_count'] > 0} "transmission-remote -l")
 (defwidget torrents []
-  (hover-button :onclick "bar/scripts/open torrents"
+  (hover-button :onclick "common/scripts/open torrents"
                 :onrightclick "$HOME/.config/transmission-daemon/scripts/clear-torrents.sh"
-                :visible {torrents-data['total_count'] > 0}
+                :visible {torrents-data['total-count'] > 0}
                 :tooltip torrents-list
     (box :orientation "h"
          :valign "center"
          :space-evenly false
          :spacing spacing
       (icon :class "icon--success"
-            :label {torrents-data['download_count']}
+            :label {torrents-data['download-count']}
             :reveal true
         "")
       (icon :class "icon--warning"
-            :label {torrents-data['upload_count']}
+            :label {torrents-data['upload-count']}
             :reveal true
         ""))))
 
 ;; Updates Widget ;;
-(defpoll updates-count :interval "1m" :initial 0 "yay -Qu | wc -l")
-(defpoll updates-list :interval "1m" "yay -Qu")
 (defwidget updates []
-  (hover-button :onclick "bar/scripts/open updates"
+  (hover-button :onclick "common/scripts/open updates"
                 :visible {updates-count > 0}
                 :tooltip updates-list
     (icon :class "icon--success"
@@ -115,32 +83,27 @@
       "")))
 
 ;; Volume Widget ;;
-(deflisten volume-data :initial "{}" "bar/scripts/volume")
 (defwidget volume []
   (icon :class "${volume-data['class']}"
-        :tooltip "${volume-data['percent']}"
+        :tooltip "${volume-data['percent']}%"
     {volume-data['icon']}))
 
 ;; Wifi Widget ;;
-(deflisten wifi-data :initial "[]" "bar/scripts/wifi")
 (defwidget wifi []
   (icon :class "${wifi-data['class']}"
         :tooltip {wifi-data['connection']}
     {wifi-data['icon']}))
 
 ;; Battery Widget ;;
-(defpoll battery-percent :interval "30s" "bar/scripts/battery percent")
-(defpoll battery-class :interval "5s" "bar/scripts/battery class")
-(defpoll battery-icon :interval "5s" "bar/scripts/battery icon")
 (defwidget battery []
-  (circular-progress :class battery-class
-                     :tooltip "${battery-percent}%"
+  (circular-progress :class {battery-data['class']}
+                     :tooltip "${battery-data['percent']}%"
                      :start-at 75
                      :clockwise false
                      :thickness 4
-                     :value battery-percent
-    (icon :class battery-class
-      battery-icon)))
+                     :value {battery-data['percent']}
+    (icon :class {battery-data['class']}
+      {battery-data['icon']})))
 
 (defwidget settings []
   (hover-button :onclick ""

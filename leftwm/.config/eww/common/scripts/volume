@@ -1,25 +1,28 @@
 #!/usr/bin/env bash
 
+EWW="eww"
+$CLOSE_OSD="$HOME/.config/eww/common/scripts/close-osd"
+
 set -e
 
 on_change() {
-    percent="Muted"
+    percent="0"
     class="icon--disabled--variable"
-    icon="婢"
+
+    percent=$(amixer -D pulse sget Master | awk -F '[][]' '/Left:/{ print $2 }' | tr -d %)
+
+    if [[ $percent -gt 50 ]]; then
+        icon="墳"
+    elif [[ $percent -gt 0 ]]; then
+        icon="奔"
+    else
+        icon="奄"
+    fi
 
     if [[ $(amixer -D pulse sget Master | awk -F '[][]' '/Left:/{ print $4 }') = "on" ]]; then
-        percent=$(amixer -D pulse sget Master | awk -F '[][]' '/Left:/{ print $2 }' | tr -d %)
         class="icon--primary--variable"
-
-        if [[ $percent -gt 50 ]]; then
-            icon="墳"
-        elif [[ $percent -gt 0 ]]; then
-            icon="奔"
-        else
-            icon="奄"
-        fi
-
-        percent="${percent}%"
+    else
+        icon="婢"
     fi
 
     echo "{ \"percent\": \"$percent\", \"class\": \"$class\", \"icon\": \"$icon\" }"

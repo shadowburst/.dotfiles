@@ -12,4 +12,7 @@ case $1 in
     "updates")
         $TERMINAL -e yay -Syu
         ;;
+    "tray")
+        trayer --edge top --align right --distance 44 --widthtype pixel --width 80 --heighttype request --padding 8 --tint 0x00FF00FF
+        ;;
 esac

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+playerctl -F metadata --format '{ "status": "{{status}}", "title": "{{title}}", "position": "{{position}}", "position-pretty": "{{duration(position)}}", "duration": "{{mpris:length}}", "duration-pretty": "{{duration(mpris:length)}}" }'

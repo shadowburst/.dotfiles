@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+EWW="eww"
+
+function close_all() {
+    eww close volume-osd brightness-osd &>/dev/null
+}
