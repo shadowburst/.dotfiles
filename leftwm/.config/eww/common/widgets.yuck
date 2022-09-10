@@ -8,7 +8,7 @@
     (revealer :reveal {reveal ?: false}
               :transition "slideright"
               :duration transition-duration
-      (label :class "label" :text label))))
+      (label :class "icon-label" :text label))))
 
 ;; Button Widget ;;
 (defwidget hover-button [?visible ?class ?tooltip ?onclick ?onmiddleclick ?onrightclick ?onhover ?onhoverlost ?label ?reveal]

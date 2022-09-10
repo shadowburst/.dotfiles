@@ -26,9 +26,9 @@
             (box :orientation "v"
                  :space-evenly false
                  :valign "end"
-                (label :class "media__duration"
+                (label :class "media__time"
                        :xalign 1
-                       :text "${media-data['position-pretty']} / ${media-data['duration-pretty']}")
+                       :text {media-data['time']})
                 (scale :orientation "h"
                     :width 410
                     :class {media-data['status'] == "Playing" ? "media__slider" : "media__slider--disabled"}
@@ -43,7 +43,7 @@
                     (icon {media-data['status'] == "Playing" ? "" : ""}))
                 (hover-button :onclick "playerctl next"
                     (icon ""))
-                (label :class "label"
+                (label :class "icon-label"
                     :limit-width 25
                     :text {media-data['title']})))))
 

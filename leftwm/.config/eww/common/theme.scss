@@ -99,10 +99,14 @@ tooltip {
 }
 
 .label {
-  margin: 0 5px;
   color: $foreground;
   font-family: $font;
   font-size: 1rem;
+}
+
+.icon-label {
+  @extend .label;
+  margin: 0 0 0 5px;
 }
 
 .mono-label {
