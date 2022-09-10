@@ -24,6 +24,7 @@
 - [[#rainbow-mode][Rainbow Mode]]
 - [[#treemacs][Treemacs]]
 - [[#vterm][Vterm]]
+- [[#other-packages][Other packages]]
 
 * Introduction
 ** What's this document ?
@@ -278,4 +279,9 @@ A clean integrated terminal for emacs. I don't need that much tinkering, just a 
 
 (map! :map vterm-mode-map
       :i "C-S-v" #'vterm-yank)
+#+end_src
+
+* Other packages
+#+begin_src emacs-lisp :tangle packages.el
+(package! gitignore-templates)
 #+end_src
