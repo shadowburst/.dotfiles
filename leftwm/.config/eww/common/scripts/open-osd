@@ -1,7 +1,24 @@
 #!/usr/bin/env bash
 
-EWW="eww"
-
 function close_all() {
     eww close volume-osd brightness-osd &>/dev/null
 }
+
+osd="$1-osd"
+
+osds=("volume-osd" "brightness-osd")
+if [[ ! " ${osds[@]} " =~ " ${osd} " ]]; then
+    exit 1
+fi
+
+if [[ -n $(eww windows | awk "/*$osd/") ]]; then
+    exit 0
+fi
+
+close_all
+
+eww open "$osd"
+
+sleep 3
+
+close_all

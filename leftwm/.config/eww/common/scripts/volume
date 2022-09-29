@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-EWW="eww"
-$CLOSE_OSD="$HOME/.config/eww/common/scripts/close-osd"
-
 set -e
 
 on_change() {
@@ -33,4 +30,7 @@ pactl subscribe | while read -r line; do
     if [[ "$line" = "Event 'change' on"* ]]; then
         on_change
     fi
+    # if [[ "$line" = "Event 'change' on sink"* ]]; then
+    #     $HOME/.config/eww/common/scripts/open-osd volume &>/dev/null &
+    # fi
 done

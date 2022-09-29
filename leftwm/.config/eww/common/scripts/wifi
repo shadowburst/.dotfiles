@@ -3,8 +3,20 @@
 set -e
 
 on_change() {
+    class="icon--disabled--variable"
     if [[ -n "$(rfkill list wlan | awk '/Soft blocked: no/')" ]]; then
         icon="直"
+
+        case "$(nmcli -g CONNECTIVITY general)" in
+            "full")
+                class="icon--primary--variable"
+                ;;
+            "limited")
+                class="icon--warning--variable"
+                ;;
+            "none") ;;
+        esac
+
     else
         icon="睊"
     fi
@@ -14,18 +26,6 @@ on_change() {
     else
         connection="No connection"
     fi
-
-    case "$(nmcli -g CONNECTIVITY general)" in
-        "full")
-            class="icon--primary--variable"
-            ;;
-        "limited")
-            class="icon--warning--variable"
-            ;;
-        "none")
-            class="icon--disabled--variable"
-            ;;
-    esac
 
     echo "{ \"connection\": \"$connection\", \"class\": \"$class\", \"icon\": \"$icon\" }"
 }
