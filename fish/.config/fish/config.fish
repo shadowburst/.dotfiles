@@ -64,3 +64,5 @@ end
 function test_desktop
     Xephyr -ac -nolisten tcp -br -noreset -screen 1280x800 :1 &; sleep 1; DISPLAY=:1.0 $argv
 end
+
+starship init fish | source
