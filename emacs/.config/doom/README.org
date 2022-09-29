@@ -40,10 +40,12 @@ After such a journey, here I am, ready for a change once more. Ready to use Doom
 Emacs seems to solve the various problems that I had with Neovim, working smoothly, no slowdowns, can connect itself to remote servers without copying configs... It seems to do no wrong ! I initially picked Doom Emacs because its stock configuration is already so close to what I wanted, evil mode out of the box with sane defaults. It also has a bunch of documentation made not only by the creators, but also youtubers (Hey DT!) that helped me grasp this tools a lot quicker than if I was all by my lonesome.
 * General settings
 ** Theme
-Doom Emacs' default colourscheme is perfect for me, who has always loved Atom's OneDark.
+Doom Emacs' default colourscheme is perfect for me, who has always loved Atom's OneDark. The only change that I like is having a transparent background.
 
 #+begin_src emacs-lisp
 (setq doom-theme 'doom-one)
+
+(add-to-list 'default-frame-alist '(alpha . 80))
 #+end_src
 
 ** Fonts

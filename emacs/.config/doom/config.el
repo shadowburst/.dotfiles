@@ -1,5 +1,7 @@
 (setq doom-theme 'doom-one)
 
+(add-to-list 'default-frame-alist '(alpha . 80))
+
 (setq doom-font (font-spec :family "JetBrainsMono Nerd Font" :size 14)
       doom-big-font (font-spec :family "JetBrainsMono Nerd Font" :size 24)
       doom-unicode-font (font-spec :family "JetBrainsMono Nerd Font")
