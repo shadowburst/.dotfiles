@@ -52,22 +52,17 @@ if ask "Install configs ?"; then
 	# Load configs
 	stow */
 
-	# Setup lightdm
-	sudo systemctl enable lightdm
-	sudo cp "$HOME/.wallpapers/current.jpg" /usr/share/backgrounds/
-
 	# Load cron jobs
-	crontab ".crontab"
+	sudo crontab ".crontab"
 
 	# Setup gnome keyring
-	echo "auth optional pam_gnome_keyring.so" >>/etc/pam.d/login
-	echo "session optional pam_gnome_keyring.so auto_start" >>/etc/pam.d/login
-	echo "password optional pam_gnome_keyring.so" >>/etc/pam.d/passwd
+	sudo echo "auth optional pam_gnome_keyring.so" >>/etc/pam.d/login
+	sudo echo "session optional pam_gnome_keyring.so auto_start" >>/etc/pam.d/login
+	sudo echo "password optional pam_gnome_keyring.so" >>/etc/pam.d/passwd
 
 	# Setup auto-cpufreq
 	sudo systemctl enable --now auto-cpufreq
 
 	# Setup emacs
-	git clone https://github.com/hlissner/doom-emacs ~/.emacs.d
 	~/.emacs.d/bin/doom install
 fi

@@ -1,15 +1,7 @@
-[submodule "awesome/.config/awesome/lib/rubato"]
-	path = awesome/.config/awesome/lib/rubato
-	url = https://github.com/andOrlando/rubato.git
-[submodule "awesome/.config/awesome/lib/bling"]
-	path = awesome/.config/awesome/lib/bling
-	url = https://github.com/BlingCorp/bling.git
 [submodule "zsh/.zgenom"]
 	path = zsh/.zgenom
 	url = https://github.com/jandamm/zgenom.git
-[submodule "ranger/.config/ranger/plugins/ranger-archives"]
-	path = ranger/.config/ranger/plugins/ranger-archives
-	url = https://github.com/maximtrp/ranger-archives.git
-[submodule "ranger/.config/ranger/plugins/ranger_devicons"]
-	path = ranger/.config/ranger/plugins/ranger_devicons
-	url = https://github.com/alexanderjeurissen/ranger_devicons
+	branch = main
+[submodule "emacs/.emacs.d"]
+	path = emacs/.emacs.d
+	url = https://github.com/hlissner/doom-emacs

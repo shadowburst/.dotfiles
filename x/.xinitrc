@@ -22,4 +22,4 @@ userprofile="$HOME/.xprofile"
 [ -f "$sysprofile" ] && . "$sysprofile"
 [ -f "$userprofile" ] && . "$userprofile"
 
-exec awesome
+exec leftwm

@@ -26,6 +26,9 @@ autorandr --change --default mobile &
 # Load the polkit agent
 /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
 
+# Enable numlock by default
+numlockx on
+
 # Use the super key
 xcape -e 'Super_L=Super_L|space' &
 
