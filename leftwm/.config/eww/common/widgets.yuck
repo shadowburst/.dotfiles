@@ -4,11 +4,11 @@
        :class {class ?: "icon"}
        :style {style ?: ""}
        :tooltip tooltip
-    (children)
-    (revealer :reveal {reveal ?: false}
-              :transition "slideright"
-              :duration transition-duration
-      (label :class "icon-label" :text label))))
+       (children)
+       (revealer :reveal {reveal ?: false}
+                 :transition "slideright"
+                 :duration transition-duration
+                 (label :class "icon-label" :text label))))
 
 ;; Button Widget ;;
 (defwidget hover-button [?visible ?class ?tooltip ?onclick ?onmiddleclick ?onrightclick ?onhover ?onhoverlost ?label ?reveal]
@@ -17,8 +17,8 @@
             :onhoverlost onhoverlost
             :tooltip tooltip
             :cursor "pointer"
-    (button :onclick onclick
-            :onmiddleclick onmiddleclick
-            :onrightclick onrightclick
-            :class {class ?: "button"}
-      (children))))
+            (button :onclick onclick
+                    :onmiddleclick onmiddleclick
+                    :onrightclick onrightclick
+                    :class {class ?: "button"}
+                    (children))))

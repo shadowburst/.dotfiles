@@ -2,7 +2,7 @@
 ;; Launcher Widget ;;
 (defwidget launcher []
   (hover-button :onclick "common/scripts/open launcher"
-    (icon "")))
+                (icon "")))
 
 ;; Workspaces Widget ;;
 (defwidget workspaces [monitor]
@@ -11,47 +11,47 @@
        :halign "center"
        :valign "start"
        :space-evenly false
-    (for workspace in workspaces-data
-      (hover-button :class {workspace['button-class']}
-                    :onclick "leftwm-command \"SendWorkspaceToTag ${workspace['index']} ${workspace['tag']}\""
-                    :visible {workspace['index'] == monitor}
-        (icon :class {workspace['icon-class']}
-          {workspace['icon']})))))
+       (for workspace in workspaces-data
+            (hover-button :class {workspace['button-class']}
+                          :onclick "leftwm-command \"SendWorkspaceToTag ${workspace['index']} ${workspace['tag']}\""
+                          :visible {workspace['index'] == monitor}
+                          (icon :class {workspace['icon-class']}
+                                {workspace['icon']})))))
 
 ;; Media Widget ;;
 (defwidget media []
-    (box :visible {media-data['status'] == "Playing" || media-data['status'] == "Paused"}
-         :class "container"
-        (overlay
-            (box :orientation "v"
-                 :space-evenly false
-                 :valign "end"
-                (label :class "media__time"
-                       :xalign 1
-                       :text {media-data['time']})
-                (scale :orientation "h"
+  (box :visible {media-data['status'] == "Playing" || media-data['status'] == "Paused"}
+       :class "container"
+       (overlay
+        (box :orientation "v"
+             :space-evenly false
+             :valign "end"
+             (label :class "media__time"
+                    :xalign 1
+                    :text {media-data['time']})
+             (scale :orientation "h"
                     :width 410
                     :class {media-data['status'] == "Playing" ? "media__slider" : "media__slider--disabled"}
                     :min 0
                     :max {media-data['duration']}
                     :value {media-data['position']}))
-            (box :orientation "h"
-                 :space-evenly false
-                (hover-button :onclick "playerctl previous"
-                    (icon ""))
-                (hover-button :onclick "playerctl play-pause"
-                    (icon {media-data['status'] == "Playing" ? "" : ""}))
-                (hover-button :onclick "playerctl next"
-                    (icon ""))
-                (label :class "icon-label"
+        (box :orientation "h"
+             :space-evenly false
+             (hover-button :onclick "playerctl previous"
+                           (icon ""))
+             (hover-button :onclick "playerctl play-pause"
+                           (icon {media-data['status'] == "Playing" ? "" : ""}))
+             (hover-button :onclick "playerctl next"
+                           (icon ""))
+             (label :class "icon-label"
                     :limit-width 25
                     :text {media-data['title']})))))
 
 ;; Date Widget ;;
 (defwidget time []
   (hover-button :tooltip date
-    (label :class "time"
-           :text time)))
+                (label :class "time"
+                       :text time)))
 
 ;; Torrent Widget ;;
 (defwidget torrents []
@@ -59,40 +59,40 @@
                 :onrightclick "$HOME/.config/transmission-daemon/scripts/clear-torrents.sh"
                 :visible {torrents-data['total-count'] > 0}
                 :tooltip torrents-list
-    (box :orientation "h"
-         :valign "center"
-         :space-evenly false
-         :spacing spacing
-      (icon :class "icon--success"
-            :label {torrents-data['download-count']}
-            :reveal true
-        "")
-      (icon :class "icon--warning"
-            :label {torrents-data['upload-count']}
-            :reveal true
-        ""))))
+                (box :orientation "h"
+                     :valign "center"
+                     :space-evenly false
+                     :spacing spacing
+                     (icon :class "icon--success"
+                           :label {torrents-data['download-count']}
+                           :reveal true
+                           "")
+                     (icon :class "icon--warning"
+                           :label {torrents-data['upload-count']}
+                           :reveal true
+                           ""))))
 
 ;; Updates Widget ;;
 (defwidget updates []
   (hover-button :onclick "common/scripts/open updates"
                 :visible {updates-count > 0}
                 :tooltip updates-list
-    (icon :class "icon--success"
-          :label "${updates-count} ${updates-count == 1 ? 'update' : 'updates'}"
-          :reveal true
-      "")))
+                (icon :class "icon--success"
+                      :label "${updates-count} ${updates-count == 1 ? 'update' : 'updates'}"
+                      :reveal true
+                      "")))
 
 ;; Volume Widget ;;
 (defwidget volume []
   (icon :class "${volume-data['class']}"
         :tooltip "${volume-data['percent']}%"
-    {volume-data['icon']}))
+        {volume-data['icon']}))
 
 ;; Wifi Widget ;;
 (defwidget wifi []
   (icon :class "${wifi-data['class']}"
         :tooltip {wifi-data['connection']}
-    {wifi-data['icon']}))
+        {wifi-data['icon']}))
 
 ;; Battery Widget ;;
 (defwidget battery []
@@ -102,48 +102,48 @@
                      :clockwise false
                      :thickness 4
                      :value {battery-data['percent']}
-    (icon :class {battery-data['class']}
-      {battery-data['icon']})))
+                     (icon :class {battery-data['class']}
+                           {battery-data['icon']})))
 
 (defwidget settings []
   (hover-button :onclick ""
-    (box :orientation "h"
-         :halign "end"
-         :valign "center"
-         :hexpand "false"
-         :vexpand "false"
-         :space-evenly false
-         :spacing spacing
-      (volume)
-      (wifi)
-      (battery))))
+                (box :orientation "h"
+                     :halign "end"
+                     :valign "center"
+                     :hexpand "false"
+                     :vexpand "false"
+                     :space-evenly false
+                     :spacing spacing
+                     (volume)
+                     (wifi)
+                     (battery))))
 
 ;; Bar Widgets ;;
 (defwidget bar [monitor]
   (centerbox :class "eww_bar"
              :orientation "h"
-       (box :orientation "h"
-            :halign "start"
-            :valign "center"
-            :space-evenly false
-            :spacing {spacing / 2}
-         (launcher)
-         (workspaces :monitor monitor)
-         (media))
-       (box :orientation "h"
-            :halign "center"
-            :valign "center"
-            :space-evenly false
-            :spacing {spacing / 2}
-         (time))
-       (box :orientation "h"
-            :halign "end"
-            :valign "center"
-            :space-evenly false
-            :spacing {spacing / 2}
-         (torrents)
-         (updates)
-         (settings))))
+             (box :orientation "h"
+                  :halign "start"
+                  :valign "center"
+                  :space-evenly false
+                  :spacing {spacing / 2}
+                  (launcher)
+                  (workspaces :monitor monitor)
+                  (media))
+             (box :orientation "h"
+                  :halign "center"
+                  :valign "center"
+                  :space-evenly false
+                  :spacing {spacing / 2}
+                  (time))
+             (box :orientation "h"
+                  :halign "end"
+                  :valign "center"
+                  :space-evenly false
+                  :spacing {spacing / 2}
+                  (torrents)
+                  (updates)
+                  (settings))))
 
 (defwindow bar0
   :geometry (geometry :x "0"
@@ -155,7 +155,7 @@
   :wm-ignore false
   :hexpand "false"
   :vexpand "false"
-(bar :monitor 0))
+  (bar :monitor 0))
 
 (defwindow bar1
   :geometry (geometry :x "0"
@@ -167,4 +167,4 @@
   :wm-ignore false
   :hexpand "false"
   :vexpand "false"
-(bar :monitor 1))
+  (bar :monitor 1))
