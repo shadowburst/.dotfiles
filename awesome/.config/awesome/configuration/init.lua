@@ -1,6 +1,0 @@
-require('configuration.apps')
-require('configuration.buttons')
-require('configuration.keybindings')
-require('configuration.rules')
-require('configuration.signals')
-require('configuration.tags')
