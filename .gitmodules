@@ -1,6 +1,8 @@
 [submodule "zsh/.zgenom"]
 	path = zsh/.zgenom
 	url = https://github.com/jandamm/zgenom.git
+	branch = main
 [submodule "emacs/.emacs.d"]
 	path = emacs/.emacs.d
 	url = https://github.com/hlissner/doom-emacs
+	branch = master
