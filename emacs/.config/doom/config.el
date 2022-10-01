@@ -61,7 +61,8 @@
 
 (defun empty-trash ()
   (interactive)
-  (shell-command "rm -rf $HOME/.local/share/Trash/files/*"))
+  (shell-command "rm -rf $HOME/.local/share/Trash/files")
+  (shell-command "mkdir -p $HOME/.local/share/Trash/files"))
 
 (setq dired-open-extensions '(("gif" . "feh")
                               ("jpg" . "feh")

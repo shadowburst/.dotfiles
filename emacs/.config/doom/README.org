@@ -148,7 +148,8 @@ Dired is an awesome file manager that has replaced Ranger as my goto.
 
 (defun empty-trash ()
   (interactive)
-  (shell-command "rm -rf $HOME/.local/share/Trash/files/*"))
+  (shell-command "rm -rf $HOME/.local/share/Trash/files")
+  (shell-command "mkdir -p $HOME/.local/share/Trash/files"))
 #+end_src
 
 I needed a few extra packages to make Dired to my liking.
