@@ -37,8 +37,9 @@ if ask "Automatic install ?"; then
 	automatic=true
 fi
 
-sudo pacman-mirrors -f
-sudo pacman -Syyu
+if ask "Update packages ?"; then
+	sudo pacman -Syyu
+fi
 
 if ask "Install official packages ?"; then
 	sudo pacman --needed --ask 4 -Sy - <./packages
@@ -53,16 +54,25 @@ if ask "Install configs ?"; then
 	stow */
 
 	# Load cron jobs
-	sudo crontab ".crontab"
+	crontab ".crontab"
+
+	# Change shell to ZSH
+	chsh -s $(which zsh)
 
 	# Setup gnome keyring
-	sudo echo "auth optional pam_gnome_keyring.so" >>/etc/pam.d/login
-	sudo echo "session optional pam_gnome_keyring.so auto_start" >>/etc/pam.d/login
-	sudo echo "password optional pam_gnome_keyring.so" >>/etc/pam.d/passwd
+	echo "auth optional pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/login
+	echo "session optional pam_gnome_keyring.so auto_start" | sudo tee -a /etc/pam.d/login
+	echo "password optional pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/passwd
 
-	# Setup auto-cpufreq
+	# Setup services
 	sudo systemctl enable --now auto-cpufreq
+	sudo systemctl enable --now bluetooth
+	sudo systemctl enable --now cronie
+	sudo systemctl enable --now reflector.timer
 
 	# Setup emacs
 	~/.emacs.d/bin/doom install
+
+	# Enable dark mode for gnome apps
+	gsettings set org.gnome.desktop.interface color-scheme prefer-dark
 fi

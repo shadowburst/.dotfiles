@@ -12,7 +12,7 @@ export QT_QPA_PLATFORMTHEME=qt5ct
 # Common environment variables
 export TERMINAL="alacritty"
 export BROWSER="brave"
-export EDITOR="/usr/bin/nvim"
+export EDITOR="emacsclient -t"
 
 eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg)
 export SSH_AUTH_SOCK
