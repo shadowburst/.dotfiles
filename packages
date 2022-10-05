@@ -5,6 +5,7 @@ autorandr
 bashtop
 blueman
 bluez-utils
+cmake
 cronie
 discord
 docker
@@ -48,6 +49,7 @@ seahorse
 shellcheck
 shfmt
 spice-vdagent
+sshfs
 starship
 steam
 sxhkd
@@ -57,6 +59,7 @@ thunar-archive-plugin
 transmission-cli
 unzip
 virt-manager
+wmctrl
 xcape
 xclip
 xdotool
