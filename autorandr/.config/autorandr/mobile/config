@@ -11,9 +11,10 @@ off
 output VIRTUAL1
 off
 output eDP1
-crtc 1
+crtc 0
 mode 1920x1200
 pos 0x0
+primary
 rate 59.95
 x-prop-broadcast_rgb Automatic
 x-prop-colorspace Default
