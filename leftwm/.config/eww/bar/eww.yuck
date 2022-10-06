@@ -1,4 +1,3 @@
-
 ;; Launcher Widget ;;
 (defwidget launcher []
   (hover-button :onclick "common/scripts/open launcher"
@@ -37,14 +36,10 @@
                     :value {media-data['position']}))
         (box :orientation "h"
              :space-evenly false
-             (hover-button :onclick "playerctl previous"
-                           (icon ""))
              (hover-button :onclick "playerctl play-pause"
                            (icon {media-data['status'] == "Playing" ? "" : ""}))
-             (hover-button :onclick "playerctl next"
-                           (icon ""))
              (label :class "icon-label"
-                    :limit-width 25
+                    :limit-width 35
                     :text {media-data['title']})))))
 
 ;; Date Widget ;;
