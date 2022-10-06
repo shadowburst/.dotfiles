@@ -14,11 +14,11 @@ export TERMINAL="alacritty"
 export BROWSER="brave"
 export EDITOR="emacsclient -t"
 
-eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg)
+eval "$(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg)"
 export SSH_AUTH_SOCK
 
 # Load custom colors
-xrdb "$HOME/.Xresources" &
+# xrdb "$HOME/.Xresources" &
 
 # Handle pluging in monitors
 autorandr --change --default mobile &
@@ -27,7 +27,7 @@ autorandr --change --default mobile &
 /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
 
 # Enable numlock by default
-numlockx on
+numlockx on &
 
 # Use the super key
 xcape -e 'Super_L=Super_L|space' &
@@ -40,7 +40,7 @@ xfsettingsd &
 (sleep 3 && xfce4-power-manager) &
 
 # Handle touchpad gestures
-fusuma -d &
+libinput-gestures-setup start &
 
 # Launch torrents daemon
 transmission-daemon &

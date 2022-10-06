@@ -57,7 +57,10 @@ if ask "Install configs ?"; then
 	crontab ".crontab"
 
 	# Change shell to ZSH
-	chsh -s $(which zsh)
+	chsh -s "$(which zsh)"
+
+	# Add user groups
+	sudo gpasswd -a "$USER" input
 
 	# Setup gnome keyring
 	echo "auth optional pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/login
@@ -66,6 +69,7 @@ if ask "Install configs ?"; then
 
 	# Setup services
 	sudo systemctl enable --now auto-cpufreq
+	sudo systemctl enable --now autorandr
 	sudo systemctl enable --now bluetooth
 	sudo systemctl enable --now cronie
 	sudo systemctl enable --now reflector.timer
@@ -75,4 +79,14 @@ if ask "Install configs ?"; then
 
 	# Enable dark mode for gnome apps
 	gsettings set org.gnome.desktop.interface color-scheme prefer-dark
+fi
+
+if ask "Install graphics controller ?"; then
+	vga_controller=$(lspci | grep -i --color 'vga\|3d\|2d')
+	if [ -n "$(echo "$vga_controller" | grep -q "Intel")" ]; then
+		sudo pacman -S intel-media-driver vulkan-intel libvdpau-va-gl
+		echo "VDPAU_DRIVER=va_gl" | sudo tee -a /etc/environment
+		echo "LIBVA_DRIVER_NAME=iHD" | sudo tee -a /etc/environment
+	fi
+
 fi

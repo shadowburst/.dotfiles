@@ -1,8 +1,4 @@
 #!/bin/bash
-#
-# ~/.xinitrc
-#
-# Executed by startx (run your window manager from here)
 
 sysresources=/etc/X11/xinit/.Xresources
 userresources="$HOME/.Xresources"
