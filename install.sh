@@ -60,7 +60,7 @@ if ask "Install configs ?"; then
 	chsh -s "$(which zsh)"
 
 	# Add user groups
-	sudo gpasswd -a "$USER" input
+	sudo gpasswd -a "$USER" input libvirt
 
 	# Setup gnome keyring
 	echo "auth optional pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/login
@@ -72,6 +72,7 @@ if ask "Install configs ?"; then
 	sudo systemctl enable --now autorandr
 	sudo systemctl enable --now bluetooth
 	sudo systemctl enable --now cronie
+	sudo systemctl enable --now libvirtd
 	sudo systemctl enable --now reflector.timer
 
 	# Setup emacs
