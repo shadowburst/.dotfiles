@@ -29,6 +29,9 @@ alias mkdir='mkdir -p'
 alias emacsclient='emacsclient -c -a "emacs"'
 alias emacsterm='emacsclient -t'
 
+# Aur helper
+alias yay='paru'
+
 # Extract all files based on type
 function extract
     if test -f $argv
