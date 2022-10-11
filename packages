@@ -7,6 +7,7 @@ blueman
 bluez-utils
 cmake
 cronie
+cups
 discord
 docker
 dunst
@@ -33,6 +34,7 @@ lutris
 mpc
 mpv
 neovim
+network-manager-applet
 numlockx
 pavucontrol
 polkit-gnome

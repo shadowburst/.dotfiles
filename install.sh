@@ -46,7 +46,7 @@ if ask "Install official packages ?"; then
 fi
 
 if ask "Install aur packages ?"; then
-	yay --needed --ask 4 -Sy - <./packages-aur
+	paru --needed --ask 4 -Sy - <./packages-aur
 fi
 
 if ask "Install configs ?"; then
@@ -72,6 +72,7 @@ if ask "Install configs ?"; then
 	sudo systemctl enable --now autorandr
 	sudo systemctl enable --now bluetooth
 	sudo systemctl enable --now cronie
+	sudo systemctl enable --now cups
 	sudo systemctl enable --now libvirtd
 	sudo systemctl enable --now reflector.timer
 
@@ -89,5 +90,10 @@ if ask "Install graphics controller ?"; then
 		echo "VDPAU_DRIVER=va_gl" | sudo tee -a /etc/environment
 		echo "LIBVA_DRIVER_NAME=iHD" | sudo tee -a /etc/environment
 	fi
+fi
 
+if ask "Install printer ?"; then
+	paru -S brother-dcpj785dw simple-scan brscan4
+	read -rp "Enter the IP address of the printer : "
+	sudo brsaneconfig4 -a name="Brother" model=DCP-J785DW ip="${REPLY}"
 fi
