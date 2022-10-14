@@ -70,6 +70,7 @@
                               ("docx" . "onlyoffice")
                               ("pdf" . "brave")
                               ("mkv" . "mpv")
+                              ("avi" . "mpv")
                               ("mp4" . "mpv")))
 
 (setq ranger-cleanup-eagerly t

@@ -168,6 +168,7 @@ This allows Dired to open files in external programs. Without this, it couldn't 
                               ("docx" . "onlyoffice")
                               ("pdf" . "brave")
                               ("mkv" . "mpv")
+                              ("avi" . "mpv")
                               ("mp4" . "mpv")))
 #+end_src
 
