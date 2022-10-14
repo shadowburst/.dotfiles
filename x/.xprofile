@@ -21,7 +21,7 @@ export SSH_AUTH_SOCK
 # xrdb "$HOME/.Xresources" &
 
 # Handle pluging in monitors
-autorandr --change --default mobile &
+autorandr --change --force --default mobile &
 
 # Load the polkit agent
 /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
