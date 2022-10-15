@@ -6,8 +6,8 @@
 (defpoll date :interval "1h" "date '+%d %B %Y'")
 (defpoll torrents-data :interval "5s" :initial "{\"total-count\": 0}" "common/scripts/torrents")
 (defpoll torrents-list :interval "1s" :run-while {torrents-data['total_count'] > 0} "transmission-remote -l")
-(defpoll updates-count :interval "1m" :initial 0 "yay -Qu | wc -l")
-(defpoll updates-list :interval "1m" :run-while {updates-count > 0} "yay -Qu")
+(defpoll updates-count :interval "1m" :initial 0 "paru -Qu | wc -l")
+(defpoll updates-list :interval "1m" :run-while {updates-count > 0} "paru -Qu")
 (defpoll battery-data :interval "5s" :initial "{}" "common/scripts/battery")
 
 (deflisten workspaces-data :initial "[]" "leftwm-state -t \"$HOME/.config/leftwm/themes/current/liquid/workspaces.liquid\"")

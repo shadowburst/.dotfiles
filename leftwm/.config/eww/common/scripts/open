@@ -10,7 +10,7 @@ case $1 in
         $TERMINAL -e tremc
         ;;
     "updates")
-        $TERMINAL -e yay -Syu
+        $TERMINAL -e paru
         ;;
     "tray")
         trayer --edge top --align right --distance 44 --widthtype pixel --width 80 --heighttype request --padding 8 --tint 0x00FF00FF
