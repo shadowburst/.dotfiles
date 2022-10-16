@@ -102,8 +102,7 @@
   '(org-level-2 ((t (:inherit outline-2 :height 1.3))))
   '(org-level-3 ((t (:inherit outline-3 :height 1.2))))
   '(org-level-4 ((t (:inherit outline-4 :height 1.1))))
-  '(org-level-5 ((t (:inherit outline-5 :height 1.0))))
-)
+  '(org-level-5 ((t (:inherit outline-5 :height 1.0)))))
 
 (use-package! org-auto-tangle
   :defer t
@@ -127,7 +126,12 @@
         treemacs-show-cursor t
         treemacs-git-mode 'deferred))
 
-(add-hook! 'projectile-after-switch-project-hook #'treemacs-display-current-project-exclusively #'treemacs)
+(treemacs-project-follow-mode t)
+(treemacs-filewatch-mode t)
+
+(after! (:and doom-themes treemacs)
+  (set-face-foreground 'treemacs-git-modified-face (doom-color 'orange))
+  (set-face-foreground 'treemacs-git-renamed-face (doom-color 'orange)))
 
 (map! :leader
       :desc "Open Treemacs" "e" #'treemacs)
