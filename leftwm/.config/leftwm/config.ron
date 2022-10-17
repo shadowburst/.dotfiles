@@ -2,7 +2,7 @@
 (
     workspaces: [],
     tags: ["", "", "", "", "", "", ""],
-    max_window_width: None,
+    max_window_width: 1920,
     layouts: [
         MainAndVertStack,
         CenterMainBalanced,
