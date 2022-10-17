@@ -75,7 +75,7 @@
 
 (setq ranger-cleanup-eagerly t
       ranger-show-hidden 'hidden
-      ranger-hide-cursor t
+      ranger-hide-cursor nil
       ranger-preview-file nil)
 
 (map! :after dired
@@ -126,8 +126,7 @@
         treemacs-show-cursor t
         treemacs-git-mode 'deferred))
 
-(treemacs-project-follow-mode t)
-(treemacs-filewatch-mode t)
+(treemacs-project-follow-mode 1)
 
 (after! (:and doom-themes treemacs)
   (set-face-foreground 'treemacs-git-modified-face (doom-color 'orange))
