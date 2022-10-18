@@ -35,7 +35,7 @@
         (command: CloseWindow, value: "", modifier: ["modkey"], key: "q"),
         (command: ToggleFloating, value: "", modifier: ["modkey"], key: "c"),
         (command: ToggleFullScreen, value: "", modifier: ["modkey"], key: "f"),
-        (command: NextLayout, value: "", modifier: ["modkey"], key: "Escape"),
+        (command: NextLayout, value: "", modifier: ["modkey"], key: "space"),
         (command: SwapTags, value: "", modifier: ["modkey"], key: "Tab"),
         (command: IncreaseMainWidth, value: "5", modifier: ["modkey"], key: "Right"),
         (command: DecreaseMainWidth, value: "5", modifier: ["modkey"], key: "Left"),

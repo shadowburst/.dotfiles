@@ -30,7 +30,7 @@ autorandr --change --force --default mobile &
 numlockx on &
 
 # Use the super key
-xcape -e 'Super_L=Super_L|A' &
+xcape -e 'Super_L=Super_L|Escape' &
 
 # Set keyboard layout
 setxkbmap fr &
