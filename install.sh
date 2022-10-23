@@ -56,9 +56,6 @@ if ask "Install configs ?"; then
 	# Load cron jobs
 	crontab ".crontab"
 
-	# Change shell to ZSH
-	chsh -s "$(which zsh)"
-
 	# Add user groups
 	sudo gpasswd -a "$USER" input libvirt
 
@@ -76,7 +73,12 @@ if ask "Install configs ?"; then
 	sudo systemctl enable --now libvirtd
 	sudo systemctl enable --now reflector.timer
 
+	# Setup ZSH
+	git clone https://github.com/jandamm/zgenom.git ~/.zgenom
+	chsh -s "$(which zsh)"
+
 	# Setup emacs
+	git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.emacs.d
 	~/.emacs.d/bin/doom install
 
 	# Enable dark mode for gnome apps
