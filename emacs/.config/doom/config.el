@@ -123,10 +123,10 @@
         treemacs-collapse-dirs 5
         treemacs-expand-after-init nil
         treemacs-expand-added-projects nil
-        treemacs-show-cursor t
-        treemacs-git-mode 'deferred))
+        treemacs-show-cursor t)
+  (treemacs-git-mode 'deferred)
+  (treemacs-project-follow-mode 1))
 
-(treemacs-project-follow-mode 1)
 
 (after! (:and doom-themes treemacs)
   (set-face-foreground 'treemacs-git-modified-face (doom-color 'orange))
