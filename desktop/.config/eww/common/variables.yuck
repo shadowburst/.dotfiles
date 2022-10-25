@@ -1,0 +1,17 @@
+(defvar transition-duration "500ms")
+(defvar eww "eww")
+(defvar spacing 10)
+(defvar bar-height 36)
+
+(defpoll time :interval "1s" "date '+%R'")
+(defpoll date :interval "1h" "date '+%d %B %Y'")
+(defpoll torrents-data :interval "5s" :initial "{\"total-count\": 0}" "common/scripts/torrents")
+(defpoll torrents-list :interval "1s" :run-while {torrents-data['total_count'] > 0} "transmission-remote -l | awk -F '[[:space:]][[:space:]]+' '{ OFS = \";\"} { print $3, $5, $7, $10 }' | head -n -1 | column -s ';' -t | cut -c 1-70")
+(defpoll updates-count :interval "1m" :initial 0 "(checkupdates && paru -Qua) | wc -l")
+(defpoll updates-list :interval "1m" :run-while {updates-count > 0} "checkupdates")
+(defpoll battery-data :interval "5s" :initial "{}" "common/scripts/battery")
+
+(deflisten workspaces-data :initial "[]" "leftwm-state -t \"$HOME/.config/leftwm/themes/current/liquid/workspaces.liquid\"")
+(deflisten media-data :initial "{\"status\": \"Stopped\"}" "common/scripts/media")
+(deflisten volume-data :initial "{}" "common/scripts/volume")
+(deflisten wifi-data :initial "{}" "common/scripts/wifi")
