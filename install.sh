@@ -42,47 +42,62 @@ if ask "Update packages ?"; then
 fi
 
 if ask "Install official packages ?"; then
-	sudo pacman --needed --ask 4 -Sy - <./packages
+	sudo pacman --needed --ask 4 -S - <./packages
 fi
 
 if ask "Install aur packages ?"; then
-	paru --needed --ask 4 -Sy - <./packages-aur
+	paru --needed --ask 4 -S - <./packages-aur
 fi
 
-if ask "Install configs ?"; then
-	# Load configs
-	stow */
+if ask "Install Arch configs ?"; then
+	stow arch
+
+	sudo systemctl enable --now bluetooth
+	sudo systemctl enable --now cronie
+	sudo systemctl enable --now reflector.timer
 
 	# Load cron jobs
 	crontab ".crontab"
+fi
 
-	# Add user groups
+if ask "Installing on a laptop ?"; then
 	sudo gpasswd -a "$USER" input libvirt
+
+	sudo systemctl enable --now auto-cpufreq
+	sudo systemctl enable --now autorandr
+	sudo systemctl enable --now libvirtd
+fi
+
+if ask "Install desktop ?"; then
+	stow desktop
 
 	# Setup gnome keyring
 	echo "auth optional pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/login
 	echo "session optional pam_gnome_keyring.so auto_start" | sudo tee -a /etc/pam.d/login
 	echo "password optional pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/passwd
 
-	# Setup services
-	sudo systemctl enable --now auto-cpufreq
-	sudo systemctl enable --now autorandr
-	sudo systemctl enable --now bluetooth
-	sudo systemctl enable --now cronie
-	sudo systemctl enable --now cups
-	sudo systemctl enable --now libvirtd
-	sudo systemctl enable --now reflector.timer
+	# Enable dark mode for gnome apps
+	gsettings set org.gnome.desktop.interface color-scheme prefer-dark
+fi
 
-	# Setup ZSH
-	git clone https://github.com/jandamm/zgenom.git ~/.zgenom
-	chsh -s "$(which zsh)"
+if ask "Install editors ?"; then
+	stow editors
 
 	# Setup emacs
 	git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.emacs.d
 	~/.emacs.d/bin/doom install
+fi
 
-	# Enable dark mode for gnome apps
-	gsettings set org.gnome.desktop.interface color-scheme prefer-dark
+if ask "Install programs ?"; then
+	stow programs
+fi
+
+if ask "Install shells ?"; then
+	stow shells
+
+	# Setup ZSH
+	git clone https://github.com/jandamm/zgenom.git ~/.zgenom
+	chsh -s "$(which zsh)"
 fi
 
 if ask "Install graphics controller ?"; then
@@ -96,6 +111,8 @@ fi
 
 if ask "Install printer ?"; then
 	paru -S brother-dcpj785dw simple-scan brscan4
+
+	sudo systemctl enable --now cups
 	read -rp "Enter the IP address of the printer : "
 	sudo brsaneconfig4 -a name="Brother" model=DCP-J785DW ip="${REPLY}"
 fi
