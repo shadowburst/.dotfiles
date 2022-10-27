@@ -25,6 +25,9 @@ gnome-calculator
 gnome-keyring
 gparted
 grub-customizer
+hunspell
+hunspell-en
+hunspell-fr
 iptables-nft
 iw
 kdenlive
@@ -49,8 +52,6 @@ reflector
 ripgrep
 rofi
 seahorse
-shellcheck
-shfmt
 spice-vdagent
 sshfs
 starship
