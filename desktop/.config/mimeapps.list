@@ -1,0 +1,5 @@
+[Default Applications]
+x-scheme-handler/webcal=brave-browser.desktop
+x-scheme-handler/mailto=brave-browser.desktop
+x-scheme-handler/magnet=transmission-magnet.desktop
+application/x.bittorrent=torrent.desktop

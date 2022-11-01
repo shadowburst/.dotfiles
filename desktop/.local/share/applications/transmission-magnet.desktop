@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Transmission (Magnet)
+Comment=Add magnet link to transmission
+Exec=/usr/bin/transmission-remote -a %u
+MimeType=x-scheme-handler/magnet;
