@@ -32,5 +32,8 @@ $character
 """
 
 [directory]
-style = "bold blue"
-format = "[](bright-green) [$path]($style) "
+style = "bold bright-blue"
+format = "[ $path]($style) "
+
+[git_branch]
+style = "bold bright-purple"

@@ -18,16 +18,16 @@ Xcursor.size:   16
 *.color10:      #4DB5BD
 
 ! yellow
-*.color3:       #DA8548
+*.color3:       #ECBE7B
 *.color11:      #ECBE7B
 
 ! blue
-*.color4:       #51AFEF
-*.color12:      #2257A0
+*.color4:       #2257A0
+*.color12:      #51AFEF
 
 ! magenta
-*.color5:       #C678DD
-*.color13:      #A9A1E1
+*.color5:       #A9A1E1
+*.color13:      #C678DD
 
 ! cyan
 *.color6:       #5699AF
