@@ -61,7 +61,7 @@ case ${chosen} in
 			ring=2257A0FF
 			inside=282C34FF
 			wrong=FF6C6BFF
-			font="Roboto"
+			font="Noto Sans"
 
 			i3lock -n --ignore-empty-password \
 				--clock --indicator --screen=1 \
@@ -72,20 +72,15 @@ case ${chosen} in
 				--keyhl-color=$primary --bshl-color=$wrong \
 				--separator-color=$ring --line-uses-inside \
 				--wrong-color=$wrong --modif-color=$wrong --time-color=$primary --date-color=$primary --greeter-color=$foreground \
-				--verif-text="" --wrong-text="" --greeter-text="" --noinput-text="" \
+				--verif-text="" --wrong-text="" --greeter-text="" --noinput-text="" --no-modkey-text \
 				--time-str="%R" --date-str="%a, %d %B" \
 				--wrong-font=$font --time-font="$font:style=Bold" --date-font=$font --greeter-font="JetBrainsMono Nerd Font" \
-				--wrong-size=20 --time-size=140 --date-size=40 --greeter-size=100 \
+				--wrong-size=20 --time-size=140 --date-size=30 --greeter-size=100 \
 				--ind-pos="x+w/2:y+h/2" --time-pos="ix:iy-220" --date-pos="tx:ty+50" --greeter-pos="ix:iy+r/2-5" \
 				--radius=70 \
-				--pass-media-keys --pass-screen-keys --no-modkey-text &
-
-			sleep 10
-
-			if [[ $(pgrep -x i3lock) ]]; then
-				xset dpms force off
-			fi
-
+				--custom-key-commands \
+				--cmd-media-play="playerctl play-pause" --cmd-media-pause="playerctl play-pause" --cmd-media-prev="playerctl previous" --cmd-media-next="playerctl next" \
+				--cmd-audio-mute="amixer -D pulse set Master 1+ toggle" --cmd-volume-down="amixer -D pulse sset Master 5%-" --cmd-volume-up="amixer -D pulse sset Master 5%+"
 		fi
 		;;
 	$suspend)
