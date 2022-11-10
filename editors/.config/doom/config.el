@@ -17,8 +17,9 @@
       :iv "C-s" (cmd! (save-buffer)
                       (evil-force-normal-state)))
 
-(map! :i "C-S-v" #'evil-paste-after
-      :v "C-S-c" #'evil-yank)
+(map! :i "C-S-v" (cmd! (evil-paste-before 1)
+                       (right-char))
+      :iv "C-S-c" #'evil-yank)
 
 (map! :after evil-org
       :map evil-org-mode-map
@@ -69,6 +70,7 @@
                               ("png" . "feh")
                               ("docx" . "onlyoffice")
                               ("pdf" . "brave")
+                              ("m4b" . "mpv")
                               ("mkv" . "mpv")
                               ("avi" . "mpv")
                               ("mp4" . "mpv")))

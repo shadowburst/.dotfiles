@@ -17,5 +17,5 @@ EWW="eww"
 $EWW daemon
 
 xrandr --listmonitors | tail -n +2 | awk '{print substr($1, 1, length($1)-1)}' | while read -r monitor; do
-  $EWW open --screen $monitor bar$monitor
+  $EWW open --screen "$monitor" bar$monitor
 done
