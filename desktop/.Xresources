@@ -22,8 +22,8 @@ Xcursor.size:   16
 *.color11:      #ECBE7B
 
 ! blue
-*.color4:       #2257A0
-*.color12:      #51AFEF
+*.color4:       #51AFEF
+*.color12:      #2257A0
 
 ! magenta
 *.color5:       #A9A1E1
