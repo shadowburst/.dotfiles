@@ -41,6 +41,8 @@ if ask "Update packages ?"; then
 	sudo pacman -Syyu
 fi
 
+sudo pacman -S paru stow
+
 if ask "Install official packages ?"; then
 	sudo pacman --needed --ask 4 -S - <./packages
 fi
