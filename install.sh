@@ -63,7 +63,8 @@ if ask "Install Arch configs ?"; then
 fi
 
 if ask "Installing on a laptop ?"; then
-	sudo gpasswd -a "$USER" input libvirt
+	sudo gpasswd -a "$USER" input
+	sudo gpasswd -a "$USER" libvirt
 
 	sudo systemctl enable --now auto-cpufreq
 	sudo systemctl enable --now autorandr

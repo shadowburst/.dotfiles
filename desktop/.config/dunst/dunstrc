@@ -17,7 +17,7 @@
     #
     # If this option is set to mouse or keyboard, the monitor option
     # will be ignored.
-    follow = none
+    follow = mouse
 
     ### Geometry ###
 
@@ -90,7 +90,7 @@
     frame_width = 3
 
     # Defines color of the frame around the notification window.
-    frame_color = "#51AFEF"
+    frame_color = "#282C34"
 
     # Size of gap to display between notifications - requires a compositor.
     # If value is greater than 0, separator_height will be ignored and a border
@@ -118,7 +118,7 @@
 
     ### Text ###
 
-    font = Roboto 11
+    font = Noto sans 11
 
     # The spacing between lines.  If the height is smaller than the
     # font height, it will get raised to the font height.
@@ -158,7 +158,7 @@
     #   %n  progress value if set without any extra characters
     #   %%  Literal %
     # Markup is allowed
-    format = "<span font="Roboto 14"><b>%s</b></span>\n%b"
+    format = "<span font="Noto sans 14"><b>%s</b></span>\n%b"
 
     # Alignment of message text.
     # Possible values are "left", "center" and "right".
@@ -175,7 +175,7 @@
 
     # Specify where to make an ellipsis in long lines.
     # Possible values are "start", "middle" and "end".
-    ellipsize = middle
+    ellipsize = end
 
     # Ignore newlines '\n' in notifications.
     ignore_newline = no
@@ -203,10 +203,10 @@
 
     # Paths to default icons.
     icon_path = /usr/share/icons/Tela/scalable/status/:/usr/share/icons/Tela/scalable/devices/
-    icon_theme = "Tela-blue-dark, Tela-dark"
+    icon_theme = "Tela-purple-dark, Tela-dark"
     enable_recursive_icon_lookup = true
+    always_run_script = true
 
-    always_run_scripts = true
     ### History ###
 
     # Should a notification popped up from history be sticky or timeout
@@ -219,7 +219,7 @@
     ### Misc/Advanced ###
 
     # dmenu path.
-    dmenu = /usr/bin/dmenu -p dunst:
+    dmenu = /usr/bin/rofi -dmenu -p Select
 
     # Browser for opening urls in context menu.
     browser = /usr/bin/xdg-open
@@ -238,7 +238,7 @@
     # corners.
     # The radius will be automatically lowered if it exceeds half of the
     # notification height to avoid clipping text and/or icons.
-    corner_radius = 15
+    corner_radius = 0
 
     # Ignore the dbus closeNotification message.
     # Useful to enforce the timeout set by dunst configuration. Without this
@@ -283,9 +283,9 @@
     # * context_all: Open context menu for all notifications.
     # These values can be strung together for each mouse event, and
     # will be executed in sequence.
-    mouse_left_click = close_current
-    mouse_middle_click = context
-    mouse_right_click = do_action
+    mouse_left_click = do_action, open_url, close_current
+    mouse_middle_click = close_all
+    mouse_right_click = context
 
 # Experimental features that may or may not work correctly. Do not expect them
 # to have a consistent behaviour across releases.
@@ -301,29 +301,22 @@
 [urgency_low]
     # IMPORTANT: colors have to be defined in quotation marks.
     # Otherwise the "#" and following would be interpreted as a comment.
-    background = "#1a1b26"
-    foreground = "#c0caf5"
-    frame_color = "#c0caf5"
-    timeout = 10
-    script = ~/.scripts/dunst/sound-normal.sh
-    # Icon for notifications with low urgency, uncomment to enable
-    #default_icon = /path/to/icon
+    background = "#282C34"
+    foreground = "#BBC2CF"
+    frame_color = "#1C1F24"
+    timeout = 3
 
 [urgency_normal]
     background = "#282C34"
     foreground = "#BBC2CF"
-    frame_color = "#51AFEF"
-    timeout = 10
-    # Icon for notifications with normal urgency, uncomment to enable
-    #default_icon = /path/to/icon
+    frame_color = "#1C1F24"
+    timeout = 5
 
 [urgency_critical]
     background = "#282C34"
     foreground = "#BBC2CF"
     frame_color = "#FF6C6B"
     timeout = 0
-    # Icon for notifications with critical urgency, uncomment to enable
-    #default_icon = /path/to/icon
 
 # Every section that isn't one of the above is interpreted as a rules to
 # override settings for certain messages.

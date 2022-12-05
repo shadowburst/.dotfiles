@@ -21,7 +21,7 @@ on_change() {
         icon="睊"
     fi
 
-    if [[ "$(cat /sys/class/net/wlp*/operstate)" = "up" ]]; then
+    if [[ "$(cat /sys/class/net/wlan*/operstate)" = "up" ]]; then
         connection="$(nmcli -t -f NAME connection show --active | head -n 1)"
     else
         connection="No connection"
