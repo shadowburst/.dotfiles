@@ -1,20 +1,9 @@
-/**
- *
- * Author : Aditya Shakya (adi1090x)
- * Github : @adi1090x
- *
- * Rofi Theme File
- * Rofi Version: 1.7.3
- **/
-
-/*****----- Configuration -----*****/
 configuration {
     show-icons:                 false;
 }
 
 /*****----- Global Properties -----*****/
 @import                          "shared/colors.rasi"
-@import                          "shared/fonts.rasi"
 
 /*
 USE_BUTTONS=YES
@@ -37,9 +26,9 @@ window {
     padding:                     0px;
     border:                      0px solid;
     border-radius:               12px;
-    border-color:                @selected;
+    border-color:                @primary;
     cursor:                      "default";
-    background-color:            @background;
+    background-color:            @black;
 }
 
 /*****----- Main Box -----*****/
@@ -50,7 +39,7 @@ mainbox {
     padding:                     15px;
     border:                      0px solid;
     border-radius:               0px;
-    border-color:                @selected;
+    border-color:                @primary;
     background-color:            transparent;
     children:                    [ "listview" ];
 }
@@ -63,7 +52,7 @@ inputbar {
     padding:                     0px;
     border:                      0px;
     border-radius:               0px;
-    border-color:                @selected;
+    border-color:                @primary;
     background-color:            transparent;
     text-color:                  @foreground;
     children:                    [ "textbox-prompt-colon", "prompt"];
@@ -97,8 +86,8 @@ message {
     padding:                     12px;
     border:                      0px solid;
     border-radius:               100%;
-    border-color:                @selected;
-    background-color:            @background-alt;
+    border-color:                @primary;
+    background-color:            @background;
     text-color:                  @foreground;
 }
 textbox {
@@ -114,7 +103,7 @@ error-message {
     padding:                     12px;
     border:                      0px solid;
     border-radius:               0px;
-    border-color:                @selected;
+    border-color:                @primary;
     background-color:            @background;
     text-color:                  @foreground;
 }
@@ -137,7 +126,7 @@ listview {
     padding:                     0px;
     border:                      0px solid;
     border-radius:               0px;
-    border-color:                @selected;
+    border-color:                @primary;
     background-color:            transparent;
     text-color:                  @foreground;
     cursor:                      "default";
@@ -151,8 +140,8 @@ element {
     padding:                     15px 0px;
     border:                      0px solid;
     border-radius:               100%;
-    border-color:                @selected;
-    background-color:            @background-alt;
+    border-color:                @primary;
+    background-color:            @background;
     text-color:                  @foreground;
     cursor:                      pointer;
 }
@@ -165,6 +154,6 @@ element-text {
     horizontal-align:            0.5;
 }
 element selected.normal {
-    background-color:            var(selected);
-    text-color:                  var(background);
+    background-color:            @primary;
+    text-color:                  @black;
 }

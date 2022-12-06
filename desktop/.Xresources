@@ -26,8 +26,8 @@ Xcursor.size:   16
 *.color12:      #2257A0
 
 ! magenta
-*.color5:       #A9A1E1
-*.color13:      #C678DD
+*.color5:       #5657f5
+*.color13:      #A9A1E1
 
 ! cyan
 *.color6:       #5699AF

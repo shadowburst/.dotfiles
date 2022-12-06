@@ -15,7 +15,7 @@
     disable_window_snap: true,
     focus_behaviour: Sloppy,
     focus_new_windows: true,
-    sloppy_mouse_follows_focus: false,
+    sloppy_mouse_follows_focus: true,
     window_rules: [
         (window_class: "Brave-browser", window_title: None, spawn_on_tag: 1, spawn_floating: None),
         (window_class: "Firefox", window_title: None, spawn_on_tag: 1, spawn_floating: None),

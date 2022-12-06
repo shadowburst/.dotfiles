@@ -4,6 +4,6 @@
     margin: 4,
     workspace_margin: 6,
     default_border_color: "#282C34",
-    floating_border_color: "#5699AF",
-    focused_border_color: "#51AFEF",
+    floating_border_color: "#A9A1E1",
+    focused_border_color: "#5657f5",
 )

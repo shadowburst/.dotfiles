@@ -57,8 +57,8 @@ case ${chosen} in
 		if [[ -x '/usr/bin/i3lock' ]]; then
 			background=00000055
 			foreground=BBC2CFFF
-			primary=51AFEFFF
-			ring=2257A0FF
+			primary=5657f5FF
+			ring=A9A1E1FF
 			inside=282C34FF
 			wrong=FF6C6BFF
 			font="Noto Sans"

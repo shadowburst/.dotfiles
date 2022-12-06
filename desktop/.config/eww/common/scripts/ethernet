@@ -10,28 +10,14 @@ if [[ -z $DEVICE ]]; then
 fi
 
 on_change() {
-    class="icon--disabled--variable"
-    if [[ -n "$(rfkill list wlan | awk '/Soft blocked: no/')" ]]; then
-        icon="直"
-
-        case "$(nmcli -g CONNECTIVITY general)" in
-            "full")
-                class="icon--primary--variable"
-                ;;
-            "limited")
-                class="icon--warning--variable"
-                ;;
-            "none") ;;
-        esac
-
-    else
-        icon="睊"
-    fi
+    icon=""
+    connection=""
 
     if [[ "$(cat /sys/class/net/$DEVICE/operstate)" = "up" ]]; then
+        class="icon--primary--variable"
         connection="$(nmcli -t connection show --active | awk -F ':' -v device=$DEVICE '$0~device { print $1 }')"
     else
-        connection="No connection"
+        class="icon--disabled--variable"
     fi
 
     echo "{ \"device\": \"$DEVICE\", \"connection\": \"$connection\", \"class\": \"$class\", \"icon\": \"$icon\" }"

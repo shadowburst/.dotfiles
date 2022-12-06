@@ -18,7 +18,7 @@
     dark-blue:      #2257A0;
     light-blue:     #51AFEF;
 
-    dark-magenta:   #C678DD;
+    dark-magenta:   #5657f5;
     light-magenta:  #A9A1E1;
 
     dark-cyan:      #5699AF;
@@ -27,6 +27,6 @@
     light-gray:     #5B6268;
     white:          #DFDFDF;
 
-    primary:        #51AFEF;
+    primary:        #5657f5;
     highlight:      #5C637028;
 }

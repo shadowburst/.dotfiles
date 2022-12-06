@@ -9,10 +9,16 @@ case $1 in
     "torrents")
         $TERMINAL -e tremc
         ;;
+    "tray")
+        trayer --edge top --align right --distance 44 --widthtype pixel --width 80 --heighttype request --padding 8 --tint 0x00FF00FF
+        ;;
     "updates")
         $TERMINAL -e paru
         ;;
-    "tray")
-        trayer --edge top --align right --distance 44 --widthtype pixel --width 80 --heighttype request --padding 8 --tint 0x00FF00FF
+    "volume")
+        pavucontrol
+        ;;
+    "wifi")
+        $TERMINAL -e nmtui
         ;;
 esac

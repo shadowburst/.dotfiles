@@ -3,15 +3,56 @@
 INTERFACE=/sys/class/power_supply/BAT0/
 
 percent="$(cat "$INTERFACE/capacity")"
-class="battery--danger"
-if [[ "$percent" -gt 40 ]]; then
-	class="battery--success"
+
+class="icon--danger--variable"
+if [[ "$percent" -eq 100 ]]; then
+	class="icon--success--variable"
+elif [[ "$percent" -gt 40 ]]; then
+	class="icon--primary--variable"
 elif [[ "$percent" -gt 20 ]]; then
-	class="battery--warning"
+	class="icon--warning--variable"
 fi
-icon=""
+
 if [[ "$(cat "$INTERFACE/status")" = "Charging" ]]; then
-	icon=""
+	if [[ "$percent" -eq 100 ]]; then
+		icon=""
+	elif [[ "$percent" -gt 90 ]]; then
+		icon=""
+	elif [[ "$percent" -gt 80 ]]; then
+		icon=""
+	elif [[ "$percent" -gt 60 ]]; then
+		icon=""
+	elif [[ "$percent" -gt 40 ]]; then
+		icon=""
+	elif [[ "$percent" -gt 30 ]]; then
+		icon=""
+	else
+		icon=""
+	fi
+else
+	if [[ "$percent" -eq 100 ]]; then
+		icon=""
+	elif [[ "$percent" -gt 90 ]]; then
+		icon=""
+	elif [[ "$percent" -gt 80 ]]; then
+		icon=""
+	elif [[ "$percent" -gt 70 ]]; then
+		icon=""
+	elif [[ "$percent" -gt 60 ]]; then
+		icon=""
+	elif [[ "$percent" -gt 50 ]]; then
+		icon=""
+	elif [[ "$percent" -gt 40 ]]; then
+		icon=""
+	elif [[ "$percent" -gt 30 ]]; then
+		icon=""
+	elif [[ "$percent" -gt 20 ]]; then
+		icon=""
+	elif [[ "$percent" -gt 10 ]]; then
+		icon=""
+	else
+		icon=""
+	fi
 fi
 
 echo "{ \"percent\": \"$percent\", \"class\": \"$class\", \"icon\": \"$icon\" }"

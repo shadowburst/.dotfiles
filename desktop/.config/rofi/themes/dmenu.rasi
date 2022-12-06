@@ -1,4 +1,4 @@
-@import "~/.config/rofi/colors/current.rasi"
+@import "shared/colors.rasi"
 
 * {
   background-color: @black;
