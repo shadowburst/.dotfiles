@@ -38,7 +38,7 @@
 
         & highlight {
           border-radius: 0 0 0 $radius;
-          background-color: $magenta;
+          background-color: $secondary;
         }
       }
     }
@@ -49,19 +49,6 @@
     margin: 0 0.5rem;
     font-size: 0.8rem;
     color: $foreground;
-  }
-}
-
-.battery {
-  @extend .icon;
-  padding: 0.7rem;
-  font-size: 1rem;
-
-  @each $key, $val in $colors {
-    &--#{$key} {
-      @extend .battery;
-      color: $val;
-    }
   }
 }
 

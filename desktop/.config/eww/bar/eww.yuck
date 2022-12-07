@@ -92,32 +92,18 @@
                       :label "${volume-data.percent}%"
                       {volume-data.icon})))
 
-;; Wifi Widget ;;
-(defvar bar-wifi-reveal -1)
-(defwidget wifi [monitor]
-  (hover-button :onclick "common/scripts/open wifi"
+;; Network Widget ;;
+(defvar bar-network-reveal -1)
+(defwidget network [monitor]
+  (hover-button :onclick "common/scripts/open network"
                 :onrightclick "rfkill toggle wlan"
-                :onhover "${EWW_CMD} update bar-wifi-reveal=${monitor}"
-                :onhoverlost "${EWW_CMD} update bar-wifi-reveal=-1"
-                :tooltip " ${round(EWW_NET[wifi-data.device].NET_DOWN / 1048576, 3)} MB/s |  ${round(EWW_NET[wifi-data.device].NET_UP / 1048576, 3)} MB/s"
-                (icon :class "${wifi-data.class}"
-                      :reveal {bar-wifi-reveal == monitor}
-                      :label "${wifi-data.connection}"
-                      {wifi-data.icon})))
-
-;; Ethernet widget ;;
-(defvar bar-ethernet-reveal -1)
-(defwidget ethernet [monitor]
-  (hover-button :onclick ""
-                :onrightclick "rfkill block wwan"
-                :visible {ethernet-data.connection ?: false}
-                :onhover "${EWW_CMD} update bar-ethernet-reveal=${monitor}"
-                :onhoverlost "${EWW_CMD} update bar-ethernet-reveal=-1"
-                :tooltip " ${round(EWW_NET[ethernet-data.device].NET_DOWN / 1048576, 3)} MB/s |  ${round(EWW_NET[ethernet-data.device].NET_UP / 1048576, 3)} MB/s"
-                (icon :class "${ethernet-data.class}"
-                      :reveal {bar-ethernet-reveal == monitor}
-                      :label "${ethernet-data.connection}"
-                      {ethernet-data.icon})))
+                :onhover "${EWW_CMD} update bar-network-reveal=${monitor}"
+                :onhoverlost "${EWW_CMD} update bar-network-reveal=-1"
+                (icon :class "${network-data.class}"
+                    :reveal {bar-network-reveal == monitor}
+                    :label "${network-data.connection}"
+                    :tooltip " ${round(EWW_NET[network-data.device].NET_DOWN / 1048576, 3)} MB/s |  ${round(EWW_NET[network-data.device].NET_UP / 1048576, 3)} MB/s"
+                    {network-data.icon})))
 
 ;; Battery Widget ;;
 (defwidget battery [monitor]
@@ -152,8 +138,7 @@
                   (torrents)
                   (updates :monitor monitor)
                   (volume :monitor monitor)
-                  (wifi :monitor monitor)
-                  (ethernet :monitor monitor)
+                  (network :monitor monitor)
                   (battery :monitor monitor))))
 
 (defwindow bar0

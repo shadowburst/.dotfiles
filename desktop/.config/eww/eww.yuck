@@ -2,4 +2,3 @@
 (include "./common/widgets.yuck")
 
 (include "./bar/eww.yuck")
-(include "./osd/eww.yuck")

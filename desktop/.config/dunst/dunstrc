@@ -74,7 +74,15 @@
     # notifications.
     # Set to 0 to disable.
     # If gap_size is greater than 0, this setting will be ignored.
-    separator_height = 4
+    separator_height = 2
+
+    # Define a color for the separator.
+    # possible values are:
+    #  * auto: dunst tries to find a color fitting to the background;
+    #  * foreground: use the same color as the foreground;
+    #  * frame: use the same color as the frame;
+    #  * anything else will be interpreted as a X color.
+    separator_color = "#5657f5"
 
     # Padding between text and separator.
     padding = 8
@@ -97,14 +105,6 @@
     # of size frame_width will be drawn around each notification instead.
     # Click events on gaps do not currently propagate to applications below.
     gap_size = 0
-
-    # Define a color for the separator.
-    # possible values are:
-    #  * auto: dunst tries to find a color fitting to the background;
-    #  * foreground: use the same color as the foreground;
-    #  * frame: use the same color as the frame;
-    #  * anything else will be interpreted as a X color.
-    separator_color = frame
 
     # Sort messages by urgency.
     sort = yes

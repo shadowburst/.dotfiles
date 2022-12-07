@@ -6,6 +6,9 @@ case $1 in
     "launcher")
         $HOME/.config/rofi/scripts/appmenu.sh
         ;;
+    "network")
+        $TERMINAL -e nmtui
+        ;;
     "torrents")
         $TERMINAL -e tremc
         ;;
@@ -13,12 +16,9 @@ case $1 in
         trayer --edge top --align right --distance 44 --widthtype pixel --width 80 --heighttype request --padding 8 --tint 0x00FF00FF
         ;;
     "updates")
-        $TERMINAL -e paru
+        $TERMINAL -e bash -c "paru -Syu; echo Done - Press enter to exit...; read _"
         ;;
     "volume")
         pavucontrol
-        ;;
-    "wifi")
-        $TERMINAL -e nmtui
         ;;
 esac

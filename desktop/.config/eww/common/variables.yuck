@@ -13,5 +13,4 @@
 (deflisten workspaces-data :initial "[]" "leftwm-state -t \"$HOME/.config/leftwm/themes/current/liquid/workspaces.liquid\"")
 (deflisten media-data :initial "{\"status\": \"Stopped\"}" "common/scripts/media")
 (deflisten volume-data :initial "{}" "common/scripts/volume")
-(deflisten wifi-data :initial "{}" "common/scripts/wifi wlan0")
-(deflisten ethernet-data :initial "{}" "common/scripts/ethernet enp7s0")
+(deflisten network-data :initial "{}" "common/scripts/network")
