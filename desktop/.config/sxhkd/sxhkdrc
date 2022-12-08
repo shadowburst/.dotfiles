@@ -34,5 +34,8 @@ XF86AudioMute
 {XF86MonBrightnessDown,XF86MonBrightnessUp}
     light -{U,A} 5
 
+XF86Calculator
+    gnome-calculator
+
 {_,shift} + Print
     flameshot {full,gui}
