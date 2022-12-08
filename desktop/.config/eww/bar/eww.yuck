@@ -80,17 +80,17 @@
                       :reveal {bar-updates-reveal == monitor}
                       "")))
 
-;; Volume Widget ;;
-(defvar bar-volume-reveal -1)
-(defwidget volume [monitor]
-  (hover-button :onclick "common/scripts/open volume"
-                :onrightclick "amixer -D pulse set Master 1+ toggle"
-                :onhover "${EWW_CMD} update bar-volume-reveal=${monitor}"
-                :onhoverlost "${EWW_CMD} update bar-volume-reveal=-1"
-                (icon :class "${volume-data.class}"
-                      :reveal {bar-volume-reveal == monitor}
-                      :label "${volume-data.percent}%"
-                      {volume-data.icon})))
+;; Bluetooth Widget ;;
+(defvar bar-bluetooth-reveal -1)
+(defwidget bluetooth [monitor]
+  (hover-button :onclick "common/scripts/open bluetooth"
+                :onrightclick "rfkill toggle bluetooth"
+                :onhover "${EWW_CMD} update bar-bluetooth-reveal=${monitor}"
+                :onhoverlost "${EWW_CMD} update bar-bluetooth-reveal=-1"
+                (icon :class {bluetooth-data.class}
+                      :reveal {bar-bluetooth-reveal == monitor}
+                      :label "${bluetooth-data.connections} ${bluetooth-data.connections != 1 ? 'connections' : 'connection'}"
+                      {bluetooth-data.icon})))
 
 ;; Network Widget ;;
 (defvar bar-network-reveal -1)
@@ -99,16 +99,28 @@
                 :onrightclick "rfkill toggle wlan"
                 :onhover "${EWW_CMD} update bar-network-reveal=${monitor}"
                 :onhoverlost "${EWW_CMD} update bar-network-reveal=-1"
-                (icon :class "${network-data.class}"
+                (icon :class {network-data.class}
                     :reveal {bar-network-reveal == monitor}
-                    :label "${network-data.connection}"
+                    :label {network-data.connection}
                     :tooltip " ${round(EWW_NET[network-data.device].NET_DOWN / 1048576, 3)} MB/s |  ${round(EWW_NET[network-data.device].NET_UP / 1048576, 3)} MB/s"
                     {network-data.icon})))
+
+;; Volume Widget ;;
+(defvar bar-volume-reveal -1)
+(defwidget volume [monitor]
+  (hover-button :onclick "common/scripts/open volume"
+                :onrightclick "amixer -D pulse set Master 1+ toggle"
+                :onhover "${EWW_CMD} update bar-volume-reveal=${monitor}"
+                :onhoverlost "${EWW_CMD} update bar-volume-reveal=-1"
+                (icon :class {volume-data.class}
+                      :reveal {bar-volume-reveal == monitor}
+                      :label "${volume-data.percent}%"
+                      {volume-data.icon})))
 
 ;; Battery Widget ;;
 (defwidget battery [monitor]
   (hover-button :onclick ""
-                (icon :class "${battery-data.class}"
+                (icon :class {battery-data.class}
                       :reveal true
                       :label "${battery-data.percent}%"
                       {battery-data.icon})))
@@ -137,8 +149,9 @@
                   :space-evenly false
                   (torrents)
                   (updates :monitor monitor)
-                  (volume :monitor monitor)
+                  (bluetooth :monitor monitor)
                   (network :monitor monitor)
+                  (volume :monitor monitor)
                   (battery :monitor monitor))))
 
 (defwindow bar0

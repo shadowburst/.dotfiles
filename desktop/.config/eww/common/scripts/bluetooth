@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+icon=""
+class="icon--disabled--variable"
+connections="0"
+
+if [[ -n "$(rfkill list bluetooth | awk '/Soft blocked: no/')" ]]; then
+    icon=""
+    class="icon--primary--variable"
+
+    connections="$(bluetoothctl devices Connected | wc -l)"
+
+    if [[ "$connections" -gt 0 ]]; then
+        icon=""
+    fi
+fi
+
+echo "{ \"connections\": \"$connections\", \"class\": \"$class\", \"icon\": \"$icon\" }"
