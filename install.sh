@@ -69,6 +69,7 @@ if ask "Installing on a laptop ?"; then
 	sudo systemctl enable --now auto-cpufreq
 	sudo systemctl enable --now autorandr
 	sudo systemctl enable --now libvirtd
+	sudo systemctl enable --now sshd
 fi
 
 if ask "Install desktop ?"; then
