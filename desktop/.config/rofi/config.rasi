@@ -2,7 +2,7 @@ configuration {
     modi: "window,drun,run,ssh,combi";
     font: "Roboto Regular 12";
     combi-modi: "window,drun,ssh";
-    icons-theme: "Tela dark";
+    icons-theme: "Tela purple dark";
     drun-display-format: "{name}";
     display-drun: "";
     display-run: "";

@@ -7,6 +7,6 @@ Encoding=UTF-8
 [X-GNOME-Metatheme]
 GtkTheme=Layan-Dark
 MetacityTheme=Layan-Dark
-IconTheme=Tela-Dark
+IconTheme=Tela-Purple-Dark
 CursorTheme=Adwaita
 ButtonLayout=menu:minimize,maximize,close
