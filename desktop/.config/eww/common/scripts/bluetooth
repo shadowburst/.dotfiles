@@ -2,17 +2,26 @@
 
 icon=""
 class="icon--disabled--variable"
-connections="0"
+connection="Off"
+connections_count="0"
 
 if [[ -n "$(rfkill list bluetooth | awk '/Soft blocked: no/')" ]]; then
     icon=""
     class="icon--primary--variable"
+    connection="No connections"
+    connections_count="$(bluetoothctl devices Connected | wc -l)"
 
-    connections="$(bluetoothctl devices Connected | wc -l)"
-
-    if [[ "$connections" -gt 0 ]]; then
+    if [[ "$connections_count" -gt 0 ]]; then
         icon=""
+
+        if [[ "$connections_count" -eq 1  ]]; then
+            connection="$(bluetoothctl devices Connected | awk '{$1=$2=""; print}' | xargs)"
+        else
+            connection="$connections_count devices"
+        fi
     fi
 fi
 
-echo "{ \"connections\": \"$connections\", \"class\": \"$class\", \"icon\": \"$icon\" }"
+
+
+echo "{ \"connection\": \"$connection\", \"class\": \"$class\", \"icon\": \"$icon\" }"

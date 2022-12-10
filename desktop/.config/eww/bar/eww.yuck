@@ -89,7 +89,7 @@
                 :onhoverlost "${EWW_CMD} update bar-bluetooth-reveal=-1"
                 (icon :class {bluetooth-data.class}
                       :reveal {bar-bluetooth-reveal == monitor}
-                      :label "${bluetooth-data.connections} ${bluetooth-data.connections != 1 ? 'connections' : 'connection'}"
+                      :label {bluetooth-data.connection}
                       {bluetooth-data.icon})))
 
 ;; Network Widget ;;
