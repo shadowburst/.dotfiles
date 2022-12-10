@@ -91,6 +91,13 @@ Some general keybindings that help while using the editor.
       :niv "M-k" #'drag-stuff-up)
 #+end_src
 
+- Use Shift + h/l to move through open files
+#+begin_src emacs-lisp
+(map! :map evil-motion-state-map
+      :g "H" #'previous-buffer
+      :g "L" #'next-buffer)
+#+end_src
+
 ** Filetypes
 Here I add modes to activate based on filetype.
 

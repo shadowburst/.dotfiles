@@ -28,6 +28,10 @@
 (map! :niv "M-j" #'drag-stuff-down
       :niv "M-k" #'drag-stuff-up)
 
+(map! :map evil-motion-state-map
+      :g "H" #'previous-buffer
+      :g "L" #'next-buffer)
+
 (add-to-list 'auto-mode-alist '("\\.yuck\\'" . lisp-mode))
 
 (setq display-line-numbers-type 'relative)
