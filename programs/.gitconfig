@@ -7,5 +7,6 @@
 	rebase = true
 [core]
 	pager = nvim -R
+	editor = nvim
 [color]
 	pager = no

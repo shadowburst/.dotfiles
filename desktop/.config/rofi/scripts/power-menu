@@ -66,10 +66,10 @@ case ${chosen} in
 			i3lock -n --ignore-empty-password \
 				--clock --indicator --screen=1 \
 				--color=$background \
-				--inside-color=$inside --ring-color=$ring \
-				--insidever-color=$inside --ringver-color=$primary \
+				--inside-color=$inside --ring-color=$primary \
+				--insidever-color=$inside --ringver-color=$ring \
 				--insidewrong-color=$inside --ringwrong-color=$wrong \
-				--keyhl-color=$primary --bshl-color=$wrong \
+				--keyhl-color=$ring --bshl-color=$wrong \
 				--separator-color=$ring --line-uses-inside \
 				--wrong-color=$wrong --modif-color=$wrong --time-color=$primary --date-color=$primary --greeter-color=$foreground \
 				--verif-text="" --wrong-text="" --greeter-text="" --noinput-text="" --no-modkey-text \

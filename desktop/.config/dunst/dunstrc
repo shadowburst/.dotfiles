@@ -52,14 +52,16 @@
     progress_bar_height = 10
 
     # Set the frame width of the progress bar
-    progress_bar_frame_width = 1
+    progress_bar_frame_width = 0
 
     # Set the minimum width for the progress bar
     progress_bar_min_width = 150
 
     # Set the maximum width for the progress bar
-    progress_bar_max_width = 300
+    progress_bar_max_width = 400
 
+    # Set the progress bar color
+    highlight = "#5657f5"
 
     # Show how many messages are currently hidden (because of
     # notification_limit).
@@ -202,8 +204,7 @@
     max_icon_size = 32
 
     # Paths to default icons.
-    icon_path = /usr/share/icons/Tela/scalable/status/:/usr/share/icons/Tela/scalable/devices/
-    icon_theme = "Tela-purple-dark, Tela-dark"
+    icon_theme = "Tela-purple-dark"
     enable_recursive_icon_lookup = true
     always_run_script = true
 

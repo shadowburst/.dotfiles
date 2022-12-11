@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
-eww update updates-count="$((checkupdates; paru -Qua) | wc -l)"
+updates="$((checkupdates; paru -Qua) | column -t | cut -c 1-70)"
 
-(checkupdates; paru -Qua) | column -t | cut -c 1-70
+eww update updates-count=$(echo "$updates" | wc -l)
+
+echo "$updates"

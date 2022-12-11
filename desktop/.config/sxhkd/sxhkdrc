@@ -1,8 +1,8 @@
 super + Escape
-    $HOME/.config/rofi/scripts/appmenu.sh
+    $HOME/.config/rofi/scripts/app-menu
 
 super + x
-    $HOME/.config/rofi/scripts/powermenu.sh
+    $HOME/.config/rofi/scripts/power-menu
 
 control + shift + Escape
     $TERMINAL -e bashtop
@@ -20,19 +20,22 @@ super + e
     emacsclient -c -a 'emacs' --eval '(ranger)'
 
 super + d
-    $HOME/.config/leftwm/scripts/launch_default.sh
+    $HOME/.config/leftwm/scripts/launch-default
 
 XF86AudioMute
-    amixer -D pulse set Master 1+ toggle
+    amixer -D pulse set Master 1+ toggle && \
+    $HOME/.config/dunst/scripts/on-volume-change
 
 {XF86AudioLowerVolume,XF86AudioRaiseVolume}
-    amixer -D pulse sset Master {"5%-","5%+"}
+    amixer -D pulse sset Master {"5%-","5%+"} && \
+    $HOME/.config/dunst/scripts/on-volume-change
 
 {XF86AudioPrev,XF86AudioPlay,XF86AudioPause,XF86AudioNext}
     playerctl {previous,play-pause,play-pause,next}
 
 {XF86MonBrightnessDown,XF86MonBrightnessUp}
-    light -{U,A} 5
+    light -{U,A} 5 && \
+    $HOME/.config/dunst/scripts/on-brightness-change
 
 XF86Calculator
     gnome-calculator
