@@ -102,7 +102,7 @@
                 (icon :class {network-data.class}
                     :reveal {bar-network-reveal == monitor}
                     :label {network-data.connection}
-                    :tooltip " ${round(EWW_NET[network-data.device].NET_DOWN / 1048576, 3)} MB/s |  ${round(EWW_NET[network-data.device].NET_UP / 1048576, 3)} MB/s"
+                    :tooltip " ${round(EWW_NET[network-data.device].NET_DOWN / (1024*1024*2), 3)} MB/s |  ${round(EWW_NET[network-data.device].NET_UP / (1024*1024*2), 3)} MB/s"
                     {network-data.icon})))
 
 ;; Volume Widget ;;
@@ -124,6 +124,13 @@
                       :reveal true
                       :label "${battery-data.percent}%"
                       {battery-data.icon})))
+
+;; Tray Widget ;;
+(defvar bar-tray-open false) ;; Updated in open tray script
+(defwidget tray [monitor]
+  (hover-button :onclick "common/scripts/open tray"
+                :visible {monitor == 0}
+                (icon {bar-tray-open ? "" : ""})))
 
 ;; Bar Widgets ;;
 (defwidget bar [monitor]
@@ -152,7 +159,8 @@
                   (bluetooth :monitor monitor)
                   (network :monitor monitor)
                   (volume :monitor monitor)
-                  (battery :monitor monitor))))
+                  (battery :monitor monitor)
+                  (tray :monitor monitor))))
 
 (defwindow bar0
   :geometry (geometry :x "0"
