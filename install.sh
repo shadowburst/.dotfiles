@@ -82,6 +82,10 @@ if ask "Install desktop ?"; then
 
 	# Enable dark mode for gnome apps
 	gsettings set org.gnome.desktop.interface color-scheme prefer-dark
+
+	# Open ports for casting
+	firewall-cmd --zone=public --permanent --add-port=8008/tcp
+	firewall-cmd --zone=public --permanent --add-port=8009/tcp
 fi
 
 if ask "Install editors ?"; then
