@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-updates="$((checkupdates; paru -Qua) | column -t | cut -c 1-70)"
+updates="$((checkupdates; paru -Qua) | column -t | cut -c 1-70 | sort)"
 
 eww update updates-count=$(echo "$updates" | wc -l)
 
