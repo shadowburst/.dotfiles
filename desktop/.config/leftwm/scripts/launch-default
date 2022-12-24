@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-case $(xdotool get_desktop) in
+case $(wmctrl -d | awk '/*/ {print $1}') in
     0)
         brave
         ;;
