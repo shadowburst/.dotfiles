@@ -15,7 +15,7 @@ if [[ -n "$(rfkill list bluetooth | awk '/Soft blocked: no/')" ]]; then
         icon=""
 
         if [[ "$connections_count" -eq 1  ]]; then
-            connection="$(bluetoothctl devices Connected | awk '{$1=$2=""; print}' | xargs)"
+            connection="$(bluetoothctl devices Connected | awk '{$1=$2=""; sub(/^ +/, "", $0); print}')"
         else
             connection="$connections_count devices"
         fi
