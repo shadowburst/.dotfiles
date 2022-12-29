@@ -37,7 +37,7 @@ setxkbmap fr &
 
 # Load xfce settings
 xfsettingsd &
-(sleep 3 && xfce4-power-manager) &
+(sleep 10 && xfce4-power-manager) &
 
 # Handle touchpad gestures
 libinput-gestures-setup start &

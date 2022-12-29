@@ -11,6 +11,8 @@ if [ -f "/tmp/leftwm-theme-down" ]; then
 fi
 ln -s $SCRIPTPATH/down /tmp/leftwm-theme-down
 
+sleep 1
+
 EWW="eww"
 
 # start eww daemon
