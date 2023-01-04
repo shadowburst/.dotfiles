@@ -144,7 +144,7 @@ tooltip {
       background-color: $val;
 
       &:hover {
-        background-color: shade($val, 0.85);
+        background-color: shade($val, 0.95);
       }
     }
   }

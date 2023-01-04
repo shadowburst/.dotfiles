@@ -55,11 +55,11 @@ case ${chosen} in
 		;;
 	$lock)
 		if [[ -x '/usr/bin/i3lock' ]]; then
-			background=00000055
+			background=00000077
 			foreground=BBC2CFFF
 			primary=5657f5FF
 			ring=A9A1E1FF
-			inside=282C34FF
+			inside=1C1F24FF
 			wrong=FF6C6BFF
 			font="Noto Sans"
 
