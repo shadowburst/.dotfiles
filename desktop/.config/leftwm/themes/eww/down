@@ -4,3 +4,4 @@ pkill eww
 pkill pactl
 pkill nmcli
 pkill playerctl
+pkill conky
