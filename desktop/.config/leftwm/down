@@ -5,3 +5,4 @@ leftwm-command "UnloadTheme"
 pkill picom
 pkill sxhkd
 pkill dunst
+pkill conky

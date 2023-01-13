@@ -26,5 +26,3 @@ do
   $EWW open --screen "${monitors[$index]}" "bar$index"
   index=$((index+1))
 done
-
-conky -m 0 &

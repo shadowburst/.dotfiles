@@ -1,1 +1,2 @@
 0 */1 * * * ~/.config/transmission-daemon/scripts/clear-torrents.sh
+0 */1 * * * ~/.config/conky/scripts/refresh-battery.sh
