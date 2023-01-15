@@ -22,11 +22,11 @@ Xcursor.size:   16
 *.color11:      #ECBE7B
 
 ! blue
-*.color4:       #51AFEF
-*.color12:      #2257A0
+*.color4:       #2257A0
+*.color12:      #51AFEF
 
 ! magenta
-*.color5:       #5657f5
+*.color5:       #C678DD
 *.color13:      #A9A1E1
 
 ! cyan

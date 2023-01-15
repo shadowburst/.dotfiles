@@ -32,7 +32,7 @@ $character
 """
 
 [directory]
-style = "bold blue"
+style = "bold bright-blue"
 format = "[ $path]($style) "
 
 [git_branch]
