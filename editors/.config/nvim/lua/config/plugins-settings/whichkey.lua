@@ -79,7 +79,7 @@ local opts = {
 }
 
 local mappings = {
-	['.'] = { '<cmd>Telescope find_files<cr>', 'Browse files' },
+	[' '] = { '<cmd>Telescope find_files<cr>', 'Browse files' },
 	[':'] = { "<cmd>lua require('Comment').toggle()<cr>", 'Comment' },
 	['/'] = { '<cmd>Telescope live_grep<cr>', 'Find text' },
 	['a'] = { '<cmd>Alpha<cr>', 'Start screen' },
