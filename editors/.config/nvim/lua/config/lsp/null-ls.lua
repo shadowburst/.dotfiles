@@ -1,29 +1,49 @@
-local null_ls_status_ok, null_ls = pcall(require, 'null-ls')
+local null_ls_status_ok, null_ls = pcall(require, "null-ls")
 if not null_ls_status_ok then
 	return
 end
+
+require("mason-null-ls").setup({
+	automatic_installation = true,
+	automatic_setup = true,
+
+	ensure_installed = {
+		"blade_formatter",
+		"luacheck",
+		"jq",
+		"prettier",
+		"shellcheck",
+		"shfmt",
+		"stylua",
+		"yamlfmt",
+	},
+})
 
 -- https://github.com/jose-elias-alvarez/null-ls.nvim/tree/main/lua/null-ls/builtins/formatting
 local formatting = null_ls.builtins.formatting
 -- https://github.com/jose-elias-alvarez/null-ls.nvim/tree/main/lua/null-ls/builtins/diagnostics
 local diagnostics = null_ls.builtins.diagnostics
 
+local augroup = vim.api.nvim_create_augroup("LspFormatting", {})
 null_ls.setup({
 	debug = false,
-	on_attach = function(client)
-		if client.server_capabilities.document_formatting then
-			vim.cmd([[
-            augroup LspFormatting
-                autocmd! * <buffer>
-                autocmd BufWritePre <buffer> lua vim.lsp.buf.formatting_sync()
-            augroup END
-            ]])
+	sources = {
+		formatting.prettier.with({ extra_args = { "--no-semi", "--single-quote", "--jsx-single-quote" } }),
+		formatting.stylua,
+	},
+	on_attach = function(client, bufnr)
+		if client.supports_method("textDocument/formatting") then
+			vim.api.nvim_clear_autocmds({ group = augroup, buffer = bufnr })
+			vim.api.nvim_create_autocmd("BufWritePre", {
+				group = augroup,
+				buffer = bufnr,
+				callback = function()
+					-- on 0.8, you should use vim.lsp.buf.format({ bufnr = bufnr }) instead
+					vim.lsp.buf.formatting_sync({ bufnr = bufnr })
+				end,
+			})
 		end
 	end,
-	sources = {
-		formatting.prettier.with({ extra_args = { '--single-quote', '--jsx-single-quote' } }),
-		formatting.stylua.with({ extra_args = { '--quote-style', 'AutoPreferSingle' } }),
-		formatting.shfmt.with({ extra_args = { '-fn' } }),
-		-- diagnostics.luacheck,
-	},
 })
+
+require("mason-null-ls").setup_handlers()
