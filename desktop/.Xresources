@@ -10,7 +10,7 @@ Xcursor.size:   16
 *.color8:       #202328
 
 ! red
-*.color1:       #FF6C6B
+*.color1:       #CB5B67
 *.color9:       #DA8548
 
 ! green
@@ -22,12 +22,12 @@ Xcursor.size:   16
 *.color11:      #ECBE7B
 
 ! blue
-*.color4:       #2257A0
-*.color12:      #51AFEF
+*.color4:       #4A93D1
+*.color12:      #6CA4D5
 
 ! magenta
-*.color5:       #C678DD
-*.color13:      #A9A1E1
+*.color5:       #935FB0
+*.color13:      #B382CB
 
 ! cyan
 *.color6:       #5699AF

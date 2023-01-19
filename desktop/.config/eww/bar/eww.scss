@@ -1,6 +1,5 @@
 .eww_bar {
-  background-color: $black;
-  padding: 0 0.5rem;
+  padding: 0 2rem;
 }
 
 .media {
@@ -16,7 +15,7 @@
 
     margin: 0 0.5rem;
     min-height: $slider-height;
-    border-radius: 0 0 $radius $radius;
+    border-radius: $radius 0;
 
     & trough {
       @extend .media__slider;
@@ -24,7 +23,7 @@
       background-color: $disabled;
 
       & highlight {
-        border-radius: 0 0 0 $radius;
+        border-radius: $radius 0;
         background-color: $primary;
       }
     }
@@ -37,7 +36,7 @@
         margin: 0;
 
         & highlight {
-          border-radius: 0 0 0 $radius;
+          border-radius: $radius 0;
           background-color: $secondary;
         }
       }

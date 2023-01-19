@@ -32,11 +32,11 @@ colors:
     foreground: "#BBC2CF"
   normal:
     black: "#1C1F24"
-    red: "#FF6C6B"
+    red: "#CB5B67"
     green: "#98BE65"
     yellow: "#ECBE7B"
-    blue: "#2257A0"
-    magenta: "#C678DD"
+    blue: "#4A93D1"
+    magenta: "#935FB0"
     cyan: "#5699AF"
     white: "#5B6268"
   bright:
@@ -44,8 +44,8 @@ colors:
     red: "#DA8548"
     green: "#4DB5BD"
     yellow: "#ECBE7B"
-    blue: "#51AFEF"
-    magenta: "#A9A1E1"
+    blue: "#6CA4D5"
+    magenta: "#B382CB"
     cyan: "#46D9FF"
     white: "#DFDFDF"
 

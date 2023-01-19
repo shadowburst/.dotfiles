@@ -57,10 +57,10 @@ case ${chosen} in
 		if [[ -x '/usr/bin/i3lock' ]]; then
 			background=00000077
 			foreground=BBC2CFFF
-			primary=51AFEFFF
-			ring=2257a0FF
+			primary=935FB0FF
+			ring=B382CBFF
 			inside=1C1F24FF
-			wrong=FF6C6BFF
+			wrong=CB5B67FF
 			font="Noto Sans"
 
 			i3lock -n --ignore-empty-password \

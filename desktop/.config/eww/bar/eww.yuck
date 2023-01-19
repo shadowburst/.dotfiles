@@ -139,6 +139,7 @@
              (box :orientation "h"
                   :halign "start"
                   :valign "center"
+                  :class "container"
                   :space-evenly false
                   :spacing {spacing / 2}
                   (launcher)
@@ -147,12 +148,14 @@
              (box :orientation "h"
                   :halign "center"
                   :valign "center"
+                  :class "container"
                   :space-evenly false
                   :spacing {spacing / 2}
                   (time))
              (box :orientation "h"
                   :halign "end"
                   :valign "center"
+                  :class "container"
                   :space-evenly false
                   (torrents)
                   (updates :monitor monitor)

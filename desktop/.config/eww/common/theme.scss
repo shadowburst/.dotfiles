@@ -1,7 +1,7 @@
-$black: #1c1f24;
+$black: #282c34;
 $dark-gray: #202328;
 
-$dark-red: #ff6c6b;
+$dark-red: #cb5b67;
 $light-red: #da8548;
 
 $dark-green: #98be65;
@@ -10,11 +10,11 @@ $light-green: #4db5bd;
 $dark-yellow: #ecbe7b;
 $light-yellow: #ecbe7b;
 
-$dark-blue: #2257a0;
-$light-blue: #51afef;
+$dark-blue: #4a93d1;
+$light-blue: #6ca4d5;
 
-$dark-magenta: #c678dd;
-$light-magenta: #a9a1e1;
+$dark-magenta: #935fb0;
+$light-magenta: #b382cb;
 
 $dark-cyan: #5699af;
 $light-cyan: #46d9ff;
@@ -23,10 +23,10 @@ $light-gray: #5b6268;
 $white: #dfdfdf;
 
 $foreground: #bbc2cf;
-$background: #282c34;
+$background: #1c1f24;
 
-$primary: $light-blue;
-$secondary: $dark-blue;
+$primary: $dark-magenta;
+$secondary: $light-magenta;
 $success: $dark-green;
 $warning: $light-red;
 $danger: $dark-red;
@@ -60,7 +60,7 @@ $colors: (
 }
 
 .container {
-  @extend .rounded;
+  border-radius: 0 0 13px 13px;
   background-color: $background;
 }
 

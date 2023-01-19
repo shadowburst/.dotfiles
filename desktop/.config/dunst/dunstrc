@@ -61,7 +61,7 @@
     progress_bar_max_width = 400
 
     # Set the progress bar color
-    highlight = "#51AFEF"
+    highlight = "#935FB0"
 
     # Show how many messages are currently hidden (because of
     # notification_limit).
