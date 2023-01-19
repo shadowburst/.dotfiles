@@ -97,6 +97,11 @@ local mappings = {
 	},
 	["d"] = { "<cmd>lua _LAZYDOCKER_TOGGLE()<cr>", "Open LazyDocker" },
 	["e"] = { "<cmd>NvimTreeToggle<CR>", "Explorer" },
+	["f"] = {
+		name = "+Files",
+		["f"] = { "<cmd>Telescope find_files<cr>", "Browse files" },
+		["r"] = { "<cmd>Telescope old_files<cr>", "Recent files" },
+	},
 	["g"] = {
 		name = "+Git",
 		["b"] = { "<cmd>Telescope git_branches<cr>", "Checkout branch" },

@@ -13,7 +13,7 @@ toggleterm.setup({
 	start_in_insert = true,
 	insert_mappings = true,
 	persist_size = true,
-	direction = "float",
+	direction = "horizontal",
 	close_on_exit = true,
 	shell = vim.o.shell,
 	float_opts = {
@@ -30,7 +30,7 @@ function _G.set_terminal_keymaps()
 	local opts = { noremap = true }
 	local keymap = vim.api.nvim_buf_set_keymap
 
-	keymap(0, "t", "`", [[<cmd>ToggleTerm<cr>]], opts)
+	keymap(0, "t", "²", [[<cmd>ToggleTerm<cr>]], opts)
 	keymap(0, "t", "jk", [[<C-\><C-n>]], opts)
 	keymap(0, "t", "kj", [[<C-\><C-n>]], opts)
 	keymap(0, "t", "<C-h>", [[<C-\><C-n><C-W>h]], opts)
@@ -43,17 +43,17 @@ vim.cmd("autocmd! TermOpen term://* lua set_terminal_keymaps()")
 
 local Terminal = require("toggleterm.terminal").Terminal
 
-local lazygit = Terminal:new({ cmd = "lazygit", hidden = true })
+local lazygit = Terminal:new({ cmd = "lazygit", hidden = true, direction = "float" })
 function _LAZYGIT_TOGGLE()
 	lazygit:toggle()
 end
 
-local lazydocker = Terminal:new({ cmd = "lazydocker", hidden = true })
+local lazydocker = Terminal:new({ cmd = "lazydocker", hidden = true, direction = "float" })
 function _LAZYDOCKER_TOGGLE()
 	lazydocker:toggle()
 end
 
-local ranger = Terminal:new({ cmd = "ranger", hidden = true })
+local ranger = Terminal:new({ cmd = "ranger", hidden = true, direction = "float" })
 function _RANGER_TOGGLE()
 	ranger:toggle()
 end

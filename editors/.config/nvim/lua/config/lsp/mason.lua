@@ -10,8 +10,8 @@ local servers = {
 	"html",
 	"intelephense",
 	"jsonls",
-	-- 'nil_ls',
-	"remark_ls",
+	--[[ "nil_ls", ]]
+	--[[ "remark_ls", ]]
 	"sumneko_lua",
 	"tailwindcss",
 	"tsserver",

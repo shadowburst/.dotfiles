@@ -27,10 +27,11 @@ telescope.setup({
 		file_ignore_patterns = {
 			"%.git/.*",
 			"%.vim/.*",
-			"node_modules/.*",
 			"%.idea/.*",
 			"%.vscode/.*",
 			"%.history/.*",
+			"node_modules/.*",
+			"vendor/.*",
 		},
 
 		mappings = {
