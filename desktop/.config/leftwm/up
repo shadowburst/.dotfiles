@@ -27,5 +27,3 @@ feh --no-fehbg --bg-fill "$SCRIPTPATH/themes/current/background.jpg" &
 sxhkd &
 dunst &
 light -N 5 &
-
-conky -m 0 &
