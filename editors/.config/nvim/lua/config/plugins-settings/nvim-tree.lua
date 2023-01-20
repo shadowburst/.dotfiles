@@ -11,13 +11,7 @@ end
 local tree_cb = nvim_tree_config.nvim_tree_callback
 
 nvim_tree.setup({
-	auto_reload_on_write = true,
 	disable_netrw = true,
-	hijack_netrw = true,
-	hijack_cursor = false,
-	open_on_setup = false,
-	open_on_setup_file = false,
-	open_on_tab = false,
 	ignore_ft_on_setup = {
 		"startify",
 		"dashboard",
@@ -89,6 +83,7 @@ nvim_tree.setup({
 		},
 	},
 	renderer = {
+		group_empty = true,
 		indent_markers = {
 			enable = false,
 			icons = {
