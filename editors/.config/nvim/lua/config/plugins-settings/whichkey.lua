@@ -79,7 +79,8 @@ local opts = {
 }
 
 local mappings = {
-	[" "] = { "<cmd>Telescope find_files<cr>", "Browse files" },
+	[" "] = { "<cmd>Telescope find_files<cr>", "Find file in project" },
+	["."] = { "<cmd>Telescope file_browser<cr>", "Find file" },
 	["/"] = { "<cmd>Telescope live_grep<cr>", "Find text" },
 	[","] = { "<cmd>Telescope buffers<cr>", "Switch buffers" },
 	["<"] = { "<cmd>Telescope buffers<cr>", "Switch buffers" },
