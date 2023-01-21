@@ -8,13 +8,17 @@ configs.setup({
 		"bash",
 		"css",
 		"dockerfile",
+		"fish",
 		"html",
 		"javascript",
 		"json",
 		"lua",
 		"markdown",
+		"php",
 		"scss",
+		"sql",
 		"typescript",
+		"vue",
 		"yaml",
 	}, -- one of "all", "maintained" (parsers with maintainers), or a list of languages
 
@@ -36,4 +40,8 @@ configs.setup({
 		enable = true,
 		enable_autocmd = false,
 	},
+	rainbow = {
+		enable = true,
+		extended_mode = false, -- Also highlight non-bracket delimiters like html tags, boolean or table: lang -> boolean
+	}
 })

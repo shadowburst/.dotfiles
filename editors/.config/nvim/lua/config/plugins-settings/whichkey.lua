@@ -82,6 +82,7 @@ local mappings = {
 	[" "] = { "<cmd>Telescope find_files<cr>", "Browse files" },
 	["/"] = { "<cmd>Telescope live_grep<cr>", "Find text" },
 	[","] = { "<cmd>Telescope buffers<cr>", "Switch buffers" },
+	["<"] = { "<cmd>Telescope buffers<cr>", "Switch buffers" },
 	["b"] = {
 		name = "+buffers",
 		["b"] = { "<cmd>Telescope buffers<cr>", "Switch buffers" },
@@ -132,7 +133,7 @@ local mappings = {
 	},
 	["p"] = {
 		name = "+projects",
-		["p"] = { "<cmd>Telescope projects<cr>", "Switch project" },
+		["p"] = { "<cmd>Telescope projects theme=ivy<cr>", "Switch project" },
 	},
 	["P"] = {
 		name = "+plugins",
@@ -144,6 +145,11 @@ local mappings = {
 		name = "+quit",
 		["q"] = { "<cmd>qa<cr>", "Quit Neovim" },
 		["Q"] = { "<cmd>qa!<cr>", "Quit Neovim without saving" },
+	},
+	["s"] = {
+		name = "+search",
+		["s"] = { "<cmd>Telescope current_buffer_fuzzy_find<cr>", "Search buffer" },
+		["S"] = { "<cmd>Telescope grep_string<cr>", "Search buffer for thing at..." },
 	},
 	["S"] = {
 		name = "+spell",

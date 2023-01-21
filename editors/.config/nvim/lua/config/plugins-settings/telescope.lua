@@ -101,21 +101,41 @@ telescope.setup({
 	},
 	pickers = {
 		find_files = {
+			theme = "ivy",
 			hidden = true,
 		},
-		-- Default configuration for builtin pickers goes here:
-		-- picker_name = {
-		--   picker_config_key = value,
-		--   ...
-		-- }
-		-- Now the picker_config_key will be applied every time you call this
-		-- builtin picker
+		oldfiles = {
+			theme = "ivy",
+		},
+		live_grep = {
+			theme = "ivy",
+		},
+		buffers = {
+			theme = "ivy",
+		},
+		grep_string = {
+			theme = "ivy",
+		},
+		current_buffer_fuzzy_find = {
+			theme = "ivy",
+		},
 	},
 	extensions = {
-		-- Your extension configuration goes here:
-		-- extension_name = {
-		--   extension_config_key = value,
-		-- }
-		-- please take a look at the readme of the extension you want to configure
+		file_browser = {
+			theme = "ivy",
+			-- disables netrw and use telescope-file-browser in its place
+			hijack_netrw = true,
+			mappings = {
+				["i"] = {
+					-- your custom insert mode mappings
+				},
+				["n"] = {
+					-- your custom normal mode mappings
+				},
+			},
+		},
 	},
 })
+
+telescope.load_extension("file_browser")
+telescope.load_extension("projects")

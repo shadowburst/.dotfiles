@@ -49,6 +49,7 @@ packer.startup(function(use)
 	use("folke/which-key.nvim")
 	use("akinsho/toggleterm.nvim")
 	use("nvim-telescope/telescope.nvim")
+	use("nvim-telescope/telescope-file-browser.nvim")
 	use("ahmedkhalf/project.nvim")
 	use("kyazdani42/nvim-tree.lua")
 	use("akinsho/bufferline.nvim")
@@ -75,7 +76,7 @@ packer.startup(function(use)
 			-- Color whole diagnostic text or only underline
 			vim.g.doom_one_diagnostics_text_color = false
 			-- Enable transparent background
-			vim.g.doom_one_transparent_background = true
+			vim.g.doom_one_transparent_background = false
 
 			-- Pumblend transparency
 			vim.g.doom_one_pumblend_enable = false
@@ -146,6 +147,7 @@ packer.startup(function(use)
 end)
 
 require("config.plugins-settings.cmp")
+require("config.plugins-settings.project")
 require("config.plugins-settings.telescope")
 require("config.plugins-settings.treesitter")
 require("config.plugins-settings.autopairs")
@@ -155,7 +157,6 @@ require("config.plugins-settings.nvim-tree")
 require("config.plugins-settings.bufferline")
 require("config.plugins-settings.lualine")
 require("config.plugins-settings.toggleterm")
-require("config.plugins-settings.project")
 require("config.plugins-settings.impatient")
 require("config.plugins-settings.indentline")
 require("config.plugins-settings.alpha")
