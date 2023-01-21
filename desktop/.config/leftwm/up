@@ -22,8 +22,12 @@ ln -s $SCRIPTPATH/down /tmp/leftwm-down
 
 leftwm-command "LoadTheme $SCRIPTPATH/themes/current/theme.ron"
 
-picom --experimental-backends --dbus &>/dev/null &
-feh --no-fehbg --bg-fill "$SCRIPTPATH/themes/current/background.jpg" &
-sxhkd &
+blueman-applet &
 dunst &
+feh --no-fehbg --bg-fill "$SCRIPTPATH/themes/current/background.jpg" &
+flameshot &
+libinput-gestures-setup start &
 light -N 5 &
+nm-applet &
+picom --experimental-backends --dbus &>/dev/null &
+sxhkd &

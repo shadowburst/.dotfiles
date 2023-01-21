@@ -17,9 +17,6 @@ export EDITOR="emacsclient -t"
 eval "$(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg)"
 export SSH_AUTH_SOCK
 
-# Load custom colors
-# xrdb "$HOME/.Xresources" &
-
 # Handle pluging in monitors
 autorandr --change --force --default mobile &
 
@@ -39,20 +36,8 @@ setxkbmap fr &
 xfsettingsd &
 (sleep 10 && xfce4-power-manager) &
 
-# Handle touchpad gestures
-libinput-gestures-setup start &
-
 # Launch torrents daemon
 transmission-daemon &
-
-# Network manager
-nm-applet &
-
-# Bluetooth manager
-blueman-applet &
-
-# Launch Flameshot daemon
-flameshot &
 
 # Launch emacs daemon
 emacs --daemon &

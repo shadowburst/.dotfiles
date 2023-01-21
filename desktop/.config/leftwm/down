@@ -2,6 +2,12 @@
 
 leftwm-command "UnloadTheme"
 
+pkill blueman-applet
+pkill dunst
+pkill feh
+pkill flameshot
+libinput-gestures-setup stop
+pkill light
+pkill nm-applet
 pkill picom
 pkill sxhkd
-pkill dunst

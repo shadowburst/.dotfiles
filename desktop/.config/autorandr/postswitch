@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 function refresh_wm {
-    case "$(wmctrl -m | awk '/Name:/ {print $2}')" in
-        "LeftWM") leftwm-command "SoftReload" ;;
-        "*") ;;
-    esac
+	case "$(wmctrl -m | awk '/Name:/ {print $2}')" in
+	"LeftWM") leftwm-command "SoftReload" ;;
+	"*") ;;
+	esac
 }
 
 if [[ -x "$(command -v wmctrl)" ]]; then
