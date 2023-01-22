@@ -129,7 +129,7 @@ local mappings = {
 	["o"] = {
 		name = "+open",
 		["d"] = { "<cmd>lua _LAZYDOCKER_TOGGLE()<cr>", "Open LazyDocker" },
-		["r"] = { "<cmd>lua _RANGER_TOGGLE()<CR>", "Open Ranger" },
+		["g"] = { "<cmd>lua _LAZYGIT_TOGGLE()<CR>", "Open Lazygit" },
 		["t"] = { "<cmd>ToggleTerm direction=horizontal<cr>", "Open Terminal" },
 	},
 	["p"] = {

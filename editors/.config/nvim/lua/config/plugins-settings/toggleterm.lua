@@ -52,8 +52,3 @@ local lazydocker = Terminal:new({ cmd = "lazydocker", hidden = true, direction =
 function _LAZYDOCKER_TOGGLE()
 	lazydocker:toggle()
 end
-
-local ranger = Terminal:new({ cmd = "ranger", hidden = true, direction = "float" })
-function _RANGER_TOGGLE()
-	ranger:toggle()
-end
