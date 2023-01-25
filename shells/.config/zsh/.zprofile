@@ -1,3 +1,3 @@
 if [ "$(tty)" = "/dev/tty1" ]; then
-    pgrep leftwm || exec startx
+    pgrep Hyprland || ~/.config/hypr/launch.sh
 fi
