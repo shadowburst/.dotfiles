@@ -2,6 +2,7 @@
 
 if pgrep -x rofi; then
     pkill rofi
-else
-    rofi -no-lazy-grab  -show drun
+	exit 0
 fi
+
+rofi -no-lazy-grab  -show drun

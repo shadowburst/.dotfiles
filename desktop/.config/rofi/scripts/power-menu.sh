@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-## Author : Aditya Shakya (adi1090x)
-## Github : @adi1090x
+if pgrep -x rofi; then
+    pkill rofi
+	exit 0
+fi
 
 rofi_dir="$HOME/.config/rofi"
 
