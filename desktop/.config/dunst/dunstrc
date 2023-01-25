@@ -220,10 +220,10 @@
     ### Misc/Advanced ###
 
     # dmenu path.
-    dmenu = /usr/bin/rofi -dmenu -p Select
+    dmenu = rofi -dmenu -p Select
 
     # Browser for opening urls in context menu.
-    browser = /usr/bin/xdg-open
+    browser = xdg-open
 
     # Always run rule-defined scripts, even if the notification is suppressed
     always_run_script = true

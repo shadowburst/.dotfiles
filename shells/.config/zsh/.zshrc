@@ -4,10 +4,8 @@
 #   / /_____/ / __  / _, _/ /___
 #  /____/____/_/ /_/_/ |_|\____/
 
-# Load theme
-if [ -f ~/.config/zsh/.zsh_theme ]; then
-    . ~/.config/zsh/.zsh_theme
-fi
+# Start fish shell and ignore ZSH
+exec fish
 
 # Load ZSH plugin manager
 . "${HOME}/.zgenom/zgenom.zsh"
@@ -17,7 +15,6 @@ zgenom autoupdate
 if ! zgenom saved; then
 
     zgenom load jeffreytse/zsh-vi-mode
-    zgenom load romkatv/powerlevel10k powerlevel10k
     zgenom load zsh-users/zsh-autosuggestions
     zgenom load zsh-users/zsh-history-substring-search
     zgenom load zsh-users/zsh-syntax-highlighting
@@ -63,6 +60,4 @@ if [ -f ~/.config/zsh/.zsh_functions ]; then
     . ~/.config/zsh/.zsh_functions
 fi
 
-# Load Node.js manager
-eval "$(fnm env --use-on-cd)"
-
+eval "$(starship init zsh)"

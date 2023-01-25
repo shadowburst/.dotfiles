@@ -290,8 +290,6 @@ A project explorer that is useful for quick file operations that don't merit a f
 A clean integrated terminal for emacs. I don't need that much tinkering, just a few keybindings.
 
 #+begin_src emacs-lisp
-(setq shell-file-name "/usr/bin/fish")
-
 (map! :niv "C-²" #'+vterm/toggle)
 
 (map! :map vterm-mode-map
