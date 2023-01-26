@@ -15,7 +15,7 @@
 #window {
   anchor: north;
   location: north;
-  width: calc(100% - 54px);
+  width: calc(100% - 50px);
   border-radius: 0 0 13px 13px;
   padding: 0;
   children: [ horibox ];

@@ -7,7 +7,7 @@ case $1 in
         blueman-manager
         ;;
     "launcher")
-        $HOME/.config/rofi/scripts/app-menu
+        $HOME/.config/rofi/scripts/app-menu.sh
         ;;
     "network")
         $TERMINAL -e nmtui
