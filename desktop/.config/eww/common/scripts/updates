@@ -2,6 +2,10 @@
 
 updates="$((checkupdates; paru -Qua) | column -t | cut -c 1-70 | sort)"
 
-eww update updates-count=$(echo "$updates" | wc -l)
 
-echo "$updates"
+if [[ -n "$updates" ]]; then
+    eww update updates-count=$(echo "$updates" | wc -l)
+    echo "$updates"
+else
+    eww update updates-count=0
+fi

@@ -50,7 +50,7 @@
 }
 
 #element {
-  border-radius: 13px;
+  border-radius: 0 0 13px 13px;
   padding: calc((36px - 1em) / 2) 10px;
 }
 

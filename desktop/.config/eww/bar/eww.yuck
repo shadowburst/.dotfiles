@@ -1,3 +1,6 @@
+(defvar bar-height 36)
+(defvar bar-spacing 10)
+
 ;; Launcher Widget ;;
 (defwidget launcher []
   (hover-button :onclick "common/scripts/open launcher"
@@ -57,7 +60,7 @@
                 (box :orientation "h"
                      :valign "center"
                      :space-evenly false
-                     :spacing spacing
+                     :spacing bar-spacing
                      (icon :class "icon--success"
                            :label {torrents-data.download-count}
                            :reveal true
@@ -125,36 +128,28 @@
                       :label "${battery-data.percent}%"
                       {battery-data.icon})))
 
-;; Tray Widget ;;
-(defvar bar-tray-open false) ;; Updated in open tray script
-(defwidget tray [monitor]
-  (hover-button :onclick "common/scripts/open tray"
-                :visible {monitor == 0}
-                (icon {bar-tray-open ? "" : ""})))
-
 ;; Bar Widgets ;;
 (defwidget bar [monitor]
   (centerbox :class "eww_bar"
              :orientation "h"
              (box :orientation "h"
                   :halign "start"
-                  :valign "center"
-                  :class "container"
                   :space-evenly false
-                  :spacing {spacing / 2}
-                  (launcher)
-                  (workspaces :monitor monitor)
+                  :spacing {bar-spacing / 2}
+                  (box :orientation "h"
+                       :class "container"
+                       :space-evenly false
+                       (launcher)
+                       (workspaces :monitor monitor))
                   (media))
              (box :orientation "h"
-                  :halign "center"
-                  :valign "center"
+                  :halign "start"
                   :class "container"
                   :space-evenly false
-                  :spacing {spacing / 2}
+                  :spacing {bar-spacing / 2}
                   (time))
              (box :orientation "h"
                   :halign "end"
-                  :valign "center"
                   :class "container"
                   :space-evenly false
                   (torrents)
@@ -162,8 +157,7 @@
                   (bluetooth :monitor monitor)
                   (network :monitor monitor)
                   (volume :monitor monitor)
-                  (battery :monitor monitor)
-                  (tray :monitor monitor))))
+                  (battery :monitor monitor))))
 
 (defwindow bar0
   :geometry (geometry :x "0"

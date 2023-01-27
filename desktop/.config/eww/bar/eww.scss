@@ -15,7 +15,7 @@
 
     margin: 0 0.5rem;
     min-height: $slider-height;
-    border-radius: $radius 0;
+    border-radius: 0 0 $radius $radius;
 
     & trough {
       @extend .media__slider;
@@ -23,7 +23,7 @@
       background-color: $disabled;
 
       & highlight {
-        border-radius: $radius 0;
+        border-radius: 0 0 $radius $radius;
         background-color: $primary;
       }
     }
@@ -36,7 +36,7 @@
         margin: 0;
 
         & highlight {
-          border-radius: $radius 0;
+          border-radius: 0 0 $radius $radius;
           background-color: $secondary;
         }
       }

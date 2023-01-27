@@ -1,6 +1,4 @@
 (defvar transition-duration "500ms")
-(defvar spacing 10)
-(defvar bar-height 36)
 
 (defvar updates-count 0) ;; Updated through the updates script
 
