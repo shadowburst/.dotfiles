@@ -27,6 +27,7 @@
         (window_class: "kdenlive", spawn_on_tag: 6),
         (window_class: "Virt-manager", spawn_on_tag: 7),
         (window_class: "gnome-calculator", spawn_floating: true),
+        (window_class: "cava", spawn_fullscreen: true),
     ],
     modkey: "Mod4",
     mousekey: "Mod4",

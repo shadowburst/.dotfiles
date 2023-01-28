@@ -3,8 +3,8 @@
 * {
   background-color: @black;
   text-color: @foreground;
-  height: 36px;
-  font: "Roboto Regular 12";
+  height: 37px;
+  font: "Noto sans 12";
   icon-font: "JetBrainsMono Nerd Font 14";
   prompt-background: @primary;
   prompt-foreground: @black;
@@ -51,7 +51,7 @@
 
 #element {
   border-radius: 0 0 13px 13px;
-  padding: calc((36px - 1em) / 2) 10px;
+  padding: calc(14px / 2) 10px;
 }
 
 #element selected {
