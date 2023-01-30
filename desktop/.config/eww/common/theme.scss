@@ -1,151 +1,206 @@
-$black: #282c34;
-$dark-gray: #202328;
-
-$dark-red: #cb5b67;
-$light-red: #da8548;
-
-$dark-green: #98be65;
-$light-green: #4db5bd;
-
-$dark-yellow: #ecbe7b;
-$light-yellow: #ecbe7b;
-
-$dark-blue: #4a93d1;
-$light-blue: #6ca4d5;
-
-$dark-magenta: #935fb0;
-$light-magenta: #b382cb;
-
-$dark-cyan: #5699af;
-$light-cyan: #46d9ff;
-
-$light-gray: #5b6268;
-$white: #dfdfdf;
-
 $foreground: #bbc2cf;
 $background: #1c1f24;
-
-$primary: $dark-magenta;
-$secondary: $light-magenta;
-$success: $dark-green;
-$warning: $light-red;
-$danger: $dark-red;
-$disabled: $light-gray;
-
-$font: "Noto Sans";
-$mono-font: "Noto Sans Mono";
-$nerd-font: "JetBrainsMono Nerd Font Mono";
-$variable-nerd-font: "JetBrainsMono Nerd Font";
-$icon-size: 2rem;
-
+$gray: #5b6268;
+$primary: #935fb0;
+$secondary: #b382cb;
+$success: #98be65;
+$warning: #da8548;
+$danger: #cb5b67;
 $colors: (
+  foreground: $foreground,
+  background: $background,
+  gray: $gray,
   primary: $primary,
   secondary: $secondary,
   success: $success,
   warning: $warning,
   danger: $danger,
-  disabled: $disabled,
 );
 
-@function get-color($key) {
-  @return map-get($map: $colors, $key: $key);
+$normal-font: "Noto Sans";
+$mono-font: "Noto Sans Mono";
+$nerd-font: "JetBrainsMono Nerd Font Mono";
+$nerd-font-variable: "JetBrainsMono Nerd Font";
+$fonts: (
+  normal: $normal-font,
+  mono: $mono-font,
+  nerd: $nerd-font,
+  nerd-variable: $nerd-font-variable,
+);
+
+$directions: (
+  l: "left",
+  r: "right",
+  t: "top",
+  b: "bottom",
+);
+
+$spaces: (
+  m: "margin",
+  p: "padding",
+);
+$base-distance: 0.25rem;
+@for $i from 0 through 10 {
+  $distance: $base-distance * $i;
+
+  @each $spaceKey, $space in $spaces {
+    .#{$spaceKey}-#{$i} {
+      #{$space}: $distance;
+    }
+
+    @each $directionKey, $direction in $directions {
+      .#{$spaceKey}#{$directionKey}-#{$i} {
+        #{$space}-#{$direction}: $distance;
+      }
+    }
+
+    .#{$spaceKey}x-#{$i} {
+      #{$space}-left: $distance;
+      #{$space}-right: $distance;
+    }
+    .#{$spaceKey}y-#{$i} {
+      #{$space}-top: $distance;
+      #{$space}-bottom: $distance;
+    }
+  }
+}
+
+$radiuses: (
+  0: 0,
+  sm: 5px,
+  md: 13px,
+  lg: 20px,
+  full: 100px,
+);
+@each $radiusKey, $radius in $radiuses {
+  .rounded {
+    &-#{$radiusKey} {
+      border-radius: $radius;
+    }
+
+    &-l-#{$radiusKey} {
+      border-radius: $radius 0 0 $radius;
+    }
+    &-r-#{$radiusKey} {
+      border-radius: 0 $radius $radius 0;
+    }
+    &-t-#{$radiusKey} {
+      border-radius: $radius $radius 0 0;
+    }
+    &-b-#{$radiusKey} {
+      border-radius: 0 0 $radius $radius;
+    }
+  }
+}
+
+@each $colorKey, $color in $colors {
+  .bg-#{$colorKey} {
+    background-color: $color;
+  }
+
+  .text-#{$colorKey} {
+    color: $color;
+  }
+}
+
+@mixin bg($color: $background) {
+  background-color: $color;
+}
+@mixin text($color: $foreground) {
+  color: $color;
+}
+@mixin font($font: $normal-font, $size: 1rem, $weight: 500) {
+  font-family: $font;
+  font-size: $size;
+  font-weight: $weight;
 }
 
 * {
   all: unset;
 }
 
-.rounded {
-  border-radius: 13px;
-}
-
-.container {
-  border-radius: 0 0 13px 13px;
-  background-color: $background;
-}
-
 tooltip {
-  background-color: $background;
-  color: $foreground;
-  font-family: $mono-font;
+  @include bg;
+  @include text;
+  @include font($mono-font);
 
   & label {
-    margin: 0.3rem;
-  }
-}
-
-.icon {
-  @extend .rounded;
-  color: $foreground;
-  font-family: $nerd-font;
-  font-size: $icon-size;
-
-  &--variable {
-    $padding: 0.2rem;
-
-    @extend .rounded;
-    margin: $padding 0;
-    color: $foreground;
-    font-family: $variable-nerd-font;
-    font-size: calc(#{$icon-size} - #{$padding} * 2);
-  }
-
-  &--inverted {
-    @extend .icon;
-    color: $background;
-
-    &--variable {
-      @extend .icon--variable;
-      color: $background;
-    }
-  }
-
-  @each $key, $val in $colors {
-    &--#{$key} {
-      @extend .icon;
-      color: $val;
-
-      &--variable {
-        @extend .icon--variable;
-        color: $val;
-      }
-    }
+    @extend .m-1;
   }
 }
 
 .label {
-  color: $foreground;
-  font-family: $font;
-  font-size: 1rem;
+  @include text;
+  @include font;
 }
 
-.icon-label {
-  @extend .label;
-  margin: 0 0 0 5px;
+@mixin button($color: transparent) {
+  @extend .rounded-md;
+  @include bg($color);
+  @extend .px-3;
+
+  &:hover {
+    @if $color == transparent {
+      @include bg(rgba(255, 255, 255, 0.03));
+    } @else {
+      @include bg(shade($color, 0.95));
+    }
+  }
 }
 
-.mono-label {
-  @extend .label;
-  font-family: $mono-font;
+@mixin base-icon($size: 2rem, $font: $nerd-font) {
+  @extend .m-0;
+  @include bg(transparent);
+  @include text;
+  @include font($font, $size);
+}
+
+@mixin icon($size: 2rem) {
+  @include base-icon($size);
+}
+
+@mixin icon-variable($size: 2rem) {
+  $variable-margin: $size / 10;
+  $variable-size: calc(#{$size} - #{$variable-margin} * 2);
+
+  @include base-icon($variable-size, $nerd-font-variable);
+
+  margin: $variable-margin 0;
+}
+
+.icon {
+  @include icon;
+
+  &-label {
+    @extend .label;
+    @extend .ml-2;
+  }
+
+  @each $colorKey, $color in $colors {
+    &-#{$colorKey} {
+      @include icon;
+      @include text($color);
+    }
+  }
+}
+
+.icon-variable {
+  @include icon-variable;
+
+  @each $colorKey, $color in $colors {
+    &-#{$colorKey} {
+      @include icon-variable;
+      @include text($color);
+    }
+  }
 }
 
 .button {
-  @extend .container;
-  background-color: inherit;
-  padding: 0 0.8rem;
+  @include button;
 
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.03);
-  }
-
-  @each $key, $val in $colors {
-    &--#{$key} {
-      @extend .button;
-      background-color: $val;
-
-      &:hover {
-        background-color: shade($val, 0.95);
-      }
+  @each $colorKey, $color in $colors {
+    &-#{$colorKey} {
+      @include button($color);
     }
   }
 }

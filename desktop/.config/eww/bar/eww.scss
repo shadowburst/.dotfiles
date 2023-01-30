@@ -1,59 +1,93 @@
-.eww_bar {
+.bar {
+  $icon-size: 2rem;
+
+  @include bg(transparent);
   padding: 0 25px;
-}
 
-.media {
-  $slider-height: 3px;
-
-  &__icon {
-    @extend .icon;
-    font-size: calc(#{$icon-size} - #{$slider-height});
+  &-container {
+    @extend .rounded-b-md;
+    @include bg($background);
   }
 
-  &__slider {
-    $radius: 50px;
+  &-time {
+    @extend .py-1;
+    @extend .px-2;
+    @include font($mono-font, 1.5rem, bold);
+  }
 
-    margin: 0 0.5rem;
-    min-height: $slider-height;
-    border-radius: 0 0 $radius $radius;
+  &-media {
+    $slider-height: 3px;
 
-    & trough {
-      @extend .media__slider;
-      margin: 0;
-      background-color: $disabled;
+    &__slider {
+      @extend .mx-1;
+      @extend .rounded-b-md;
 
-      & highlight {
-        border-radius: 0 0 $radius $radius;
-        background-color: $primary;
-      }
-    }
-
-    &--disabled {
-      @extend .media__slider;
+      min-height: $slider-height;
 
       & trough {
-        @extend .media__slider;
-        margin: 0;
+        @extend .bar-media__slider;
+        @extend .mt-0;
+        @include bg($gray);
 
         & highlight {
-          border-radius: 0 0 $radius $radius;
-          background-color: $secondary;
+          @extend .rounded-b-full;
+          @include bg($primary);
+        }
+      }
+
+      &--paused {
+        @extend .bar-media__slider;
+
+        & trough {
+          @extend .bar-media__slider;
+          @extend .m-0;
+
+          & highlight {
+            @extend .rounded-b-full;
+            @include bg($secondary);
+          }
         }
       }
     }
+
+    &__time {
+      @extend .label;
+      @extend .mx-2;
+      @include font($normal-font, 0.8rem);
+    }
   }
 
-  &__time {
-    @extend .label;
-    margin: 0 0.5rem;
-    font-size: 0.8rem;
-    color: $foreground;
-  }
-}
+  &-icon {
+    @include icon($icon-size);
 
-.time {
-  @extend .mono-label;
-  padding: 0.3rem 0;
-  font-size: 1.5rem;
-  font-weight: bold;
+    @each $colorKey, $color in $colors {
+      &-#{$colorKey} {
+        @include icon($icon-size);
+        @include text($color);
+      }
+    }
+  }
+
+  &-icon-variable {
+    @include icon-variable($icon-size);
+
+    @each $colorKey, $color in $colors {
+      &-#{$colorKey} {
+        @include icon-variable($icon-size);
+        @include text($color);
+      }
+    }
+  }
+
+  &-button {
+    @include button;
+    @extend .rounded-b-md;
+
+    @each $colorKey, $color in $colors {
+      &-#{$colorKey} {
+        @include button($color);
+        @extend .rounded-b-md;
+      }
+    }
+  }
 }

@@ -4,13 +4,13 @@ INTERFACE=/sys/class/power_supply/BAT0/
 
 percent="$(cat "$INTERFACE/capacity")"
 
-class="icon--danger--variable"
+class="icon-danger"
 if [[ "$percent" -eq 100 ]]; then
-	class="icon--success--variable"
+	class="icon-variable-success"
 elif [[ "$percent" -gt 40 ]]; then
-	class="icon--primary--variable"
+	class="icon-variable-primary"
 elif [[ "$percent" -gt 20 ]]; then
-	class="icon--warning--variable"
+	class="icon-variable-warning"
 fi
 
 if [[ "$(cat "$INTERFACE/status")" = "Charging" ]]; then

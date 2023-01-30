@@ -10,13 +10,13 @@ on_change() {
 
     case "$(nmcli -g CONNECTIVITY general)" in
         "full")
-            class="icon--primary--variable"
+            class="icon-variable-primary"
             ;;
         "limited")
-            class="icon--warning--variable"
+            class="icon-variable-warning"
             ;;
         "none")
-            class="icon--disabled--variable"
+            class="icon-variable-gray"
             ;;
     esac
 

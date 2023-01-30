@@ -4,7 +4,7 @@ set -e
 
 on_change() {
     percent="0"
-    class="icon--disabled--variable"
+    class="icon-gray"
 
     percent=$(amixer -D pulse sget Master | awk -F '[][]' '/Left:/{ print $2 }' | tr -d %)
 
@@ -17,7 +17,7 @@ on_change() {
     fi
 
     if [[ $(amixer -D pulse sget Master | awk -F '[][]' '/Left:/{ print $4 }') = "on" ]]; then
-        class="icon--primary--variable"
+        class="icon-variable-primary"
     else
         icon="婢"
     fi
