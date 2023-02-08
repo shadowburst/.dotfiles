@@ -15,11 +15,10 @@
        :valign "start"
        :space-evenly false
        (for workspace in workspaces-data
-            (hover-button :class "bar-${workspace.button-class}"
-                          :onclick "leftwm-command \"SendWorkspaceToTag ${workspace.index} ${workspace.tag}\""
-                          :visible {workspace.index == monitor}
-                          (icon :class "bar-${workspace.icon-class}"
-                              {workspace.icon})))))
+            (hover-button :class {workspace.monitor == monitor ? "bar-button-primary" : "bar-button"}
+                          :onclick "hyprctl dispatch workspace ${workspace.id}"
+                          (icon :class "${workspace.monitor == monitor ? 'icon-background' : (workspace.windows > 0 ? 'icon-primary' : 'icon')}"
+                              {workspace.name})))))
 
 ;; Media Widget ;;
 (defwidget media []
@@ -173,9 +172,8 @@
                       :y "0"
                       :height "36"
                       :width "100%")
-  :reserve (struts :distance "36"
-                   :side "top")
-  :wm-ignore false
+  :stacking "fg"
+  :monitor 0
   :hexpand "false"
   :vexpand "false"
   (bar :monitor 0))
@@ -185,9 +183,8 @@
                       :y "0"
                       :height "36"
                       :width "100%")
-  :reserve (struts :distance "36"
-                   :side "top")
-  :wm-ignore false
+  :stacking "fg"
+  :monitor 1
   :hexpand "false"
   :vexpand "false"
   (bar :monitor 1))

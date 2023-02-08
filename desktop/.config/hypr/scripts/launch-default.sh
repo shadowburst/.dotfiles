@@ -1,25 +1,25 @@
 #!/usr/bin/env bash
 
-case $(wmctrl -d | awk '/*/ {print $1}') in
-    0)
+case $(hyprctl monitors -j | jq '.[] | select(.focused == true) | .activeWorkspace.id') in
+    1)
         brave
         ;;
-    1)
+    2)
         emacsclient -c -a "emacs"
         ;;
-    2)
+    3)
         discord
         ;;
-    3)
+    4)
         emacsclient -c -a "emacs" --eval "(ranger)"
         ;;
-    4)
+    5)
         lutris
         ;;
-    5)
+    6)
         gimp
         ;;
-    6)
+    7)
         alacritty
         ;;
 esac

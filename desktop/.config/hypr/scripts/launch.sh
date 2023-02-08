@@ -21,6 +21,7 @@ export QT_QPA_PLATFORMTHEME=qt5ct
 export TERMINAL="alacritty"
 export BROWSER="brave"
 export EDITOR="emacsclient -t"
+export MANPAGER="nvim +Man!"
 
 # Start keyring
 eval "$(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg)"

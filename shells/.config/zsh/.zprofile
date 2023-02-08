@@ -1,3 +1,3 @@
 if [ "$(tty)" = "/dev/tty1" ]; then
-    pgrep Hyprland || ~/.config/hypr/launch.sh
+    pgrep Hyprland || ~/.config/hypr/scripts/launch.sh
 fi

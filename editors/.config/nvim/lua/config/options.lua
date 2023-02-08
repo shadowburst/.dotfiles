@@ -5,6 +5,7 @@ local options = {
 	cmdheight = 1,
 	completeopt = { "menuone", "noselect" },
 	conceallevel = 0,
+	encoding = "utf-8",
 	fileencoding = "utf-8",
 	hlsearch = true,
 	ignorecase = true,

@@ -64,11 +64,11 @@ case ${chosen} in
 		wrong=CB5B67FF
 		font="Noto Sans"
 
-		nohup $TERMINAL --class cava -e cava &
-		cava_window="$!"
-		sleep 0.2
+		# nohup $TERMINAL --class cava -e cava &
+		# cava_window="$!"
+		# sleep 0.2
 
-		i3lock -n --ignore-empty-password \
+		swaylock -n --ignore-empty-password \
 			--clock --indicator --screen=1 \
 			--color=$background \
 			--inside-color=$inside --ring-color=$primary \
@@ -87,7 +87,7 @@ case ${chosen} in
 			--cmd-media-play="playerctl play-pause" --cmd-media-pause="playerctl play-pause" --cmd-media-prev="playerctl previous" --cmd-media-next="playerctl next" \
 			--cmd-audio-mute="amixer -D pulse set Master 1+ toggle" --cmd-volume-down="amixer -D pulse sset Master 5%-" --cmd-volume-up="amixer -D pulse sset Master 5%+"
 
-		kill "$cava_window"
+		# kill "$cava_window"
 		;;
 	$suspend)
 		systemctl suspend

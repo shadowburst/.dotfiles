@@ -10,7 +10,7 @@
 (defpoll battery-data :interval "30s" :initial "{}" "common/scripts/battery")
 (defpoll bluetooth-data :interval "5s" :initial "{}" "common/scripts/bluetooth")
 
-(deflisten workspaces-data :initial "[]" "leftwm-state -t \"$HOME/.config/leftwm/themes/current/liquid/workspaces.liquid\"")
+(deflisten workspaces-data :initial "[]" "common/scripts/workspaces.sh")
 (deflisten media-data :initial "{\"status\": \"Stopped\"}" "common/scripts/media")
 (deflisten volume-data :initial "{}" "common/scripts/volume")
 (deflisten network-data :initial "{}" "common/scripts/network")
