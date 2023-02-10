@@ -9,14 +9,11 @@ cups
 discord
 docker
 dunst
-emacs
 exa
-feh
 ffmpegthumbnailer
 filelight
 firefox
 fish
-flameshot
 gamemode
 gimp
 gnome-calculator
@@ -28,6 +25,7 @@ hunspell-en_gb
 hunspell-fr
 iptables-nft
 iw
+jq
 kdenlive
 kvantum
 lazygit
@@ -47,7 +45,6 @@ qt5ct
 rclone
 reflector
 ripgrep
-rofi
 seahorse
 socat
 solaar
@@ -56,13 +53,15 @@ sshfs
 starship
 steam
 swaybg
+swayimg
 thunar
 thunar-volman
 thunar-archive-plugin
 transmission-cli
 unzip
 virt-manager
-xclip
+wl-clipboard
+xdg-desktop-portal-wlr
 xfce4-power-manager
 xfce4-settings
 xsane-gimp
