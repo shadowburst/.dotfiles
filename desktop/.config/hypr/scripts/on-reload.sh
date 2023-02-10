@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+pkill swaybg
 swaybg -i ~/.wallpapers/current.jpg -m fill &
 
 pkill eww

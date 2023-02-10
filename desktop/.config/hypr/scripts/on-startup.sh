@@ -1,9 +1,19 @@
 #!/usr/bin/env bash
 
-hyprctl setcursor Bibata-Modern-Classic 18
+# Watch monitor hot pluggin in order to reload the config
+~/.config/hypr/scripts/watch-monitors.sh &
 
 # Load the polkit agent
 /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
+
+# Set cursor theme
+hyprctl setcursor Bibata-Modern-Classic 18 &
+
+# Set minimum screen brightness
+light -N 5 &
+
+# Notification daemon
+dunst &
 
 # Launch torrents daemon
 transmission-daemon &
@@ -11,8 +21,6 @@ transmission-daemon &
 # Launch Emacs daemon
 emacs --daemon &
 
+# Launch applets
 blueman-applet &
 nm-applet &
-
-dunst &
-light -N 5 &
