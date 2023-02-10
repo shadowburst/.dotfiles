@@ -1,6 +1,6 @@
 (setq doom-theme 'doom-one)
 
-(add-to-list 'default-frame-alist '(alpha . 80))
+;; (add-to-list 'default-frame-alist '(alpha . 80))
 
 (setq doom-font (font-spec :family "JetBrainsMono Nerd Font" :size 14)
       doom-big-font (font-spec :family "JetBrainsMono Nerd Font" :size 24)
@@ -69,9 +69,9 @@
   (shell-command "rm -rf $HOME/.local/share/Trash/files")
   (shell-command "mkdir -p $HOME/.local/share/Trash/files"))
 
-(setq dired-open-extensions '(("gif" . "feh")
-                              ("jpg" . "feh")
-                              ("png" . "feh")
+(setq dired-open-extensions '(("gif" . "swayimg")
+                              ("jpg" . "swayimg")
+                              ("png" . "swayimg")
                               ("docx" . "onlyoffice")
                               ("pdf" . "brave")
                               ("m4b" . "mpv")

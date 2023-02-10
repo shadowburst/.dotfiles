@@ -45,7 +45,7 @@ Doom Emacs' default colourscheme is perfect for me, who has always loved Atom's 
 #+begin_src emacs-lisp
 (setq doom-theme 'doom-one)
 
-(add-to-list 'default-frame-alist '(alpha . 80))
+;; (add-to-list 'default-frame-alist '(alpha . 80))
 #+end_src
 
 ** Fonts
@@ -170,9 +170,9 @@ This allows Dired to open files in external programs. Without this, it couldn't 
 #+end_src
 
 #+begin_src emacs-lisp
-(setq dired-open-extensions '(("gif" . "feh")
-                              ("jpg" . "feh")
-                              ("png" . "feh")
+(setq dired-open-extensions '(("gif" . "swayimg")
+                              ("jpg" . "swayimg")
+                              ("png" . "swayimg")
                               ("docx" . "onlyoffice")
                               ("pdf" . "brave")
                               ("m4b" . "mpv")
