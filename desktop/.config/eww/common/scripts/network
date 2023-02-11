@@ -7,18 +7,7 @@ ETHERNET_DEVICE="enp7s0"
 
 on_change() {
     icon="睊"
-
-    case "$(nmcli -g CONNECTIVITY general)" in
-        "full")
-            class="icon-variable-primary"
-            ;;
-        "limited")
-            class="icon-variable-warning"
-            ;;
-        "none")
-            class="icon-variable-gray"
-            ;;
-    esac
+    status="$(nmcli -g CONNECTIVITY general)"
 
     if [[ "$(cat /sys/class/net/$ETHERNET_DEVICE/operstate)" = "up" ]]; then
         device="$ETHERNET_DEVICE"
@@ -38,7 +27,7 @@ on_change() {
         connection="No connection"
     fi
 
-    echo "{ \"device\": \"$device\", \"connection\": \"$connection\", \"class\": \"$class\", \"icon\": \"$icon\" }"
+    echo "{ \"device\": \"$device\", \"connection\": \"$connection\", \"status\": \"$status\", \"icon\": \"$icon\" }"
 }
 
 on_change

@@ -58,18 +58,18 @@
   (hover-button :class "bar-button"
                 :onclick "common/scripts/open torrents"
                 :onrightclick "$HOME/.config/transmission-daemon/scripts/clear-torrents.sh"
-                :visible {torrents-data.total-count > 0}
+                :visible {torrents-data.total > 0}
                 :tooltip torrents-list
                 (box :orientation "h"
                      :valign "center"
                      :space-evenly false
                      :spacing bar-spacing
                      (icon :class "icon-success"
-                           :label {torrents-data.download-count}
+                           :label {torrents-data.downloads}
                            :reveal true
                            "")
                      (icon :class "icon-warning"
-                           :label {torrents-data.upload-count}
+                           :label {torrents-data.uploads}
                            :reveal true
                            ""))))
 
@@ -95,7 +95,7 @@
                 :onrightclick "rfkill toggle bluetooth"
                 :onhover "${EWW_CMD} update bar-bluetooth-reveal=${monitor}"
                 :onhoverlost "${EWW_CMD} update bar-bluetooth-reveal=-1"
-                (icon :class "bar-${bluetooth-data.class}"
+                (icon :class {bluetooth-data.status == "on" ? "icon-variable-primary" : "icon-variable-disabled"}
                       :reveal {bar-bluetooth-reveal == monitor}
                       :label {bluetooth-data.connection}
                       {bluetooth-data.icon})))
@@ -108,7 +108,7 @@
                 :onrightclick "rfkill toggle wlan"
                 :onhover "${EWW_CMD} update bar-network-reveal=${monitor}"
                 :onhoverlost "${EWW_CMD} update bar-network-reveal=-1"
-                (icon :class "bar-${network-data.class}"
+                (icon :class {network-data.status == "full" ? "icon-variable-primary" : (network-data.status == "limited" ? "icon-variable-warning" : "icon-variable-disabled")}
                       :reveal {bar-network-reveal == monitor}
                       :label {network-data.connection}
                       :tooltip " ${round(EWW_NET[network-data.device].NET_DOWN / (1024*1024*2), 3)} MB/s |  ${round(EWW_NET[network-data.device].NET_UP / (1024*1024*2), 3)} MB/s"
@@ -122,7 +122,7 @@
                 :onrightclick "amixer -D pulse set Master 1+ toggle"
                 :onhover "${EWW_CMD} update bar-volume-reveal=${monitor}"
                 :onhoverlost "${EWW_CMD} update bar-volume-reveal=-1"
-                (icon :class "bar-${volume-data.class}"
+                (icon :class {volume-data.muted ? "icon-variable-disabled" : "icon-variable-primary"}
                       :reveal {bar-volume-reveal == monitor}
                       :label "${volume-data.percent}%"
                       {volume-data.icon})))
@@ -131,7 +131,7 @@
 (defwidget battery [monitor]
   (hover-button :class "bar-button"
                 :onclick ""
-                (icon :class "bar-${battery-data.class}"
+                (icon :class {battery-data.percent > 40 ? "icon-variable-primary" : (battery-data.percent > 20 ? "icon-variable-warning" : "icon-variable-danger")}
                       :reveal true
                       :label "${battery-data.percent}%"
                       {battery-data.icon})))

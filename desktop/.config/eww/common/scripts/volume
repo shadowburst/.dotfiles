@@ -3,9 +3,6 @@
 set -e
 
 on_change() {
-    percent="0"
-    class="icon-gray"
-
     percent=$(amixer -D pulse sget Master | awk -F '[][]' '/Left:/{ print $2 }' | tr -d %)
 
     if [[ $percent -ge 50 ]]; then
@@ -17,12 +14,13 @@ on_change() {
     fi
 
     if [[ $(amixer -D pulse sget Master | awk -F '[][]' '/Left:/{ print $4 }') = "on" ]]; then
-        class="icon-variable-primary"
+        muted="false"
     else
+        muted="true"
         icon="婢"
     fi
 
-    echo "{ \"percent\": \"$percent\", \"class\": \"$class\", \"icon\": \"$icon\" }"
+    echo "{ \"percent\": $percent, \"muted\": $muted, \"icon\": \"$icon\" }"
 }
 
 on_change

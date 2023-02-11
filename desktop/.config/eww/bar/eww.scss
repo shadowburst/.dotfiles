@@ -27,7 +27,7 @@
       & trough {
         @extend .bar-media__slider;
         @extend .mt-0;
-        @include bg($gray);
+        @include bg($disabled);
 
         & highlight {
           @extend .rounded-b-full;

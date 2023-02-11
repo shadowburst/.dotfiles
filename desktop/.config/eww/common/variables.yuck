@@ -4,13 +4,13 @@
 
 (defpoll time :interval "1s" "date '+%R'")
 (defpoll date :interval "1h" "date '+%d %B %Y'")
-(defpoll torrents-data :interval "5s" :initial "{\"total-count\": 0}" "common/scripts/torrents")
-(defpoll torrents-list :interval "1s" :run-while {torrents-data.total_count > 0} "transmission-remote -l | awk -F '[[:space:]][[:space:]]+' '{ OFS = \";\"} { print $3, $5, $7, $10 }' | head -n -1 | column -s ';' -t | cut -c 1-70")
+(defpoll torrents-data :interval "5s" :initial "{\"total\": 0}" "common/scripts/torrents")
+(defpoll torrents-list :interval "1s" :run-while {torrents-data.total > 0} "transmission-remote -l | awk -F '[[:space:]][[:space:]]+' '{ OFS = \";\"} { print $3, $5, $7, $10 }' | head -n -1 | column -s ';' -t | cut -c 1-70")
 (defpoll updates-list :interval "15m" "common/scripts/updates")
 (defpoll battery-data :interval "30s" :initial "{}" "common/scripts/battery")
 (defpoll bluetooth-data :interval "5s" :initial "{}" "common/scripts/bluetooth")
 
-(deflisten workspaces-data :initial "[]" "common/scripts/workspaces.sh")
+(deflisten workspaces-data :initial "[]" "common/scripts/workspaces")
 (deflisten media-data :initial "{\"status\": \"Stopped\"}" "common/scripts/media")
 (deflisten volume-data :initial "{}" "common/scripts/volume")
 (deflisten network-data :initial "{}" "common/scripts/network")
