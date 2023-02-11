@@ -3,6 +3,11 @@
 # Watch monitor hot pluggin in order to reload the config
 ~/.config/hypr/scripts/watch-monitors.sh &
 
+# Lock and turn off displays if idle
+swayidle \
+    timeout 575 '~/.config/hypr/scripts.lock.sh' \
+    timeout 600 'hyprctl dispatch dpms off' resume 'hyprctl dispatch dpms on' &
+
 # Load the polkit agent
 /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
 
