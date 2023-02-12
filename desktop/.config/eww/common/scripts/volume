@@ -3,7 +3,7 @@
 set -e
 
 on_change() {
-    percent=$(amixer -D pulse sget Master | awk -F '[][]' '/Left:/{ print $2 }' | tr -d %)
+    percent=$(amixer -D pulse sget Master | awk -F '[][%]' '/\[.*%\]/ {print $2; exit}')
 
     if [[ $percent -ge 50 ]]; then
         icon="墳"
@@ -13,7 +13,7 @@ on_change() {
         icon="奄"
     fi
 
-    if [[ $(amixer -D pulse sget Master | awk -F '[][]' '/Left:/{ print $4 }') = "on" ]]; then
+    if [[ $(amixer -D pulse sget Master | awk -F '[][]' '/\[.*%\]/ {print $4; exit}') = "on" ]]; then
         muted="false"
     else
         muted="true"
