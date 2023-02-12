@@ -22,29 +22,31 @@
 
 ;; Media Widget ;;
 (defwidget media []
-  (box :visible {media-data.status == "Playing" || media-data.status == "Paused"}
-       :class "bar-container"
-       (overlay
-         (box :orientation "v"
-              :space-evenly false
-              :valign "end"
-              (label :class "bar-media__time"
-                     :xalign 1
-                     :text {media-data.time})
-              (scale :orientation "h"
-                     :width 410
-                     :class {media-data.status == "Playing" ? "bar-media__slider" : "bar-media__slider--paused"}
-                     :min 0
-                     :max {media-data.duration}
-                     :value {media-data.position}))
-         (box :orientation "h"
-              :space-evenly false
-              (hover-button :class "bar-button"
-                            :onclick "playerctl play-pause"
-                            (icon {media-data.status == "Playing" ? "" : ""}))
-              (label :class "icon-label"
-                     :limit-width 35
-                     :text {media-data.title})))))
+  (revealer :reveal {media-data.status == "Playing" || media-data.status == "Paused"}
+            :transition "slideright"
+            :duration {transition-duration}
+            (box :class "bar-container"
+                 (overlay
+                   (box :orientation "v"
+                        :space-evenly false
+                        :valign "end"
+                        (label :class "bar-media__time"
+                               :xalign 1
+                               :text {media-data.time})
+                        (scale :orientation "h"
+                               :width 410
+                               :class {media-data.status == "Playing" ? "bar-media__slider" : "bar-media__slider--paused"}
+                               :min 0
+                               :max {media-data.duration}
+                               :value {media-data.position}))
+                   (box :orientation "h"
+                        :space-evenly false
+                        (hover-button :class "bar-button"
+                                      :onclick "playerctl play-pause"
+                                      (icon {media-data.status == "Playing" ? "" : ""}))
+                       (label :class "icon-label"
+                              :limit-width 35
+                              :text {media-data.title}))))))
 
 ;; Date Widget ;;
 (defwidget time []

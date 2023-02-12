@@ -57,28 +57,6 @@
     }
   }
 
-  &-icon {
-    @include icon($icon-size);
-
-    @each $colorKey, $color in $colors {
-      &-#{$colorKey} {
-        @include icon($icon-size);
-        @include text($color);
-      }
-    }
-  }
-
-  &-icon-variable {
-    @include icon-variable($icon-size);
-
-    @each $colorKey, $color in $colors {
-      &-#{$colorKey} {
-        @include icon-variable($icon-size);
-        @include text($color);
-      }
-    }
-  }
-
   &-button {
     @include button;
     @extend .rounded-b-md;
