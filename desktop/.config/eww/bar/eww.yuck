@@ -15,10 +15,10 @@
        :valign "start"
        :space-evenly false
        (for workspace in workspaces-data
-            (hover-button :class {workspace.monitor == monitor ? "bar-button-primary" : "bar-button"}
-                          :onclick "hyprctl dispatch workspace ${workspace.id}"
-                          (icon :class "${workspace.monitor == monitor ? 'icon-background' : (workspace.windows > 0 ? 'icon-primary' : 'icon')}"
-                              {workspace.name})))))
+         (hover-button :class {workspace.monitor == monitor ? "bar-button-primary" : "bar-button"}
+                       :onclick "hyprctl dispatch workspace ${workspace.id}"
+                       (icon :class {workspace.monitor == monitor ? "icon-background" : (workspace.windows > 0 ? "icon-primary" : "icon")}
+                             {workspace.name})))))
 
 ;; Media Widget ;;
 (defwidget media []
@@ -51,7 +51,7 @@
   (hover-button :class "bar-button"
                 :tooltip date
                 (label :class "bar-time"
-                       :text time)))
+                       :text {time})))
 
 ;; Torrent Widget ;;
 (defwidget torrents []
@@ -59,7 +59,7 @@
                 :onclick "common/scripts/open torrents"
                 :onrightclick "$HOME/.config/transmission-daemon/scripts/clear-torrents.sh"
                 :visible {torrents-data.total > 0}
-                :tooltip torrents-list
+                :tooltip {torrents-list}
                 (box :orientation "h"
                      :valign "center"
                      :space-evenly false
@@ -92,7 +92,7 @@
 (defwidget bluetooth [monitor]
   (hover-button :class "bar-button"
                 :onclick "common/scripts/open bluetooth"
-                :onrightclick "rfkill toggle bluetooth"
+                :onrightclick "common/scripts/toggle bluetooth"
                 :onhover "${EWW_CMD} update bar-bluetooth-reveal=${monitor}"
                 :onhoverlost "${EWW_CMD} update bar-bluetooth-reveal=-1"
                 (icon :class {bluetooth-data.status == "on" ? "icon-variable-primary" : "icon-variable-disabled"}
@@ -105,7 +105,7 @@
 (defwidget network [monitor]
   (hover-button :class "bar-button"
                 :onclick "common/scripts/open network"
-                :onrightclick "rfkill toggle wlan"
+                :onrightclick "common/scripts/toggle network"
                 :onhover "${EWW_CMD} update bar-network-reveal=${monitor}"
                 :onhoverlost "${EWW_CMD} update bar-network-reveal=-1"
                 (icon :class {network-data.status == "full" ? "icon-variable-primary" : (network-data.status == "limited" ? "icon-variable-warning" : "icon-variable-disabled")}
@@ -119,7 +119,7 @@
 (defwidget volume [monitor]
   (hover-button :class "bar-button"
                 :onclick "common/scripts/open volume"
-                :onrightclick "amixer -D pulse set Master 1+ toggle"
+                :onrightclick "common/scripts/toggle volume"
                 :onhover "${EWW_CMD} update bar-volume-reveal=${monitor}"
                 :onhoverlost "${EWW_CMD} update bar-volume-reveal=-1"
                 (icon :class {volume-data.muted ? "icon-variable-disabled" : "icon-variable-primary"}

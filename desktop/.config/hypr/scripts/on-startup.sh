@@ -5,7 +5,7 @@
 
 # Lock and turn off displays if idle
 swayidle \
-    timeout 575 '~/.config/hypr/scripts.lock.sh' \
+    timeout 590 '~/.config/hypr/scripts/lock.sh' \
     timeout 600 'hyprctl dispatch dpms off' resume 'hyprctl dispatch dpms on' &
 
 # Load the polkit agent
