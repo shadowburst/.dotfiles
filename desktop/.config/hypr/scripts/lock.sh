@@ -7,8 +7,8 @@ warning=DA8548FF
 danger=CB5B67FF
 font="Noto Sans"
 
-swaylock --daemonize \
-    --grace 10 --grace-no-mouse \
+pgrep swaylock || swaylock --daemonize \
+    --grace 10 \
     --ignore-empty-password \
     --indicator-idle-visible \
     --indicator-radius=120 --indicator-thickness=8 \

@@ -5,8 +5,8 @@
 
 # Lock and turn off displays if idle
 swayidle \
-    timeout 590 '~/.config/hypr/scripts/lock.sh' \
-    timeout 600 'hyprctl dispatch dpms off' resume 'hyprctl dispatch dpms on' &
+    timeout 300 '~/.config/hypr/scripts/lock.sh' \
+    timeout 13 'pgrep swaylock && hyprctl dispatch dpms off' resume 'pgrep swaylock && hyprctl dispatch dpms on' &
 
 # Load the polkit agent
 /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
