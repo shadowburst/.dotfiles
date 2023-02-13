@@ -12,5 +12,5 @@
 
 (deflisten workspaces-data :initial "[]" "common/scripts/workspaces")
 (deflisten media-data :initial "{\"status\": \"Stopped\"}" "common/scripts/media")
-(deflisten volume-data :initial "{}" "common/scripts/volume")
+(deflisten volume-data :initial '{ "muted": true }' "common/scripts/volume")
 (deflisten network-data :initial "{}" "common/scripts/network")

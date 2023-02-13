@@ -1,5 +1,5 @@
 (defvar bar-height 36)
-(defvar bar-spacing 10)
+(defvar bar-spacing 6)
 
 ;; Launcher Widget ;;
 (defwidget launcher []
@@ -15,10 +15,10 @@
        :valign "start"
        :space-evenly false
        (for workspace in workspaces-data
-         (hover-button :class {workspace.monitor == monitor ? "bar-button-primary" : "bar-button"}
-                       :onclick "hyprctl dispatch workspace ${workspace.id}"
-                       (icon :class {workspace.monitor == monitor ? "icon-background" : (workspace.windows > 0 ? "icon-primary" : "icon")}
-                             {workspace.name})))))
+            (hover-button :class {workspace.monitor == monitor ? "bar-button-primary" : "bar-button"}
+                          :onclick "hyprctl dispatch workspace ${workspace.id}"
+                          (icon :class {workspace.monitor == monitor ? "icon-background" : (workspace.windows > 0 ? "icon-primary" : "icon")}
+                                {workspace.name})))))
 
 ;; Media Widget ;;
 (defwidget media []
@@ -26,27 +26,35 @@
             :transition "slideright"
             :duration {transition-duration}
             (box :class "bar-container"
-                 (overlay
-                   (box :orientation "v"
-                        :space-evenly false
-                        :valign "end"
-                        (label :class "bar-media__time"
-                               :xalign 1
-                               :text {media-data.time})
-                        (scale :orientation "h"
-                               :width 410
-                               :class {media-data.status == "Playing" ? "bar-media__slider" : "bar-media__slider--paused"}
-                               :min 0
-                               :max {media-data.duration}
-                               :value {media-data.position}))
-                   (box :orientation "h"
-                        :space-evenly false
-                        (hover-button :class "bar-button"
-                                      :onclick "playerctl play-pause"
-                                      (icon {media-data.status == "Playing" ? "" : ""}))
-                       (label :class "icon-label"
-                              :limit-width 35
-                              :text {media-data.title}))))))
+                 :orientation "v"
+                 :space-evenly false
+                 (box :orientation "h"
+                      :space-evenly false
+                      :spacing {bar-spacing}
+                      (box :orientation "h"
+                           (hover-button :class "bar-media__button"
+                                         :onclick "playerctl previous"
+                                         (icon :class "bar-media__icon"
+                                               ""))
+                           (hover-button :class "bar-media__button"
+                                         :onclick "playerctl play-pause"
+                                         (icon :class "bar-media__icon"
+                                               {media-data.status == "Playing" ? "" : ""}))
+                           (hover-button :class "bar-media__button"
+                                         :onclick "playerctl next"
+                                         (icon :class "bar-media__icon"
+                                               "")))
+                      (label :limit-width 40
+                             :text {media-data.title})
+                      (label :class "bar-media__time"
+                             :xalign 1
+                             :yalign 1
+                             :text {media-data.time}))
+                 (scale :orientation "h"
+                        :class {media-data.status == "Playing" ? "bar-media__slider" : "bar-media__slider--paused"}
+                        :min 0
+                        :max {media-data.duration}
+                        :value {media-data.position}))))
 
 ;; Date Widget ;;
 (defwidget time []
@@ -57,37 +65,41 @@
 
 ;; Torrent Widget ;;
 (defwidget torrents []
-  (hover-button :class "bar-button"
-                :onclick "common/scripts/open torrents"
-                :onrightclick "$HOME/.config/transmission-daemon/scripts/clear-torrents.sh"
-                :visible {torrents-data.total > 0}
-                :tooltip {torrents-list}
-                (box :orientation "h"
-                     :valign "center"
-                     :space-evenly false
-                     :spacing bar-spacing
-                     (icon :class "icon-success"
-                           :label {torrents-data.downloads}
-                           :reveal true
-                           "")
-                     (icon :class "icon-warning"
-                           :label {torrents-data.uploads}
-                           :reveal true
-                           ""))))
+  (revealer :reveal {torrents-data.total > 0}
+            :transition "slideleft"
+            :duration {transition-duration}
+            (hover-button :class "bar-button"
+                          :onclick "common/scripts/open torrents"
+                          :onrightclick "$HOME/.config/transmission-daemon/scripts/clear-torrents.sh"
+                          :tooltip {torrents-list}
+                          (box :orientation "h"
+                               :valign "center"
+                               :space-evenly false
+                               :spacing {bar-spacing}
+                               (icon :class "icon-success"
+                                     :label {torrents-data.downloads}
+                                     :reveal true
+                                     "")
+                               (icon :class "icon-warning"
+                                     :label {torrents-data.uploads}
+                                     :reveal true
+                                     "")))))
 
 ;; Updates Widget ;;
 (defvar bar-updates-reveal -1)
 (defwidget updates [monitor]
-  (hover-button :class "bar-button"
-                :onclick "common/scripts/open updates"
-                :visible {updates-count > 0}
-                :onhover "${EWW_CMD} update bar-updates-reveal=${monitor}"
-                :onhoverlost "${EWW_CMD} update bar-updates-reveal=-1"
-                :tooltip updates-list
-                (icon :class "icon-success"
-                      :label "${updates-count} ${updates-count == 1 ? 'update' : 'updates'}"
-                      :reveal {bar-updates-reveal == monitor}
-                      "")))
+  (revealer :reveal {updates-count > 0}
+            :transition "slideleft"
+            :duration {transition-duration}
+            (hover-button :class "bar-button"
+                          :onclick "common/scripts/open updates"
+                          :onhover "${EWW_CMD} update bar-updates-reveal=${monitor}"
+                          :onhoverlost "${EWW_CMD} update bar-updates-reveal=-1"
+                          :tooltip {updates-list}
+                          (icon :class "icon-success"
+                                :label "${updates-count} ${updates-count == 1 ? 'update' : 'updates'}"
+                                :reveal {bar-updates-reveal == monitor}
+                                ""))))
 
 ;; Bluetooth Widget ;;
 (defvar bar-bluetooth-reveal -1)
@@ -145,7 +157,7 @@
              (box :orientation "h"
                   :halign "start"
                   :space-evenly false
-                  :spacing {bar-spacing / 2}
+                  :spacing {bar-spacing}
                   (box :orientation "h"
                        :class "bar-container"
                        :space-evenly false
@@ -156,7 +168,7 @@
                   :halign "start"
                   :class "bar-container"
                   :space-evenly false
-                  :spacing {bar-spacing / 2}
+                  :spacing {bar-spacing}
                   (time))
              (box :orientation "h"
                   :halign "end"

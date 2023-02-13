@@ -68,7 +68,7 @@ $base-distance: 0.25rem;
 
 $radiuses: (
   0: 0,
-  sm: 5px,
+  sm: 8px,
   md: 13px,
   lg: 20px,
   full: 100px,
@@ -136,7 +136,6 @@ tooltip {
 }
 
 @mixin button($color: transparent) {
-  @extend .rounded-md;
   @include bg($color);
   @extend .px-3;
 

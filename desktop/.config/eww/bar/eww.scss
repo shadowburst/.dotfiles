@@ -20,7 +20,7 @@
 
     &__slider {
       @extend .mx-1;
-      @extend .rounded-b-md;
+      @extend .rounded-b-full;
 
       min-height: $slider-height;
 
@@ -46,6 +46,22 @@
             @extend .rounded-b-full;
             @include bg($secondary);
           }
+        }
+      }
+    }
+
+    &__button {
+      @extend .rounded-b-sm;
+      @include button;
+    }
+
+    &__icon {
+      @include icon(calc(2rem - #{$slider-height}));
+
+      @each $colorKey, $color in $colors {
+        &-#{$colorKey} {
+          @include icon;
+          @include text($color);
         }
       }
     }
