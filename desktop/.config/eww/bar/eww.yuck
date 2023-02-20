@@ -2,48 +2,41 @@
 (defvar bar-spacing 6)
 
 ;; Launcher Widget ;;
-(defwidget launcher []
-  (hover-button :class "bar-button"
-                :onclick "common/scripts/open launcher"
+(defwidget bar-launcher []
+  (hover-button :onclick "common/scripts/open launcher"
                 (icon "")))
 
 ;; Workspaces Widget ;;
-(defwidget workspaces [monitor]
-  (box :class "bar-container"
+(defwidget bar-workspaces [monitor]
+  (box :class "container"
        :orientation "h"
        :halign "center"
        :valign "start"
        :space-evenly false
        (for workspace in workspaces-data
-            (hover-button :class {workspace.monitor == monitor ? "bar-button-primary" : "bar-button"}
+            (hover-button :class {workspace.monitor == monitor ? "primary" : ""}
                           :onclick "hyprctl dispatch workspace ${workspace.id}"
-                          (icon :class {workspace.monitor == monitor ? "icon-background" : (workspace.windows > 0 ? "icon-primary" : "icon")}
+                          (icon :class {workspace.monitor != monitor && workspace.windows > 0 ? "primary" : ""}
                                 {workspace.name})))))
 
 ;; Media Widget ;;
-(defwidget media []
+(defwidget bar-media []
   (revealer :reveal {media-data.status == "Playing" || media-data.status == "Paused"}
             :transition "slideright"
             :duration {transition-duration}
-            (box :class "bar-container"
+            (box :class "container bar-media"
                  :orientation "v"
                  :space-evenly false
                  (box :orientation "h"
                       :space-evenly false
                       :spacing {bar-spacing}
                       (box :orientation "h"
-                           (hover-button :class "bar-media__button"
-                                         :onclick "playerctl previous"
-                                         (icon :class "bar-media__icon"
-                                               ""))
-                           (hover-button :class "bar-media__button"
-                                         :onclick "playerctl play-pause"
-                                         (icon :class "bar-media__icon"
-                                               {media-data.status == "Playing" ? "" : ""}))
-                           (hover-button :class "bar-media__button"
-                                         :onclick "playerctl next"
-                                         (icon :class "bar-media__icon"
-                                               "")))
+                           (hover-button :onclick "playerctl previous"
+                                         (icon ""))
+                           (hover-button :onclick "playerctl play-pause"
+                                         (icon {media-data.status == "Playing" ? "" : ""}))
+                           (hover-button :onclick "playerctl next"
+                                         (icon "")))
                       (label :limit-width 40
                              :text {media-data.title})
                       (label :class "bar-media__time"
@@ -57,95 +50,88 @@
                         :value {media-data.position}))))
 
 ;; Date Widget ;;
-(defwidget time []
-  (hover-button :class "bar-button"
-                :tooltip date
+(defwidget bar-time []
+  (hover-button :tooltip date
                 (label :class "bar-time"
                        :text {time})))
 
 ;; Torrent Widget ;;
-(defwidget torrents []
+(defwidget bar-torrents [monitor]
   (revealer :reveal {torrents-data.total > 0}
             :transition "slideleft"
             :duration {transition-duration}
-            (hover-button :class "bar-button"
-                          :onclick "common/scripts/open torrents"
+            (hover-button :onclick "common/scripts/open torrents ${monitor}"
                           :onrightclick "$HOME/.config/transmission-daemon/scripts/clear-torrents.sh"
                           :tooltip {torrents-list}
                           (box :orientation "h"
                                :valign "center"
                                :space-evenly false
                                :spacing {bar-spacing}
-                               (icon :class "icon-success"
+                               (icon :class "success"
                                      :label {torrents-data.downloads}
                                      :reveal true
                                      "")
-                               (icon :class "icon-warning"
+                               (icon :class "warning"
                                      :label {torrents-data.uploads}
                                      :reveal true
                                      "")))))
 
 ;; Updates Widget ;;
 (defvar bar-updates-reveal -1)
-(defwidget updates [monitor]
+(defwidget bar-updates [monitor]
   (revealer :reveal {updates-count > 0}
             :transition "slideleft"
             :duration {transition-duration}
-            (hover-button :class "bar-button"
-                          :onclick "common/scripts/open updates"
+            (hover-button :onclick "common/scripts/open updates"
                           :onhover "${EWW_CMD} update bar-updates-reveal=${monitor}"
                           :onhoverlost "${EWW_CMD} update bar-updates-reveal=-1"
                           :tooltip {updates-list}
-                          (icon :class "icon-success"
+                          (icon :class "success"
                                 :label "${updates-count} ${updates-count == 1 ? 'update' : 'updates'}"
                                 :reveal {bar-updates-reveal == monitor}
                                 ""))))
 
 ;; Bluetooth Widget ;;
 (defvar bar-bluetooth-reveal -1)
-(defwidget bluetooth [monitor]
-  (hover-button :class "bar-button"
-                :onclick "common/scripts/open bluetooth"
+(defwidget bar-bluetooth [monitor]
+  (hover-button :onclick "common/scripts/open bluetooth"
                 :onrightclick "common/scripts/toggle bluetooth"
                 :onhover "${EWW_CMD} update bar-bluetooth-reveal=${monitor}"
                 :onhoverlost "${EWW_CMD} update bar-bluetooth-reveal=-1"
-                (icon :class {bluetooth-data.status == "on" ? "icon-variable-primary" : "icon-variable-disabled"}
+                (icon :class "variable ${bluetooth-data.enabled ? 'primary' : 'disabled'}"
                       :reveal {bar-bluetooth-reveal == monitor}
                       :label {bluetooth-data.connection}
                       {bluetooth-data.icon})))
 
 ;; Network Widget ;;
 (defvar bar-network-reveal -1)
-(defwidget network [monitor]
-  (hover-button :class "bar-button"
-                :onclick "common/scripts/open network"
+(defwidget bar-network [monitor]
+  (hover-button :onclick "common/scripts/open network"
                 :onrightclick "common/scripts/toggle network"
                 :onhover "${EWW_CMD} update bar-network-reveal=${monitor}"
                 :onhoverlost "${EWW_CMD} update bar-network-reveal=-1"
-                (icon :class {network-data.status == "full" ? "icon-variable-primary" : (network-data.status == "limited" ? "icon-variable-warning" : "icon-variable-disabled")}
+                (icon :class "variable ${network-data.status == 'full' ? 'primary' : (network-data.status == 'limited' ? 'warning' : 'disabled')}"
                       :reveal {bar-network-reveal == monitor}
                       :label {network-data.connection}
-                      :tooltip " ${round(EWW_NET[network-data.device].NET_DOWN / (1024*1024*2), 3)} MB/s |  ${round(EWW_NET[network-data.device].NET_UP / (1024*1024*2), 3)} MB/s"
+                      :tooltip " ${round(EWW_NET[network-data.device].NET_DOWN / (1024*2), 0)} Kb/s |  ${round(EWW_NET[network-data.device].NET_UP / (1024*2), 0)} Kb/s"
                       {network-data.icon})))
 
 ;; Volume Widget ;;
 (defvar bar-volume-reveal -1)
-(defwidget volume [monitor]
-  (hover-button :class "bar-button"
-                :onclick "common/scripts/open volume"
+(defwidget bar-volume [monitor]
+  (hover-button :onclick "common/scripts/open volume"
                 :onrightclick "common/scripts/toggle volume"
                 :onhover "${EWW_CMD} update bar-volume-reveal=${monitor}"
                 :onhoverlost "${EWW_CMD} update bar-volume-reveal=-1"
-                (icon :class {volume-data.muted ? "icon-variable-disabled" : "icon-variable-primary"}
+                (icon :class "variable ${volume-data.muted ? 'disabled' : 'primary'}"
                       :reveal {bar-volume-reveal == monitor}
                       :label "${volume-data.percent}%"
                       {volume-data.icon})))
 
 ;; Battery Widget ;;
-(defwidget battery [monitor]
-  (hover-button :class "bar-button"
-                :onclick ""
-                (icon :class {battery-data.percent > 40 ? "icon-variable-primary" : (battery-data.percent > 20 ? "icon-variable-warning" : "icon-variable-danger")}
+(defwidget bar-battery [monitor]
+  (hover-button :onclick ""
+                (icon :class "variable ${battery-data.percent > 40 ? 'primary' : (battery-data.percent > 20 ? 'warning' : 'danger')}"
                       :reveal true
                       :label "${battery-data.percent}%"
                       {battery-data.icon})))
@@ -159,29 +145,29 @@
                   :space-evenly false
                   :spacing {bar-spacing}
                   (box :orientation "h"
-                       :class "bar-container"
+                       :class "container"
                        :space-evenly false
-                       (launcher)
-                       (workspaces :monitor monitor))
-                  (media))
+                       (bar-launcher)
+                       (bar-workspaces :monitor monitor))
+                  (bar-media))
              (box :orientation "h"
                   :halign "start"
-                  :class "bar-container"
+                  :class "container"
                   :space-evenly false
                   :spacing {bar-spacing}
-                  (time))
+                  (bar-time))
              (box :orientation "h"
                   :halign "end"
-                  :class "bar-container"
+                  :class "container"
                   :space-evenly false
-                  (torrents)
-                  (updates :monitor monitor)
-                  (bluetooth :monitor monitor)
-                  (network :monitor monitor)
-                  (volume :monitor monitor)
-                  (battery :monitor monitor))))
+                  (bar-torrents :monitor monitor)
+                  (bar-updates :monitor monitor)
+                  (bar-bluetooth :monitor monitor)
+                  (bar-network :monitor monitor)
+                  (bar-volume :monitor monitor)
+                  (bar-battery :monitor monitor))))
 
-(defwindow bar0
+(defwindow bar-0
   :geometry (geometry :x "0"
                       :y "0"
                       :height "36"
@@ -192,7 +178,7 @@
   :vexpand "false"
   (bar :monitor 0))
 
-(defwindow bar1
+(defwindow bar-1
   :geometry (geometry :x "0"
                       :y "0"
                       :height "36"

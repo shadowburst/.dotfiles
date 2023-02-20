@@ -7,18 +7,19 @@ ETHERNET_DEVICE="enp7s0"
 
 on_change() {
     icon="睊"
+    enabled=false
     status="$(nmcli -g CONNECTIVITY general)"
+
+    device="$WIFI_DEVICE"
+
+    if [[ -n "$(rfkill list wlan | awk '/Soft blocked: no/')" ]]; then
+        icon="直"
+        enabled=true
+    fi
 
     if [[ "$(cat /sys/class/net/$ETHERNET_DEVICE/operstate)" = "up" ]]; then
         device="$ETHERNET_DEVICE"
-
         icon=""
-    else
-        device="$WIFI_DEVICE"
-
-        if [[ -n "$(rfkill list wlan | awk '/Soft blocked: no/')" ]]; then
-            icon="直"
-        fi
     fi
 
     if [[ "$(cat /sys/class/net/$device/operstate)" = "up" ]]; then
@@ -27,7 +28,19 @@ on_change() {
         connection="No connection"
     fi
 
-    echo "{ \"device\": \"$device\", \"connection\": \"$connection\", \"status\": \"$status\", \"icon\": \"$icon\" }"
+    jq -Mcn \
+        --arg connection "$connection" \
+        --arg device "$device" \
+        --arg enabled "$enabled" \
+        --arg icon "$icon" \
+        --arg status "$status" \
+        '{
+            connection: $connection,
+            device: $device,
+            enabled: $enabled,
+            icon: $icon,
+            status: $status
+        }'
 }
 
 on_change

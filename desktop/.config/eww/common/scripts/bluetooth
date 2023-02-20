@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 icon=""
-status="off"
+enabled=false
 connection="Off"
 connections_count="0"
 
 if [[ -n "$(rfkill list bluetooth | awk '/Soft blocked: no/')" ]]; then
     icon=""
-    status="on"
+    enabled=true
     connection="No connections"
     connections_count="$(bluetoothctl devices Connected | wc -l)"
 
@@ -22,6 +22,12 @@ if [[ -n "$(rfkill list bluetooth | awk '/Soft blocked: no/')" ]]; then
     fi
 fi
 
-
-
-echo "{ \"connection\": \"$connection\", \"status\": \"$status\", \"icon\": \"$icon\" }"
+jq -Mcn \
+    --arg connection "$connection" \
+    --arg enabled "$enabled" \
+    --arg icon "$icon" \
+    '{
+        connection: $connection,
+        enabled: $enabled,
+        icon: $icon
+    }'

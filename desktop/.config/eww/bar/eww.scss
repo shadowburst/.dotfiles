@@ -4,9 +4,13 @@
   @include bg(transparent);
   padding: 0 25px;
 
-  &-container {
-    @extend .rounded-b-md;
+  & .container {
     @include bg($background);
+  }
+
+  & .container,
+  & .button {
+    @extend .rounded-b-md;
   }
 
   &-time {
@@ -50,38 +54,18 @@
       }
     }
 
-    &__button {
+    & .button {
       @extend .rounded-b-sm;
-      @include button;
     }
 
-    &__icon {
+    & .icon {
       @include icon(calc(2rem - #{$slider-height}));
-
-      @each $colorKey, $color in $colors {
-        &-#{$colorKey} {
-          @include icon;
-          @include text($color);
-        }
-      }
     }
 
     &__time {
       @extend .label;
       @extend .mx-2;
       @include font($normal-font, 0.8rem);
-    }
-  }
-
-  &-button {
-    @include button;
-    @extend .rounded-b-md;
-
-    @each $colorKey, $color in $colors {
-      &-#{$colorKey} {
-        @include button($color);
-        @extend .rounded-b-md;
-      }
     }
   }
 }

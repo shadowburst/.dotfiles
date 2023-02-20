@@ -1,5 +1,8 @@
+@use "sass:list";
+
 $foreground: #bbc2cf;
 $background: #1c1f24;
+$card: #202328;
 $primary: #935fb0;
 $secondary: #b382cb;
 $success: #98be65;
@@ -9,6 +12,7 @@ $disabled: #5b6268;
 $colors: (
   foreground: $foreground,
   background: $background,
+  card: $card,
   primary: $primary,
   secondary: $secondary,
   success: $success,
@@ -28,6 +32,35 @@ $fonts: (
   nerd: $nerd-font,
   nerd-variable: $nerd-font-variable,
 );
+
+.transition {
+  transition-property: color, background-color, border-color, outline-color,
+    text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter,
+    backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 250ms;
+
+  &-all {
+    transition-property: all;
+  }
+
+  &-colors {
+    @extend .transition;
+
+    transition-property: color, background-color, border-color, outline-color,
+      text-decoration-color, fill, stroke;
+  }
+
+  &-none {
+    transition-property: none;
+  }
+
+  &-opacity {
+    @extend .transition;
+
+    transition-property: opacity;
+  }
+}
 
 $directions: (
   l: "left",
@@ -94,16 +127,6 @@ $radiuses: (
   }
 }
 
-@each $colorKey, $color in $colors {
-  .bg-#{$colorKey} {
-    background-color: $color;
-  }
-
-  .text-#{$colorKey} {
-    color: $color;
-  }
-}
-
 @mixin bg($color: $background) {
   background-color: $color;
 }
@@ -121,6 +144,7 @@ $radiuses: (
 }
 
 tooltip {
+  @extend .rounded-sm;
   @include bg;
   @include text;
   @include font($mono-font);
@@ -135,15 +159,33 @@ tooltip {
   @include font;
 }
 
-@mixin button($color: transparent) {
-  @include bg($color);
+@mixin button() {
+  $dark-backgrounds: (transparent, $background, $card);
+
+  @extend .transition-colors;
   @extend .px-3;
 
   &:hover {
-    @if $color == transparent {
-      @include bg(rgba(255, 255, 255, 0.03));
-    } @else {
-      @include bg(shade($color, 0.95));
+    @include bg(rgba(255, 255, 255, 0.03));
+  }
+
+  @each $colorKey, $color in $colors {
+    &.#{$colorKey} {
+      @include bg($color);
+
+      & .icon,
+      & .icon-variable,
+      & .label {
+        @include text($background);
+      }
+
+      &:hover {
+        @if list.index($dark-backgrounds, $color) {
+          @include bg(rgba(255, 255, 255, 0.03));
+        } @else {
+          @include bg(shade($color, 0.9));
+        }
+      }
     }
   }
 }
@@ -171,24 +213,20 @@ tooltip {
 .icon {
   @include icon;
 
-  &-label {
-    @extend .label;
+  & .label {
     @extend .ml-2;
   }
 
+  &.variable {
+    @include icon-variable;
+  }
+
   @each $colorKey, $color in $colors {
-    &-#{$colorKey} {
+    &.#{$colorKey} {
       @include icon;
       @include text($color);
     }
-  }
-}
-
-.icon-variable {
-  @include icon-variable;
-
-  @each $colorKey, $color in $colors {
-    &-#{$colorKey} {
+    &.variable.#{$colorKey} {
       @include icon-variable;
       @include text($color);
     }
@@ -197,10 +235,4 @@ tooltip {
 
 .button {
   @include button;
-
-  @each $colorKey, $color in $colors {
-    &-#{$colorKey} {
-      @include button($color);
-    }
-  }
 }

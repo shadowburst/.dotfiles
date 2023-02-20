@@ -1,8 +1,20 @@
 #!/usr/bin/env bash
 
-output="$(transmission-remote -l)"
-total="$(($(echo "$output" | wc -l) - 2))"
-downloads="$((total - $(echo "$output" | awk '/100%/' | wc -l)))"
-uploads="$((total - downloads))"
+if [[ "$1" == "--details" ]]; then
+    transmission-remote -l | awk -F '[[:space:]][[:space:]]+' '{ OFS = ";"} { print $3, $5, $7, $9, $10 }' |  head -n -1 | column -s ';' -t | cut -c 1-70
+else
+    output="$(transmission-remote -l)"
+    total="$(($(echo "$output" | wc -l) - 2))"
+    downloads="$((total - $(echo "$output" | awk '/100%/' | wc -l)))"
+    uploads="$((total - downloads))"
 
-echo "{ \"total\": $total, \"downloads\": $downloads, \"uploads\": $uploads }"
+    jq -Mcn \
+        --arg total "$total" \
+        --arg downloads "$downloads" \
+        --arg uploads "$uploads" \
+        '{
+            total: $total | tonumber,
+            downloads: $downloads | tonumber,
+            uploads: $uploads | tonumber
+         }'
+fi

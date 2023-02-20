@@ -20,7 +20,15 @@ on_change() {
         icon="婢"
     fi
 
-    echo "{ \"percent\": $percent, \"muted\": $muted, \"icon\": \"$icon\" }"
+    jq -Mcn \
+        --arg icon "$icon" \
+        --arg muted "$muted" \
+        --arg percent "$percent" \
+        '{
+            icon: $icon,
+            muted: $muted,
+            percent: $percent
+        }'
 }
 
 on_change

@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-TERMINAL=alacritty
-
 case $1 in
     "bluetooth")
         blueman-manager

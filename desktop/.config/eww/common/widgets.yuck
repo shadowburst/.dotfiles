@@ -1,17 +1,16 @@
-(defwidget icon [?class ?style ?label ?reveal ?tooltip]
+(defwidget icon [?class ?label ?reveal ?tooltip]
   (box :orientation "h"
        :space-evenly false
-       :class {class ?: "icon"}
-       :style {style ?: ""}
+       :class "icon ${class ?: ''}"
        :tooltip {tooltip}
        (children)
        (revealer :reveal {reveal ?: false}
                  :transition "slideright"
                  :duration {transition-duration}
-                 (label :class "icon-label" :text {label}))))
+                 (label :class "label" :text {label}))))
 
 ;; Button Widget ;;
-(defwidget hover-button [?visible ?class ?tooltip ?onclick ?onmiddleclick ?onrightclick ?onhover ?onhoverlost ?label ?reveal]
+(defwidget hover-button [?visible ?class ?tooltip ?onclick ?onmiddleclick ?onrightclick ?onhover ?onhoverlost]
   (eventbox :visible {visible ?: true}
             :onhover {onhover}
             :onhoverlost {onhoverlost}
@@ -20,5 +19,5 @@
             (button :onclick {onclick}
                     :onmiddleclick {onmiddleclick}
                     :onrightclick {onrightclick}
-                    :class {class ?: "button"}
+                    :class "button ${class ?: ''}"
                     (children))))

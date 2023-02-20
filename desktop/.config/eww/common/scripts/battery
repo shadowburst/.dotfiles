@@ -46,4 +46,10 @@ else
 	fi
 fi
 
-echo "{ \"percent\": $percent, \"icon\": \"$icon\" }"
+jq -Mcn \
+	--arg icon "$icon" \
+	--arg percent "$percent" \
+	'{
+		icon: $icon,
+		percent: $percent
+	}'

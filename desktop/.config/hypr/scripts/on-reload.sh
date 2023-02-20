@@ -8,5 +8,5 @@ eww daemon
 
 hyprctl monitors -j | jq --raw-output .[].id | while read -r id
 do
-  eww open "bar$id"
+  eww open "bar-$id"
 done
