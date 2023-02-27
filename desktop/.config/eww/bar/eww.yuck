@@ -15,7 +15,7 @@
        :space-evenly false
        (for workspace in workspaces-data
             (hover-button :class {workspace.monitor == monitor ? "primary" : ""}
-                          :onclick "hyprctl dispatch workspace ${workspace.id}"
+                          :onclick "common/scripts/open workspace ${workspace.id}"
                           (icon :class {workspace.monitor != monitor && workspace.windows > 0 ? "primary" : ""}
                                 {workspace.name})))))
 
@@ -66,7 +66,7 @@
                           (box :orientation "h"
                                :valign "center"
                                :space-evenly false
-                               :spacing {bar-spacing}
+                               :spacing {bar-spacing * 2}
                                (icon :class "success"
                                      :label {torrents-data.downloads}
                                      :reveal true
@@ -129,10 +129,13 @@
                       {volume-data.icon})))
 
 ;; Battery Widget ;;
+(defvar bar-battery-reveal -1)
 (defwidget bar-battery [monitor]
   (hover-button :onclick ""
+                :onhover "${EWW_CMD} update bar-battery-reveal=${monitor}"
+                :onhoverlost "${EWW_CMD} update bar-battery-reveal=-1"
                 (icon :class "variable ${battery-data.percent > 40 ? 'primary' : (battery-data.percent > 20 ? 'warning' : 'danger')}"
-                      :reveal true
+                      :reveal {bar-battery-reveal == monitor}
                       :label "${battery-data.percent}%"
                       {battery-data.icon})))
 

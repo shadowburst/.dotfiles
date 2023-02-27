@@ -1,7 +1,7 @@
 (defwidget icon [?class ?label ?reveal ?tooltip]
-  (box :orientation "h"
+  (box :class "icon ${class ?: ''}"
+       :orientation "h"
        :space-evenly false
-       :class "icon ${class ?: ''}"
        :tooltip {tooltip}
        (children)
        (revealer :reveal {reveal ?: false}
@@ -11,13 +11,13 @@
 
 ;; Button Widget ;;
 (defwidget hover-button [?visible ?class ?tooltip ?onclick ?onmiddleclick ?onrightclick ?onhover ?onhoverlost]
-  (eventbox :visible {visible ?: true}
+  (eventbox :class "button ${class ?: ''}"
+            :visible {visible ?: true}
+            :onclick {onclick}
+            :onmiddleclick {onmiddleclick}
+            :onrightclick {onrightclick}
             :onhover {onhover}
             :onhoverlost {onhoverlost}
             :tooltip {tooltip}
             :cursor "pointer"
-            (button :onclick {onclick}
-                    :onmiddleclick {onmiddleclick}
-                    :onrightclick {onrightclick}
-                    :class "button ${class ?: ''}"
-                    (children))))
+            (children)))

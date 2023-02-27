@@ -163,7 +163,10 @@ tooltip {
   $dark-backgrounds: (transparent, $background, $card);
 
   @extend .transition-colors;
-  @extend .px-3;
+
+  & > * {
+    @extend .px-3;
+  }
 
   &:hover {
     @include bg(rgba(255, 255, 255, 0.03));

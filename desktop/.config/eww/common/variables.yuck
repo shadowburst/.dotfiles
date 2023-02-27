@@ -10,7 +10,7 @@
 (defpoll battery-data :interval "30s" :initial '{ "percent": 0 }' "common/scripts/battery")
 (defpoll bluetooth-data :interval "5s" :initial '{ "enabled": false }' "common/scripts/bluetooth")
 
-(deflisten workspaces-data :initial "[]" "common/scripts/workspaces")
-(deflisten media-data :initial "{}" "common/scripts/media")
+(deflisten network-data :initial '{}' "common/scripts/network")
+(deflisten media-data :initial '{}' "common/scripts/media")
 (deflisten volume-data :initial '{ "muted": true }' "common/scripts/volume")
-(deflisten network-data :initial "{}" "common/scripts/network")
+(deflisten workspaces-data :initial '[]' "common/scripts/workspaces")

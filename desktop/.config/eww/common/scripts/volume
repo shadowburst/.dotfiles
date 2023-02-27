@@ -32,7 +32,8 @@ on_change() {
 }
 
 on_change
-pactl subscribe | while read -r line; do
+pactl subscribe | while read -r line
+do
     if [[ "$line" = "Event 'change' on sink"* ]]; then
         on_change
     fi

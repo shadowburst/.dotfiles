@@ -19,4 +19,7 @@ case $1 in
     "volume")
         pavucontrol
         ;;
+    "workspace")
+        $HOME/.config/hypr/scripts/workspace.sh $2
+        ;;
 esac
