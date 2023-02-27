@@ -103,9 +103,7 @@ fi
 if ask "Install shells ?"; then
 	stow shells
 
-	# Setup ZSH
-	git clone https://github.com/jandamm/zgenom.git ~/.zgenom
-	chsh -s "$(which zsh)"
+	chsh -s "$(which fish)"
 fi
 
 if ask "Install graphics controller ?"; then
