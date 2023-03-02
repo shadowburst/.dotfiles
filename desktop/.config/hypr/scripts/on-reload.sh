@@ -3,9 +3,7 @@
 pkill swaybg
 swaybg -i ~/.wallpapers/current.jpg -m fill &
 
-pkill eww
-eww daemon
-
+eww close-all
 hyprctl monitors -j | jq --raw-output .[].id | while read -r id
 do
   eww open "bar-$id"

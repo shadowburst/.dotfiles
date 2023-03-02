@@ -30,3 +30,6 @@ emacs --daemon &
 # Launch applets
 blueman-applet &
 nm-applet &
+
+# Launch EWW daemon
+eww daemon &
