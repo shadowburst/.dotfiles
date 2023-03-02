@@ -107,12 +107,9 @@ if ask "Install shells ?"; then
 fi
 
 if ask "Install graphics controller ?"; then
-	vga_controller=$(lspci | grep -i --color 'vga\|3d\|2d')
-	if [ -n "$(echo "$vga_controller" | grep -q "Intel")" ]; then
-		sudo pacman -S intel-media-driver vulkan-intel libvdpau-va-gl
-		echo "VDPAU_DRIVER=va_gl" | sudo tee -a /etc/environment
-		echo "LIBVA_DRIVER_NAME=iHD" | sudo tee -a /etc/environment
-	fi
+	sudo pacman -S intel-media-driver vulkan-intel libvdpau-va-gl
+	echo "VDPAU_DRIVER=va_gl" | sudo tee -a /etc/environment
+	echo "LIBVA_DRIVER_NAME=iHD" | sudo tee -a /etc/environment
 fi
 
 if ask "Install printer ?"; then
