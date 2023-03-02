@@ -80,6 +80,11 @@ if ask "Install desktop ?"; then
 	echo "session optional pam_gnome_keyring.so auto_start" | sudo tee -a /etc/pam.d/login
 	echo "password optional pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/passwd
 
+	# Setup greetd
+	sudo sed -i "s#command = .*#command = \"tuigreet --time --time-format '%A %e, %B %Y' --remember --asterisks --cmd $HOME/.config/hypr/scripts/launch.sh\"#" /etc/greetd/config.toml
+	echo "auth optional pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/greetd
+	echo "session optional pam_gnome_keyring.so auto_start" | sudo tee -a /etc/pam.d/greetd
+
 	# Enable dark mode for gnome apps
 	gsettings set org.gnome.desktop.interface color-scheme prefer-dark
 
