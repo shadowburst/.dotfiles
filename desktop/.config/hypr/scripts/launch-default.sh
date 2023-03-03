@@ -2,24 +2,24 @@
 
 case $(hyprctl monitors -j | jq '.[] | select(.focused == true) | .activeWorkspace.id') in
     1)
-        brave
+        brave &
         ;;
     2)
-        emacsclient -c -a "emacs"
+        emacsclient -c -a "emacs" &
         ;;
     3)
-        discord
+        discord &
         ;;
     4)
-        emacsclient -c -a "emacs" --eval "(ranger)"
+        emacsclient -c -a "emacs" --eval "(ranger)" &
         ;;
     5)
-        lutris
+        lutris &
         ;;
     6)
-        gimp
+        gimp &
         ;;
     7)
-        alacritty
+        alacritty &
         ;;
 esac
