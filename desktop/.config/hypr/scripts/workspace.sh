@@ -2,10 +2,12 @@
 
 WORKSPACE="$1"
 
-MONITOR="$(hyprctl monitors -j | jq -Mc --arg workspace $WORKSPACE '.[] | select(.activeWorkspace.id == ($workspace | tonumber) and .focused == false).id')"
+OTHER_MONITOR="$(hyprctl monitors -j | jq -Mc --arg workspace $WORKSPACE '.[] | select(.activeWorkspace.id == ($workspace | tonumber) and .focused == false).id')"
+CURRENT_MONITOR="$(hyprctl monitors -j | jq -Mc '.[] | select(.focused == true).id')"
 
-if [[ -n "$MONITOR" ]]; then
-    hyprctl dispatch swapactiveworkspaces $MONITOR current
+if [[ -n "$OTHER_MONITOR" ]]; then
+    hyprctl dispatch swapactiveworkspaces $OTHER_MONITOR $CURRENT_MONITOR
 else
     hyprctl dispatch workspace $WORKSPACE
+    hyprctl dispatch moveworkspacetomonitor $WORKSPACE $CURRENT_MONITOR
 fi
