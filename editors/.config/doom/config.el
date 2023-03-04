@@ -64,10 +64,9 @@
 (setq delete-by-moving-to-trash t
       trash-directory "~/.local/share/Trash/files/")
 
-(defun empty-trash ()
+(defun trash-empty ()
   (interactive)
-  (shell-command "rm -rf $HOME/.local/share/Trash/files")
-  (shell-command "mkdir -p $HOME/.local/share/Trash/files"))
+  (shell-command "trash-empty -f"))
 
 (setq dired-open-extensions '(("gif" . "swayimg")
                               ("jpg" . "swayimg")
