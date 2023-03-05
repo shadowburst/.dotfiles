@@ -22,35 +22,30 @@
   &-media {
     $slider-height: 3px;
 
-    &__slider {
-      @extend .mx-1;
-      @extend .rounded-b-full;
+    scale {
+      &,
+      & trough {
+        @extend .mx-1;
+      }
 
-      min-height: $slider-height;
+      &,
+      & trough,
+      & trough highlight {
+        @extend .rounded-b-full;
+
+        min-height: $slider-height;
+      }
 
       & trough {
-        @extend .bar-media__slider;
-        @extend .mt-0;
         @include bg($disabled);
 
         & highlight {
-          @extend .rounded-b-full;
           @include bg($primary);
         }
       }
 
-      &--paused {
-        @extend .bar-media__slider;
-
-        & trough {
-          @extend .bar-media__slider;
-          @extend .m-0;
-
-          & highlight {
-            @extend .rounded-b-full;
-            @include bg($secondary);
-          }
-        }
+      &.paused trough highlight {
+        @include bg($secondary);
       }
     }
 
@@ -62,10 +57,10 @@
       @include icon(calc(2rem - #{$slider-height}));
     }
 
-    &__time {
-      @extend .label;
+    & .time {
       @extend .mx-2;
-      @include font($normal-font, 0.8rem);
+      @extend .text-sm;
+      @include text($foreground);
     }
   }
 }

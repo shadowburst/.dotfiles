@@ -39,12 +39,13 @@
                                          (icon "")))
                       (label :limit-width 40
                              :text {media-data.title})
-                      (label :class "bar-media__time"
+                      (label :class "time"
                              :xalign 1
                              :yalign 1
                              :text {media-data.time}))
-                 (scale :orientation "h"
-                        :class {media-data.status == "Playing" ? "bar-media__slider" : "bar-media__slider--paused"}
+                 (scale :class {media-data.status != "Playing" ? "paused" : ""}
+                        :onchange "playerctl position $(({} / 1000000))"
+                        :orientation "h"
                         :min 0
                         :max {media-data.duration}
                         :value {media-data.position}))))
@@ -62,7 +63,6 @@
             :duration {transition-duration}
             (hover-button :onclick "common/scripts/open torrents ${monitor}"
                           :onrightclick "$HOME/.config/transmission-daemon/scripts/clear-torrents.sh"
-                          :tooltip {torrents-list}
                           (box :orientation "h"
                                :valign "center"
                                :space-evenly false
