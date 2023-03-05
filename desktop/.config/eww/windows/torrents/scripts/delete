@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+transmission-remote -t "$1" --remove-and-delete

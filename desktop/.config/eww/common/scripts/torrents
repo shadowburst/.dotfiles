@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [[ "$1" == "--details" ]]; then
-    transmission-remote -l | awk -F '[[:space:]][[:space:]]+' '{ OFS = ";"} { print $2, $3, $4, $5, $6, $7, $9, $10 }' | head -n -1 | tail -n +2 | jq -Rn \
+    transmission-remote -l | awk -F '[[:space:]][[:space:]]+' '{ OFS = ";"} { print $2, $3, $4, $5, $6, $7, $9, $10 }' | head -n -1 | tail -n +2 | jq -MRcn \
         '[inputs | split(";") | {
             "id": .[0] | tonumber,
             "down": .[5] | tonumber,

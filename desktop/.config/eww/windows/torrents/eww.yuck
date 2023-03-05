@@ -43,7 +43,7 @@
                          (box :orientation "h"
                               :spacing 6
                               :valign "center"
-                              (hover-button :onclick "windows/torrents/scripts/remove ${torrent.id}"
+                              (hover-button :onclick "windows/torrents/scripts/${torrent.progress == 100 ? 'remove' : 'delete'} ${torrent.id}"
                                             (icon ""))))))))
 
 (defwindow torrents-0
