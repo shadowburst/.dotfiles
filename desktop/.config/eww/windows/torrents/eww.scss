@@ -1,0 +1,47 @@
+.torrents {
+  .torrent {
+    & .title {
+      @include font($normal-font, 1.1rem, 600);
+    }
+
+    progressbar {
+      $slider-height: 15px;
+
+      &,
+      & trough,
+      & trough progress {
+        @extend .rounded-full;
+
+        min-height: $slider-height;
+      }
+
+      & trough {
+        @include bg($disabled);
+
+        & progress {
+          @include bg($primary);
+        }
+
+        &.full progress {
+          @include bg($success);
+        }
+      }
+
+      &.paused trough progress {
+        @include bg($warning);
+      }
+    }
+
+    & .speed {
+      & label {
+        @extend .text-sm;
+      }
+    }
+
+    & .button {
+      & .icon {
+        @include icon(1.8rem);
+      }
+    }
+  }
+}

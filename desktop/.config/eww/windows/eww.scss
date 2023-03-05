@@ -1,0 +1,23 @@
+.window {
+  @extend .rounded-sm;
+  @include bg($background);
+  @extend .p-3;
+
+  & .title {
+    @include font($normal-font, 1.5rem, bold);
+    @include text;
+  }
+
+  & .container {
+    @extend .rounded-sm;
+    @include bg($card);
+    @extend .px-3;
+    @extend .py-2;
+  }
+
+  & .button {
+    @extend .rounded-sm;
+  }
+}
+
+@import "./torrents/eww.scss";

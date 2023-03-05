@@ -11,7 +11,9 @@ case $1 in
         $TERMINAL -e nmtui
         ;;
     "torrents")
-        $TERMINAL -e tremc
+        eww open window-closer-0
+        eww open window-closer-1
+        eww open "torrents-$2"
         ;;
     "updates")
         $TERMINAL -e bash -c "paru -Syu; echo Done - Press enter to exit...; read _"

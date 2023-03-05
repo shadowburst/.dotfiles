@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
 
 if [[ "$1" == "--details" ]]; then
-    transmission-remote -l | awk -F '[[:space:]][[:space:]]+' '{ OFS = ";"} { print $3, $5, $7, $9, $10 }' |  head -n -1 | column -s ';' -t | cut -c 1-70
+    transmission-remote -l | awk -F '[[:space:]][[:space:]]+' '{ OFS = ";"} { print $2, $3, $4, $5, $6, $7, $9, $10 }' | head -n -1 | tail -n +2 | jq -Rn \
+        '[inputs | split(";") | {
+            "id": .[0] | tonumber,
+            "down": .[5] | tonumber,
+            "eta": .[3],
+            "have": .[2],
+            "name": .[7],
+            "progress": .[1] | sub("%$"; "") | tonumber,
+            "status": .[6],
+            "up": .[4] | tonumber
+        }]'
 else
     output="$(transmission-remote -l)"
     total="$(($(echo "$output" | wc -l) - 2))"

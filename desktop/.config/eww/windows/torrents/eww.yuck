@@ -1,0 +1,67 @@
+(defwidget torrents []
+  (window :title "Torrents"
+          (box :orientation "h"
+               (hover-button :onclick "windows/torrents/scripts/start all"
+                             (icon ""))
+               (hover-button :onclick "windows/torrents/scripts/stop all"
+                             (icon "")))
+          (box :class "torrents"
+               :orientation "v"
+               :spacing 6
+               (for torrent in torrents-list
+                    (box :class "torrent container"
+                         :orientation "h"
+                         :space-evenly false
+                         :spacing 6
+                         (box :orientation "v"
+                              :space-evenly false
+                              :hexpand true
+                              (label :class "title"
+                                     :xalign 0
+                                     :text {torrent.name})
+                              (label :class "label"
+                                     :xalign 0
+                                     :text "${torrent.have} (${torrent.progress}%)  -  ${torrent.eta}")
+                              (progress :class {torrent.status == "Paused" || torrent.status == "Stopped" ? "paused" : ""}
+                                        :orientation "h"
+                                        :value {torrent.progress})
+                              (box :class "speed"
+                                   :orientation "h"
+                                   :space-evenly false
+                                   :spacing 12
+                                   (box :orientation "h"
+                                        :space-evenly false
+                                        :spacing 6
+                                        (label :text "${torrent.down} KB/s")
+                                        (icon :class "variable" ""))
+                                   (label :text "-")
+                                   (box :orientation "h"
+                                        :space-evenly false
+                                        :spacing 6
+                                        (label :text "${torrent.up} KB/s")
+                                        (icon :class "variable" ""))))
+                         (box :orientation "h"
+                              :spacing 6
+                              :valign "center"
+                              (hover-button :onclick "windows/torrents/scripts/remove ${torrent.id}"
+                                            (icon ""))))))))
+
+(defwindow torrents-0
+  :geometry (geometry :x "10px"
+                      :y "46px"
+                      :anchor "top right")
+  :stacking "fg"
+  :monitor 0
+  :hexpand "false"
+  :vexpand "false"
+  (torrents :monitor 0))
+
+(defwindow torrents-1
+  :geometry (geometry :x "10px"
+                      :y "46px"
+                      :anchor "top right")
+  :stacking "fg"
+  :monitor 1
+  :hexpand "false"
+  :vexpand "false"
+  (torrents :monitor 1))

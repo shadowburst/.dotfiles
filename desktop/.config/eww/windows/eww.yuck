@@ -1,0 +1,40 @@
+;; Window Widget ;;
+(defwidget window [title]
+  (box :class "window"
+       :orientation "v"
+       :space-evenly false
+       :spacing 6
+       :width 500
+       (box :orientation "h"
+            :valign "center"
+            (box :orientation "h"
+                 :halign "start"
+                 (label :class "title" :text {title}))
+            (box :orientation "h"
+                 :halign "end"
+                 (children :nth 0)))
+       (children :nth 1)))
+
+;; Window Closer Widget ;;
+(defwidget window-closer []
+  (eventbox :onclick "${EWW_CMD} close torrents-0 torrents-1 window-closer-0 window-closer-1"))
+
+(defwindow window-closer-0
+  :geometry (geometry :x "0"
+                      :y "0"
+                      :height "100%"
+                      :width "100%")
+  :stacking "fg"
+  :monitor 0
+  (window-closer))
+
+(defwindow window-closer-1
+  :geometry (geometry :x "0"
+                      :y "0"
+                      :height "100%"
+                      :width "100%")
+  :stacking "fg"
+  :monitor 1
+  (window-closer))
+
+(include "./windows/torrents/eww.yuck")
