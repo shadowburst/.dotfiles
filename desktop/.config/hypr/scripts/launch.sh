@@ -9,7 +9,7 @@ export QT_QPA_PLATFORM="wayland;xcb"
 export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 export QT_QPA_PLATFORMTHEME=kvantum
 
-export GTK_THEME=Layan-Dark
+export GTK_THEME=Orchis-Purple-Dark
 export XCURSOR_THEME=Bibata-Modern-Classic
 export XCURSOR_SIZE=16
 
