@@ -1,20 +1,23 @@
 ;; Window Widget ;;
-(defwidget window [title]
+(defwidget window []
   (box :class "window"
        :orientation "v"
        :space-evenly false
        :spacing 6
        :width 500
+       (children)))
+
+;; Window Header Widget ;;
+(defwidget window-header [title]
+  (box :orientation "h"
+       :valign "center"
        (box :orientation "h"
-            :valign "center"
-            (box :orientation "h"
-                 :halign "start"
-                 (label :class "title" :text {title}))
-            (box :orientation "h"
-                 :halign "end"
-                 (children :nth 0)))
-       (children :nth 1)
-       (children :nth 2)))
+            :halign "start"
+            (label :class "title" :text {title}))
+       (box :orientation "h"
+            :halign "end"
+            (children)))
+  )
 
 ;; Window Closer Widget ;;
 (defwidget window-closer []
