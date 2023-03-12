@@ -48,7 +48,7 @@ fi
 
 jq -Mcn \
 	--arg icon "$icon" \
-	--arg percent "$percent" \
+	--argjson percent "$percent" \
 	'{
 		icon: $icon,
 		percent: $percent

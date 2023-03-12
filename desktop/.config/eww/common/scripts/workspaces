@@ -3,23 +3,36 @@
 WORKSPACE_NAMES=("" "" "" "" "" "" "")
 NAMES_JSON=$(printf '%s\n' "${WORKSPACE_NAMES[@]}" | jq -c -R '.' | jq --slurp -c '.')
 
-workspaces (){
+PREVIOUS_VALUE=""
+
+on_change() {
     MONITOR_WORKSPACES=$(hyprctl monitors -j | jq -Mc 'map(.activeWorkspace.id)')
 	WORKSPACE_WINDOWS=$(hyprctl workspaces -j | jq 'map({key: .id | tostring, value: .windows}) | from_entries')
-	seq 1 "${#WORKSPACE_NAMES[@]}" | jq --slurp -Mc \
-        --argjson monitors "${MONITOR_WORKSPACES}" \
-        --argjson names "${NAMES_JSON}" \
-        --argjson windows "${WORKSPACE_WINDOWS}" \
-        'map(tostring) | map(. as $id | {
-            id: $id,
-            name: $names[$id | tonumber - 1],
-            windows: ($windows[$id]//0),
-            monitor: ($monitors | index($id | tonumber))
-        })'
+
+    VALUE=$(
+        seq 1 "${#WORKSPACE_NAMES[@]}" | jq --slurp -Mc \
+            --argjson monitors "${MONITOR_WORKSPACES}" \
+            --argjson names "${NAMES_JSON}" \
+            --argjson windows "${WORKSPACE_WINDOWS}" \
+            'map(tostring) | map(. as $id | {
+                id: $id,
+                name: $names[$id | tonumber - 1],
+                windows: ($windows[$id] // 0),
+                monitor: ($monitors | index($id | tonumber))
+            })'
+    )
+
+    if [[ "$VALUE" == "$PREVIOUS_VALUE" ]]; then
+        return 0
+    fi
+
+    PREVIOUS_VALUE="$VALUE"
+
+    echo "$VALUE"
 }
 
-workspaces
+on_change
 socat -u UNIX-CONNECT:/tmp/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock - | while read -r line
 do
-	workspaces
+	on_change
 done

@@ -1,46 +1,56 @@
 #!/usr/bin/env bash
 
-set -e
-
 WIFI_DEVICE="wlan0"
 ETHERNET_DEVICE="enp7s0"
 
+PREVIOUS_VALUE=""
+
 on_change() {
     icon="睊"
-    enabled=false
+    enabled="false"
     status="$(nmcli -g CONNECTIVITY general)"
 
     device="$WIFI_DEVICE"
 
     if [[ -n "$(rfkill list wlan | awk '/Soft blocked: no/')" ]]; then
         icon="直"
-        enabled=true
+        enabled="true"
     fi
 
-    if [[ "$(cat /sys/class/net/$ETHERNET_DEVICE/operstate)" = "up" ]]; then
+    if [[ "$(cat /sys/class/net/$ETHERNET_DEVICE/operstate)" == "up" ]]; then
         device="$ETHERNET_DEVICE"
         icon=""
     fi
 
-    if [[ "$(cat /sys/class/net/$device/operstate)" = "up" ]]; then
+    if [[ "$(cat /sys/class/net/$device/operstate)" == "up" ]]; then
         connection="$(nmcli -t connection show --active | awk -F ':' -v device=$device '$0~device { print $1 }')"
     else
         connection="No connection"
     fi
 
-    jq -Mcn \
-        --arg connection "$connection" \
-        --arg device "$device" \
-        --arg enabled "$enabled" \
-        --arg icon "$icon" \
-        --arg status "$status" \
-        '{
-            connection: $connection,
-            device: $device,
-            enabled: $enabled,
-            icon: $icon,
-            status: $status
-        }'
+    VALUE=$(
+        jq -Mcn \
+            --arg connection "$connection" \
+            --arg device "$device" \
+            --argjson enabled "$enabled" \
+            --arg icon "$icon" \
+            --arg status "$status" \
+            '{
+                connection: $connection,
+                device: $device,
+                enabled: $enabled,
+                icon: $icon,
+                status: $status
+            }'
+    )
+
+    if [[ "$VALUE" == "$PREVIOUS_VALUE" ]]; then
+        return 0
+    fi
+
+    PREVIOUS_VALUE="$VALUE"
+
+    echo "$VALUE"
 }
 
 on_change

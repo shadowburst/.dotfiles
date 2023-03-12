@@ -19,12 +19,12 @@ else
     uploads="$((total - downloads))"
 
     jq -Mcn \
-        --arg total "$total" \
-        --arg downloads "$downloads" \
-        --arg uploads "$uploads" \
+        --argjson total "$total" \
+        --argjson downloads "$downloads" \
+        --argjson uploads "$uploads" \
         '{
-            total: $total | tonumber,
-            downloads: $downloads | tonumber,
-            uploads: $uploads | tonumber
+            total: $total,
+            downloads: $downloads,
+            uploads: $uploads
          }'
 fi

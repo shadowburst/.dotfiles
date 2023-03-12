@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 
-playerctl -F metadata --format '{ #@#status#@#: #@#{{status}}#@#, #@#title#@#: #@#{{title}}#@#, #@#position#@#: {{position}}, #@#duration#@#: {{mpris:length}}, #@#time#@#: #@#{{duration(position)}} / {{duration(mpris:length)}}#@# }' | while read -r line
+playerctl -F metadata --format '{{status}};;{{title}};;{{position}};;{{mpris:length}};;{{duration(position)}} / {{duration(mpris:length)}}' | while read -r line
 do
-    line_no_quotes="$(echo "${line//\"/\\\"}")"
-    echo "${line_no_quotes//#@#/\"}"
+    echo "$line" | jq -MRc \
+        'split(";;") | {
+            status: (.[0] // "Stopped"),
+            title: (.[1] // ""),
+            position: (.[2] // 0) | tonumber,
+            duration: (.[3] // 0) | tonumber,
+            time: (.[4] // "0:00 / 0:00")
+        }'
 done
