@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 
-icon=""
+icon="󰂲"
 enabled="false"
 connection="Off"
 connections_count="0"
 
 if [[ -n "$(rfkill list bluetooth | awk '/Soft blocked: no/')" ]]; then
-    icon=""
+    icon="󰂯"
     enabled="true"
     connection="No connections"
     connections_count="$(bluetoothctl devices Connected | wc -l)"
 
     if [[ "$connections_count" -gt 0 ]]; then
-        icon=""
+        icon="󰂱"
 
         if [[ "$connections_count" -eq 1  ]]; then
             connection="$(bluetoothctl devices Connected | awk '{$1=$2=""; sub(/^ +/, "", $0); print}')"
