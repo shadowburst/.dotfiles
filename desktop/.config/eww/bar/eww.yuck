@@ -16,7 +16,7 @@
        (for workspace in workspaces-data
             (hover-button :class {workspace.monitor == monitor ? "primary" : ""}
                           :onclick "common/scripts/open workspace ${workspace.id}"
-                          (icon :class {workspace.monitor != monitor && workspace.windows > 0 ? "primary" : ""}
+                          (icon :class {workspace.monitor != monitor && workspace.windows > 0 ? "primary" : (workspace.monitor == monitor ? "background" : "")}
                                 {workspace.name})))))
 
 ;; Media Widget ;;

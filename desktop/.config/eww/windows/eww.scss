@@ -1,5 +1,5 @@
 .window {
-  @extend .rounded-sm;
+  @extend .rounded-md;
   @include bg($background);
   @extend .p-3;
 
@@ -16,8 +16,9 @@
   }
 
   & .button {
-    @extend .rounded-sm;
+    @extend .rounded-full;
   }
 }
 
+@import "./controls/eww.scss";
 @import "./torrents/eww.scss";

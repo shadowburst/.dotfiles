@@ -191,12 +191,6 @@ tooltip {
     &.#{$colorKey} {
       @include bg($color);
 
-      & .icon,
-      & .icon-variable,
-      & .label {
-        @include text($background);
-      }
-
       &:hover {
         @if list.index($dark-backgrounds, $color) {
           @include bg(rgba(255, 255, 255, 0.03));
@@ -241,11 +235,6 @@ tooltip {
 
   @each $colorKey, $color in $colors {
     &.#{$colorKey} {
-      @include icon;
-      @include text($color);
-    }
-    &.variable.#{$colorKey} {
-      @include icon-variable;
       @include text($color);
     }
   }

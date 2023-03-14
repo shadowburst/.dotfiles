@@ -7,12 +7,12 @@
                                 (icon "")))
    (box :class "torrents"
         :orientation "v"
-        :spacing 6
+        :spacing {window-spacing}
         (for torrent in torrents-list
              (box :class "torrent container"
                   :orientation "h"
                   :space-evenly false
-                  :spacing 6
+                  :spacing {window-spacing}
                   (box :orientation "v"
                        :space-evenly false
                        :hexpand true
@@ -29,27 +29,27 @@
                        (box :class "speed"
                             :orientation "h"
                             :space-evenly false
-                            :spacing 12
+                            :spacing {2 * window-spacing}
                             (box :orientation "h"
                                  :space-evenly false
-                                 :spacing 6
+                                 :spacing {window-spacing}
                                  (label :text "${torrent.down} KB/s")
                                  (icon :class "variable" ""))
                             (label :text "-")
                             (box :orientation "h"
                                  :space-evenly false
-                                 :spacing 6
+                                 :spacing {window-spacing}
                                  (label :text "${torrent.up} KB/s")
                                  (icon :class "variable" ""))))
                   (box :orientation "h"
-                       :spacing 6
+                       :spacing {window-spacing}
                        :valign "center"
                        (hover-button :onclick "windows/torrents/scripts/${torrent.progress == 100 ? 'remove' : 'delete'} ${torrent.id}"
                                      (icon ""))))))))
 
 (defwindow torrents-0
-  :geometry (geometry :x "10px"
-                      :y "46px"
+  :geometry (geometry :x "4px"
+                      :y "40px"
                       :anchor "top right")
   :stacking "fg"
   :monitor 0
@@ -58,8 +58,8 @@
   (torrents :monitor 0))
 
 (defwindow torrents-1
-  :geometry (geometry :x "10px"
-                      :y "46px"
+  :geometry (geometry :x "4px"
+                      :y "40px"
                       :anchor "top right")
   :stacking "fg"
   :monitor 1
