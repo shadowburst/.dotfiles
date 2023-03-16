@@ -5,7 +5,7 @@
   text-color: @foreground;
   height: 36px;
   font: "Noto sans 12";
-  icon-font: "JetBrainsMono Nerd Font 14";
+  icon-font: "JetBrainsMono Nerd Font Mono 20";
   prompt-background: @primary;
   prompt-foreground: @black;
   selected-entry-background: @background;
