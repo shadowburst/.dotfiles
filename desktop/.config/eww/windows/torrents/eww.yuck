@@ -7,6 +7,7 @@
                                 (icon "")))
    (box :class "torrents"
         :orientation "v"
+        :space-evenly false
         :spacing {window-spacing}
         (for torrent in torrents-list
              (box :class "torrent container"
