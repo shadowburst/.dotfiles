@@ -5,27 +5,7 @@ INTERFACE=/sys/class/power_supply/BAT0/
 percent="$(cat "$INTERFACE/capacity")"
 
 if [[ "$(cat "$INTERFACE/status")" = "Charging" ]]; then
-	if [[ "$percent" -eq 100 ]]; then
-		icon="󰂅"
-	elif [[ "$percent" -gt 90 ]]; then
-		icon="󰂋"
-	elif [[ "$percent" -gt 80 ]]; then
-		icon="󰂊"
-	elif [[ "$percent" -gt 70 ]]; then
-		icon="󰢞"
-	elif [[ "$percent" -gt 60 ]]; then
-		icon="󰂉"
-	elif [[ "$percent" -gt 50 ]]; then
-		icon="󰢝"
-	elif [[ "$percent" -gt 40 ]]; then
-		icon="󰂈"
-	elif [[ "$percent" -gt 30 ]]; then
-		icon="󰂇"
-	elif [[ "$percent" -gt 20 ]]; then
-		icon="󰂆"
-	else
-		icon="󰢜"
-	fi
+	icon="󰂄"
 else
 	if [[ "$percent" -eq 100 ]]; then
 		icon="󰁹"

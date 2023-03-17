@@ -1,7 +1,7 @@
 .window {
   @extend .rounded-md;
   @include bg($background);
-  @extend .p-3;
+  @extend .p-5;
 
   & .title {
     @include font($normal-font, 1.5rem, bold);
@@ -20,5 +20,4 @@
   }
 }
 
-@import "./controls/eww.scss";
 @import "./torrents/eww.scss";

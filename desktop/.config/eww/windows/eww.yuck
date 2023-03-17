@@ -1,12 +1,12 @@
 (defvar window-spacing 6)
 
 ;; Window Widget ;;
-(defwidget window []
+(defwidget window [?width]
   (box :class "window"
        :orientation "v"
        :space-evenly false
        :spacing {window-spacing}
-       :width 500
+       :width {width ?: 450}
        (children)))
 
 ;; Window Header Widget ;;
@@ -44,4 +44,3 @@
   (window-closer))
 
 (include "./windows/torrents/eww.yuck")
-(include "./windows/controls/eww.yuck")
