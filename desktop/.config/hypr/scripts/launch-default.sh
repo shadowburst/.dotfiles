@@ -2,7 +2,7 @@
 
 case $(hyprctl monitors -j | jq '.[] | select(.focused == true) | .activeWorkspace.id') in
     1)
-        brave &
+        $BROWSER &
         ;;
     2)
         emacsclient -c -a "emacs" &
@@ -20,6 +20,6 @@ case $(hyprctl monitors -j | jq '.[] | select(.focused == true) | .activeWorkspa
         gimp &
         ;;
     7)
-        alacritty &
+        $TERMINAL &
         ;;
 esac
