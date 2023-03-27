@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 
-DMENU="tofi"
+DMENU="tofi -c $HOME/.config/tofi/powermenu.config"
 
 # Options
-lock="Lock"
-suspend="Suspend"
-logout="Logout"
-reboot="Reboot"
-poweroff="Power off"
+lock=''
+suspend=''
+logout=''
+reboot=''
+poweroff=''
 
 # Actions
 chosen=$(echo -e "$lock\n$suspend\n$logout\n$reboot\n$poweroff" | $DMENU)
 case ${chosen} in
 	$lock)
-		(sleep 0.2 && ~/.scripts/lock.sh) &
+		(sleep 0.3 && ~/.scripts/lock.sh) &
 		;;
 	$suspend)
 		systemctl suspend
