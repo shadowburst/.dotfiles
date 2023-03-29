@@ -1,5 +1,5 @@
 local options = {
-	shell = "fish",
+	-- shell = "fish",
 	backup = false,
 	clipboard = "unnamedplus",
 	cmdheight = 1,
@@ -40,6 +40,7 @@ local options = {
 	foldmethod = "expr",
 	foldexpr = "nvim_treesitter#foldexpr()",
 	foldlevel = 99,
+	spelllang = "en,fr",
 }
 
 vim.opt.shortmess:append("c")
