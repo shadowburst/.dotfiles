@@ -1,23 +1,18 @@
 return {
-	-- {
-	--     'navarasu/onedark.nvim',
-	--     config = function()
-	--       require('onedark').setup({
-	--           style = 'dark',
-	--           transparent = false,
-	--       })
-	--     end,
-	-- },
-	-- {
-	--     'LazyVim/LazyVim',
-	--     opts = {
-	--         colorscheme = 'onedark',
-	--     },
-	-- },
 	{
-		"folke/tokyonight.nvim",
-		lazy = true,
-		opts = { style = "moon" },
+		"navarasu/onedark.nvim",
+		config = function()
+			require("onedark").setup({
+				style = "dark",
+				transparent = false,
+			})
+		end,
+	},
+	{
+		"LazyVim/LazyVim",
+		opts = {
+			colorscheme = "onedark",
+		},
 	},
 	{
 		"norcalli/nvim-colorizer.lua",

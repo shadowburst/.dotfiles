@@ -29,3 +29,9 @@ del("n", "<leader><tab>d")
 
 -- Handle lazygit myself
 del("n", "<leader>gG")
+
+-- Handle terminal myself
+del("n", "<leader>ft")
+del("n", "<leader>fT")
+
+map("n", "<leader>hr", "<cmd>so $MYVIMRC<cr>", { desc = "Reload config" })
