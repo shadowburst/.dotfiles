@@ -23,6 +23,7 @@ map("n", "<leader>wv", "<C-w>v", { desc = "Split window right" })
 
 map("n", "<leader>bc", "<cmd>bdelete<cr>", { desc = "Close buffer" })
 del("n", "<leader>bd")
+map("n", "<leader>bo", "<cmd>up | %bd | e# | bd#<cr>", { desc = "Close other buffers" })
 
 map("n", "<leader><tab>c", "<cmd>tabclose<cr>", { desc = "Close Tab" })
 del("n", "<leader><tab>d")
