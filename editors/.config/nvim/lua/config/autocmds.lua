@@ -1,17 +1,5 @@
--- Autocmds are automatically loaded on the VeryLazy event
--- Default autocmds that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/autocmds.lua
--- Add any additional autocmds here
--- function _G.set_terminal_keymaps()
--- 	local opts = { noremap = true }
--- 	local keymap = vim.api.nvim_buf_set_keymap
---
--- 	keymap(0, "t", "²", [[<cmd>ToggleTerm<cr>]], opts)
--- 	keymap(0, "t", "jk", [[<C-\><C-n>]], opts)
--- 	keymap(0, "t", "kj", [[<C-\><C-n>]], opts)
--- 	keymap(0, "t", "<C-h>", [[<C-\><C-n><C-W>h]], opts)
--- 	keymap(0, "t", "<C-j>", [[<C-\><C-n><C-W>j]], opts)
--- 	keymap(0, "t", "<C-k>", [[<C-\><C-n><C-W>k]], opts)
--- 	keymap(0, "t", "<C-l>", [[<C-\><C-n><C-W>l]], opts)
--- end
---
--- vim.cmd("autocmd! TermOpen term://* lua set_terminal_keymaps()")
+-- Fix folding when opening files with telescope
+vim.api.nvim_create_autocmd({ "BufEnter" }, {
+	pattern = { "*" },
+	command = "normal zx",
+})
