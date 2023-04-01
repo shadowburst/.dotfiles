@@ -38,6 +38,16 @@ return {
 		},
 	},
 	{
+		"lambdalisue/suda.vim",
+		keys = {
+			{
+				"<leader>fu",
+				"<cmd>SudaRead<cr>",
+				desc = "Sudo this file",
+			},
+		},
+	},
+	{
 		"telescope.nvim",
 		dependencies = {
 			{
@@ -141,15 +151,5 @@ return {
 				["<leader>p"] = { name = "+projects" },
 			})
 		end,
-	},
-	{
-		"lambdalisue/suda.vim",
-		keys = {
-			{
-				"<leader>fu",
-				"<cmd>SudaRead<cr>",
-				desc = "Sudo this file",
-			},
-		},
 	},
 }
