@@ -1,0 +1,60 @@
+* {
+  background-image: none;
+}
+window {
+  background-color: rgba(28, 31, 36, 0.9);
+  font-size: 14pt;
+}
+button {
+  margin: 2rem;
+  background-color: #282c34;
+  border-width: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 20%;
+  color: #bbc2cf;
+  transition: box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+button:focus,
+button:active,
+button:hover {
+  background-color: #935fb0;
+  outline-style: none;
+}
+
+#lock {
+  background-image: image(url("./icons/lock.svg"));
+}
+#lock:active,
+#lock:hover,
+#lock:focus {
+  background-image: image(url("./icons/lock-focus.svg"));
+}
+
+#logout {
+  background-image: image(url("./icons/logout.svg"));
+}
+#logout:active,
+#logout:hover,
+#logout:focus {
+  background-image: image(url("./icons/logout-focus.svg"));
+}
+
+#reboot {
+  background-image: image(url("./icons/reboot.svg"));
+}
+#reboot:active,
+#reboot:hover,
+#reboot:focus {
+  background-image: image(url("./icons/reboot-focus.svg"));
+}
+
+#shutdown {
+  background-image: image(url("./icons/shutdown.svg"));
+}
+#shutdown:active,
+#shutdown:hover,
+#shutdown:focus {
+  background-image: image(url("./icons/shutdown-focus.svg"));
+}

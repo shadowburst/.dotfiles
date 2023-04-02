@@ -1,30 +1,3 @@
 #!/usr/bin/env bash
 
-DMENU="tofi -c $HOME/.config/tofi/powermenu.config"
-
-# Options
-lock=''
-suspend=''
-logout=''
-reboot=''
-poweroff=''
-
-# Actions
-chosen=$(echo -e "$lock\n$suspend\n$logout\n$reboot\n$poweroff" | $DMENU)
-case ${chosen} in
-	$lock)
-		(sleep 0.3 && ~/.scripts/lock.sh) &
-		;;
-	$suspend)
-		systemctl suspend
-		;;
-	$logout)
-		loginctl terminate-user $USER
-		;;
-	$reboot)
-		systemctl reboot
-		;;
-	$poweroff)
-		systemctl poweroff
-		;;
-esac
+wlogout --protocol layer-shell --buttons-per-row 4 --margin-top 450 --margin-bottom 450 --margin-left 300 --margin-right 300
