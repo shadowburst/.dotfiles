@@ -1,6 +1,4 @@
 set TERM "xterm-256color"
-set EDITOR "emacsclient -t"
-set VISUAL "emacsclient -t"
 
 set fish_greeting
 set fish_color_command green
