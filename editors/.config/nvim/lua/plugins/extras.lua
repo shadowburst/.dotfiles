@@ -20,18 +20,6 @@ return {
 				mode = "t",
 			},
 			{
-				"jk",
-				[[<C-\><C-n>]],
-				desc = "Exit insert mode",
-				mode = "t",
-			},
-			{
-				"kj",
-				[[<C-\><C-n>]],
-				desc = "Exit insert mode",
-				mode = "t",
-			},
-			{
 				"<C-h>",
 				[[<C-\><C-n><C-W>h]],
 				desc = "Go to left window",
