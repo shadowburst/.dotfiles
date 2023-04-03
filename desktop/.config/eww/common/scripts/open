@@ -1,27 +1,27 @@
 #!/usr/bin/env bash
 
 case $1 in
-    "bluetooth")
-        blueman-manager
-        ;;
-    "launcher")
-        $HOME/.scripts/app-menu.sh
-        ;;
-    "network")
-        $TERMINAL -e nmtui
-        ;;
-    "torrents")
-        eww open window-closer-0
-        eww open window-closer-1
-        eww open "torrents-$2"
-        ;;
-    "updates")
-        $TERMINAL -e bash -c "paru -Syu; echo Done - Press enter to exit...; read _"
-        ;;
-    "volume")
-        pavucontrol
-        ;;
-    "workspace")
-        $HOME/.config/hypr/scripts/workspace.sh $2
-        ;;
+"bluetooth")
+	blueman-manager
+	;;
+"launcher")
+	"$HOME"/.scripts/app-menu.sh
+	;;
+"network")
+	$TERMINAL -e nmtui
+	;;
+"torrents")
+	eww open window-closer-0
+	eww open window-closer-1
+	eww open "torrents-$2"
+	;;
+"updates")
+	$TERMINAL -e bash -c "paru -Syu; echo Done - Press enter to exit...; read _"
+	;;
+"volume")
+	pavucontrol
+	;;
+"workspace")
+	"$HOME"/.config/hypr/scripts/workspace.sh "$2"
+	;;
 esac

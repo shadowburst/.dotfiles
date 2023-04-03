@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
 
-TERMINAL=alacritty
-
 case $1 in
-    "bluetooth")
-        rfkill toggle bluetooth
-        ;;
-    "network")
-        rfkill toggle wlan
-        ;;
-    "volume")
-        amixer -D pulse set Master 1+ toggle
-        ;;
+"bluetooth")
+	rfkill toggle bluetooth
+	;;
+"network")
+	rfkill toggle wlan
+	;;
+"volume")
+	amixer -D pulse set Master 1+ toggle
+	;;
 esac

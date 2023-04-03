@@ -6,84 +6,82 @@ ETHERNET_DEVICE="enp7s0"
 PREVIOUS_VALUE=""
 
 on_change() {
-    icon="󰤭"
-    enabled="true"
-    status="$(nmcli -g CONNECTIVITY general)"
+	icon="󰤭"
+	enabled="true"
+	status="$(nmcli -g CONNECTIVITY general)"
 
-    device="$WIFI_DEVICE"
+	device="$WIFI_DEVICE"
 
-    if [[ "$(cat /sys/class/net/$ETHERNET_DEVICE/operstate)" == "up" ]]; then
-        device="$ETHERNET_DEVICE"
-        icon="󰈀"
-    elif [[ -n "$(rfkill list wlan | awk '/Soft blocked: no/')" ]]; then
-        strength=$(nmcli -f SIGNAL device wifi list ifname $device | awk 'NR==2{print int($1)}')
-        case "$status" in
-            "full")
-                if [[ "$strength" -gt 80 ]]; then
-                    icon="󰤨"
-                elif [[ "$strength" -gt 60 ]]; then
-                    icon="󰤥"
-                elif [[ "$strength" -gt 40 ]]; then
-                    icon="󰤢"
-                elif [[ "$strength" -gt 20 ]]; then
-                    icon="󰤟"
-                else
-                    icon="󰤯"
-                fi
-                ;;
-            "limited")
-                if [[ "$strength" -gt 80 ]]; then
-                    icon="󰤩"
-                elif [[ "$strength" -gt 60 ]]; then
-                    icon="󰤦"
-                elif [[ "$strength" -gt 40 ]]; then
-                    icon="󰤣"
-                elif [[ "$strength" -gt 20 ]]; then
-                    icon="󰤠"
-                else
-                    icon="󰤫"
-                fi
-                ;;
-            *)
-                ;;
-        esac
-    else
-        enabled="false"
-    fi
+	if [[ "$(cat /sys/class/net/$ETHERNET_DEVICE/operstate)" == "up" ]]; then
+		device="$ETHERNET_DEVICE"
+		icon="󰈀"
+	elif [[ -n "$(rfkill list wlan | awk '/Soft blocked: no/')" ]]; then
+		strength=$(nmcli -f SIGNAL device wifi list ifname $device | awk 'NR==2{print int($1)}')
+		case "$status" in
+		"full")
+			if [[ "$strength" -gt 80 ]]; then
+				icon="󰤨"
+			elif [[ "$strength" -gt 60 ]]; then
+				icon="󰤥"
+			elif [[ "$strength" -gt 40 ]]; then
+				icon="󰤢"
+			elif [[ "$strength" -gt 20 ]]; then
+				icon="󰤟"
+			else
+				icon="󰤯"
+			fi
+			;;
+		"limited")
+			if [[ "$strength" -gt 80 ]]; then
+				icon="󰤩"
+			elif [[ "$strength" -gt 60 ]]; then
+				icon="󰤦"
+			elif [[ "$strength" -gt 40 ]]; then
+				icon="󰤣"
+			elif [[ "$strength" -gt 20 ]]; then
+				icon="󰤠"
+			else
+				icon="󰤫"
+			fi
+			;;
+		*) ;;
+		esac
+	else
+		enabled="false"
+	fi
 
-    if [[ "$(cat /sys/class/net/$device/operstate)" == "up" ]]; then
-        connection="$(nmcli -t connection show --active | awk -F ':' -v device=$device '$0~device { print $1 }')"
-    else
-        connection="No connection"
-    fi
+	if [[ "$(cat /sys/class/net/$device/operstate)" == "up" ]]; then
+		connection="$(nmcli -t connection show --active | awk -F ':' -v device=$device '$0~device { print $1 }')"
+	else
+		connection="No connection"
+	fi
 
-    VALUE=$(
-        jq -Mcn \
-            --arg connection "$connection" \
-            --arg device "$device" \
-            --argjson enabled "$enabled" \
-            --arg icon "$icon" \
-            --arg status "$status" \
-            '{
+	VALUE=$(
+		jq -Mcn \
+			--arg connection "$connection" \
+			--arg device "$device" \
+			--argjson enabled "$enabled" \
+			--arg icon "$icon" \
+			--arg status "$status" \
+			'{
                 connection: $connection,
                 device: $device,
                 enabled: $enabled,
                 icon: $icon,
                 status: $status
             }'
-    )
+	)
 
-    if [[ "$VALUE" == "$PREVIOUS_VALUE" ]]; then
-        return 0
-    fi
+	if [[ "$VALUE" == "$PREVIOUS_VALUE" ]]; then
+		return 0
+	fi
 
-    PREVIOUS_VALUE="$VALUE"
+	PREVIOUS_VALUE="$VALUE"
 
-    echo "$VALUE"
+	echo "$VALUE"
 }
 
 on_change
-nmcli monitor | while read -r line
-do
-    on_change
+nmcli monitor | while read -r _; do
+	on_change
 done

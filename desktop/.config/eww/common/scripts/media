@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 
-playerctl -F metadata --format '{{status}};;{{title}};;{{position}};;{{mpris:length}};;{{duration(position)}} / {{duration(mpris:length)}}' | while read -r line
-do
-    echo "$line" | jq -MRc \
-        'split(";;") | {
+playerctl -F metadata --format '{{status}};;{{title}};;{{position}};;{{mpris:length}};;{{duration(position)}} / {{duration(mpris:length)}}' | while read -r line; do
+	echo "$line" | jq -MRc \
+		'split(";;") | {
             status: (.[0] // "Stopped"),
             title: (.[1] // ""),
             position: (.[2] // 0) | tonumber,

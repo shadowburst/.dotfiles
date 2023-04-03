@@ -3,48 +3,47 @@
 PREVIOUS_VALUE=""
 
 on_change() {
-    percent=$(amixer -D pulse sget Master | awk -F '[][%]' '/\[.*%\]/ {print $2; exit}')
+	percent=$(amixer -D pulse sget Master | awk -F '[][%]' '/\[.*%\]/ {print $2; exit}')
 
-    if [[ $percent -ge 50 ]]; then
-        icon="󰕾"
-    elif [[ $percent -gt 0 ]]; then
-        icon="󰖀"
-    else
-        icon="󰕿"
-    fi
+	if [[ $percent -ge 50 ]]; then
+		icon="󰕾"
+	elif [[ $percent -gt 0 ]]; then
+		icon="󰖀"
+	else
+		icon="󰕿"
+	fi
 
-    if [[ $(amixer -D pulse sget Master | awk -F '[][]' '/\[.*%\]/ {print $4; exit}') == "on" ]]; then
-        muted="false"
-    else
-        muted="true"
-        icon="󰖁"
-    fi
+	if [[ $(amixer -D pulse sget Master | awk -F '[][]' '/\[.*%\]/ {print $4; exit}') == "on" ]]; then
+		muted="false"
+	else
+		muted="true"
+		icon="󰖁"
+	fi
 
-    VALUE=$(
-        jq -Mcn \
-            --arg icon "$icon" \
-            --argjson muted "$muted" \
-            --argjson percent "$percent" \
-            '{
+	VALUE=$(
+		jq -Mcn \
+			--arg icon "$icon" \
+			--argjson muted "$muted" \
+			--argjson percent "$percent" \
+			'{
                 icon: $icon,
                 muted: $muted,
                 percent: $percent
             }'
-    )
+	)
 
-    if [[ "$VALUE" == "$PREVIOUS_VALUE" ]]; then
-        return 0
-    fi
+	if [[ "$VALUE" == "$PREVIOUS_VALUE" ]]; then
+		return 0
+	fi
 
-    PREVIOUS_VALUE="$VALUE"
+	PREVIOUS_VALUE="$VALUE"
 
-    echo "$VALUE"
+	echo "$VALUE"
 }
 
 on_change
-pactl subscribe | while read -r line
-do
-    if [[ "$line" == "Event 'change'"* ]]; then
-        on_change
-    fi
+pactl subscribe | while read -r line; do
+	if [[ "$line" == "Event 'change'"* ]]; then
+		on_change
+	fi
 done
