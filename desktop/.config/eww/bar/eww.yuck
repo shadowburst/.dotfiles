@@ -44,7 +44,6 @@
                              :yalign 1
                              :text {media-data.time}))
                  (scale :class {media-data.status != "Playing" ? "paused" : ""}
-                        :onchange "playerctl position $(({} / 1000000))"
                         :orientation "h"
                         :min 0
                         :max {media-data.duration}
