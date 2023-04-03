@@ -118,6 +118,18 @@ return {
 					"node_modules/.*",
 					"vendor/.*",
 				},
+				layout_config = { prompt_position = "top" },
+				sorting_strategy = "ascending",
+				mappings = {
+					i = {
+						["<Tab>"] = function(...)
+							require("telescope.actions").move_selection_worse(...)
+						end,
+						["<S-Tab>"] = function(...)
+							require("telescope.actions").move_selection_better(...)
+						end,
+					},
+				},
 			},
 			pickers = {
 				find_files = {
