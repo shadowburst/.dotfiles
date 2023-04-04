@@ -1,6 +1,31 @@
 return {
 	{
+		"lewis6991/gitsigns.nvim",
+		event = { "BufReadPre", "BufNewFile" },
+		opts = {
+			current_line_blame = true,
+			on_attach = function(buffer)
+				local gs = package.loaded.gitsigns
+
+				local function map(mode, l, r, desc)
+					vim.keymap.set(mode, l, r, { buffer = buffer, desc = desc })
+				end
+
+				map("n", "]h", gs.next_hunk, "Next Hunk")
+				map("n", "[h", gs.prev_hunk, "Prev Hunk")
+				map("n", "<leader>gd", function()
+					gs.diffthis("~")
+				end, "Diff this buffer")
+				map("n", "<leader>gp", gs.preview_hunk, "Preview Hunk")
+				map({ "n", "v" }, "<leader>gr", ":Gitsigns reset_hunk<CR>", "Reset Hunk")
+			end,
+		},
+	},
+	{
 		"nvim-neo-tree/neo-tree.nvim",
+		keys = {
+			{ "<leader>E", false },
+		},
 		opts = {
 			filesystem = {
 				bind_to_cwd = true,
@@ -157,11 +182,32 @@ return {
 	{
 		"folke/which-key.nvim",
 		event = "VeryLazy",
-		opts = function()
-			require("which-key").register({
+		opts = {
+			plugins = { spelling = true },
+		},
+		config = function(_, opts)
+			local wk = require("which-key")
+			wk.setup(opts)
+			local keymaps = {
+				mode = { "n", "v" },
+				["g"] = { name = "+goto" },
+				["]"] = { name = "+next" },
+				["["] = { name = "+prev" },
+				["<leader><tab>"] = { name = "+tabs" },
+				["<leader>b"] = { name = "+buffer" },
+				["<leader>c"] = { name = "+code" },
+				["<leader>f"] = { name = "+file/find" },
+				["<leader>g"] = { name = "+git" },
 				["<leader>o"] = { name = "+open" },
+				["<leader>q"] = { name = "+quit/session" },
 				["<leader>p"] = { name = "+projects" },
-			})
+				["<leader>s"] = { name = "+search" },
+				["<leader>sn"] = { name = "+noice" },
+				["<leader>u"] = { name = "+ui" },
+				["<leader>w"] = { name = "+windows" },
+				["<leader>x"] = { name = "+diagnostics/quickfix" },
+			}
+			wk.register(keymaps)
 		end,
 	},
 }
