@@ -118,11 +118,14 @@ return {
 			ins_left({
 				"filename",
 				cond = conditions.buffer_not_empty,
-				color = { fg = colors.magenta, gui = "bold" },
+				color = function()
+					return vim.bo.modified and { fg = colors.red, gui = "bold" } or { gui = "bold" }
+				end,
 				symbols = {
-					modified = " ",
-					readonly = " ",
+					modified = "",
+					readonly = "",
 				},
+				padding = 2,
 			})
 
 			ins_left({ "location" })
