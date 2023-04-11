@@ -101,4 +101,5 @@ return {
 			},
 		},
 	},
+	{ "elkowar/yuck.vim" },
 }
