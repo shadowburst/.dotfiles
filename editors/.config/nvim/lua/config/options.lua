@@ -2,7 +2,7 @@ local options = {
 	-- shell = "fish",
 	backup = false,
 	clipboard = "unnamedplus",
-	cmdheight = 1,
+	cmdheight = 0,
 	completeopt = { "menuone", "noselect" },
 	conceallevel = 0,
 	encoding = "utf-8",
@@ -41,6 +41,7 @@ local options = {
 	foldexpr = "nvim_treesitter#foldexpr()",
 	foldlevel = 99,
 	spelllang = "en,fr",
+	showcmdloc = "statusline",
 }
 
 vim.opt.shortmess:append("c")

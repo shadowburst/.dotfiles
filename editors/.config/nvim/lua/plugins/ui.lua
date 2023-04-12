@@ -143,8 +143,7 @@ return {
 				},
 			})
 
-			-- Insert mid section. You can make any number of sections in neovim :)
-			-- for lualine it's any number greater then 2
+			-- Insert mid section
 			ins_left({
 				function()
 					return "%="
@@ -152,7 +151,7 @@ return {
 			})
 
 			ins_left({
-				-- Lsp server name .
+				-- Lsp server name
 				function()
 					local msg = "No Active Lsp"
 					local buf_ft = vim.api.nvim_buf_get_option(0, "filetype")
@@ -173,6 +172,24 @@ return {
 			})
 
 			-- Add components to right sections
+			ins_right({
+				"macro-recording",
+				fmt = function()
+					local recording_register = vim.fn.reg_recording()
+					if recording_register == "" then
+						return ""
+					else
+						return "Recording @" .. recording_register
+					end
+				end,
+			})
+
+			ins_right({
+				function()
+					return "%S"
+				end,
+			})
+
 			ins_right({
 				"o:encoding", -- option component same as &encoding in viml
 				fmt = string.upper, -- I'm not sure why it's upper case either ;)
