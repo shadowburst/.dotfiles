@@ -28,14 +28,22 @@ cmd open ${{
     esac
 }}
 
-cmd extract ${{
-  case "$f" in
-      *.zip) unzip "$f" ;;
-      *.tar.gz) tar -xzvf "$f" ;;
-      *.tar.bz2) tar -xjvf "$f" ;;
-      *.tar) tar -xvf "$f" ;;
-      *) echo "Unsupported format" ;;
-  esac
+cmd paste &{{
+    set -- $(cat ~/.local/share/lf/files)
+    mode="$1"
+    shift
+    case "$mode" in
+        copy)
+            rsync -av --ignore-existing --progress -- "$@" . |
+            stdbuf -i0 -o0 -e0 tr '\r' '\n' |
+            while IFS= read -r line; do
+                lf -remote "send $id echo $line"
+            done
+            ;;
+        move) mv -n -- "$@" .;;
+    esac
+    rm ~/.local/share/lf/files
+    lf -remote "send clear"
 }}
 
 cmd rename ${{
@@ -60,20 +68,36 @@ cmd rename ${{
     lf -remote "send $id unselect"
 }}
 
+cmd extract ${{
+  case "$f" in
+      *.zip) unzip "$f" ;;
+      *.tar.gz) tar -xzvf "$f" ;;
+      *.tar.bz2) tar -xjvf "$f" ;;
+      *.tar) tar -xvf "$f" ;;
+      *) echo "Unsupported format" ;;
+  esac
+}}
+
+map <esc> clear
+
 map a push %touch<space>
 map A push %mkdir<space>
+
+map cd push %cd<space>
 
 map DD %trash-put $fx 
 map DE %trash-empty -f
 
 map g. cd ~/.dotfiles
 map g/ cd /
+map gc cd ~/.config
 map gd cd ~/Downloads
 map gD cd ~/Documents
 map gE cd /etc
 map gp cd ~/Public
 map gP cd ~/Pictures
 map gt cd ~/.local/share/Trash/files
+map gu $lf -remote "send $id cd /run/media/$USER"
 map gU cd /usr
 map gv cd ~/Videos
 
