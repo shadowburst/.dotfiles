@@ -1,12 +1,5 @@
 return {
-	{
-		"akinsho/bufferline.nvim",
-		opts = {
-			options = {
-				sort_by = "directory",
-			},
-		},
-	},
+	{ "akinsho/bufferline.nvim", enabled = false },
 	{
 		"LazyVim/LazyVim",
 		opts = {

@@ -88,13 +88,17 @@ return {
 				"sql",
 				"typescript",
 				"vim",
+				"vimdoc",
 				"vue",
 				"yaml",
 			},
 			autotag = {
 				enable = true,
 			},
-			indent = { enable = true, disable = { "yaml" } },
+			indent = {
+				enable = true,
+				disable = { "yaml" },
+			},
 			rainbow = {
 				enable = true,
 				extended_mode = false,
