@@ -31,11 +31,6 @@ del("n", "<leader><tab>d")
 -- Handle lazygit myself
 del("n", "<leader>gG")
 
--- Toggle auto format
-map("n", "<leader>cF", function()
-	vim.b.autoformat = vim.b.autoformat == false
-end, { desc = "Toggle autoformat" })
-
 -- Handle terminal myself
 del("n", "<leader>ft")
 del("n", "<leader>fT")
