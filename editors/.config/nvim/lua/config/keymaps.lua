@@ -1,3 +1,5 @@
+local Util = require("lazyvim.util")
+
 local map = function(mode, lhs, rhs, opts)
 	opts = opts or {}
 	opts.silent = opts.silent ~= true
@@ -36,3 +38,8 @@ del("n", "<leader>ft")
 del("n", "<leader>fT")
 
 map("n", "<leader>hr", "<cmd>so $MYVIMRC<cr>", { desc = "Reload config" })
+
+if Util.has("vim-bufsurf") then
+	map("n", "<S-h>", "<cmd>BufSurfBack<cr>", { desc = "Go to previous buffer in history" })
+	map("n", "<S-l>", "<cmd>BufSurfForward<cr>", { desc = "Go to next buffer in history" })
+end

@@ -8,7 +8,7 @@ return {
 		keys = {
 			{
 				"<leader>gi",
-				"GitignoreGenerate",
+				"<cmd>GitignoreGenerate<cr>",
 				desc = "Generate gitignore",
 			},
 		},
@@ -65,5 +65,9 @@ return {
 				end, { "i", "s" }),
 			})
 		end,
+	},
+	{
+		"ton/vim-bufsurf",
+		lazy = false,
 	},
 }
