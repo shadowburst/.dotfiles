@@ -3,7 +3,7 @@
 if [[ "$1" == "--details" ]]; then
 	transmission-remote -l | awk -F '[[:space:]][[:space:]]+' '{ OFS = ";"} { print $2, $3, $4, $5, $6, $7, $9, $10 }' | head -n -1 | tail -n +2 | jq -MRcn \
 		'[inputs | split(";") | {
-            "id": .[0] | tonumber,
+            "id": .[0] | sub("\\*"; "") | tonumber,
             "down": .[5] | tonumber,
             "eta": .[3],
             "have": .[2],
