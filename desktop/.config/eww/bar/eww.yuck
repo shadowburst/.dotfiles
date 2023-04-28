@@ -106,7 +106,7 @@
                 :onhoverlost "${EWW_CMD} update bar-network-reveal=-1"
                 (icon :class "variable ${network-data.status == 'full' ? 'primary' : (network-data.status == 'limited' ? 'warning' : 'disabled')}"
                       :reveal {bar-network-reveal == monitor}
-                      :label "⠀${network-data.connection}"
+                      :label "${network-data.connection}"
                       :tooltip " ${round(EWW_NET[network-data.device].NET_DOWN / (1024*2), 0)} Kb/s |  ${round(EWW_NET[network-data.device].NET_UP / (1024*2), 0)} Kb/s"
                       {network-data.icon})))
 

@@ -202,24 +202,11 @@ tooltip {
   }
 }
 
-@mixin base-icon($size: 2rem, $font: $nerd-font) {
+@mixin icon($size: 2rem) {
   @extend .m-0;
   @include bg(transparent);
   @include text;
-  @include font($font, $size);
-}
-
-@mixin icon($size: 2rem) {
-  @include base-icon($size);
-}
-
-@mixin icon-variable($size: 2rem) {
-  $variable-margin: $size / 10;
-  $variable-size: calc(#{$size} - #{$variable-margin} * 2);
-
-  @include base-icon($variable-size, $nerd-font-variable);
-
-  margin: $variable-margin 0;
+  @include font($nerd-font, $size);
 }
 
 .icon {
@@ -230,7 +217,9 @@ tooltip {
   }
 
   &.variable {
-    @include icon-variable;
+    font-size: 2.6rem;
+    margin-top: -0.6rem;
+    margin-bottom: -0.6rem;
   }
 
   @each $colorKey, $color in $colors {
