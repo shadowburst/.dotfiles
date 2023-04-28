@@ -24,6 +24,7 @@ grub-customizer
 hunspell
 hunspell-en_gb
 hunspell-fr
+hyprland
 iptables-nft
 iw
 jq
@@ -65,7 +66,7 @@ unzip
 virt-manager
 wdisplays
 wl-clipboard
-xdg-desktop-portal-wlr
+xdg-desktop-portal-hyprland
 xfce4-power-manager
 xfce4-settings
 xsane-gimp
