@@ -218,8 +218,7 @@ tooltip {
 
   &.variable {
     font-size: 2.6rem;
-    margin-top: -0.6rem;
-    margin-bottom: -0.6rem;
+    margin: -0.6rem 0;
   }
 
   @each $colorKey, $color in $colors {

@@ -16,7 +16,7 @@
   &-time {
     @extend .py-1;
     @extend .px-2;
-    @include font($mono-font, 1.5rem, bold);
+    @include font($mono-font, 1.3rem, bold);
   }
 
   &-media {

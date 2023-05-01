@@ -44,12 +44,6 @@
                         :max {media-data.duration}
                         :value {media-data.position}))))
 
-;; Date Widget ;;
-(defwidget bar-time []
-  (hover-button :tooltip date
-                (label :class "bar-time"
-                       :text {time})))
-
 ;; Torrent Widget ;;
 (defwidget bar-torrents [monitor]
   (revealer :reveal {torrents-data.total > 0}
@@ -133,6 +127,12 @@
                       :label "${battery-data.percent}%"
                       {battery-data.icon})))
 
+;; Date Widget ;;
+(defwidget bar-time []
+  (hover-button :tooltip date
+                (label :class "bar-time"
+                       :text {time})))
+
 ;; Bar Widgets ;;
 (defwidget bar [monitor]
   (centerbox :class "bar"
@@ -146,12 +146,7 @@
                        :space-evenly false
                        (bar-workspaces :monitor monitor))
                   (bar-media))
-             (box :orientation "h"
-                  :halign "start"
-                  :class "container"
-                  :space-evenly false
-                  :spacing {bar-spacing}
-                  (bar-time))
+             (box)
              (box :orientation "h"
                   :halign "end"
                   :class "container"
@@ -161,7 +156,8 @@
                   (bar-bluetooth :monitor monitor)
                   (bar-network :monitor monitor)
                   (bar-volume :monitor monitor)
-                  (bar-battery :monitor monitor))))
+                  (bar-battery :monitor monitor)
+                  (bar-time))))
 
 (defwindow bar-0
   :geometry (geometry :x "0"
