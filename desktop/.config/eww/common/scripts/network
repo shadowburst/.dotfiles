@@ -12,7 +12,7 @@ on_change() {
 
 	device="$WIFI_DEVICE"
 
-	if [[ "$(cat /sys/class/net/$ETHERNET_DEVICE/operstate)" == "up" ]]; then
+	if [[ -f "/sys/class/net/$ETHERNET_DEVICE/operstate" && "$(cat /sys/class/net/$ETHERNET_DEVICE/operstate)" == "up" ]]; then
 		device="$ETHERNET_DEVICE"
 		icon="󰈀"
 	elif [[ -n "$(rfkill list wlan | awk '/Soft blocked: no/')" ]]; then

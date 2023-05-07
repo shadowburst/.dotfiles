@@ -35,13 +35,13 @@
                                  :space-evenly false
                                  :spacing {window-spacing}
                                  (label :text "${torrent.down} KB/s")
-                                 (icon :class "variable" ""))
+                                 (icon ""))
                             (label :text "-")
                             (box :orientation "h"
                                  :space-evenly false
                                  :spacing {window-spacing}
                                  (label :text "${torrent.up} KB/s")
-                                 (icon :class "variable" ""))))
+                                 (icon ""))))
                   (box :orientation "h"
                        :spacing {window-spacing}
                        :valign "center"
