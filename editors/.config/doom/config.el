@@ -42,6 +42,8 @@
 (global-auto-revert-mode 1)
 (setq global-auto-revert-non-file-buffers t)
 
+(setq evil-kill-on-visual-paste nil)
+
 (setq user-full-name "Peter Baudry")
 
 (setq avy-all-windows t

@@ -117,6 +117,8 @@ A couple of extra settings that help me use the text editor.
 (global-auto-revert-mode 1)
 (setq global-auto-revert-non-file-buffers t)
 
+(setq evil-kill-on-visual-paste nil)
+
 (setq user-full-name "Peter Baudry")
 #+end_src
 
