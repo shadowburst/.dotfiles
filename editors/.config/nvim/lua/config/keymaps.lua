@@ -23,9 +23,8 @@ map("n", "<leader>wo", "<cmd>only<cr>", { desc = "Close other windows" })
 map("n", "<leader>ws", "<C-w>s", { desc = "Split window below" })
 map("n", "<leader>wv", "<C-w>v", { desc = "Split window right" })
 
-map("n", "<leader>bc", "<cmd>bdelete<cr>", { desc = "Close buffer" })
+map("n", "<leader>bc", "<cmd>bwipeout<cr>", { desc = "Close buffer" })
 del("n", "<leader>bd")
-map("n", "<leader>bo", "<cmd>up | %bd | e# | bd#<cr>", { desc = "Close other buffers" })
 
 map("n", "<leader><tab>c", "<cmd>tabclose<cr>", { desc = "Close Tab" })
 del("n", "<leader><tab>d")
@@ -42,4 +41,7 @@ map("n", "<leader>hr", "<cmd>so $MYVIMRC<cr>", { desc = "Reload config" })
 if Util.has("vim-bufsurf") then
 	map("n", "<S-h>", "<cmd>BufSurfBack<cr>", { desc = "Go to previous buffer in history" })
 	map("n", "<S-l>", "<cmd>BufSurfForward<cr>", { desc = "Go to next buffer in history" })
+	map("n", "<leader>bo", "<cmd>up | %bd | e# | bd# | BufSurfClear<cr>", { desc = "Close other buffers" })
+else
+	map("n", "<leader>bo", "<cmd>up | %bd | e# | bd#<cr>", { desc = "Close other buffers" })
 end
