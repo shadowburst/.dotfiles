@@ -2,10 +2,10 @@
 
 ;; (add-to-list 'default-frame-alist '(alpha . 80))
 
-(setq doom-font (font-spec :family "JetBrainsMono Nerd Font" :size 14)
-      doom-big-font (font-spec :family "JetBrainsMono Nerd Font" :size 24)
-      doom-unicode-font (font-spec :family "JetBrainsMono Nerd Font")
-      doom-variable-pitch-font (font-spec :family "JetBrainsMono Nerd Font" :size 14))
+(setq doom-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 14)
+      doom-big-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 24)
+      doom-unicode-font (font-spec :family "JetBrainsMono Nerd Font Mono")
+      doom-variable-pitch-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 14))
 (after! doom-themes
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t))
@@ -120,6 +120,12 @@
 
 (global-rainbow-mode 1)
 
+(when (eq system-type 'gnu/linux)
+    (map! :niv "C-²" #'+vterm/toggle))
+
+(when (eq system-type 'windows-nt)
+    (map! :niv "C-²" #'+term/toggle))
+
 (setq doom-themes-treemacs-theme "doom-colors")
 
 (with-eval-after-load 'doom-themes
@@ -147,8 +153,3 @@
       :map treemacs-mode-map
       :g "a" #'treemacs-create-file
       :g "A" #'treemacs-create-dir)
-
-(map! :niv "C-²" #'+vterm/toggle)
-
-(map! :map vterm-mode-map
-      :i "C-S-v" #'vterm-yank)

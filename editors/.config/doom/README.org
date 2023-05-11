@@ -22,8 +22,8 @@
 - [[#org-mode][Org mode]]
   - [[#auto-tangle][Auto tangle]]
 - [[#rainbow-mode][Rainbow Mode]]
+- [[#terminal][Terminal]]
 - [[#treemacs][Treemacs]]
-- [[#vterm][Vterm]]
 - [[#other-packages][Other packages]]
 
 * Introduction
@@ -52,10 +52,10 @@ Doom Emacs' default colourscheme is perfect for me, who has always loved Atom's 
 Monospace + ligatures + patched = happiness.
 
 #+begin_src emacs-lisp
-(setq doom-font (font-spec :family "JetBrainsMono Nerd Font" :size 14)
-      doom-big-font (font-spec :family "JetBrainsMono Nerd Font" :size 24)
-      doom-unicode-font (font-spec :family "JetBrainsMono Nerd Font")
-      doom-variable-pitch-font (font-spec :family "JetBrainsMono Nerd Font" :size 14))
+(setq doom-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 14)
+      doom-big-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 24)
+      doom-unicode-font (font-spec :family "JetBrainsMono Nerd Font Mono")
+      doom-variable-pitch-font (font-spec :family "JetBrainsMono Nerd Font Mono" :size 14))
 (after! doom-themes
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t))
@@ -254,6 +254,17 @@ I wanted rainbow mode to be enabled everywhere, but that caused the dashboard to
 (global-rainbow-mode 1)
 #+end_src
 
+* Terminal
+Terminals are important, but vterm isn't available in Windows, so I need to account for that.
+
+#+begin_src emacs-lisp
+(when (eq system-type 'gnu/linux)
+    (map! :niv "C-²" #'+vterm/toggle))
+
+(when (eq system-type 'windows-nt)
+    (map! :niv "C-²" #'+term/toggle))
+#+end_src
+
 * Treemacs
 A project explorer that is useful for quick file operations that don't merit a full Dired buffer.
 
@@ -285,16 +296,6 @@ A project explorer that is useful for quick file operations that don't merit a f
       :map treemacs-mode-map
       :g "a" #'treemacs-create-file
       :g "A" #'treemacs-create-dir)
-#+end_src
-
-* Vterm
-A clean integrated terminal for emacs. I don't need that much tinkering, just a few keybindings.
-
-#+begin_src emacs-lisp
-(map! :niv "C-²" #'+vterm/toggle)
-
-(map! :map vterm-mode-map
-      :i "C-S-v" #'vterm-yank)
 #+end_src
 
 * Other packages
