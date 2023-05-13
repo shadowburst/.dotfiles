@@ -5,13 +5,13 @@ case $(hyprctl monitors -j | jq '.[] | select(.focused == true) | .activeWorkspa
 	$BROWSER &
 	;;
 2)
-	emacsclient -c -a emacs
+	$TERMINAL -e "$EDITOR"
 	;;
 3)
 	discord &
 	;;
 4)
-	emacsclient -c -a emacs --eval '(ranger)'
+	$TERMINAL -e lf
 	;;
 5)
 	lutris &
