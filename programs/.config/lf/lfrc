@@ -1,14 +1,14 @@
 # vim:ft=conf
 
-set autoquit on
-set drawbox on
+set autoquit true
+set drawbox true
 set findlen 0
-set icons on
+set icons true
 set ifs "\n"
-set incsearch on
-set mouse on
-# set number on
-# set relativenumber on
+set incsearch true
+set mouse true
+set number true
+set relativenumber true
 set scrolloff 10
 set shell bash
 set shellopts '-eu'
