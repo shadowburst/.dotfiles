@@ -44,6 +44,7 @@ cmd paste &{{
     esac
     rm ~/.local/share/lf/files
     lf -remote "send clear"
+    lf -remote "send reload"
 }}
 
 cmd rename ${{
@@ -78,12 +79,15 @@ cmd extract ${{
   esac
 }}
 
+# Unbind keymaps
+map c
+
 map <esc> clear
 
 map a push %touch<space>
 map A push %mkdir<space>
 
-map cd push %cd<space>
+map cd push :cd<space>
 
 map DD %trash-put $fx 
 map DE %trash-empty -f
