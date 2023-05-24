@@ -1,9 +1,12 @@
 (defvar bar-height 36)
 (defvar bar-spacing 6)
 
+(defwidget bar-seperator []
+  (box :class "seperator"))
+
 ;; Workspaces Widget ;;
 (defwidget bar-workspaces [monitor]
-  (box :class "container"
+  (box :class "bar-workspaces"
        :orientation "h"
        :halign "center"
        :valign "start"
@@ -11,157 +14,158 @@
        (for workspace in workspaces-data
             (hover-button :class {workspace.monitor == monitor ? "primary" : ""}
                           :onclick "common/scripts/open workspace ${workspace.id}"
-                          (icon :class {workspace.monitor != monitor && workspace.windows > 0 ? "primary" : (workspace.monitor == monitor ? "background" : "")}
+                          (icon :class {workspace.monitor != monitor && arraylength(workspace.windows) > 0 ? "primary" : (workspace.monitor == monitor ? "background" : "")}
                                 {workspace.name})))))
+
+;; Windows Widget ;;
+(defwidget bar-windows [monitor]
+  (box :class "bar-windows"
+       :orientation "h"
+       :hexpand true
+       (for window in {jq(workspaces-data, ".[] | select(.monitor == ${monitor}) | .windows")}
+         (hover-button :class {window.focused == true ? "focused" : ""}
+                       :onclick "common/scripts/open window ${window.address}"
+                       (label :text {window.title})))))
 
 ;; Media Widget ;;
 (defwidget bar-media []
   (revealer :reveal {media-data.status == "Playing" || media-data.status == "Paused"}
             :transition "slideright"
             :duration {transition-duration}
-            (box :class "container bar-media"
-                 :orientation "v"
+            (box :class "bar-media"
+                 :orientation "h"
                  :space-evenly false
-                 (box :orientation "h"
+                 :spacing {bar-spacing}
+                  (box :class "bar-media"
+                      :orientation "v"
                       :space-evenly false
-                      :spacing {bar-spacing}
                       (box :orientation "h"
-                           (hover-button :onclick "playerctl previous"
-                                         (icon ""))
-                           (hover-button :onclick "playerctl play-pause"
-                                         (icon {media-data.status == "Playing" ? "" : ""}))
-                           (hover-button :onclick "playerctl next"
-                                         (icon "")))
-                      (label :limit-width 40
-                             :text {media-data.title})
-                      (label :class "time"
-                             :xalign 1
-                             :yalign 1
-                             :text {media-data.time}))
-                 (scale :class {media-data.status != "Playing" ? "paused" : ""}
-                        :orientation "h"
-                        :min 0
-                        :max {media-data.duration}
-                        :value {media-data.position}))))
+                            :space-evenly false
+                            (hover-button :onclick "playerctl previous"
+                                          (icon ""))
+                            (hover-button :onclick "playerctl play-pause"
+                                          (icon {media-data.status == "Playing" ? "" : ""}))
+                            (hover-button :onclick "playerctl next"
+                                          (icon ""))
+                            (label :class "label"
+                                   :limit-width 40
+                                   :text {media-data.title})
+                            (label :class "time"
+                                  :xalign 1
+                                  :yalign 1
+                                  :text {media-data.time}))
+                      (scale :class {media-data.status != "Playing" ? "paused" : ""}
+                              :orientation "h"
+                              :min 0
+                              :max {media-data.duration}
+                              :value {media-data.position}))
+                 (bar-seperator))))
+
 
 ;; Torrent Widget ;;
 (defwidget bar-torrents [monitor]
   (revealer :reveal {torrents-data.total > 0}
             :transition "slideleft"
             :duration {transition-duration}
-            (hover-button :onclick "common/scripts/open torrents ${monitor}"
-                          :onrightclick "$HOME/.config/transmission-daemon/scripts/clear-torrents.sh"
-                          (box :orientation "h"
-                               :valign "center"
-                               :space-evenly false
-                               :spacing {bar-spacing * 2}
-                               (icon :class "success"
-                                     :label {torrents-data.downloads}
-                                     :reveal true
-                                     "")
-                               (icon :class "warning"
-                                     :label {torrents-data.uploads}
-                                     :reveal true
-                                     "")))))
+            (box :orientation "h"
+                 :space-evenly false
+                 (bar-seperator)
+                 (hover-button :onclick "common/scripts/open torrents ${monitor}"
+                               :onrightclick "$HOME/.config/transmission-daemon/scripts/clear-torrents.sh"
+                               (box :orientation "h"
+                                    :valign "center"
+                                    :space-evenly false
+                                    :spacing {bar-spacing * 2}
+                                    (icon :class "success"
+                                          :label {torrents-data.downloads}
+                                          "")
+                                    (icon :class "warning"
+                                          :label {torrents-data.uploads}
+                                          ""))))))
 
 ;; Updates Widget ;;
-(defvar bar-updates-reveal -1)
-(defwidget bar-updates [monitor]
+(defwidget bar-updates []
   (revealer :reveal {updates-count > 0}
             :transition "slideleft"
             :duration {transition-duration}
-            (hover-button :onclick "common/scripts/open updates"
-                          :onhover "${EWW_CMD} update bar-updates-reveal=${monitor}"
-                          :onhoverlost "${EWW_CMD} update bar-updates-reveal=-1"
-                          :tooltip {updates-list}
-                          (icon :class "success"
-                                :label "${updates-count} ${updates-count == 1 ? 'update' : 'updates'}"
-                                :reveal {bar-updates-reveal == monitor}
-                                ""))))
+            (box :orientation 'h'
+                 :space-evenly false
+                 (bar-seperator)
+                 (hover-button :onclick "common/scripts/open updates"
+                               :tooltip {updates-list}
+                               (icon :class "success"
+                                     :label "${updates-count} ${updates-count == 1 ? 'update' : 'updates'}"
+                                     "")))))
 
 ;; Bluetooth Widget ;;
-(defvar bar-bluetooth-reveal -1)
-(defwidget bar-bluetooth [monitor]
+(defwidget bar-bluetooth []
   (hover-button :onclick "common/scripts/open bluetooth"
                 :onrightclick "common/scripts/toggle bluetooth"
-                :onhover "${EWW_CMD} update bar-bluetooth-reveal=${monitor}"
-                :onhoverlost "${EWW_CMD} update bar-bluetooth-reveal=-1"
                 (icon :class "variable ${bluetooth-data.enabled ? 'primary' : 'disabled'}"
-                      :reveal {bar-bluetooth-reveal == monitor}
                       :label "${bluetooth-data.connection}"
                       {bluetooth-data.icon})))
 
 ;; Network Widget ;;
-(defvar bar-network-reveal -1)
-(defwidget bar-network [monitor]
+(defwidget bar-network []
   (hover-button :onclick "common/scripts/open network"
                 :onrightclick "common/scripts/toggle network"
-                :onhover "${EWW_CMD} update bar-network-reveal=${monitor}"
-                :onhoverlost "${EWW_CMD} update bar-network-reveal=-1"
                 (icon :class "variable ${network-data.status == 'full' ? 'primary' : (network-data.status == 'limited' ? 'warning' : 'disabled')}"
-                      :reveal {bar-network-reveal == monitor}
                       :label "${network-data.connection}"
                       :tooltip " ${round(EWW_NET[network-data.device].NET_DOWN / (1024*2), 0)} Kb/s |  ${round(EWW_NET[network-data.device].NET_UP / (1024*2), 0)} Kb/s"
                       {network-data.icon})))
 
 ;; Volume Widget ;;
 (defvar bar-volume-reveal -1)
-(defwidget bar-volume [monitor]
+(defwidget bar-volume []
   (hover-button :onclick "common/scripts/open volume"
                 :onrightclick "common/scripts/toggle volume"
-                :onhover "${EWW_CMD} update bar-volume-reveal=${monitor}"
-                :onhoverlost "${EWW_CMD} update bar-volume-reveal=-1"
                 (icon :class "variable ${volume-data.muted ? 'disabled' : 'primary'}"
-                      :reveal {bar-volume-reveal == monitor}
                       :label "${volume-data.percent}%"
                       {volume-data.icon})))
 
 ;; Battery Widget ;;
-(defvar bar-battery-reveal -1)
-(defwidget bar-battery [monitor]
+(defwidget bar-battery []
   (hover-button :onclick ""
-                :onhover "${EWW_CMD} update bar-battery-reveal=${monitor}"
-                :onhoverlost "${EWW_CMD} update bar-battery-reveal=-1"
                 (icon :class "variable ${battery-data.percent > 40 ? 'primary' : (battery-data.percent > 20 ? 'warning' : 'danger')}"
-                      :reveal {bar-battery-reveal == monitor}
                       :label "${battery-data.percent}%"
                       {battery-data.icon})))
 
 ;; Date Widget ;;
 (defwidget bar-time []
-  (hover-button :tooltip date
-                (label :class "bar-time"
+  (hover-button :class "bar-time"
+                :tooltip date
+                (label :class "label"
                        :text {time})))
 
 ;; Bar Widgets ;;
 (defwidget bar [monitor]
-  (centerbox :class "bar"
-             :orientation "h"
-             (box :orientation "h"
-                  :halign "start"
-                  :space-evenly false
-                  :spacing {bar-spacing}
-                  (box :orientation "h"
-                       :class "container"
-                       :space-evenly false
-                       (bar-workspaces :monitor monitor))
-                  (bar-media))
-             (box)
-             (box :orientation "h"
-                  :halign "end"
-                  :class "container"
-                  :space-evenly false
-                  (bar-torrents :monitor monitor)
-                  (bar-updates :monitor monitor)
-                  (bar-bluetooth :monitor monitor)
-                  (bar-network :monitor monitor)
-                  (bar-volume :monitor monitor)
-                  (bar-battery :monitor monitor)
-                  (bar-time))))
+  (box :class "bar"
+       :orientation "h"
+       :valign "center"
+       :space-evenly false
+       (box :orientation "h"
+            :space-evenly false
+            :spacing {bar-spacing}
+            (bar-workspaces :monitor monitor)
+            (bar-seperator)
+            (bar-media))
+       (box :hexpand true)
+       (bar-torrents :monitor monitor)
+       (bar-updates)
+       (bar-seperator)
+       (bar-bluetooth)
+       (bar-seperator)
+       (bar-network)
+       (bar-seperator)
+       (bar-volume)
+       (bar-seperator)
+       (bar-battery)
+       (bar-seperator)
+       (bar-time)))
 
 (defwindow bar-0
   :geometry (geometry :x "0"
-                      :y "0"
+                      :y "6"
                       :height "36"
                       :width "100%")
   :stacking "fg"
@@ -172,7 +176,7 @@
 
 (defwindow bar-1
   :geometry (geometry :x "0"
-                      :y "0"
+                      :y "6"
                       :height "36"
                       :width "100%")
   :stacking "fg"

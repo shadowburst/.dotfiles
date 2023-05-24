@@ -1,4 +1,5 @@
 @use "sass:list";
+@use "sass:map";
 
 $foreground: #bbc2cf;
 $background: #1c1f24;
@@ -33,102 +34,103 @@ $fonts: (
   nerd-variable: $nerd-font-variable,
 );
 
-.transition {
-  transition-property: color, background-color, border-color, outline-color,
-    text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter,
-    backdrop-filter;
+@mixin transition($type: null) {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 250ms;
+  transition-duration: 200ms;
 
-  &-all {
-    @extend .transition;
-
+  @if not $type {
+    transition-property: color, background-color, border-color, outline-color,
+      text-decoration-color, fill, stroke, opacity, box-shadow, transform,
+      filter, backdrop-filter;
+  }
+  @if $type == "all" {
     transition-property: all;
   }
-
-  &-colors {
-    @extend .transition;
-
+  @if $type == "colors" {
     transition-property: color, background-color, border-color, outline-color,
       text-decoration-color, fill, stroke;
   }
-
-  &-none {
+  @if $type == "none" {
     transition-property: none;
   }
-
-  &-opacity {
-    @extend .transition;
-
+  @if $type == "opacity" {
     transition-property: opacity;
   }
 }
 
-$directions: (
-  l: "left",
-  r: "right",
-  t: "top",
-  b: "bottom",
-);
+@mixin spacing($attribute, $size, $direction: null) {
+  $size: 0.25rem * $size;
 
-$spaces: (
-  m: "margin",
-  p: "padding",
-);
-$base-distance: 0.25rem;
-@for $i from 0 through 10 {
-  $distance: $base-distance * $i;
-
-  @each $spaceKey, $space in $spaces {
-    .#{$spaceKey}-#{$i} {
-      #{$space}: $distance;
-    }
-
-    @each $directionKey, $direction in $directions {
-      .#{$spaceKey}#{$directionKey}-#{$i} {
-        #{$space}-#{$direction}: $distance;
-      }
-    }
-
-    .#{$spaceKey}x-#{$i} {
-      #{$space}-left: $distance;
-      #{$space}-right: $distance;
-    }
-    .#{$spaceKey}y-#{$i} {
-      #{$space}-top: $distance;
-      #{$space}-bottom: $distance;
-    }
+  @if not $direction {
+    #{$attribute}: $size;
+  }
+  @if $direction == "l" or $direction == "x" {
+    #{$attribute}-left: $size;
+  }
+  @if $direction == "r" or $direction == "x" {
+    #{$attribute}-right: $size;
+  }
+  @if $direction == "t" or $direction == "y" {
+    #{$attribute}-top: $size;
+  }
+  @if $direction == "b" or $direction == "y" {
+    #{$attribute}-bottom: $size;
   }
 }
+@mixin m($size: 3, $direction: null) {
+  @include spacing(margin, $size, $direction);
+}
+@mixin p($size: 3, $direction: null) {
+  @include spacing(padding, $size, $direction);
+}
+@mixin rounded($breakpoint: md, $direction: null) {
+  $breakpoints: (
+    0: 0,
+    sm: 8px,
+    md: 13px,
+    lg: 20px,
+    full: 100px,
+  );
+  $size: map.get($breakpoints, $breakpoint);
 
-$radiuses: (
-  0: 0,
-  sm: 8px,
-  md: 13px,
-  lg: 20px,
-  full: 100px,
-);
-@each $radiusKey, $radius in $radiuses {
-  .rounded {
-    &-#{$radiusKey} {
-      border-radius: $radius;
-    }
-
-    &-l-#{$radiusKey} {
-      border-radius: $radius 0 0 $radius;
-    }
-    &-r-#{$radiusKey} {
-      border-radius: 0 $radius $radius 0;
-    }
-    &-t-#{$radiusKey} {
-      border-radius: $radius $radius 0 0;
-    }
-    &-b-#{$radiusKey} {
-      border-radius: 0 0 $radius $radius;
-    }
+  @if not $direction {
+    border-radius: $size;
+  }
+  @if $direction == "l" {
+    border-radius: $size 0 0 $size;
+  }
+  @if $direction == "r" {
+    border-radius: 0 $size $size 0;
+  }
+  @if $direction == "t" {
+    border-radius: $size $size 0 0;
+  }
+  @if $direction == "b" {
+    border-radius: 0 0 $size $size;
   }
 }
+@mixin border($color: $background, $size: 2, $direction: null, $style: solid) {
+  $size: #{$size}px;
 
+  border-color: $color;
+  border-style: $style;
+
+  @if not $direction {
+    border-width: $size;
+  }
+  @if $direction == "l" or $direction == "x" {
+    border-left-width: $size;
+  }
+  @if $direction == "r" or $direction == "x" {
+    border-right-width: $size;
+  }
+  @if $direction == "t" or $direction == "y" {
+    border-top-width: $size;
+  }
+  @if $direction == "b" or $direction == "y" {
+    border-bottom-width: $size;
+  }
+}
 @mixin bg($color: $background) {
   background-color: $color;
 }
@@ -141,31 +143,18 @@ $radiuses: (
   font-weight: $weight;
 }
 
-$font-sizes: (
-  xs: 0.7rem,
-  sm: 0.8rem,
-  md: 1rem,
-  lg: 1.5rem,
-  xl: 2rem,
-);
-@each $sizeKey, $size in $font-sizes {
-  .text-#{$sizeKey} {
-    font-size: $size;
-  }
-}
-
 * {
   all: unset;
 }
 
 tooltip {
-  @extend .rounded-sm;
+  @include rounded(sm);
   @include bg;
   @include text;
   @include font($mono-font);
 
   & label {
-    @extend .m-1;
+    @include m(1);
   }
 }
 
@@ -177,10 +166,10 @@ tooltip {
 @mixin button() {
   $dark-backgrounds: (transparent, $background, $card);
 
-  @extend .transition-colors;
+  @include transition(colors);
 
   & > * {
-    @extend .px-3;
+    @include p(3, x);
   }
 
   &:hover {
@@ -203,9 +192,9 @@ tooltip {
 }
 
 @mixin icon($size: 2rem) {
-  @extend .m-0;
+  @include m(0);
   @include bg(transparent);
-  @include text;
+  @include text($foreground);
   @include font($nerd-font, $size);
 }
 
@@ -213,12 +202,12 @@ tooltip {
   @include icon;
 
   & .label {
-    @extend .ml-2;
+    @include m(2, "l");
   }
 
   &.variable {
-    font-size: 2.6rem;
-    margin: -0.6rem 0;
+    font-size: calc(2rem + 8px);
+    margin: -8px 0;
   }
 
   @each $colorKey, $color in $colors {

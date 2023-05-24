@@ -21,6 +21,9 @@ case $1 in
 "volume")
 	pavucontrol
 	;;
+"window")
+	hyprctl dispatch focuswindow "address:$2"
+	;;
 "workspace")
 	"$HOME"/.config/hypr/scripts/workspace.sh "$2"
 	;;

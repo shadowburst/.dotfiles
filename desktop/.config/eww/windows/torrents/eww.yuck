@@ -59,8 +59,8 @@
   (torrents :monitor 0))
 
 (defwindow torrents-1
-  :geometry (geometry :x "4px"
-                      :y "40px"
+  :geometry (geometry :x "6px"
+                      :y "48px"
                       :anchor "top right")
   :stacking "fg"
   :monitor 1

@@ -1,7 +1,9 @@
 .window {
-  @extend .rounded-md;
+  @include rounded(md);
   @include bg($background);
-  @extend .p-5;
+  @include p(4, x);
+  @include p(2, t);
+  @include p(4, b);
 
   & .title {
     @include font($normal-font, 1.5rem, bold);
@@ -9,14 +11,14 @@
   }
 
   & .container {
-    @extend .rounded-sm;
+    @include rounded(sm);
     @include bg($card);
-    @extend .px-3;
-    @extend .py-2;
+    @include p(3, x);
+    @include p(2, y);
   }
 
   & .button {
-    @extend .rounded-full;
+    @include rounded(full);
   }
 }
 

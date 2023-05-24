@@ -7,10 +7,12 @@
     progressbar {
       $slider-height: 15px;
 
+      @include m(1, y);
+
       &,
       & trough,
       & trough progress {
-        @extend .rounded-full;
+        @include rounded(full);
 
         min-height: $slider-height;
       }
@@ -34,7 +36,7 @@
 
     & .speed {
       & label {
-        @extend .text-sm;
+        @include font($normal-font, 0.7rem);
       }
     }
 

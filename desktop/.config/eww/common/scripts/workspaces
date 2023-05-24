@@ -7,17 +7,19 @@ PREVIOUS_VALUE=""
 
 on_change() {
 	MONITOR_WORKSPACES=$(hyprctl monitors -j | jq -Mc 'map(.activeWorkspace.id)')
-	WORKSPACE_WINDOWS=$(hyprctl workspaces -j | jq 'map({key: .id | tostring, value: .windows}) | from_entries')
+	WORKSPACE_WINDOWS=$(hyprctl clients -j | jq -Mc '[.[] | select(.mapped and (.hidden | not))] | map({ address, title, workspace: .workspace.id })')
+	ACTIVE_WINDOW=$(hyprctl activewindow -j | jq -Mcr '.address')
 
 	VALUE=$(
 		seq 1 "${#WORKSPACE_NAMES[@]}" | jq --slurp -Mc \
 			--argjson monitors "${MONITOR_WORKSPACES}" \
 			--argjson names "${NAMES_JSON}" \
 			--argjson windows "${WORKSPACE_WINDOWS}" \
+			--arg active_window "${ACTIVE_WINDOW}" \
 			'map(tostring) | map(. as $id | {
                 id: $id,
                 name: $names[$id | tonumber - 1],
-                windows: ($windows[$id] // 0),
+                windows: ([$windows[] | select(.workspace == ($id | tonumber)) | { address, title, focused: (.address == $active_window) }]),
                 monitor: ($monitors | index($id | tonumber))
             })'
 	)

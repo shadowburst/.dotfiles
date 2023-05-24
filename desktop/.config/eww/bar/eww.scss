@@ -1,37 +1,46 @@
 .bar {
   $icon-size: 2rem;
 
-  @include bg(transparent);
-  padding: 0 25px;
+  @include bg($background);
+  @include m(6, x);
 
   & .container {
     @include bg($background);
   }
 
-  & .container,
-  & .button {
-    @extend .rounded-b-md;
+  &,
+  & .container {
+    @include rounded(md);
   }
 
-  &-time {
-    @extend .py-1;
-    @extend .px-2;
-    @include font($mono-font, 1.3rem, bold);
+  & .seperator {
+    @include m(2, y);
+    @include border($primary, 1, l);
+  }
+  &-workspaces {
+    & .button:first-child {
+      @include rounded(md, l);
+    }
+  }
+
+  &-windows {
+    & .button {
+      @extend .rounded-0;
+    }
+    & .button.focused {
+      @include border($primary, 2, b);
+      @include text($primary);
+    }
   }
 
   &-media {
-    $slider-height: 3px;
+    $slider-height: 2px;
 
     scale {
       &,
-      & trough {
-        @extend .mx-1;
-      }
-
-      &,
       & trough,
       & trough highlight {
-        @extend .rounded-b-full;
+        @include rounded(full);
 
         min-height: $slider-height;
       }
@@ -40,7 +49,7 @@
         @include bg($disabled);
 
         & highlight {
-          @extend .transition-colors;
+          @include transition(colors);
           @include bg($primary);
         }
       }
@@ -50,18 +59,27 @@
       }
     }
 
-    & .button {
-      @extend .rounded-b-sm;
-    }
-
     & .icon {
       @include icon(calc(2rem - #{$slider-height}));
     }
 
+    & .label {
+      @include m(2, x);
+    }
+
     & .time {
-      @extend .mx-2;
-      @extend .text-sm;
+      @include m(2, x);
       @include text($foreground);
+      @include font($normal-font, 0.8rem);
+    }
+  }
+
+  &-time {
+    @include rounded(md, r);
+
+    & .label {
+      @include m(1, r);
+      @include font($mono-font, 1.3rem, bold);
     }
   }
 }
