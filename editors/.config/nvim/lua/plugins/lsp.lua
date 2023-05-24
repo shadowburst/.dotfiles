@@ -27,6 +27,7 @@ return {
 		opts = {
 			servers = {
 				bashls = {},
+				cssls = {},
 				dockerls = {},
 				emmet_ls = {},
 				html = {},
