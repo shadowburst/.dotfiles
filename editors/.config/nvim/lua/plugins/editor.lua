@@ -77,6 +77,7 @@ return {
 	},
 	{
 		"lambdalisue/suda.vim",
+		lazy = false,
 		keys = {
 			{
 				"<leader>fu",
