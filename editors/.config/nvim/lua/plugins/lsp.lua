@@ -48,7 +48,9 @@ return {
 						},
 					},
 				},
-				tailwindcss = {},
+				tailwindcss = {
+					filetypes_exclude = { "markdown", "php" },
+				},
 				tsserver = {},
 				volar = {},
 				yamlls = {},
