@@ -21,12 +21,12 @@
     & .button:first-child {
       @include rounded(md, l);
     }
+    & .button:last-child {
+      @include rounded(md, r);
+    }
   }
 
   &-windows {
-    & .button {
-      @extend .rounded-0;
-    }
     & .button.focused {
       @include border($primary, 2, b);
       @include text($primary);
