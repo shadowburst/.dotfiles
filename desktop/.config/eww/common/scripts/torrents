@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 
-if [[ "$1" == "--details" ]]; then
-	transmission-remote -l | awk -F '[[:space:]][[:space:]]+' '{ OFS = ";"} { print $2, $3, $4, $5, $6, $7, $9, $10 }' | head -n -1 | tail -n +2 | jq -MRcn \
-		'[inputs | split(";") | {
+PREVIOUS_VALUE=""
+
+DEFAULT_INTERVAL=10
+INTERVAL=$DEFAULT_INTERVAL
+
+on_change() {
+	VALUE=$(
+		transmission-remote -l | awk -F '[[:space:]][[:space:]]+' '{ OFS = ";"} { print $2, $3, $4, $5, $6, $7, $9, $10 }' | head -n -1 | tail -n +2 | jq -MRcn \
+			'[inputs | split(";") | {
             "id": .[0] | sub("\\*"; "") | tonumber,
             "down": .[5] | tonumber,
             "eta": .[3],
@@ -12,19 +18,25 @@ if [[ "$1" == "--details" ]]; then
             "status": .[6],
             "up": .[4] | tonumber
         }]'
-else
-	output="$(transmission-remote -l)"
-	total="$(($(echo "$output" | wc -l) - 2))"
-	downloads="$((total - $(echo "$output" | awk '/100%/' | wc -l)))"
-	uploads="$((total - downloads))"
+	)
 
-	jq -Mcn \
-		--argjson total "$total" \
-		--argjson downloads "$downloads" \
-		--argjson uploads "$uploads" \
-		'{
-            total: $total,
-            downloads: $downloads,
-            uploads: $uploads
-         }'
-fi
+	if [[ "$VALUE" == "$PREVIOUS_VALUE" ]]; then
+		INTERVAL=$DEFAULT_INTERVAL
+
+		return 0
+	fi
+
+	# Change interval if changes are happening
+	INTERVAL=1
+
+	PREVIOUS_VALUE="$VALUE"
+
+	echo "$VALUE"
+}
+
+on_change
+while true; do
+	sleep $INTERVAL
+
+	on_change
+done

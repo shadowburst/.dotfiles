@@ -4,13 +4,12 @@
 
 (defpoll time :interval "1s" "date '+%R'")
 (defpoll date :interval "1h" "date '+%d %B %Y'")
-(defpoll torrents-data :interval "5s" :initial '{ "total": 0 }' "common/scripts/torrents")
-(defpoll torrents-list :interval "1s" :run-while {torrents-data.total > 0} "common/scripts/torrents --details")
 (defpoll updates-list :interval "15m" "common/scripts/updates")
 (defpoll battery-data :interval "30s" :initial '{ "percent": 0 }' "common/scripts/battery")
 (defpoll bluetooth-data :interval "5s" :initial '{ "enabled": false }' "common/scripts/bluetooth")
 
-(deflisten network-data :initial '{}' "common/scripts/network")
 (deflisten media-data :initial '{}' "common/scripts/media")
+(deflisten network-data :initial '{}' "common/scripts/network")
+(deflisten torrents-data :initial '[]' "common/scripts/torrents")
 (deflisten volume-data :initial '{ "muted": true }' "common/scripts/volume")
 (deflisten workspaces-data :initial '[]' "common/scripts/workspaces")

@@ -9,7 +9,7 @@
         :orientation "v"
         :space-evenly false
         :spacing {window-spacing}
-        (for torrent in torrents-list
+        (for torrent in torrents-data
              (box :class "torrent container"
                   :orientation "h"
                   :space-evenly false
@@ -24,7 +24,7 @@
                        (label :class "label"
                               :xalign 0
                               :text "${torrent.have} (${torrent.progress}%)  -  ${torrent.eta}")
-                       (progress :class {torrent.status == "Paused" || torrent.status == "Stopped" ? "paused" : ""}
+                       (progress :class {torrent.down == 0 && torrent.progress < 100 ? "paused" : ""}
                                  :orientation "h"
                                  :value {torrent.progress})
                        (box :class "speed"
@@ -49,8 +49,8 @@
                                      (icon ""))))))))
 
 (defwindow torrents-0
-  :geometry (geometry :x "4px"
-                      :y "40px"
+  :geometry (geometry :x "6px"
+                      :y "48px"
                       :anchor "top right")
   :stacking "fg"
   :monitor 0

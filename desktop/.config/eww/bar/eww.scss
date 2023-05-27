@@ -40,8 +40,6 @@
       &,
       & trough,
       & trough highlight {
-        @include rounded(full);
-
         min-height: $slider-height;
       }
 
@@ -60,7 +58,7 @@
     }
 
     & .icon {
-      @include icon(calc(2rem - #{$slider-height}));
+      @include font($nerd-font, calc(2rem - #{$slider-height}));
     }
 
     & .label {
@@ -71,6 +69,39 @@
       @include m(2, x);
       @include text($foreground);
       @include font($normal-font, 0.8rem);
+    }
+  }
+
+  &-torrents {
+    $slider-height: 2px;
+
+    scale {
+      $slider-height: 2px;
+
+      &,
+      & trough,
+      & trough highlight {
+        min-height: $slider-height;
+      }
+
+      & trough {
+        @include bg($disabled);
+
+        & highlight {
+          @include bg($primary);
+        }
+      }
+
+      &.full trough highlight {
+        @include bg($success);
+      }
+      &.paused trough highlight {
+        @include bg($warning);
+      }
+    }
+
+    & .icon {
+      @include font($nerd-font, calc(2rem - #{$slider-height}));
     }
   }
 
