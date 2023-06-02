@@ -242,15 +242,6 @@ return {
 		},
 	},
 	{
-		"NvChad/nvim-colorizer.lua",
-		opts = {
-			user_default_options = {
-				tailwind = true,
-				sass = { enable = true, parsers = { "css" } },
-			},
-		},
-	},
-	{
 		"navarasu/onedark.nvim",
 		config = function()
 			require("onedark").setup({
