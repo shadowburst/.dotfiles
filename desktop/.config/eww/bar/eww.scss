@@ -75,27 +75,28 @@
   &-torrents {
     $slider-height: 2px;
 
-    scale {
+    progressbar {
       $slider-height: 2px;
 
       &,
       & trough,
-      & trough highlight {
+      & trough progress {
         min-height: $slider-height;
       }
 
       & trough {
         @include bg($disabled);
 
-        & highlight {
+        & progress {
           @include bg($primary);
+        }
+
+        &.full progress {
+          @include bg($success);
         }
       }
 
-      &.full trough highlight {
-        @include bg($success);
-      }
-      &.paused trough highlight {
+      &.paused trough progress {
         @include bg($warning);
       }
     }

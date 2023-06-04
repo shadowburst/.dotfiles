@@ -83,10 +83,8 @@
                                          (icon :class "warning"
                                                :label {jq(torrents-data, 'map(select(.progress == 100)) | length')}
                                                ""))
-                                (scale :class {jq(torrents-data, 'all(.progress == 100)') ? "full" : (jq(torrents-data, 'all(.down == 0)') ? "paused" : "")} 
+                                (progress :class {jq(torrents-data, 'all(.progress == 100)') ? "full" : (jq(torrents-data, 'all(.down == 0)') ? "paused" : "")} 
                                        :orientation "h"
-                                       :min 0
-                                       :max 100
                                        :value {jq(torrents-data, 'map(.progress) | add / length')}))))))
 
 ;; Updates Widget ;;

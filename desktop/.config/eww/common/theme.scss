@@ -158,6 +158,11 @@ tooltip {
   }
 }
 
+// Make progressbars size to content
+progressbar trough {
+  min-width: 1px;
+}
+
 .label {
   @include text;
   @include font;
