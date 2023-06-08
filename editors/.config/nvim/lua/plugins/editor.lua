@@ -34,6 +34,7 @@ return {
 					bind_to_cwd = true,
 					follow_current_file = true,
 					group_empty_dirs = true,
+					scan_mode = "deep",
 					cwd_target = {
 						sidebar = "window",
 					},
