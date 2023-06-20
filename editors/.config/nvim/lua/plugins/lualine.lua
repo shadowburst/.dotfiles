@@ -1,11 +1,4 @@
 return {
-	{ "akinsho/bufferline.nvim", enabled = false },
-	{
-		"LazyVim/LazyVim",
-		opts = {
-			colorscheme = "onedark",
-		},
-	},
 	{
 		"nvim-lualine/lualine.nvim",
 		event = "VeryLazy",
@@ -229,24 +222,6 @@ return {
 				end,
 				color = { fg = colors.blue },
 				padding = { left = 1 },
-			})
-		end,
-	},
-	{
-		"echasnovski/mini.animate",
-		event = "VeryLazy",
-		opts = {
-			cursor = {
-				enable = false,
-			},
-		},
-	},
-	{
-		"navarasu/onedark.nvim",
-		config = function()
-			require("onedark").setup({
-				style = "dark",
-				transparent = false,
 			})
 		end,
 	},

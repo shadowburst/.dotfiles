@@ -1,33 +1,5 @@
 return {
 	{
-		"kalvinpearce/gitignore-gen.nvim",
-		event = "VeryLazy",
-		dependencies = {
-			"nvim-lua/plenary.nvim",
-		},
-		keys = {
-			{
-				"<leader>gi",
-				"<cmd>GitignoreGenerate<cr>",
-				desc = "Generate gitignore",
-			},
-		},
-	},
-	{
-		"echasnovski/mini.surround",
-		opts = {
-			mappings = {
-				add = "ys",
-				delete = "ds",
-				replace = "cs",
-				find = "gzf",
-				find_left = "gzF",
-				highlight = "gzh",
-				update_n_lines = "gzn",
-			},
-		},
-	},
-	{
 		"hrsh7th/nvim-cmp",
 		dependencies = {
 			{ "roobert/tailwindcss-colorizer-cmp.nvim", config = true },
@@ -75,9 +47,5 @@ return {
 				return require("tailwindcss-colorizer-cmp").formatter(entry, item)
 			end
 		end,
-	},
-	{
-		"ton/vim-bufsurf",
-		lazy = false,
 	},
 }
