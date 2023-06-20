@@ -79,7 +79,8 @@ if ask "Install desktop ?"; then
 	echo "auth optional pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/login
 	echo "session optional pam_gnome_keyring.so auto_start" | sudo tee -a /etc/pam.d/login
 	echo "password optional pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/passwd
-	sudo sed -i "s#ExecStart.*#ExecStart=/usr/bin/gnome-keyring-daemon --foreground --components=\"pkcs11,secrets,ssh,gpg\" --control-directory=%t/keyring#" /usr/lib/systemd/user/gnome-keyring-daemon.service
+	# sudo sed -i "s#ExecStart.*#ExecStart=/usr/bin/gnome-keyring-daemon --foreground --components=\"pkcs11,secrets,ssh,gpg\" --control-directory=%t/keyring#" /usr/lib/systemd/user/gnome-keyring-daemon.service
+	systemctl --user enable --now gcr-ssh-agent.service
 
 	# Setup greetd
 	sudo sed -i "s#command = .*#command = \"tuigreet --time --time-format '%A %e, %B %Y' --remember --asterisks --cmd Hyprland\"#" /etc/greetd/config.toml
