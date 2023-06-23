@@ -50,44 +50,27 @@ return {
 				mode = "t",
 			},
 		},
-		config = function()
-			require("toggleterm").setup({
-				size = 15,
-				open_mapping = [[<c-\>]],
-				hide_numbers = true,
-				shade_filetypes = {},
-				shade_terminals = false,
-				shading_factor = 2,
-				start_in_insert = true,
-				insert_mappings = true,
-				persist_size = true,
-				direction = "horizontal",
-				close_on_exit = true,
-				shell = vim.o.shell,
-				float_opts = {
-					border = "curved",
-					winblend = 0,
-					highlights = {
-						border = "Normal",
-						background = "Normal",
-					},
+		opts = {
+			size = 15,
+			open_mapping = [[<c-\>]],
+			hide_numbers = true,
+			shade_filetypes = {},
+			shade_terminals = false,
+			shading_factor = 2,
+			start_in_insert = true,
+			insert_mappings = true,
+			persist_size = true,
+			direction = "horizontal",
+			close_on_exit = true,
+			shell = vim.o.shell,
+			float_opts = {
+				border = "curved",
+				winblend = 0,
+				highlights = {
+					border = "Normal",
+					background = "Normal",
 				},
-			})
-
-			local Terminal = require("toggleterm.terminal").Terminal
-
-			local lazygit = Terminal:new({ cmd = "lazygit", hidden = true, direction = "float" })
-			local lazydocker = Terminal:new({ cmd = "lazydocker", hidden = true, direction = "float" })
-
-			local map = vim.keymap.set
-
-			map("n", "<leader>od", function()
-				lazydocker:toggle()
-			end, { desc = "Open Lazydocker", silent = true })
-
-			map("n", "<leader>og", function()
-				lazygit:toggle()
-			end, { desc = "Open Lazygit", silent = true })
-		end,
+			},
+		},
 	},
 }

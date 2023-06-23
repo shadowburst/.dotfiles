@@ -29,13 +29,6 @@ del("n", "<leader>bd")
 map("n", "<leader><tab>c", "<cmd>tabclose<cr>", { desc = "Close Tab" })
 del("n", "<leader><tab>d")
 
--- Handle lazygit myself
-del("n", "<leader>gG")
-
--- Handle terminal myself
-del("n", "<leader>ft")
-del("n", "<leader>fT")
-
 map("n", "<leader>hr", "<cmd>so $MYVIMRC<cr>", { desc = "Reload config" })
 
 if Util.has("vim-bufsurf") then
@@ -45,3 +38,8 @@ if Util.has("vim-bufsurf") then
 else
 	map("n", "<leader>bo", "<cmd>up | %bd | e# | bd#<cr>", { desc = "Close other buffers" })
 end
+
+-- Disabled from default Lazyvim
+del("n", "<leader>gG")
+del("n", "<leader>ft")
+del("n", "<leader>fT")
