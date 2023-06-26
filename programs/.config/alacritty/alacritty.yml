@@ -23,27 +23,29 @@ font:
   size: 11.0
 colors:
   primary:
-    background: "#282C34"
-    foreground: "#BBC2CF"
+    background: "0x222436"
+    foreground: "0xc8d3f5"
   normal:
-    black: "#1C1F24"
-    red: "#CB5B67"
-    green: "#98BE65"
-    yellow: "#ECBE7B"
-    blue: "#4A93D1"
-    magenta: "#935FB0"
-    cyan: "#5699AF"
-    white: "#5B6268"
+    black: "0x1b1d2b"
+    red: "0xff757f"
+    green: "0xc3e88d"
+    yellow: "0xffc777"
+    blue: "0x82aaff"
+    magenta: "0xc099ff"
+    cyan: "0x86e1fc"
+    white: "0x828bb8"
   bright:
-    black: "#5C6370"
-    red: "#DA8548"
-    green: "#4DB5BD"
-    yellow: "#ECBE7B"
-    blue: "#6CA4D5"
-    magenta: "#B382CB"
-    cyan: "#46D9FF"
-    white: "#DFDFDF"
-
+    black: "0x444a73"
+    red: "0xff757f"
+    green: "0xc3e88d"
+    yellow: "0xffc777"
+    blue: "0x82aaff"
+    magenta: "0xc099ff"
+    cyan: "0x86e1fc"
+    white: "0xc8d3f5"
+  indexed_colors:
+    - { index: 16, color: "0xff966c" }
+    - { index: 17, color: "0xc53b53" }
 key_bindings:
   # Fix alt key bindings
   - { key: J, mods: Alt, chars: "\x1bj" }

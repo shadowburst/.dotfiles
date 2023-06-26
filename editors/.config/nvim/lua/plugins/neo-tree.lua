@@ -1,11 +1,17 @@
 return {
 	{
 		"nvim-neo-tree/neo-tree.nvim",
+		dependencies = {
+			"folke/tokyonight.nvim",
+		},
 		keys = {
 			{ "<leader>E", false },
 		},
 		opts = function()
-			vim.api.nvim_set_hl(0, "NeoTreeGitUntracked", { italic = true, fg = "#98be65" })
+			local theme = require("tokyonight.colors").moon()
+
+			vim.api.nvim_set_hl(0, "NeoTreeGitUntracked", { italic = true, fg = theme.green })
+			vim.api.nvim_set_hl(0, "NeoTreeGitModified", { italic = true, fg = theme.orange })
 
 			return {
 				filesystem = {

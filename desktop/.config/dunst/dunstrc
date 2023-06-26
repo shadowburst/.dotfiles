@@ -17,7 +17,7 @@
     progress_bar_frame_width = 0
     progress_bar_min_width = 150
     progress_bar_max_width = 400
-    highlight = "#935FB0"
+    highlight = "#82aaff"
 
     ### Notifications ###
     transparency = 0
@@ -76,19 +76,19 @@
     mouse_right_click = context
 
 [urgency_low]
-    background = "#1C1F24"
-    foreground = "#BBC2CF"
-    frame_color = "#202328"
+    background = "#1b1d2b"
+    foreground = "#c8d3f5"
+    frame_color = "#2d3f76"
     timeout = 3
 
 [urgency_normal]
-    background = "#1C1F24"
-    foreground = "#BBC2CF"
-    frame_color = "#202328"
+    background = "#1b1d2b"
+    foreground = "#c8d3f5"
+    frame_color = "#2d3f76"
     timeout = 5
 
 [urgency_critical]
-    background = "#1C1F24"
-    foreground = "#BBC2CF"
-    frame_color = "#FF6C6B"
+    background = "#1b1d2b"
+    foreground = "#c8d3f5"
+    frame_color = "#ff757f"
     timeout = 0

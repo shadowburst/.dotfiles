@@ -7,19 +7,18 @@ window {
 }
 button {
   margin: 2rem;
-  background-color: #282c34;
+  background-color: #222436;
   border-width: 0;
   background-repeat: no-repeat;
   background-position: center;
   background-size: 20%;
-  color: #bbc2cf;
+  color: #c8d3f5;
   transition: box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
 }
 
 button:focus,
-button:active,
-button:hover {
-  background-color: #935fb0;
+button:active {
+  background-color: #82aaff;
   outline-style: none;
 }
 
@@ -27,7 +26,6 @@ button:hover {
   background-image: image(url("./icons/lock.svg"));
 }
 #lock:active,
-#lock:hover,
 #lock:focus {
   background-image: image(url("./icons/lock-focus.svg"));
 }
@@ -36,7 +34,6 @@ button:hover {
   background-image: image(url("./icons/logout.svg"));
 }
 #logout:active,
-#logout:hover,
 #logout:focus {
   background-image: image(url("./icons/logout-focus.svg"));
 }
@@ -45,7 +42,6 @@ button:hover {
   background-image: image(url("./icons/reboot.svg"));
 }
 #reboot:active,
-#reboot:hover,
 #reboot:focus {
   background-image: image(url("./icons/reboot-focus.svg"));
 }
@@ -54,7 +50,6 @@ button:hover {
   background-image: image(url("./icons/shutdown.svg"));
 }
 #shutdown:active,
-#shutdown:hover,
 #shutdown:focus {
   background-image: image(url("./icons/shutdown-focus.svg"));
 }

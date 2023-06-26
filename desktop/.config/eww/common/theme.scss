@@ -1,15 +1,15 @@
 @use "sass:list";
 @use "sass:map";
 
-$foreground: #bbc2cf;
-$background: #1c1f24;
-$card: #282c34;
-$primary: #935fb0;
-$secondary: #b382cb;
-$success: #98be65;
-$warning: #da8548;
-$danger: #cb5b67;
-$disabled: #5b6268;
+$foreground: #c8d3f5;
+$background: #1b1d2b;
+$card: #222436;
+$primary: #82aaff;
+$secondary: #4fd6be;
+$success: #c3e88d;
+$warning: #ff966c;
+$danger: #ff757f;
+$disabled: #2d3f76;
 $colors: (
   foreground: $foreground,
   background: $background,

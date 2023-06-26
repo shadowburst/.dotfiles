@@ -1,19 +1,24 @@
 return {
 	{
 		"nvim-lualine/lualine.nvim",
+		dependencies = {
+			"folke/tokyonight.nvim",
+		},
 		event = "VeryLazy",
 		opts = function(_, opts)
+			local theme = require("tokyonight.colors").moon()
+
 			local colors = {
-				bg = "#202328",
-				fg = "#bbc2cf",
-				yellow = "#ecbe7b",
-				cyan = "#5699af",
-				darkblue = "#081633",
-				green = "#98be65",
-				orange = "#da8548",
-				magenta = "#b382cb",
-				blue = "#4a93d1",
-				red = "#cb5b67",
+				bg = theme.bg,
+				fg = theme.fg,
+				yellow = theme.yellow,
+				cyan = theme.cyan,
+				darkblue = theme.darkblue,
+				green = theme.green,
+				orange = theme.orange,
+				magenta = theme.magenta,
+				blue = theme.blue,
+				red = theme.red,
 			}
 
 			local conditions = {
@@ -107,13 +112,14 @@ return {
 				-- filesize component
 				"filesize",
 				cond = conditions.buffer_not_empty,
+				color = { fg = colors.fg },
 			})
 
 			ins_left({
 				"filename",
 				cond = conditions.buffer_not_empty,
 				color = function()
-					return vim.bo.modified and { fg = colors.red, gui = "bold" } or { gui = "bold" }
+					return vim.bo.modified and { fg = colors.red, gui = "bold" } or { fg = colors.fg, gui = "bold" }
 				end,
 				symbols = {
 					modified = "",
@@ -122,7 +128,7 @@ return {
 				padding = 2,
 			})
 
-			ins_left({ "location" })
+			ins_left({ "location", color = { fg = colors.fg } })
 
 			ins_left({ "progress", color = { fg = colors.fg, gui = "bold" } })
 
