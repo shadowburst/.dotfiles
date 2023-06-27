@@ -16,6 +16,7 @@ return {
 		opts = {
 			disable_commit_confirmation = true,
 			disable_insert_on_commit = false,
+			remember_settings = false,
 			signs = {
 				-- { CLOSED, OPENED }
 				section = { "", "" },
