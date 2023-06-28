@@ -6,7 +6,6 @@ return {
 				bashls = {},
 				cssls = {},
 				dockerls = {},
-				emmet_ls = {},
 				html = {},
 				intelephense = {},
 				jsonls = {},

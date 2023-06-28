@@ -24,6 +24,7 @@ return {
 				"regex",
 				"scss",
 				"sql",
+				"tsx",
 				"typescript",
 				"vim",
 				"vimdoc",

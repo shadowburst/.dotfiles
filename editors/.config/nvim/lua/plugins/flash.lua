@@ -6,23 +6,39 @@ return {
 				"s",
 				mode = { "n", "o", "x" },
 				function()
-					require("flash").jump()
+					require("flash").jump({
+						search = {
+							mode = function(str)
+								return "\\<" .. str
+							end,
+						},
+					})
 				end,
 			},
 			{
 				"S",
 				mode = { "n", "o", "x" },
 				function()
-					require("flash").jump({
-						pattern = vim.fn.expand("<cword>"),
-					})
+					require("flash").treesitter()
 				end,
 			},
-		},
-		opts = {
-			jump = {
-				autojump = true,
+			{
+				"r",
+				mode = "o",
+				function()
+					require("flash").remote()
+				end,
+				desc = "Remote Flash",
+			},
+			{
+				"R",
+				mode = { "o", "x" },
+				function()
+					require("flash").treesitter_search()
+				end,
+				desc = "Treesitter Search",
 			},
 		},
+		opts = {},
 	},
 }

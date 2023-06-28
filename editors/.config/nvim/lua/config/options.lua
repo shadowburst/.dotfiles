@@ -1,5 +1,4 @@
 local options = {
-	-- shell = "fish",
 	backup = false,
 	clipboard = "unnamedplus",
 	cmdheight = 0,
@@ -9,7 +8,7 @@ local options = {
 	fileencoding = "utf-8",
 	hlsearch = true,
 	ignorecase = true,
-	mouse = "a",
+	mouse = "",
 	pumheight = 10,
 	showmode = false,
 	showtabline = 0,
@@ -36,7 +35,6 @@ local options = {
 	wrap = true,
 	scrolloff = 8,
 	sidescrolloff = 8,
-	-- guifont = "JetBrainsMono Nerd Font Mono:h10",
 	foldmethod = "expr",
 	foldexpr = "nvim_treesitter#foldexpr()",
 	foldlevel = 99,
@@ -49,8 +47,6 @@ vim.opt.shortmess:append("c")
 for k, v in pairs(options) do
 	vim.opt[k] = v
 end
-
-vim.cmd([[set whichwrap+=<,>,[,],h,l]])
-vim.cmd([[set iskeyword+=-]])
-vim.cmd([[set formatoptions-=cro]])
+vim.opt.whichwrap:append("<,>,[,],h,l")
+vim.opt.formatoptions:append("ro/")
 vim.cmd([[autocmd BufEnter *.md setlocal nospell]])
