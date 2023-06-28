@@ -35,6 +35,7 @@ return {
 				end,
 			}
 
+			opts.options.theme = "tokyonight"
 			opts.options.component_separators = ""
 			opts.options.section_separators = ""
 
