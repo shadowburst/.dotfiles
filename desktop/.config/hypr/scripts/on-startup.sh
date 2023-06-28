@@ -12,9 +12,6 @@ swayidle \
 # Load the polkit agent
 /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
 
-# Set cursor theme
-hyprctl setcursor Bibata-Modern-Classic 18 &
-
 # Set minimum screen brightness
 light -N 5 &
 
@@ -33,3 +30,10 @@ nm-applet &
 
 # Launch EWW daemon
 eww daemon &
+
+# Theme settings
+hyprctl setcursor Bibata-Modern-Classic 18 &
+
+# GTK
+gsettings set org.gnome.desktop.interface icon-theme 'Tela-dark'
+gsettings set org.gnome.desktop.interface color-scheme prefer-dark
