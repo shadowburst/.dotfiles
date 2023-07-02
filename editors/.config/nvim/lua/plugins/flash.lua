@@ -5,16 +5,7 @@ return {
 			{
 				"s",
 				mode = { "n", "o", "x" },
-				function()
-					require("flash").jump()
-				end,
-			},
-			{
-				"S",
-				mode = { "n", "o", "x" },
-				function()
-					require("flash").treesitter()
-				end,
+				false,
 			},
 			{
 				"r",
@@ -33,6 +24,18 @@ return {
 				desc = "Treesitter Search",
 			},
 		},
-		opts = {},
+		opts = {
+			modes = {
+				search = {
+					highlight = {
+						backdrop = true,
+					},
+					search = {
+						wrap = false,
+						multi_window = false,
+					},
+				},
+			},
+		},
 	},
 }
