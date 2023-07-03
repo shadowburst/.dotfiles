@@ -49,6 +49,7 @@ return {
 						search = {
 							forward = true,
 							wrap = false,
+							multi_window = false,
 						},
 						jump = {
 							history = true,
@@ -84,6 +85,7 @@ return {
 						search = {
 							forward = false,
 							wrap = false,
+							multi_window = false,
 						},
 						jump = {
 							history = true,
