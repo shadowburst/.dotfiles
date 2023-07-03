@@ -15,3 +15,11 @@ vim.api.nvim_create_autocmd({ "BufEnter" }, {
 		vim.cmd.normal("zx")
 	end,
 })
+
+-- Center cursor when entering insert mode
+vim.api.nvim_create_autocmd({ "InsertEnter" }, {
+	group = augroup("center_on_insert"),
+	callback = function()
+		vim.cmd.normal("zz")
+	end,
+})
