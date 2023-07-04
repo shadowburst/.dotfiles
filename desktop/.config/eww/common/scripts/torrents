@@ -17,7 +17,7 @@ on_change() {
             "progress": .[1] | sub("%$"; "") | tonumber,
             "status": .[6],
             "up": .[4] | tonumber
-        }]'
+        }] | sort_by(.id)'
 	)
 
 	if [[ "$VALUE" == "$PREVIOUS_VALUE" ]]; then
