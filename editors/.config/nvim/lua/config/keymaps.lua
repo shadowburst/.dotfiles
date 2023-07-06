@@ -43,3 +43,13 @@ end
 del("n", "<leader>gG")
 del("n", "<leader>ft")
 del("n", "<leader>fT")
+
+-- Add some terminal multiplexing
+
+map("n", "<Tab>", "<cmd>tabnext<cr>", { desc = "Go to next tab" })
+map("n", "<S-Tab>", "<cmd>tabprevious<cr>", { desc = "Go to previous tab" })
+
+map("n", "<leader>tn", "<cmd>tabnew | terminal<cr><cmd>normal i<cr>", { desc = "Open a new terminal tab" })
+map("t", "<C-s>", "<cmd>split | terminal<cr>", { desc = "Horizontal split new terminal" })
+map("t", "<C-v>", "<cmd>vsplit | terminal<cr>", { desc = "Vertical split new terminal" })
+map("t", "<C-w>", "<cmd>bdelete<cr>", { desc = "Close buffer" })
