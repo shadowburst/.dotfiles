@@ -23,20 +23,11 @@ map("n", "<leader>wo", "<cmd>only<cr>", { desc = "Close other windows" })
 map("n", "<leader>ws", "<C-w>s", { desc = "Split window below" })
 map("n", "<leader>wv", "<C-w>v", { desc = "Split window right" })
 
-map("n", "<leader>bc", "<cmd>bwipeout<cr>", { desc = "Close buffer" })
-del("n", "<leader>bd")
-
-map("n", "<leader><tab>c", "<cmd>tabclose<cr>", { desc = "Close Tab" })
-del("n", "<leader><tab>d")
-
 map("n", "<leader>hr", "<cmd>so $MYVIMRC<cr>", { desc = "Reload config" })
 
 if Util.has("vim-bufsurf") then
 	map("n", "<S-h>", "<cmd>BufSurfBack<cr>", { desc = "Go to previous buffer in history" })
 	map("n", "<S-l>", "<cmd>BufSurfForward<cr>", { desc = "Go to next buffer in history" })
-	map("n", "<leader>bo", "<cmd>up | %bd | e# | bd# | BufSurfClear<cr>", { desc = "Close other buffers" })
-else
-	map("n", "<leader>bo", "<cmd>up | %bd | e# | bd#<cr>", { desc = "Close other buffers" })
 end
 
 -- Disabled from default Lazyvim
@@ -46,10 +37,17 @@ del("n", "<leader>fT")
 
 -- Add some terminal multiplexing
 
-map("n", "<Tab>", "<cmd>tabnext<cr>", { desc = "Go to next tab" })
-map("n", "<S-Tab>", "<cmd>tabprevious<cr>", { desc = "Go to previous tab" })
+map("n", "<tab>", "<cmd>tabnext<cr>", { desc = "Go to next tab" })
+map("n", "<S-tab>", "<cmd>tabprevious<cr>", { desc = "Go to previous tab" })
 
-map("n", "<leader>tn", "<cmd>tabnew | terminal<cr><cmd>normal i<cr>", { desc = "Open a new terminal tab" })
+map("n", "<leader><tab><tab>", "<cmd>tabnew | terminal<cr><cmd>normal i<cr>", { desc = "Open a new terminal tab" })
+map("n", "<leader><tab>c", "<cmd>tabclose<cr>", { desc = "Close Tab" })
+del("n", "<leader><tab>d")
+del("n", "<leader><tab>[")
+del("n", "<leader><tab>]")
+del("n", "<leader><tab>f")
+del("n", "<leader><tab>l")
+
 map("t", "<C-s>", "<cmd>split | terminal<cr>", { desc = "Horizontal split new terminal" })
 map("t", "<C-v>", "<cmd>vsplit | terminal<cr>", { desc = "Vertical split new terminal" })
 map("t", "<C-w>", "<cmd>bdelete<cr>", { desc = "Close buffer" })
