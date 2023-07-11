@@ -24,78 +24,6 @@ return {
 				desc = "Treesitter Search",
 			},
 			{
-				"/",
-				mode = { "n", "x" },
-				function()
-					require("flash").jump({
-						search = {
-							forward = true,
-							wrap = false,
-							incremental = true,
-						},
-						jump = {
-							history = true,
-							register = true,
-							nohlsearch = true,
-						},
-					})
-				end,
-			},
-			{
-				"/",
-				mode = "o",
-				function()
-					require("flash").jump({
-						search = {
-							forward = true,
-							wrap = false,
-							multi_window = false,
-						},
-						jump = {
-							history = true,
-							register = true,
-							nohlsearch = true,
-						},
-					})
-				end,
-			},
-			{
-				"?",
-				mode = { "n", "x" },
-				function()
-					require("flash").jump({
-						search = {
-							forward = false,
-							wrap = false,
-							incremental = true,
-						},
-						jump = {
-							history = true,
-							register = true,
-							nohlsearch = true,
-						},
-					})
-				end,
-			},
-			{
-				"?",
-				mode = "o",
-				function()
-					require("flash").jump({
-						search = {
-							forward = false,
-							wrap = false,
-							multi_window = false,
-						},
-						jump = {
-							history = true,
-							register = true,
-							nohlsearch = true,
-						},
-					})
-				end,
-			},
-			{
 				"*",
 				mode = "n",
 				function()
@@ -132,6 +60,18 @@ return {
 				end,
 			},
 		},
-		opts = {},
+		opts = {
+			modes = {
+				search = {
+					highlight = {
+						backdrop = true,
+					},
+					search = {
+						wrap = false,
+						multi_window = false,
+					},
+				},
+			},
+		},
 	},
 }
