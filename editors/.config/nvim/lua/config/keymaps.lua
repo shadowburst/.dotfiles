@@ -14,6 +14,7 @@ map("v", "p", '"_dP')
 map("i", "jk", "<esc>")
 map("i", "kj", "<esc>")
 
+-- Windows
 map("n", "<leader>w=", "<C-w>=", { desc = "Balance windows" })
 map("n", "<leader>wc", "<C-w>c", { desc = "Close window" })
 del("n", "<leader>wd")
@@ -23,8 +24,7 @@ map("n", "<leader>wo", "<cmd>only<cr>", { desc = "Close other windows" })
 map("n", "<leader>ws", "<C-w>s", { desc = "Split window below" })
 map("n", "<leader>wv", "<C-w>v", { desc = "Split window right" })
 
-map("n", "<leader>hr", "<cmd>so $MYVIMRC<cr>", { desc = "Reload config" })
-
+-- Buffers
 if Util.has("vim-bufsurf") then
 	map("n", "<S-h>", "<cmd>BufSurfBack<cr>", { desc = "Go to previous buffer in history" })
 	map("n", "<S-l>", "<cmd>BufSurfForward<cr>", { desc = "Go to next buffer in history" })
@@ -34,18 +34,3 @@ end
 del("n", "<leader>gG")
 del("n", "<leader>ft")
 del("n", "<leader>fT")
-
--- Add some terminal multiplexing
-
-map("n", "<tab>", "<cmd>tabnext<cr>", { desc = "Go to next tab" })
-map("n", "<S-tab>", "<cmd>tabprevious<cr>", { desc = "Go to previous tab" })
-
-map("n", "<leader><tab><tab>", "<cmd>tabnew | terminal<cr><cmd>normal i<cr>", { desc = "Open a new terminal tab" })
-map("n", "<leader><tab>c", "<cmd>tabclose<cr>", { desc = "Close Tab" })
-del("n", "<leader><tab>d")
-del("n", "<leader><tab>[")
-del("n", "<leader><tab>]")
-del("n", "<leader><tab>f")
-del("n", "<leader><tab>l")
-
-map("n", "<leader>sr", ":%s/<C-r><C-w>//gI<Left><Left><Left>", { desc = "Replace current word in buffer" })
