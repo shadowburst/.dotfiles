@@ -16,7 +16,9 @@ return {
 			return {
 				filesystem = {
 					bind_to_cwd = true,
-					follow_current_file = true,
+					follow_current_file = {
+						enabled = true,
+					},
 					group_empty_dirs = true,
 					scan_mode = "deep",
 					cwd_target = {
@@ -53,7 +55,7 @@ return {
 					{
 						event = "file_opened",
 						handler = function()
-							require("neo-tree").close_all()
+							require("neo-tree.sources.manager").close_all()
 						end,
 					},
 				},
