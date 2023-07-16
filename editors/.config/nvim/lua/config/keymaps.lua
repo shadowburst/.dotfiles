@@ -47,3 +47,5 @@ del("n", "<leader><tab>[")
 del("n", "<leader><tab>]")
 del("n", "<leader><tab>f")
 del("n", "<leader><tab>l")
+
+map("n", "<leader>sr", ":%s/<C-r><C-w>//gI<Left><Left><Left>", { desc = "Replace current word in buffer" })

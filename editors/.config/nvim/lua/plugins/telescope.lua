@@ -55,6 +55,7 @@ return {
 			{ "<leader>sk", false },
 			{ "<leader>sm", false },
 			{ "<leader>so", false },
+			{ "<leader>sR", false },
 			{ "<leader>ss", "<cmd>Telescope current_buffer_fuzzy_find<cr>", desc = "Search in buffer" },
 			{ "<leader>sS", false },
 			{ "<leader>sW", false },
