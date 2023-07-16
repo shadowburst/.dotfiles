@@ -47,7 +47,3 @@ del("n", "<leader><tab>[")
 del("n", "<leader><tab>]")
 del("n", "<leader><tab>f")
 del("n", "<leader><tab>l")
-
-map("t", "<C-s>", "<cmd>split | terminal<cr>", { desc = "Horizontal split new terminal" })
-map("t", "<C-v>", "<cmd>vsplit | terminal<cr>", { desc = "Vertical split new terminal" })
-map("t", "<C-w>", "<cmd>bdelete<cr>", { desc = "Close buffer" })

@@ -49,7 +49,15 @@ return {
 
 					vim.notify("Deleted " .. counter .. (counter == 1 and " buffer" or " buffers"))
 				end,
-				desc = "Delete Buffer",
+				desc = "Close Buffer",
+			},
+			{
+				"<C-w>c",
+				function()
+					require("mini.bufremove").wipeout(0, false)
+				end,
+				desc = "Close terminal",
+				mode = "t",
 			},
 			{ "<leader>bd", false },
 			{ "<leader>bD", false },

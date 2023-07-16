@@ -1,3 +1,13 @@
+local function next_id()
+	local all = require("toggleterm.terminal").get_all(true)
+	for index, term in pairs(all) do
+		if index ~= term.id then
+			return index
+		end
+	end
+	return #all + 1
+end
+
 return {
 	{
 		"akinsho/toggleterm.nvim",
@@ -5,18 +15,43 @@ return {
 		keys = {
 			{
 				"²",
-				"<cmd>ToggleTerm<cr>",
-				desc = "Open terminal",
-			},
-			{
-				"<leader>ot",
-				"<cmd>ToggleTerm<cr>",
-				desc = "Open terminal",
+				function()
+					local terminals = require("toggleterm.terminal")
+
+					if terminals.get(1) then
+						require("toggleterm").toggle_all()
+					else
+						terminals.Terminal:new({ direction = "tab" }):toggle()
+					end
+				end,
+				desc = "Open terminal tab",
 			},
 			{
 				"²",
-				"<cmd>ToggleTerm<cr>",
+				function()
+					local terminals = require("toggleterm.terminal")
+
+					for _, terminal in pairs(terminals.get_all()) do
+						terminal:close()
+					end
+				end,
 				desc = "Close terminal",
+				mode = "t",
+			},
+			{
+				"<C-w>s",
+				function()
+					require("toggleterm").toggle(next_id(), nil, nil, "vertical")
+				end,
+				desc = "Split terminal horizontally",
+				mode = "t",
+			},
+			{
+				"<C-w>v",
+				function()
+					require("toggleterm").toggle(next_id(), nil, nil, "horizontal")
+				end,
+				desc = "Split terminal vertically",
 				mode = "t",
 			},
 			{
@@ -43,16 +78,9 @@ return {
 				desc = "Go to right window",
 				mode = "t",
 			},
-			{
-				"<C-é>",
-				"<cmd>2ToggleTerm<cr>",
-				desc = "Open a second terminal",
-				mode = "t",
-			},
 		},
 		opts = {
-			size = 15,
-			open_mapping = [[<c-\>]],
+			open_mapping = [[<C-\>]],
 			hide_numbers = true,
 			shade_filetypes = {},
 			shade_terminals = false,
@@ -60,17 +88,10 @@ return {
 			start_in_insert = true,
 			insert_mappings = true,
 			persist_size = true,
-			direction = "horizontal",
+			persist_mode = false,
+			direction = "tab",
 			close_on_exit = true,
 			shell = vim.o.shell,
-			float_opts = {
-				border = "curved",
-				winblend = 0,
-				highlights = {
-					border = "Normal",
-					background = "Normal",
-				},
-			},
 		},
 	},
 }
