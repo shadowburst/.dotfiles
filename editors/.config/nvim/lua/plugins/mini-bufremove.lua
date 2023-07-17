@@ -20,18 +20,17 @@ return {
 
 					for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
 						local delete = vim.api.nvim_buf_is_loaded(buffer) and buffer ~= current_buffer
+
 						local force = false
 
-						if vim.api.nvim_buf_get_option(buffer, "modified") then
-							vim.api.nvim_set_current_buf(buffer)
-
+						if delete and vim.api.nvim_buf_get_option(buffer, "modified") then
 							local choice = vim.fn.confirm(
 								"Save " .. vim.api.nvim_buf_get_name(buffer) .. " ?",
 								"&Yes\n&No\n&Cancel"
 							)
 
 							if choice == 1 then
-								vim.cmd.w()
+								vim.api.nvim_buf_call(buffer, vim.cmd.w)
 							elseif choice == 2 then
 								force = true
 							else
