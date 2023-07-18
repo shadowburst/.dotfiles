@@ -24,7 +24,7 @@
                        (label :class "label"
                               :xalign 0
                               :text "${torrent.have} (${torrent.progress}%)  -  ${torrent.eta}")
-                       (progress :class {torrent.down == 0 && torrent.progress < 100 ? "paused" : ""}
+                       (progress :class {torrent.status == "Stopped" ? "paused" : ""}
                                  :orientation "h"
                                  :value {torrent.progress})
                        (box :class "speed"
