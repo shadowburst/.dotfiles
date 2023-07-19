@@ -17,5 +17,13 @@ return {
 				desc = "Replace in files",
 			},
 		},
+		opts = {
+			open_cmd = "tabnew",
+			default = {
+				find = {
+					options = { "hidden" },
+				},
+			},
+		},
 	},
 }
