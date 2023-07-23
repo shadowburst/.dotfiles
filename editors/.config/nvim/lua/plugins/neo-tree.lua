@@ -6,12 +6,25 @@ return {
 		},
 		keys = {
 			{ "<leader>E", false },
+			{
+				"<leader>e",
+				function()
+					require("neo-tree.command").execute({
+						toggle = true,
+						dir = require("lazyvim.util").get_root(),
+						reveal = true,
+					})
+				end,
+				desc = "Toggle NeoTree",
+			},
 		},
 		opts = function()
 			local theme = require("tokyonight.colors").moon()
 
 			vim.api.nvim_set_hl(0, "NeoTreeGitUntracked", { italic = true, fg = theme.green })
 			vim.api.nvim_set_hl(0, "NeoTreeGitModified", { italic = true, fg = theme.orange })
+			vim.api.nvim_set_hl(0, "NeoTreeNormal", { bg = theme.bg })
+			vim.api.nvim_set_hl(0, "NeoTreeNormalNC", { bg = theme.bg })
 
 			return {
 				filesystem = {
@@ -37,6 +50,7 @@ return {
 					},
 				},
 				window = {
+					position = "current",
 					mappings = {
 						["<space>"] = "none",
 						["h"] = "close_node",
