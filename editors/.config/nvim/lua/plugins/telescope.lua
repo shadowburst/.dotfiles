@@ -10,19 +10,6 @@ return {
 				end,
 			},
 			{
-				"nvim-telescope/telescope-file-browser.nvim",
-				keys = {
-					{
-						"<leader>.",
-						"<cmd>Telescope file_browser path=%:p:h=%:p:h<cr>",
-						desc = "Browse files",
-					},
-				},
-				config = function()
-					require("telescope").load_extension("file_browser")
-				end,
-			},
-			{
 				"nvim-telescope/telescope-project.nvim",
 				keys = {
 					{
@@ -37,6 +24,14 @@ return {
 			},
 		},
 		keys = {
+			{
+				"<leader><leader>",
+				function()
+					local Util = require("lazyvim.util")
+					require("telescope.builtin").find_files({ cwd = Util.get_root() })
+				end,
+				desc = "Find files",
+			},
 			{ "<leader>cD", "<cmd>Telescope diagnostics<cr>", desc = "Diagnostics" },
 			{ "<leader>hC", "<cmd>Telescope command_history<cr>", desc = "Command History" },
 			{ "<leader>hc", "<cmd>Telescope commands<cr>", desc = "Commands" },
