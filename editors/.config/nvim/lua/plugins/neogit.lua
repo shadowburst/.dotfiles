@@ -8,7 +8,7 @@ return {
 			{
 				"<leader>gg",
 				function()
-					require("neogit").open()
+					require("neogit").open({})
 				end,
 				desc = "Open neogit",
 			},
