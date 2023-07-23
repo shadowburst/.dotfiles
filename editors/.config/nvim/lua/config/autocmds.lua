@@ -15,3 +15,17 @@ vim.api.nvim_create_autocmd({ "BufEnter" }, {
 		vim.cmd.normal("zx")
 	end,
 })
+
+-- Open help pages in tabs
+vim.api.nvim_create_autocmd({ "BufRead" }, {
+	group = augroup("tab_help"),
+	pattern = { "*" },
+	callback = function()
+		-- Only execute in help files
+		if vim.bo.buftype ~= "help" then
+			return
+		end
+
+		vim.cmd.wincmd("T")
+	end,
+})
