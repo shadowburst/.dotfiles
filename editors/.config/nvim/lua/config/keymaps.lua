@@ -14,6 +14,16 @@ map("v", "p", '"_dP')
 map("i", "jk", "<esc>")
 map("i", "kj", "<esc>")
 
+-- Tabs
+map("n", "<leader><tab><tab>", "<cmd>tabnext<cr>", { desc = "Next tab" })
+map("n", "<leader><tab>c", "<cmd>tabclose<cr>", { desc = "Close tab" })
+map("n", "<leader><tab>o", "<cmd>tabonly<cr>", { desc = "Close other tabs" })
+del("n", "<leader><tab>[")
+del("n", "<leader><tab>]")
+del("n", "<leader><tab>d")
+del("n", "<leader><tab>f")
+del("n", "<leader><tab>l")
+
 -- Windows
 map("n", "<leader>w=", "<C-w>=", { desc = "Balance windows" })
 map("n", "<leader>wc", "<C-w>c", { desc = "Close window" })
@@ -29,6 +39,7 @@ if Util.has("vim-bufsurf") then
 	map("n", "<S-h>", "<cmd>BufSurfBack<cr>", { desc = "Go to previous buffer in history" })
 	map("n", "<S-l>", "<cmd>BufSurfForward<cr>", { desc = "Go to next buffer in history" })
 end
+map("n", "<leader>bb", "<cmd>e #<cr>", { desc = "Switch to other buffer" })
 
 -- Disabled from default Lazyvim
 del("n", "<leader>gG")

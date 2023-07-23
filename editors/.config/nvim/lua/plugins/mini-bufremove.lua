@@ -7,7 +7,7 @@ return {
 				function()
 					require("mini.bufremove").wipeout(0, false)
 				end,
-				desc = "Delete Buffer",
+				desc = "Close buffer",
 			},
 			{
 				"<leader>bo",
@@ -48,7 +48,7 @@ return {
 
 					vim.notify("Deleted " .. counter .. (counter == 1 and " buffer" or " buffers"))
 				end,
-				desc = "Close Buffer",
+				desc = "Close other buffers",
 			},
 			{
 				"<C-w>c",
