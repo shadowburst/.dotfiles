@@ -17,7 +17,7 @@ vim.api.nvim_create_autocmd({ "BufEnter" }, {
 })
 
 -- Open help pages in tabs
-vim.api.nvim_create_autocmd({ "BufRead" }, {
+vim.api.nvim_create_autocmd({ "BufEnter" }, {
 	group = augroup("tab_help"),
 	pattern = { "*" },
 	callback = function()
