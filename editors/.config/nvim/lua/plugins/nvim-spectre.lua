@@ -19,9 +19,20 @@ return {
 		},
 		opts = {
 			open_cmd = "tabnew",
+			highlight = {
+				search = "DiffDelete",
+				replace = "DiffAdd",
+			},
 			default = {
 				find = {
 					options = { "hidden" },
+				},
+			},
+			mapping = {
+				["run_current_replace"] = {
+					map = "<leader>r",
+					cmd = "<cmd>lua require('spectre.actions').run_current_replace()<CR>",
+					desc = "replace current line",
 				},
 			},
 		},
