@@ -40,6 +40,8 @@ local options = {
 	foldlevel = 99,
 	spelllang = "en,fr",
 	showcmdloc = "statusline",
+	formatoptions = "cro/j",
+	whichwrap = "<,>,[,],h,l",
 }
 
 vim.opt.shortmess:append("c")
@@ -47,6 +49,3 @@ vim.opt.shortmess:append("c")
 for k, v in pairs(options) do
 	vim.opt[k] = v
 end
-vim.opt.whichwrap:append("<,>,[,],h,l")
-vim.opt.formatoptions:append("ro/")
-vim.cmd([[autocmd BufEnter *.md setlocal nospell]])
