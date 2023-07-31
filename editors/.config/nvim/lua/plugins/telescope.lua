@@ -11,7 +11,12 @@ return {
 				keys = {
 					{
 						"<leader>.",
-						"<cmd>Telescope file_browser path=%:p:h=%:p:h<cr>",
+						"<cmd>Telescope file_browser initial_mode=insert path=%:p:h=%:p:h<cr>",
+						desc = "Browse files",
+					},
+					{
+						"<leader>e",
+						"<cmd>Telescope file_browser initial_mode=normal path=%:p:h=%:p:h<cr>",
 						desc = "Browse files",
 					},
 				},
@@ -185,7 +190,6 @@ return {
 					hidden_files = true,
 				},
 				file_browser = {
-					initial_mode = "normal",
 					grouped = true,
 					hidden = true,
 					hijack_netrw = true,
