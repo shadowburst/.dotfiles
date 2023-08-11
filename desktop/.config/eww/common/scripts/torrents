@@ -14,7 +14,7 @@ on_change() {
             "eta": .[3],
             "have": .[2],
             "name": .[7],
-            "progress": .[1] | sub("%$"; "") | tonumber,
+            "progress": (.[1] | sub("%$"; "") | try tonumber catch 0),
             "status": .[6],
             "up": .[4] | tonumber
         }] | sort_by(.id)'
