@@ -42,9 +42,11 @@
                                  :spacing {window-spacing}
                                  (label :text "${torrent.up} KB/s")
                                  (icon ""))))
-                  (box :orientation "h"
-                       :spacing {window-spacing}
+                  (box :orientation "v"
                        :valign "center"
+                       (hover-button :visible {torrent.eta != "Done"}
+                                     :onclick {torrent.status == "Stopped" ? "windows/torrents/scripts/start ${torrent.id}" : "windows/torrents/scripts/stop ${torrent.id}"} 
+                                     (icon {torrent.status == "Stopped" ? "": ""} ))
                        (hover-button :onclick "windows/torrents/scripts/${torrent.progress == 100 ? 'remove' : 'delete'} ${torrent.id}"
                                      (icon ""))))))))
 
