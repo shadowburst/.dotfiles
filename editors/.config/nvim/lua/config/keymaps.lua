@@ -1,5 +1,3 @@
-local Util = require("lazyvim.util")
-
 local map = function(mode, lhs, rhs, opts)
 	opts = opts or {}
 	opts.silent = opts.silent ~= true
@@ -35,10 +33,9 @@ map("n", "<leader>ws", "<C-w>s", { desc = "Split window below" })
 map("n", "<leader>wv", "<C-w>v", { desc = "Split window right" })
 
 -- Buffers
-if Util.has("vim-bufsurf") then
-	map("n", "<S-h>", "<cmd>BufSurfBack<cr>", { desc = "Go to previous buffer in history" })
-	map("n", "<S-l>", "<cmd>BufSurfForward<cr>", { desc = "Go to next buffer in history" })
-end
+map("n", "<S-h>", "<cmd>CybuLastusedPrev<cr>", { desc = "Go to previous buffer in history" })
+map("n", "<S-l>", "<cmd>CybuLastusedNext<cr>", { desc = "Go to next buffer in history" })
+
 map("n", "<leader>bb", "<cmd>e #<cr>", { desc = "Switch to other buffer" })
 
 -- Disabled from default Lazyvim
