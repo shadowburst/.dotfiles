@@ -5,6 +5,7 @@ return {
 			{
 				"<leader>sr",
 				function()
+					vim.cmd.write()
 					require("spectre").open_file_search({ select_word = true })
 				end,
 				desc = "Replace in current file",
@@ -12,6 +13,7 @@ return {
 			{
 				"<leader>sR",
 				function()
+					vim.cmd.write()
 					require("spectre").open_visual({ select_word = true })
 				end,
 				desc = "Replace in files",
