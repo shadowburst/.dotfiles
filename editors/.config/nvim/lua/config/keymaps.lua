@@ -33,8 +33,12 @@ map("n", "<leader>ws", "<C-w>s", { desc = "Split window below" })
 map("n", "<leader>wv", "<C-w>v", { desc = "Split window right" })
 
 -- Buffers
-map("n", "<S-h>", "<cmd>CybuLastusedPrev<cr>", { desc = "Go to previous buffer in history" })
-map("n", "<S-l>", "<cmd>CybuLastusedNext<cr>", { desc = "Go to next buffer in history" })
+map("n", "<S-h>", function()
+	require("harpoon.ui").nav_prev()
+end, { desc = "Go to previous marked file" })
+map("n", "<S-l>", function()
+	require("harpoon.ui").nav_next()
+end, { desc = "Go to next marked file" })
 
 map("n", "<leader>bb", "<cmd>e #<cr>", { desc = "Switch to other buffer" })
 
