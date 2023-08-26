@@ -1,13 +1,14 @@
-set TERM "xterm-256color"
+set TERM xterm-256color
 
 set fish_greeting
 set fish_color_command green
 set fish_color_param foreground
 set fish_color_option cyan
 set fish_color_error red
+set -U fish_user_paths ~/.local/bin $fish_user_paths
 
 function fish_user_key_bindings
-  fish_vi_key_bindings
+    fish_vi_key_bindings
 end
 
 alias grep="grep --color=always"
@@ -60,10 +61,6 @@ function extract
     else
         echo "'$argv' is not a valid file"
     end
-end
-
-function test_desktop
-    Xephyr -ac -nolisten tcp -br -noreset -screen 1280x800 :1 &; sleep 1; DISPLAY=:1.0 $argv
 end
 
 starship init fish | source

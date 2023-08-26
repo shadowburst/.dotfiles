@@ -5,13 +5,13 @@ case $(hyprctl monitors -j | jq '.[] | select(.focused == true) | .activeWorkspa
 	$BROWSER &
 	;;
 2)
-	$TERMINAL -e "$EDITOR"
+	$TERMINAL -e "tmux-sessionizer" &
 	;;
 3)
 	discord &
 	;;
 4)
-	$TERMINAL -e lf
+	$TERMINAL -e lf &
 	;;
 5)
 	lutris &

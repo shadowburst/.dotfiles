@@ -21,16 +21,6 @@ return {
 					},
 				},
 			},
-			{
-				"nvim-telescope/telescope-project.nvim",
-				keys = {
-					{
-						"<leader>pp",
-						"<cmd>Telescope project<cr>",
-						desc = "Switch project",
-					},
-				},
-			},
 		},
 		keys = {
 			{
@@ -186,9 +176,6 @@ return {
 				},
 			},
 			extensions = {
-				project = {
-					hidden_files = true,
-				},
 				file_browser = {
 					grouped = true,
 					hidden = true,
@@ -236,7 +223,6 @@ return {
 			local telescope = require("telescope")
 
 			telescope.load_extension("fzf")
-			telescope.load_extension("project")
 			telescope.load_extension("file_browser")
 		end,
 	},
