@@ -78,12 +78,12 @@
                                          :space-evenly false
                                          :spacing {bar-spacing * 2}
                                          (icon :class "success"
-                                               :label {jq(torrents-data, 'map(select(.progress < 100)) | length')}
+                                               :label {jq(torrents-data, 'map(select(.eta != "Done")) | length')}
                                                "")
                                          (icon :class "warning"
-                                               :label {jq(torrents-data, 'map(select(.progress == 100)) | length')}
+                                               :label {jq(torrents-data, 'map(select(.eta == "Done")) | length')}
                                                ""))
-                                (progress :class {jq(torrents-data, 'all(.progress == 100)') ? "full" : (jq(torrents-data, 'all(.status == "Stopped")') ? "paused" : "")} 
+                                (progress :class {jq(torrents-data, 'all(.eta == "Done")') ? "full" : (jq(torrents-data, 'all(.status == "Stopped")') ? "paused" : "")} 
                                        :orientation "h"
                                        :value {jq(torrents-data, 'map(.progress) | add / length')}))))))
 
