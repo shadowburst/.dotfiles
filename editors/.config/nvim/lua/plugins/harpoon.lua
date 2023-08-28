@@ -24,6 +24,18 @@ return {
 				desc = "Add current file to harpoon",
 			},
 			{
+				"<leader>mc",
+				function()
+					if require("harpoon.mark").get_length() > 0 then
+						require("harpoon.mark").clear_all()
+						vim.notify("Harpoon cleared")
+					else
+						vim.notify("Harpoon already empty")
+					end
+				end,
+				desc = "Clear all marked files",
+			},
+			{
 				"<leader>mm",
 				function()
 					require("harpoon.ui").toggle_quick_menu()
