@@ -24,12 +24,10 @@ alias rm='rm -i'
 # Create directories recursively
 alias mkdir='mkdir -p'
 
-# Emacs
-alias emacsclient='emacsclient -c -a "emacs"'
-alias emacsterm='emacsclient -t'
-
-# Aur helper
-alias yay='paru'
+# Nixos
+function flake
+    sudo nixos-rebuild $argv[0] --flake ~/.dotfiles#$argv[1]
+end
 
 # Extract all files based on type
 function extract

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-WIFI_DEVICE="wlan0"
+WIFI_DEVICE="wlp0s20f3"
 ETHERNET_DEVICE="enp7s0"
 
 PREVIOUS_VALUE=""
