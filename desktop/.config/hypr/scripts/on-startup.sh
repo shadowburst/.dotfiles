@@ -16,6 +16,8 @@ transmission-daemon &
 blueman-applet &
 nm-applet &
 
+kanshi &
+
 # Launch EWW daemon
 eww daemon &
 
