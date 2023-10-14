@@ -24,7 +24,6 @@ return {
 						},
 					},
 				},
-				rnix = {},
 				tailwindcss = {
 					filetypes_exclude = { "markdown", "php" },
 				},
