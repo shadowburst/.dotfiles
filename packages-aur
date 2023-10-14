@@ -1,12 +1,10 @@
 auto-cpufreq
 brave-bin
 cava
-emacs-gcc-wayland-devel-bin
 eww-wayland
 greetd-tuigreet
 grimshot
 lazydocker-bin
-libinput-gestures
 light-git
 onlyoffice-bin
 stylua
@@ -14,4 +12,3 @@ swaylock-effects-git
 tela-circle-icon-theme-purple
 timeshift-bin
 wlogout
-youtube-dl-gui
