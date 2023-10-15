@@ -1,8 +1,10 @@
-profile {
-    output eDP-1 mode 1920x1200@59.95Hz scale 1.00
+profile mobile {
+    output eDP-1 enable mode 1920x1200@59.95Hz scale 1
+    exec hyprctl reload
 }
 
-profile {
-    output eDP-1 mode 1920x1200@59.95Hz scale 1.00 position 0,120
-    output DP-1 mode 3440x1440@60Hz scale 1.00 position 1920,0 adaptive_sync on
+profile docked {
+    output eDP-1 enable mode 1920x1200@59.95Hz scale 1 position 0,120
+    output DP-1 enable mode 3440x1440@60Hz scale 1 position 1920,0
+    exec hyprctl reload
 }

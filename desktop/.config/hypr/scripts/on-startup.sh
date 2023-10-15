@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-# Watch monitor hot pluggin in order to reload the config
-~/.config/hypr/scripts/watch-monitors.sh &
+# Watch monitor hot plugging in order to reload the config
+# ~/.config/hypr/scripts/watch-monitors.sh &
 
 # Lock and turn off displays if idle
-swayidle timeout 10 "pgrep swaylock && hyprctl dispatch dpms off" &
+swayidle timeout 10 "pgrep gtklock && hyprctl dispatch dpms off" &
 
 # Set minimum screen brightness
 light -N 5 &

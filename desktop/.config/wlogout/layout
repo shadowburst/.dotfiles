@@ -1,6 +1,6 @@
 {
     "label" : "lock",
-    "action" : "sleep 0.3 && ~/.scripts/lock.sh",
+    "action" : "sleep 0.3 && lock",
     "keybind" : "l"
 }
 {

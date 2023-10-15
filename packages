@@ -23,6 +23,7 @@ gimp
 gnome-calculator
 gnome-keyring
 gparted
+grim
 grub-customizer
 hunspell
 hunspell-en_gb
@@ -46,6 +47,7 @@ noto-fonts
 noto-fonts-emoji
 pacman-contrib
 pavucontrol
+pdfarranger
 pipewire
 pipewire-alsa
 pipewire-pulse
@@ -77,6 +79,7 @@ transmission-cli
 trash-cli
 unzip
 virt-manager
+wget
 wireplumber
 wl-clipboard
 xdg-desktop-portal-gtk

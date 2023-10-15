@@ -1,6 +1,8 @@
 auto-cpufreq
 brave-bin
 cava
+corrupter
+cptv-git
 eww-wayland
 greetd-tuigreet
 grimshot
@@ -11,4 +13,5 @@ stylua
 swaylock-effects-git
 tela-circle-icon-theme-purple
 timeshift-bin
+wdisplays
 wlogout
