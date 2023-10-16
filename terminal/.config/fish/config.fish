@@ -24,10 +24,7 @@ alias rm='rm -i'
 # Create directories recursively
 alias mkdir='mkdir -p'
 
-# Nixos
-function flake
-    sudo nixos-rebuild $argv[0] --flake ~/.dotfiles#$argv[1]
-end
+alias yay='paru'
 
 # Extract all files based on type
 function extract
