@@ -12,3 +12,10 @@ window#DP-1 {
   background-color: #222436;
   color: #c8d3f5;
 }
+
+#playerctl-box {
+  padding: 0 18px;
+  border-radius: 8px;
+  background-color: #222436;
+  color: #c8d3f5;
+}
