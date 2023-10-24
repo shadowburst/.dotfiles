@@ -51,7 +51,7 @@
     icon_position = left
     min_icon_size = 32
     max_icon_size = 32
-    icon_theme = "Tela-dark"
+    icon_theme = "kora"
     enable_recursive_icon_lookup = true
 
     ### History ###

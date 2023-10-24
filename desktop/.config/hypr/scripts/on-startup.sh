@@ -22,10 +22,4 @@ kanshi &
 eww daemon &
 
 # Theme settings
-hyprctl setcursor Bibata-Modern-Classic 18 &
-
-# GTK
-dconf write /org/gnome/desktop/interface/icon-theme "'Tela-dark'"
-dconf write /org/gnome/desktop/interface/color-scheme "'prefer-dark'"
-dconf write /org/gnome/desktop/interface/cursor-theme "'Bibata-Modern-Classic'"
-dconf write /org/gnome/desktop/interface/gtk-theme "'Catppuccin-Macchiato-Standard-Blue-Dark'"
+hyprctl setcursor Bibata-Modern-Classic 24 &

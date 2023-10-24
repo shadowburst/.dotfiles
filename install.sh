@@ -41,14 +41,16 @@ if ask "Update packages ?"; then
 	sudo pacman -Syyu
 fi
 
-sudo pacman --needed -S paru stow
+if ! command -v stow; then
+	sudo pacman --needed --noconfirm -S stow
+fi
 
 if ask "Install official packages ?"; then
-	sudo pacman --needed --ask 4 -S - <./packages
+	paru --needed --noconfirm -S - <./packages
 fi
 
 if ask "Install aur packages ?"; then
-	paru --needed --ask 4 -S - <./packages-aur
+	paru --needed --noconfirm -S - <./packages-aur
 fi
 
 if ask "Install Arch configs ?"; then
@@ -67,7 +69,6 @@ if ask "Installing on a laptop ?"; then
 	sudo gpasswd -a "$USER" libvirt
 
 	sudo systemctl enable --now auto-cpufreq
-	sudo systemctl enable --now autorandr
 	sudo systemctl enable --now libvirtd
 	sudo systemctl enable --now sshd
 fi
@@ -79,42 +80,52 @@ if ask "Install desktop ?"; then
 	echo "auth optional pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/login
 	echo "session optional pam_gnome_keyring.so auto_start" | sudo tee -a /etc/pam.d/login
 	echo "password optional pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/passwd
-	# sudo sed -i "s#ExecStart.*#ExecStart=/usr/bin/gnome-keyring-daemon --foreground --components=\"pkcs11,secrets,ssh,gpg\" --control-directory=%t/keyring#" /usr/lib/systemd/user/gnome-keyring-daemon.service
 	systemctl --user enable --now gcr-ssh-agent.service
 
 	# Setup greetd
+	sudo systemctl enable greetd.service
 	sudo sed -i "s#command = .*#command = \"tuigreet --time --time-format '%A %e, %B %Y' --remember --asterisks --cmd Hyprland\"#" /etc/greetd/config.toml
 	echo "auth optional pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/greetd
 	echo "session optional pam_gnome_keyring.so auto_start" | sudo tee -a /etc/pam.d/greetd
 
-	# Enable dark mode for gnome apps
-	gsettings set org.gnome.desktop.interface color-scheme prefer-dark
+	# Set up pipewire
+	systemctl --user enable --now pipewire.service
+	systemctl --user enable --now pipewire-pulse.service
 
 	# Open ports for casting
-	firewall-cmd --zone=public --permanent --add-port=8008/tcp
-	firewall-cmd --zone=public --permanent --add-port=8009/tcp
+	# firewall-cmd --zone=public --permanent --add-port=8008/tcp
+	# firewall-cmd --zone=public --permanent --add-port=8009/tcp
+
+	# GTK
+	dconf write /org/gnome/desktop/interface/icon-theme "'kora'"
+	dconf write /org/gnome/desktop/interface/color-scheme "'prefer-dark'"
+	dconf write /org/gnome/desktop/interface/cursor-theme "'Bibata-Modern-Classic'"
+	dconf write /org/gnome/desktop/interface/gtk-theme "'Catppuccin-Macchiato-Standard-Blue-Dark'"
+
+	# Install GTK theme
+	if [[ ! -d "$HOME/.themes/Catppuccin-Macchiato-Standard-Blue-Dark" ]]; then
+		wget https://github.com/catppuccin/gtk/releases/download/v0.7.0/Catppuccin-Macchiato-Standard-Blue-Dark.zip
+		unzip ./Catppuccin-Macchiato-Standard-Blue-Dark.zip -d ~/.themes
+		rm -f ./Catppuccin-Macchiato-Standard-Blue-Dark.zip
+	fi
+
+	# Install cursor
+	if [[ ! -d "$HOME/.local/share/icons/Bibata-Modern-Classic" ]]; then
+		wget https://github.com/ful1e5/Bibata_Cursor/releases/download/v2.0.4/Bibata-Modern-Classic.tar.xz
+		tar xf ./Bibata-Modern-Classic.tar.xz --directory="$HOME/.local/share/icons/"
+		rm -f ./Bibata-Modern-Classic.tar.xz
+	fi
+
 fi
 
-if ask "Install editors ?"; then
-	stow editors
-
-	# Setup emacs
-	git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.emacs.d
-	~/.emacs.d/bin/doom install
-fi
-
-if ask "Install programs ?"; then
-	stow programs
-fi
-
-if ask "Install shells ?"; then
-	stow shells
+if ask "Install terminal ?"; then
+	stow terminal
 
 	chsh -s "$(which fish)"
 fi
 
-if ask "Install graphics controller ?"; then
-	sudo pacman -S intel-media-driver vulkan-intel libvdpau-va-gl
+if ask "Install intel graphics controller ?"; then
+	sudo pacman -S intel-media-driver vulkan-intel libvdpau-va-gl lib32-vulkan-intel
 	echo "VDPAU_DRIVER=va_gl" | sudo tee -a /etc/environment
 	echo "LIBVA_DRIVER_NAME=iHD" | sudo tee -a /etc/environment
 fi
