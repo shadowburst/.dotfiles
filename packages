@@ -12,6 +12,7 @@ discord
 docker
 dunst
 exa
+fd
 ffmpegthumbnailer
 filelight
 firefox
@@ -25,9 +26,6 @@ gnome-keyring
 gparted
 grim
 grub-customizer
-hunspell
-hunspell-en_gb
-hunspell-fr
 hyprland
 iptables-nft
 iw
@@ -53,7 +51,6 @@ pipewire-alsa
 pipewire-pulse
 polkit-gnome
 playerctl
-prettier
 qemu-base
 qemu-guest-agent
 qt5ct
@@ -74,6 +71,7 @@ swayimg
 thunar
 thunar-volman
 thunar-archive-plugin
+tldr
 tmux
 transmission-cli
 trash-cli
@@ -84,6 +82,3 @@ wireplumber
 wl-clipboard
 xdg-desktop-portal-gtk
 xdg-desktop-portal-hyprland
-xsane-gimp
-yarn
-zsh
