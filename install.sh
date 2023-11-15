@@ -41,15 +41,16 @@ if ask "Update packages ?"; then
 	sudo pacman -Syyu
 fi
 
+if ! command -v paru; then
+	sudo pacman -S --needed base-devel
+	git clone https://aur.archlinux.org/paru.git
+	makepkg -si --directory=./paru
+	rm -rf ./paru
+fi
+
 if ! command -v stow; then
-	sudo pacman --needed --noconfirm -S stow
-fi
-
-if ask "Install official packages ?"; then
+	paru --needed --noconfirm -S stow
 	paru --needed --noconfirm -S - <./packages
-fi
-
-if ask "Install aur packages ?"; then
 	paru --needed --noconfirm -S - <./packages-aur
 fi
 
@@ -60,16 +61,18 @@ if ask "Install Arch configs ?"; then
 	sudo systemctl enable --now cronie
 	sudo systemctl enable --now reflector.timer
 
+	sudo virsh net-autostart default
+	sudo gpasswd -a "$USER" libvirt
+	sudo systemctl enable --now libvirtd
+
 	# Load cron jobs
 	crontab ".crontab"
 fi
 
 if ask "Installing on a laptop ?"; then
 	sudo gpasswd -a "$USER" input
-	sudo gpasswd -a "$USER" libvirt
 
 	sudo systemctl enable --now auto-cpufreq
-	sudo systemctl enable --now libvirtd
 	sudo systemctl enable --now sshd
 fi
 
@@ -122,6 +125,9 @@ if ask "Install terminal ?"; then
 	stow terminal
 
 	chsh -s "$(which fish)"
+
+	sudo gpasswd -a "$USER" docker
+	sudo systemctl enable --now docker.service
 fi
 
 if ask "Install intel graphics controller ?"; then
