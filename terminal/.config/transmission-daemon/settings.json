@@ -68,7 +68,7 @@
     "script-torrent-done-seeding-filename": "",
     "seed-queue-enabled": true,
     "seed-queue-size": 5,
-    "speed-limit-down": 300,
+    "speed-limit-down": 6000,
     "speed-limit-down-enabled": true,
     "speed-limit-up": 150,
     "speed-limit-up-enabled": true,
