@@ -18,6 +18,7 @@ return {
 			disable_commit_confirmation = true,
 			disable_insert_on_commit = false,
 			remember_settings = false,
+			auto_show_console = false,
 			commit_editor = {
 				kind = "split",
 			},
