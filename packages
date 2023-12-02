@@ -39,6 +39,7 @@ lutris
 mpc
 mpv
 mpv-mpris
+nautilus
 neovim
 network-manager-applet
 noto-fonts
@@ -69,9 +70,6 @@ swaybg
 swayidle
 swayimg
 timeshift
-thunar
-thunar-volman
-thunar-archive-plugin
 tldr
 tmux
 transmission-cli
