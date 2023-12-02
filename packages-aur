@@ -5,11 +5,10 @@ corrupter
 cptv-git
 eww-wayland
 greetd-tuigreet
-getlock
-getlock-playerctl-module
+gtklock
+gtklock-playerctl-module
 grimshot
 lazydocker-bin
 light-git
-timeshift-bin
 wdisplays
 wlogout
