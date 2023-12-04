@@ -142,4 +142,5 @@ if ask "Install printer ?"; then
 	sudo systemctl enable --now cups
 	read -rp "Enter the IP address of the printer : "
 	sudo brsaneconfig4 -a name="Brother" model=DCP-J785DW ip="${REPLY}"
+	sudo lpadmin -p Brother -E -L Home -m "Brother DCP-J785DW CUPS" -v lpd://BRW5CEA1D16F8C5/BINARY_P1
 fi
