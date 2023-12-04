@@ -19,6 +19,7 @@ return {
 			disable_insert_on_commit = false,
 			remember_settings = false,
 			auto_show_console = false,
+			graph_style = "unicode",
 			commit_editor = {
 				kind = "split",
 			},
