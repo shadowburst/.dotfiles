@@ -44,6 +44,9 @@ return {
 				},
 				window = {
 					mappings = {
+						["<esc><esc>"] = function()
+							require("neo-tree.sources.manager").close_all()
+						end,
 						["<space>"] = "none",
 						["h"] = "close_node",
 						["l"] = "open",
