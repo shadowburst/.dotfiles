@@ -38,10 +38,6 @@ return {
 				enable = true,
 				disable = { "yaml" },
 			},
-			rainbow = {
-				enable = true,
-				extended_mode = false,
-			},
 		},
 	},
 }
