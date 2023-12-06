@@ -14,16 +14,6 @@ return {
 				desc = "Find files",
 			},
 			{
-				"<leader>cD",
-				"<cmd>Telescope diagnostics<cr>",
-				desc = "Diagnostics",
-			},
-			{
-				"<leader>hC",
-				"<cmd>Telescope command_history<cr>",
-				desc = "Command History",
-			},
-			{
 				"<leader>hc",
 				"<cmd>Telescope commands<cr>",
 				desc = "Commands",
@@ -49,9 +39,19 @@ return {
 				desc = "Options",
 			},
 			{
+				"<leader>sc",
+				"<cmd>Telescope command_history<cr>",
+				desc = "Command History",
+			},
+			{
 				"<leader>sG",
 				"<cmd>Telescope live_grep grep_open_files=true<cr>",
 				desc = "Grep (Open buffers)",
+			},
+			{
+				"<leader>sl",
+				"<cmd>Telescope lsp_document_symbols<cr>",
+				desc = "Symbols",
 			},
 			{
 				"<leader>ss",
@@ -60,13 +60,12 @@ return {
 			},
 			{ "<leader>sa", false },
 			{ "<leader>sb", false },
-			{ "<leader>sc", false },
 			{ "<leader>sC", false },
-			{ "<leader>sd", false },
 			{ "<leader>sh", false },
 			{ "<leader>sH", false },
 			{ "<leader>sk", false },
 			{ "<leader>sm", false },
+			{ "<leader>sM", false },
 			{ "<leader>so", false },
 			{ "<leader>sR", false },
 			{ "<leader>sS", false },
