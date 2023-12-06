@@ -6,6 +6,7 @@ return {
 				bashls = {},
 				cssls = {},
 				dockerls = {},
+				docker_compose_language_service = {},
 				html = {},
 				intelephense = {},
 				jsonls = {},
