@@ -6,6 +6,21 @@ return {
 				"nvim-telescope/telescope-fzf-native.nvim",
 				build = "make",
 			},
+			{
+				"nvim-telescope/telescope-file-browser.nvim",
+				keys = {
+					{
+						"<leader>.",
+						"<cmd>Telescope file_browser initial_mode=insert path=%:p:h=%:p:h<cr>",
+						desc = "Browse files",
+					},
+					{
+						"<leader>e",
+						"<cmd>Telescope file_browser initial_mode=normal path=%:p:h=%:p:h<cr>",
+						desc = "Browse files",
+					},
+				},
+			},
 		},
 		keys = {
 			{
@@ -159,11 +174,55 @@ return {
 					},
 				},
 			},
+			extensions = {
+				file_browser = {
+					grouped = true,
+					hidden = true,
+					hijack_netrw = true,
+					respect_gitignore = false,
+					select_buffer = true,
+					quiet = true,
+					mappings = {
+						["i"] = {
+							["<S-CR>"] = function(...)
+								require("telescope._extensions.file_browser.actions").create_from_prompt(...)
+							end,
+						},
+						["n"] = {
+							["a"] = function(...)
+								require("telescope._extensions.file_browser.actions").create(...)
+							end,
+							["r"] = function(...)
+								require("telescope._extensions.file_browser.actions").rename(...)
+							end,
+							["m"] = function(...)
+								require("telescope._extensions.file_browser.actions").move(...)
+							end,
+							["p"] = function(...)
+								require("telescope._extensions.file_browser.actions").copy(...)
+							end,
+							["d"] = function(...)
+								require("telescope._extensions.file_browser.actions").remove(...)
+							end,
+							["h"] = function(...)
+								require("telescope._extensions.file_browser.actions").goto_parent_dir(...)
+							end,
+							["l"] = function(...)
+								require("telescope.actions").select_default(...)
+							end,
+							["v"] = function(...)
+								require("telescope._extensions.file_browser.actions").toggle_all(...)
+							end,
+						},
+					},
+				},
+			},
 		},
 		init = function()
 			local telescope = require("telescope")
 
 			telescope.load_extension("fzf")
+			telescope.load_extension("file_browser")
 		end,
 	},
 }
