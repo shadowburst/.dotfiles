@@ -36,6 +36,8 @@ map("n", "<leader>wv", "<C-w>v", { desc = "Split window right" })
 map("n", "<leader>bb", "<cmd>e #<cr>", { desc = "Switch to other buffer" })
 
 -- Disabled from default Lazyvim
+del({ "n", "x" }, "j")
+del({ "n", "x" }, "k")
 del("n", "<leader>gG")
 del("n", "<leader>ft")
 del("n", "<leader>fT")
