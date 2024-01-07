@@ -6,7 +6,6 @@ return {
 				"blade-formatter",
 				"luacheck",
 				"jq",
-				"prettier",
 				"prettierd",
 				"shellcheck",
 				"shfmt",
