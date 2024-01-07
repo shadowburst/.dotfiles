@@ -29,6 +29,11 @@ return {
 				desc = "Find files",
 			},
 			{
+				"<leader>fr",
+				"<cmd>Telescope oldfiles only_cwd=true<cr>",
+				desc = "Recent files",
+			},
+			{
 				"<leader>hc",
 				"<cmd>Telescope commands<cr>",
 				desc = "Commands",
@@ -73,6 +78,7 @@ return {
 				"<cmd>Telescope current_buffer_fuzzy_find<cr>",
 				desc = "Search in buffer",
 			},
+			{ "<leader>fR", false },
 			{ "<leader>sa", false },
 			{ "<leader>sb", false },
 			{ "<leader>sC", false },
