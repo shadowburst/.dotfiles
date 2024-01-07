@@ -6,6 +6,8 @@ return {
 				"blade-formatter",
 				"luacheck",
 				"jq",
+				"markdownlint",
+				"marksman",
 				"prettierd",
 				"shellcheck",
 				"shfmt",
