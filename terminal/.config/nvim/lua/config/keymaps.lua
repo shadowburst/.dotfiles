@@ -28,7 +28,7 @@ map("n", "<leader>wc", "<C-w>c", { desc = "Close window" })
 del("n", "<leader>wd")
 map("n", "<leader>wm", "<C-w>_<C-w>|", { desc = "Maximize window" })
 map("n", "<leader>wM", "<C-w>p<C-w>_<C-w>|", { desc = "Minimize window" })
-map("n", "<leader>wo", "<cmd>only<cr>", { desc = "Close other windows" })
+map("n", "<leader>wo", "<C-w>o", { desc = "Close other windows" })
 map("n", "<leader>ws", "<C-w>s", { desc = "Split window below" })
 map("n", "<leader>wv", "<C-w>v", { desc = "Split window right" })
 
