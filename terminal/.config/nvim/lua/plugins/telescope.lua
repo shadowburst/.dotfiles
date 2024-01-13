@@ -3,10 +3,6 @@ return {
 		"telescope.nvim",
 		dependencies = {
 			{
-				"nvim-telescope/telescope-fzf-native.nvim",
-				build = "make",
-			},
-			{
 				"nvim-telescope/telescope-file-browser.nvim",
 				keys = {
 					{
@@ -20,6 +16,35 @@ return {
 						desc = "Browse files",
 					},
 				},
+				config = function()
+					require("lazyvim.util").on_load("telescope.nvim", function()
+						require("telescope").load_extension("file_browser")
+					end)
+				end,
+			},
+			{
+				"nvim-telescope/telescope-fzf-native.nvim",
+				build = "make",
+				config = function()
+					require("lazyvim.util").on_load("telescope.nvim", function()
+						require("telescope").load_extension("fzf")
+					end)
+				end,
+			},
+			{
+				"debugloop/telescope-undo.nvim",
+				keys = {
+					{
+						"<leader>su",
+						"<cmd>Telescope undo<cr>",
+						desc = "Search undos",
+					},
+				},
+				config = function()
+					require("lazyvim.util").on_load("telescope.nvim", function()
+						require("telescope").load_extension("undo")
+					end)
+				end,
 			},
 		},
 		keys = {
@@ -224,11 +249,5 @@ return {
 				},
 			},
 		},
-		init = function()
-			local telescope = require("telescope")
-
-			telescope.load_extension("fzf")
-			telescope.load_extension("file_browser")
-		end,
 	},
 }
