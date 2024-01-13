@@ -15,9 +15,6 @@ return {
 			},
 		},
 		opts = {
-			disable_commit_confirmation = true,
-			disable_insert_on_commit = false,
-			auto_show_console = true,
 			graph_style = "unicode",
 			commit_editor = {
 				kind = "split",
