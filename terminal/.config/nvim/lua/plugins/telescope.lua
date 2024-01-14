@@ -16,20 +16,11 @@ return {
 						desc = "Browse files",
 					},
 				},
-				config = function()
-					require("lazyvim.util").on_load("telescope.nvim", function()
-						require("telescope").load_extension("file_browser")
-					end)
-				end,
 			},
 			{
 				"nvim-telescope/telescope-fzf-native.nvim",
 				build = "make",
-				config = function()
-					require("lazyvim.util").on_load("telescope.nvim", function()
-						require("telescope").load_extension("fzf")
-					end)
-				end,
+				enabled = vim.fn.executable("make") == 1,
 			},
 			{
 				"debugloop/telescope-undo.nvim",
@@ -40,11 +31,6 @@ return {
 						desc = "Search undos",
 					},
 				},
-				config = function()
-					require("lazyvim.util").on_load("telescope.nvim", function()
-						require("telescope").load_extension("undo")
-					end)
-				end,
 			},
 		},
 		keys = {
@@ -249,5 +235,13 @@ return {
 				},
 			},
 		},
+		config = function(_, opts)
+			local telescope = require("telescope")
+
+			telescope.setup(opts)
+			telescope.load_extension("file_browser")
+			telescope.load_extension("fzf")
+			telescope.load_extension("undo")
+		end,
 	},
 }
