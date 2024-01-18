@@ -5,6 +5,7 @@ return {
 			ensure_installed = {
 				"blade-formatter",
 				"luacheck",
+				"hadolint",
 				"jq",
 				"markdownlint",
 				"marksman",
