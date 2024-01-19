@@ -7,6 +7,7 @@ local del = vim.keymap.del
 
 -- Keep previous clipboard if pasting in visual
 map("v", "p", '"_dP')
+map("s", "p", "p")
 
 -- Fast exit from normal mode
 map("i", "jk", "<esc>")
