@@ -1,9 +1,3 @@
 #!/usr/bin/env bash
 
-for o in $(hyprctl monitors -j | jq --raw-output .[].name); do
-	grim -o "$o" "/tmp/$o.png"
-	corrupter "/tmp/$o.png" "/tmp/$o.png" &
-done
-
-wait
-exec gtklock -s ~/.config/gtklock/style.css "$@"
+hyprctl dispatch dpms off

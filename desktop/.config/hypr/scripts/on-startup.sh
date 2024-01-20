@@ -6,9 +6,6 @@
 # Load the polkit agent
 /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
 
-# Lock and turn off displays if idle
-swayidle timeout 10 "pgrep gtklock && hyprctl dispatch dpms off" &
-
 # Set minimum screen brightness
 light -N 5 &
 
