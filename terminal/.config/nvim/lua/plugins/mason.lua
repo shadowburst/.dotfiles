@@ -4,6 +4,7 @@ return {
 		opts = {
 			ensure_installed = {
 				"blade-formatter",
+				"eslint_d",
 				"luacheck",
 				"hadolint",
 				"jq",
@@ -13,6 +14,7 @@ return {
 				"shellcheck",
 				"shfmt",
 				"stylua",
+				"xmlformatter",
 				"yamlfmt",
 			},
 		},

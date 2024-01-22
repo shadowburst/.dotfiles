@@ -22,6 +22,8 @@ return {
 				["markdown.mdx"] = { "prettierd" },
 				["graphql"] = { "prettierd" },
 				["handlebars"] = { "prettierd" },
+				["xml"] = { "xmlformat" },
+				["svg"] = { "xmlformat" },
 			},
 		},
 	},
