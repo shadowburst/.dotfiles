@@ -4,40 +4,42 @@ return {
 		dependencies = {
 			{ "windwp/nvim-ts-autotag" },
 		},
-		opts = {
-			ensure_installed = {
-				"bash",
-				"c",
-				"cpp",
-				"css",
-				"dockerfile",
-				"fish",
-				"html",
-				"javascript",
-				"json",
-				"lua",
-				"markdown",
-				"markdown_inline",
-				"nix",
-				"php",
-				"regex",
-				"scss",
-				"sql",
-				"tsx",
-				"typescript",
-				"vim",
-				"vimdoc",
-				"vue",
-				"yaml",
-				"yuck",
-			},
-			autotag = {
+		opts = function(_, opts)
+			if type(opts.ensure_installed) == "table" then
+				vim.list_extend(opts.ensure_installed, {
+					"bash",
+					"c",
+					"cpp",
+					"css",
+					"dockerfile",
+					"fish",
+					"html",
+					"javascript",
+					"json",
+					"lua",
+					"markdown",
+					"markdown_inline",
+					"nix",
+					"php",
+					"regex",
+					"scss",
+					"sql",
+					"tsx",
+					"typescript",
+					"vim",
+					"vimdoc",
+					"vue",
+					"yaml",
+					"yuck",
+				})
+			end
+			opts.autotag = {
 				enable = true,
-			},
-			indent = {
+			}
+			opts.indent = {
 				enable = true,
 				disable = { "yaml" },
-			},
-		},
+			}
+		end,
 	},
 }
