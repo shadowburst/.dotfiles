@@ -25,6 +25,16 @@ return {
 						},
 					},
 				},
+				rust_analyzer = {
+					settings = {
+						["rust-analyzer"] = {
+							cachePriming = {
+								enable = false,
+								numThreads = 2,
+							},
+						},
+					},
+				},
 				tailwindcss = {
 					filetypes_exclude = { "markdown", "php" },
 				},

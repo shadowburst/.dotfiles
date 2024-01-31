@@ -24,6 +24,7 @@ return {
 				["handlebars"] = { "prettierd" },
 				["xml"] = { "xmlformat" },
 				["svg"] = { "xmlformat" },
+				["rust"] = { "rustfmt" },
 			},
 		},
 	},
