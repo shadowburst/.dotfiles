@@ -26,6 +26,11 @@ return {
 				["svg"] = { "xmlformat" },
 				["rust"] = { "rustfmt" },
 			},
+			formatters = {
+				rustfmt = {
+					prepend_args = { "--edition", "2021" },
+				},
+			},
 		},
 	},
 }
