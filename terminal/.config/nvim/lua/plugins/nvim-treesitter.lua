@@ -2,7 +2,10 @@ return {
 	{
 		"nvim-treesitter/nvim-treesitter",
 		dependencies = {
-			{ "windwp/nvim-ts-autotag" },
+			{
+				"windwp/nvim-ts-autotag",
+				config = true,
+			},
 		},
 		opts = function(_, opts)
 			if type(opts.ensure_installed) == "table" then
