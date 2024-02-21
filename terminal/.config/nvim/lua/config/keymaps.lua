@@ -10,8 +10,8 @@ map("v", "p", '"_dP')
 map("s", "p", "p")
 
 -- Fast exit from normal mode
-map("i", "jk", "<esc>")
-map("i", "kj", "<esc>")
+-- map("i", "jk", "<esc>")
+-- map("i", "kj", "<esc>")
 
 -- Windows
 map("n", "<leader>w=", "<C-w>=", { desc = "Balance windows" })
