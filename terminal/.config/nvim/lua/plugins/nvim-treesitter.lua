@@ -24,6 +24,7 @@ return {
 					"markdown_inline",
 					"nix",
 					"php",
+					"phpdoc",
 					"regex",
 					"scss",
 					"sql",
