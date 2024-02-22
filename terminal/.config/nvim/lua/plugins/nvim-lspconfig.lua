@@ -38,8 +38,16 @@ return {
 				tailwindcss = {
 					filetypes_exclude = { "markdown", "php" },
 				},
-				tsserver = {},
-				volar = {},
+				tsserver = {
+					filetypes_exclude = { "vue" },
+				},
+				volar = {
+					init_options = {
+						typescript = {
+							tsdk = "$XDG_DATA_HOME/nvim/mason/bin",
+						},
+					},
+				},
 				yamlls = {},
 			},
 		},
