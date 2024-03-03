@@ -59,6 +59,17 @@ return {
 					end
 				end, { "i", "s" }),
 			})
+
+			opts.window = {
+				completion = {
+					border = "rounded",
+					winhighlight = "Normal:Pmenu",
+				},
+				documentation = {
+					border = "rounded",
+					winhighlight = "Normal:Pmenu",
+				},
+			}
 		end,
 	},
 }
