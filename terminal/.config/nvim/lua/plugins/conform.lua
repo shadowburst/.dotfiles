@@ -6,6 +6,7 @@ return {
 		cmd = "ConformInfo",
 		opts = {
 			formatters_by_ft = {
+				["php"] = { "prettierd" },
 				["javascript"] = { "prettierd" },
 				["javascriptreact"] = { "prettierd" },
 				["typescript"] = { "prettierd" },
