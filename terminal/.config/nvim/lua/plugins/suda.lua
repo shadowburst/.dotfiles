@@ -4,9 +4,14 @@ return {
 		lazy = false,
 		keys = {
 			{
-				"<leader>fu",
+				"<leader>fs",
 				"<cmd>SudaRead<cr>",
 				desc = "Sudo this file",
+			},
+			{
+				"<leader>fS",
+				"<cmd>SudaWrite<cr>",
+				desc = "Sudo write this file",
 			},
 		},
 	},
