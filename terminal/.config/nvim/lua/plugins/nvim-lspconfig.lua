@@ -2,6 +2,12 @@ return {
 	{
 		"neovim/nvim-lspconfig",
 		opts = {
+			inlay_hints = {
+				enable = false,
+			},
+			codelens = {
+				enable = false,
+			},
 			servers = {
 				bashls = {},
 				cssls = {},
