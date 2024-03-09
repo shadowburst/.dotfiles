@@ -6,6 +6,7 @@ return {
 			"sindrets/diffview.nvim",
 		},
 		opts = {
+			disable_hint = true,
 			graph_style = "unicode",
 			commit_editor = {
 				kind = "split",
