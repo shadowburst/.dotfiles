@@ -3,6 +3,9 @@ return {
 		"ThePrimeagen/harpoon",
 		branch = "harpoon2",
 		opts = {
+			menu = {
+				width = vim.api.nvim_win_get_width(0) - 4,
+			},
 			settings = {
 				{
 					save_on_toggle = true,
@@ -16,27 +19,28 @@ return {
 				function()
 					require("harpoon"):list():prev()
 				end,
-				desc = "Go to previous marked file",
+				desc = "Harpoon to previous marked file",
 			},
 			{
 				"<S-l>",
 				function()
 					require("harpoon"):list():next()
 				end,
-				desc = "Go to next marked file",
+				desc = "Harpoon to next marked file",
 			},
 			{
-				"<leader>ma",
+				"<leader>hH",
 				function()
 					require("harpoon"):list():append()
 				end,
-				desc = "Add current file to harpoon",
+				desc = "Harpoon file",
 			},
 			{
-				"<leader>mc",
+				"<leader>hc",
 				function()
-					if require("harpoon"):list():length() > 0 then
-						require("harpoon"):list():clear()
+					local harpoon = require("harpoon")
+					if harpoon:list():length() > 0 then
+						harpoon:list():clear()
 						vim.notify("Harpoon cleared")
 					else
 						vim.notify("Harpoon already empty")
@@ -45,67 +49,40 @@ return {
 				desc = "Clear all marked files",
 			},
 			{
-				"<leader>mm",
+				"<leader>hm",
 				function()
-					require("harpoon").ui:toggle_quick_menu(require("harpoon"):list())
+					local harpoon = require("harpoon")
+					harpoon.ui:toggle_quick_menu(harpoon:list())
 				end,
-				desc = "Toggle harpoon menu",
+				desc = "Harpoon menu",
 			},
 			{
-				"<C-&>",
+				"<leader>hh",
 				function()
 					require("harpoon"):list():select(1)
 				end,
-				desc = "Go to file 1",
+				desc = "Harpoon to file 1",
 			},
 			{
-				"<leader>mh",
-				function()
-					require("harpoon"):list():select(1)
-				end,
-				desc = "Go to file 1",
-			},
-			{
-				"<C-é>",
+				"<leader>hj",
 				function()
 					require("harpoon"):list():select(2)
 				end,
-				desc = "Go to file 2",
+				desc = "Harpoon to file 2",
 			},
 			{
-				"<leader>mj",
-				function()
-					require("harpoon"):list():select(2)
-				end,
-				desc = "Go to file 2",
-			},
-			{
-				'<C-">',
+				"<leader>hk",
 				function()
 					require("harpoon"):list():select(3)
 				end,
-				desc = "Go to file 3",
+				desc = "Harpoon to file 3",
 			},
 			{
-				"<leader>mk",
-				function()
-					require("harpoon"):list():select(3)
-				end,
-				desc = "Go to file 3",
-			},
-			{
-				"<C-'>",
+				"<leader>hl",
 				function()
 					require("harpoon"):list():select(4)
 				end,
-				desc = "Go to file 4",
-			},
-			{
-				"<leader>ml",
-				function()
-					require("harpoon"):list():select(4)
-				end,
-				desc = "Go to file 4",
+				desc = "Harpoon to file 4",
 			},
 		},
 	},
