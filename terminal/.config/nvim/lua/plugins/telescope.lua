@@ -48,24 +48,6 @@ return {
 				sorting_strategy = "ascending",
 				mappings = {
 					i = {
-						["<Tab>"] = function(...)
-							require("telescope.actions").move_selection_worse(...)
-						end,
-						["<S-Tab>"] = function(...)
-							require("telescope.actions").move_selection_better(...)
-						end,
-						["<C-j>"] = function(...)
-							require("telescope.actions").move_selection_worse(...)
-						end,
-						["<C-k>"] = function(...)
-							require("telescope.actions").move_selection_better(...)
-						end,
-						["<C-d>"] = function(...)
-							require("telescope.actions").results_scrolling_down(...)
-						end,
-						["<C-u>"] = function(...)
-							require("telescope.actions").results_scrolling_up(...)
-						end,
 						["<C-y>"] = function(...)
 							require("telescope.actions").file_edit(...)
 						end,
@@ -77,23 +59,11 @@ return {
 						end,
 					},
 					["n"] = {
-						["<Tab>"] = function(...)
-							require("telescope.actions").move_selection_worse(...)
-						end,
-						["<S-Tab>"] = function(...)
-							require("telescope.actions").move_selection_better(...)
-						end,
 						["j"] = function(...)
 							require("telescope.actions").move_selection_worse(...)
 						end,
 						["k"] = function(...)
 							require("telescope.actions").move_selection_better(...)
-						end,
-						["<C-d>"] = function(...)
-							require("telescope.actions").results_scrolling_down(...)
-						end,
-						["<C-u>"] = function(...)
-							require("telescope.actions").results_scrolling_up(...)
 						end,
 						["<C-y>"] = function(...)
 							require("telescope.actions").file_edit(...)
