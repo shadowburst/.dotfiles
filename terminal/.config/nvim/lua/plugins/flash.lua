@@ -1,6 +1,19 @@
 return {
 	{
 		"folke/flash.nvim",
+		opts = {
+			modes = {
+				search = {
+					highlight = {
+						backdrop = true,
+					},
+					search = {
+						wrap = false,
+						multi_window = false,
+					},
+				},
+			},
+		},
 		keys = {
 			{
 				"s",
@@ -58,19 +71,6 @@ return {
 						},
 					})
 				end,
-			},
-		},
-		opts = {
-			modes = {
-				search = {
-					highlight = {
-						backdrop = true,
-					},
-					search = {
-						wrap = false,
-						multi_window = false,
-					},
-				},
 			},
 		},
 	},

@@ -1,6 +1,7 @@
 return {
 	{
 		"aserowy/tmux.nvim",
+		opts = {},
 		keys = {
 			{
 				"<C-h>",
@@ -59,6 +60,5 @@ return {
 				desc = "Increase window size right",
 			},
 		},
-		opts = {},
 	},
 }

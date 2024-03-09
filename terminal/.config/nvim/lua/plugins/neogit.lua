@@ -5,15 +5,6 @@ return {
 			"nvim-lua/plenary.nvim",
 			"sindrets/diffview.nvim",
 		},
-		keys = {
-			{
-				"<leader>gg",
-				function()
-					require("neogit").open({})
-				end,
-				desc = "Open neogit",
-			},
-		},
 		opts = {
 			graph_style = "unicode",
 			commit_editor = {
@@ -28,6 +19,15 @@ return {
 				section = { "", "" },
 				item = { "", "" },
 				hunk = { "", "" },
+			},
+		},
+		keys = {
+			{
+				"<leader>gg",
+				function()
+					require("neogit").open({})
+				end,
+				desc = "Open neogit",
 			},
 		},
 	},

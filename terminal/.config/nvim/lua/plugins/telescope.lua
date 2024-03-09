@@ -33,76 +33,6 @@ return {
 				},
 			},
 		},
-		keys = {
-			{
-				"<leader><leader>",
-				"<cmd>Telescope find_files<cr>",
-				desc = "Find files",
-			},
-			{
-				"<leader>fr",
-				"<cmd>Telescope oldfiles only_cwd=true<cr>",
-				desc = "Recent files",
-			},
-			{
-				"<leader>hc",
-				"<cmd>Telescope commands<cr>",
-				desc = "Commands",
-			},
-			{
-				"<leader>hh",
-				"<cmd>Telescope help_tags<cr>",
-				desc = "Help Pages",
-			},
-			{
-				"<leader>hk",
-				"<cmd>Telescope keymaps<cr>",
-				desc = "Key Maps",
-			},
-			{
-				"<leader>hm",
-				"<cmd>Telescope man_pages<cr>",
-				desc = "Man Pages",
-			},
-			{
-				"<leader>ho",
-				"<cmd>Telescope vim_options<cr>",
-				desc = "Options",
-			},
-			{
-				"<leader>sc",
-				"<cmd>Telescope command_history<cr>",
-				desc = "Command History",
-			},
-			{
-				"<leader>sG",
-				"<cmd>Telescope live_grep grep_open_files=true<cr>",
-				desc = "Grep (Open buffers)",
-			},
-			{
-				"<leader>sl",
-				"<cmd>Telescope lsp_document_symbols<cr>",
-				desc = "Symbols",
-			},
-			{
-				"<leader>ss",
-				"<cmd>Telescope current_buffer_fuzzy_find<cr>",
-				desc = "Search in buffer",
-			},
-			{ "<leader>fR", false },
-			{ "<leader>sa", false },
-			{ "<leader>sb", false },
-			{ "<leader>sC", false },
-			{ "<leader>sh", false },
-			{ "<leader>sH", false },
-			{ "<leader>sk", false },
-			{ "<leader>sm", false },
-			{ "<leader>sM", false },
-			{ "<leader>so", false },
-			{ "<leader>sR", false },
-			{ "<leader>sS", false },
-			{ "<leader>sW", false },
-		},
 		opts = {
 			defaults = {
 				file_ignore_patterns = {
@@ -136,6 +66,9 @@ return {
 						["<C-u>"] = function(...)
 							require("telescope.actions").results_scrolling_up(...)
 						end,
+						["<C-y>"] = function(...)
+							require("telescope.actions").file_edit(...)
+						end,
 						["<C-v>"] = function(...)
 							require("telescope.actions").toggle_all(...)
 						end,
@@ -161,6 +94,9 @@ return {
 						end,
 						["<C-u>"] = function(...)
 							require("telescope.actions").results_scrolling_up(...)
+						end,
+						["<C-y>"] = function(...)
+							require("telescope.actions").file_edit(...)
 						end,
 						["v"] = function(...)
 							require("telescope.actions").toggle_all(...)
@@ -243,5 +179,28 @@ return {
 			telescope.load_extension("fzf")
 			telescope.load_extension("undo")
 		end,
+		keys = {
+			{ "<leader><leader>", "<cmd>Telescope find_files<cr>", desc = "Find files" },
+			{ "<leader>fr", "<cmd>Telescope oldfiles only_cwd=true<cr>", desc = "Recent files" },
+			{ "<leader>gs", desc = "Status" },
+			{ "<leader>gf", "<cmd>Telescope git_bcommits<cr>", desc = "File history" },
+			{ "<leader>hc", "<cmd>Telescope commands<cr>", desc = "Commands" },
+			{ "<leader>hh", "<cmd>Telescope help_tags<cr>", desc = "Help Pages" },
+			{ "<leader>hk", "<cmd>Telescope keymaps<cr>", desc = "Key Maps" },
+			{ "<leader>hm", "<cmd>Telescope man_pages<cr>", desc = "Man Pages" },
+			{ "<leader>ho", "<cmd>Telescope vim_options<cr>", desc = "Options" },
+			{ "<leader>sG", "<cmd>Telescope live_grep grep_open_files=true<cr>", desc = "Grep (Open buffers)" },
+			{ "<leader>fR", false },
+			{ "<leader>sa", false },
+			{ "<leader>sC", false },
+			{ "<leader>sh", false },
+			{ "<leader>sH", false },
+			{ "<leader>sk", false },
+			{ "<leader>sm", false },
+			{ "<leader>sM", false },
+			{ "<leader>so", false },
+			{ "<leader>sR", false },
+			{ "<leader>sW", false },
+		},
 	},
 }
