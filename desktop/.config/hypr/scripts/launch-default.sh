@@ -11,7 +11,7 @@ case $(hyprctl monitors -j | jq '.[] | select(.focused == true) | .activeWorkspa
 	discord &
 	;;
 4)
-	$TERMINAL -e lf &
+	$TERMINAL -e yazi &
 	;;
 5)
 	lutris &

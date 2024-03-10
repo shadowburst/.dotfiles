@@ -1,0 +1,39 @@
+[manager]
+prepend_keymap = [
+  { on = [
+    "q",
+  ], run = "close", desc = "Close the current tab, or quit if it is last tab" },
+
+  # Navigation
+  { on = [
+    "l",
+  ], run = "plugin smart-enter --sync ", desc = "Enter the child directory, or open the file" },
+
+  # Goto
+  { on = [
+    "g",
+    ".",
+  ], run = "cd ~/.dotfiles", desc = "Go to dotfiles" },
+  { on = [
+    "g",
+    "t",
+  ], run = "cd ~/.local/share/Trash/files", desc = "Go to the trash directory" },
+  { on = [
+    "g",
+    "v",
+  ], run = "cd ~/Videos", desc = "Go to the videos directory" },
+  { on = [
+    "g",
+    "c",
+  ], run = "cd ~/.config", desc = "Go to the config directory" },
+]
+
+[completion]
+prepend_keymap = [
+  { on = [
+    "<C-y>",
+  ], run = [
+    "close --submit",
+    "close_input --submit",
+  ], desc = "Submit the completion and input" },
+]

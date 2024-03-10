@@ -36,7 +36,6 @@ kanshi
 kdenlive
 kvantum
 libappindicator-gtk3
-lf
 luarocks
 lutris
 mpc
@@ -77,6 +76,7 @@ tldr
 tmux
 transmission-cli
 trash-cli
+unarchiver
 unzip
 virt-manager
 wget
@@ -84,3 +84,5 @@ wireplumber
 wl-clipboard
 xdg-desktop-portal-gtk
 xdg-desktop-portal-hyprland
+yazi
+zoxide
