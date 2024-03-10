@@ -4,7 +4,18 @@ if [[ $# -eq 1 ]]; then
 	selected=$1
 else
 	directories=(~ ~/Repos)
-	selected=$(find "${directories[@]}" -mindepth 1 -maxdepth 1 -type d -exec test -e '{}/.git' \; -print | fzf)
+	selected=$(
+		find "${directories[@]}" \
+			-mindepth 1 -maxdepth 1 \
+			-type d -exec test -e '{}/.git' \; \
+			-print |
+			fzf \
+				--prompt=" Project  " \
+				--pointer="" \
+				--border=rounded --layout=reverse --height=50% \
+				--preview="$HOME/.local/bin/tmux-project-previewer {}" \
+				--bind "ctrl-d:preview-page-down,ctrl-u:preview-page-up"
+	)
 fi
 
 if [[ -z $selected ]]; then
