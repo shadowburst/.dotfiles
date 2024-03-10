@@ -11,10 +11,15 @@ function fish_user_key_bindings
     fish_vi_key_bindings
 end
 
+# Always color output
 alias grep="grep --color=always"
 
+# Better listing files
 alias ll='exa --icons --group-directories-first --color=always -la'
 alias lt='exa --icons --group-directories-first --color=always -T'
+
+# Better previewing contents
+alias cat='bat --color=always --plain'
 
 # Confirm dangerous actions
 alias cp='cp -i'
