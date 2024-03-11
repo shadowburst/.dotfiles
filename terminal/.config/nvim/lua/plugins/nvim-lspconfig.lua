@@ -50,7 +50,7 @@ return {
 				volar = {
 					init_options = {
 						typescript = {
-							tsdk = "$XDG_DATA_HOME/nvim/mason/bin",
+							tsdk = "/home/pbaudry/.local/share/nvim/mason/packages/typescript-language-server/node_modules/typescript/lib",
 						},
 					},
 				},
