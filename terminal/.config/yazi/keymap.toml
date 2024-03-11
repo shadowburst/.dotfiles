@@ -9,6 +9,16 @@ prepend_keymap = [
     "l",
   ], run = "plugin smart-enter --sync ", desc = "Enter the child directory, or open the file" },
 
+  # Operations
+  { on = [
+    "d",
+    "d",
+  ], run = "remove --force", desc = "Move the files to the trash" },
+  { on = [
+    "D",
+    "D",
+  ], run = "remove --permanently", desc = "Permanently delete the files" },
+
   # Goto
   { on = [
     "g",
