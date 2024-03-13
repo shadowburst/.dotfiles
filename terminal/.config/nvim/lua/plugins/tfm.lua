@@ -3,6 +3,9 @@ return {
 		"Rolv-Apneseth/tfm.nvim",
 		opts = {
 			replace_netrw = true,
+			ui = {
+				border = "none",
+			},
 		},
 		keys = {
 			{
