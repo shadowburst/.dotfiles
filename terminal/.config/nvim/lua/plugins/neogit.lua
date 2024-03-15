@@ -30,6 +30,13 @@ return {
 				end,
 				desc = "Open neogit",
 			},
+			{
+				"<leader>gl",
+				function()
+					require("neogit").open({ "log" })
+				end,
+				desc = "Git logs",
+			},
 		},
 	},
 }
