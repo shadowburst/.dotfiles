@@ -2,7 +2,7 @@
   $icon-size: 2rem;
 
   @include bg($background);
-  @include m(6, x);
+  @include m(2, x);
 
   & .container {
     @include bg($background);
