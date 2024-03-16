@@ -26,16 +26,20 @@ prepend_keymap = [
   ], run = "cd ~/.dotfiles", desc = "Go to dotfiles" },
   { on = [
     "g",
+    "c",
+  ], run = "cd ~/.config", desc = "Go to the config directory" },
+  { on = [
+    "g",
+    "p",
+  ], run = "cd ~/Public", desc = "Go to the public directory" },
+  { on = [
+    "g",
     "t",
   ], run = "cd ~/.local/share/Trash/files", desc = "Go to the trash directory" },
   { on = [
     "g",
     "v",
   ], run = "cd ~/Videos", desc = "Go to the videos directory" },
-  { on = [
-    "g",
-    "c",
-  ], run = "cd ~/.config", desc = "Go to the config directory" },
 ]
 
 [completion]
