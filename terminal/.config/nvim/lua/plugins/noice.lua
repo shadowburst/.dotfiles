@@ -1,6 +1,24 @@
 return {
 	{
 		"folke/noice.nvim",
+		opts = {
+			lsp = {
+				hover = {
+					view = "hover",
+				},
+			},
+			views = {
+				hover = {
+					border = {
+						style = "rounded",
+						padding = { 0, 1 },
+					},
+					position = {
+						row = 2,
+					},
+				},
+			},
+		},
 		keys = {
 			{
 				"<leader>nl",

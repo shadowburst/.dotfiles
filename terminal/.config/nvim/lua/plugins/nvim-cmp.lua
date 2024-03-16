@@ -5,7 +5,7 @@ return {
 			"hrsh7th/cmp-cmdline",
 			{ "roobert/tailwindcss-colorizer-cmp.nvim", opts = {} },
 		},
-		lazy = false,
+		event = "VeryLazy",
 		opts = function(_, opts)
 			local luasnip = require("luasnip")
 			local cmp = require("cmp")
