@@ -16,6 +16,7 @@ return {
 				"dockerfile",
 				"fish",
 				"html",
+				"hyprlang",
 				"javascript",
 				"json",
 				"lua",
