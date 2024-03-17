@@ -29,6 +29,7 @@ gparted
 grim
 grub-customizer
 hyprland
+hyprpaper
 iptables-nft
 iw
 jq
@@ -68,7 +69,6 @@ spice-vdagent
 sshfs
 starship
 steam
-swaybg
 swayidle
 swayimg
 timeshift

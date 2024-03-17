@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-pkill swaybg
-swaybg -i ~/.wallpapers/current.jpg -m fill &
+# Start wallpaper daemon
+pkill hyprpaper
+hyprpaper &
 
 eww close-all
 hyprctl monitors -j | jq --raw-output .[].id | while read -r id; do
