@@ -6,8 +6,8 @@
 # Load the polkit agent
 /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
 
-# Set minimum screen brightness
-light -N 5 &
+# Set brightness settings
+brightnessctl -s set 40%
 
 # Launch torrents daemon
 transmission-daemon &
