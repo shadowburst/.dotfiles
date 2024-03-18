@@ -8,6 +8,9 @@ prepend_keymap = [
   { on = [
     "l",
   ], run = "plugin smart-enter --sync ", desc = "Enter the child directory, or open the file" },
+  { on = [
+    "<C-s>",
+  ], run = "plugin keyjump", desc = "Keyjump" },
 
   # Operations
   { on = [
