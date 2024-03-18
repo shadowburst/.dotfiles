@@ -29,9 +29,10 @@ return {
 				desc = "Harpoon to next marked file",
 			},
 			{
-				"<leader>hH",
+				"<leader>H",
 				function()
 					require("harpoon"):list():append()
+					vim.notify("Harpooned file")
 				end,
 				desc = "Harpoon file",
 			},
