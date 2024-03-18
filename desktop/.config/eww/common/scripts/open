@@ -25,6 +25,6 @@ case $1 in
 	hyprctl dispatch focuswindow "address:$2"
 	;;
 "workspace")
-	"$HOME"/.config/hypr/scripts/workspace.sh "$2"
+	hyprctl dispatch focusworkspaceoncurrentmonitor "$2"
 	;;
 esac
