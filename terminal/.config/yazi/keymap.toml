@@ -1,55 +1,52 @@
-[manager]
-prepend_keymap = [
-  { on = [
-    "q",
-  ], run = "close", desc = "Close the current tab, or quit if it is last tab" },
+[[manager.prepend_keymap]]
+on = [ "q" ]
+run = "close"
+desc = "Close the current tab, or quit if it is last tab"
 
-  # Navigation
-  { on = [
-    "l",
-  ], run = "plugin smart-enter --sync ", desc = "Enter the child directory, or open the file" },
-  { on = [
-    "<C-s>",
-  ], run = "plugin keyjump", desc = "Keyjump" },
+# Navigation
+[[manager.prepend_keymap]]
+on = [ "l" ]
+run = "plugin smart-enter --sync"
+desc = "Enter the child directory, or open the file"
 
-  # Operations
-  { on = [
-    "d",
-    "d",
-  ], run = "remove --force", desc = "Move the files to the trash" },
-  { on = [
-    "D",
-    "D",
-  ], run = "remove --permanently", desc = "Permanently delete the files" },
+[[manager.prepend_keymap]]
+on = [ "<C-s>" ]
+run = "plugin keyjump"
+desc = "Keyjump"
 
-  # Goto
-  { on = [
-    "g",
-    ".",
-  ], run = "cd ~/.dotfiles", desc = "Go to dotfiles" },
-  { on = [
-    "g",
-    "c",
-  ], run = "cd ~/.config", desc = "Go to the config directory" },
-  { on = [
-    "g",
-    "p",
-  ], run = "cd ~/Public", desc = "Go to the public directory" },
-  { on = [
-    "g",
-    "t",
-  ], run = "cd ~/.local/share/Trash/files", desc = "Go to the trash directory" },
-  { on = [
-    "g",
-    "v",
-  ], run = "cd ~/Videos", desc = "Go to the videos directory" },
-]
+# Operations
+[[manager.prepend_keymap]]
+on = [ "d", "d" ]
+run = "remove --force"
+desc = "Move the files to the trash"
+[[manager.prepend_keymap]]
+on = [ "D", "D" ]
+run = "remove --permanently"
+desc = "Permanently delete the files"
 
-[completion]
-prepend_keymap = [
-  { on = [
-    "<C-y>",
-  ], run = [
-    "close --submit",
-  ], desc = "Submit the completion" },
-]
+# Goto
+[[manager.prepend_keymap]]
+on = [ "g", "." ]
+run = "cd ~/.dotfiles"
+desc = "Go to dotfiles"
+[[manager.prepend_keymap]]
+on = [ "g", "c" ]
+run = "cd ~/.config"
+desc = "Go to the config directory"
+[[manager.prepend_keymap]]
+on = [ "g", "p" ]
+run = "cd ~/Public"
+desc = "Go to the public directory"
+[[manager.prepend_keymap]]
+on = [ "g", "t" ]
+run = "cd ~/.local/share/Trash/files"
+desc = "Go to the trash directory"
+[[manager.prepend_keymap]]
+on = [ "g", "v" ]
+run = "cd ~/Videos"
+desc = "Go to the videos directory"
+
+[[completion.prepend_keymap]]
+on = [ "<C-y>" ]
+run = "close --submit"
+desc = "Submit the completion"
