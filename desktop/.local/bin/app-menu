@@ -1,3 +1,10 @@
 #!/usr/bin/env bash
 
-fuzzel
+APP_MENU_CLASS="app-menu"
+
+if [[ -n $(hyprctl clients -j | jq --arg class "$APP_MENU_CLASS" -r '.[] | select(.class == $class) | .class') ]]; then
+	hyprctl dispatch closewindow "^($APP_MENU_CLASS)$"
+	exit 0
+fi
+
+$TERMINAL --class="$APP_MENU_CLASS" -e app-launcher
