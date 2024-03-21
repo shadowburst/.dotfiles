@@ -6,6 +6,9 @@ set fish_color_param foreground
 set fish_color_option cyan
 set fish_color_error red
 set -U fish_user_paths ~/.local/bin $fish_user_paths
+if test -d ~/go/bin
+    set -U fish_user_paths ~/go/bin $fish_user_paths
+end
 
 function fish_user_key_bindings
     fish_vi_key_bindings
