@@ -11,6 +11,7 @@ return {
 			ignored_settings = {
 				"NeogitPushPopup--force-with-lease",
 				"NeogitPushPopup--force",
+				"NeogitPushPopup--set-upstream",
 				"NeogitPullPopup--rebase",
 				"NeogitCommitPopup--allow-empty",
 				"NeogitRevertPopup--no-edit",
