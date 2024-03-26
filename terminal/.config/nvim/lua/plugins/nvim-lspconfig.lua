@@ -45,12 +45,20 @@ return {
 					filetypes_exclude = { "markdown", "php" },
 				},
 				tsserver = {
-					filetypes_exclude = { "vue" },
+					init_options = {
+						plugins = {
+							{
+								name = "@vue/typescript-plugin",
+								location = "~/.local/share/nvim/mason/packages/vue-language-server/node_modules/@vue/language-server",
+								languages = { "vue" },
+							},
+						},
+					},
 				},
 				volar = {
 					init_options = {
-						typescript = {
-							tsdk = "/home/pbaudry/.local/share/nvim/mason/packages/typescript-language-server/node_modules/typescript/lib",
+						vue = {
+							hybridMode = false,
 						},
 					},
 				},
