@@ -15,6 +15,7 @@ return {
 					},
 					position = {
 						row = 2,
+						col = 2,
 					},
 				},
 			},

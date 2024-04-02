@@ -5,6 +5,8 @@ return {
 			current_line_blame = true,
 			preview_config = {
 				border = "rounded",
+				row = 1,
+				col = 0,
 			},
 			on_attach = function(buffer)
 				local gs = package.loaded.gitsigns
