@@ -11,7 +11,7 @@ return {
 			local cmp = require("cmp")
 
 			opts.completion = {
-				completeopt = "menu,menuone,noselect",
+				completeopt = table.concat(vim.opt.completeopt:get(), ","),
 			}
 
 			opts.mapping = cmp.mapping.preset.insert({
