@@ -10,6 +10,10 @@ return {
 			local luasnip = require("luasnip")
 			local cmp = require("cmp")
 
+			opts.experimental = {
+				ghost_text = false,
+			}
+
 			opts.completion = {
 				completeopt = table.concat(vim.opt.completeopt:get(), ","),
 			}
