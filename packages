@@ -2,7 +2,6 @@ acpilight
 alacritty
 alsa-firmware
 bat
-bashtop
 bc
 blueman
 bluez-utils
@@ -28,6 +27,7 @@ gnome-keyring
 gparted
 grim
 grub-customizer
+htop
 hyprland
 hyprpaper
 iptables-nft
