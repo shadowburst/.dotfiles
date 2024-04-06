@@ -15,7 +15,7 @@ else
 				--header='' --no-info --margin='1,2' \
 				--layout=reverse \
 				--color="16,gutter:-1,bg:-1,bg+:-1,fg+:4,hl:1,hl+:1" \
-				--preview="$HOME/.local/bin/tmux-project-previewer {}" \
+				--preview="tree -a -L 1 -C --dirsfirst --sort=name --noreport {} | head -200" \
 				--bind="ctrl-d:preview-page-down,ctrl-u:preview-page-up,ctrl-y:accept"
 	)
 fi
