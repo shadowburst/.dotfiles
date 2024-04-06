@@ -14,8 +14,8 @@ else
 				--pointer="" \
 				--header='' --no-info --margin='1,2' \
 				--layout=reverse \
-				--color="16,gutter:-1,bg:-1,bg+:-1,fg+:4,hl:1,hl+:1" \
-				--preview="tree -a -L 1 -C --dirsfirst --sort=name --noreport {} | head -200" \
+				--color="16,gutter:-1,bg:-1,bg+:-1,fg+:-1,hl:4,hl+:4,prompt:5,pointer:15" \
+				--preview="tree -a -L 1 -C --dirsfirst --sort=name --noreport {}" \
 				--bind="ctrl-d:preview-page-down,ctrl-u:preview-page-up,ctrl-y:accept"
 	)
 fi
