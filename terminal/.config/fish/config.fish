@@ -32,8 +32,6 @@ alias rm='rm -i'
 # Create directories recursively
 alias mkdir='mkdir -p'
 
-alias yay='paru'
-
 # Extract all files based on type
 function extract
     if test -f $argv

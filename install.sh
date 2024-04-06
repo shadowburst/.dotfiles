@@ -41,17 +41,17 @@ if ask "Update packages ?"; then
 	sudo pacman -Syyu
 fi
 
-if ! command -v paru; then
-	sudo pacman -S --needed base-devel
-	git clone https://aur.archlinux.org/paru.git
-	makepkg -si --directory=./paru
-	rm -rf ./paru
+if ! command -v yay; then
+	sudo pacman -S --needed git base-devel
+	git clone https://aur.archlinux.org/yay-bin.git
+	makepkg -si --dir=./yay-bin
+	rm -rf ./yay-bin
 fi
 
 if ! command -v stow; then
-	paru --needed --noconfirm -S stow
-	paru --needed --noconfirm -S - <./packages
-	paru --needed --noconfirm -S - <./packages-aur
+	yay --needed --noconfirm -S stow
+	yay --needed --noconfirm -S - <./packages
+	yay --needed --noconfirm -S - <./packages-aur
 fi
 
 if ask "Install Arch configs ?"; then
@@ -137,7 +137,7 @@ if ask "Install intel graphics controller ?"; then
 fi
 
 if ask "Install printer ?"; then
-	paru -S brother-dcpj785dw simple-scan brscan4
+	yay -S brother-dcpj785dw simple-scan brscan4
 
 	sudo systemctl enable --now cups
 	read -rp "Enter the IP address of the printer : "
