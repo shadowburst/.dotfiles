@@ -1,14 +1,23 @@
 return {
 	{
 		"neovim/nvim-lspconfig",
-		opts = {
-			inlay_hints = {
+		dependencies = {
+			"williamboman/mason.nvim",
+			"williamboman/mason-lspconfig.nvim",
+		},
+		opts = function(_, opts)
+			opts.inlay_hints = {
 				enable = false,
-			},
-			codelens = {
+			}
+			opts.codelens = {
 				enable = false,
-			},
-			servers = {
+			}
+
+			local mason_registry = require("mason-registry")
+			local vue_language_server_path = mason_registry.get_package("vue-language-server"):get_install_path()
+				.. "/node_modules/@vue/language-server"
+
+			opts.servers = {
 				bashls = {},
 				cssls = {},
 				dockerls = {},
@@ -39,11 +48,12 @@ return {
 						plugins = {
 							{
 								name = "@vue/typescript-plugin",
-								location = "~/.local/share/nvim/mason/packages/vue-language-server/node_modules/@vue/language-server",
+								location = vue_language_server_path,
 								languages = { "vue" },
 							},
 						},
 					},
+					filetypes = { "typescript", "javascript", "javascriptreact", "typescriptreact" },
 				},
 				volar = {
 					init_options = {
@@ -53,7 +63,7 @@ return {
 					},
 				},
 				yamlls = {},
-			},
-		},
+			}
+		end,
 	},
 }
