@@ -14,7 +14,6 @@ return {
 				["less"] = { "prettierd" },
 				["markdown"] = { "prettierd" },
 				["markdown.mdx"] = { "prettierd" },
-				["rust"] = { "rustfmt" },
 				["scss"] = { "prettierd" },
 				["svg"] = { "xmlformat" },
 				["typescript"] = { "prettierd" },
@@ -22,11 +21,6 @@ return {
 				["vue"] = { "prettierd" },
 				["xml"] = { "xmlformat" },
 				["yaml"] = { "prettierd" },
-			},
-			formatters = {
-				rustfmt = {
-					prepend_args = { "--edition", "2021" },
-				},
 			},
 		},
 	},

@@ -13,7 +13,6 @@ return {
 				"markdownlint",
 				"marksman",
 				"prettierd",
-				"rustfmt",
 				"shellcheck",
 				"shfmt",
 				"stylua",
