@@ -1,7 +1,7 @@
 return {
 	{
 		"johmsalas/text-case.nvim",
-		event = "BufEnter",
+		event = "VeryLazy",
 		opts = {},
 		keys = {
 			{
