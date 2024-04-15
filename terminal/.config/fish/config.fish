@@ -14,6 +14,8 @@ function fish_user_key_bindings
     fish_vi_key_bindings
 end
 
+alias lazyvim="env NVIM_APPNAME=lazyvim nvim"
+
 # Always color output
 alias grep="grep --color=always"
 
