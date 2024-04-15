@@ -1,30 +1,67 @@
-local map = function(mode, lhs, rhs, opts)
-	opts = opts or {}
-	opts.silent = opts.silent ~= true
-	vim.keymap.set(mode, lhs, rhs, opts)
-end
-local del = vim.keymap.del
+local map = require("utils.keys").map
+local notify = require("utils.notify")
 
 -- Keep previous clipboard if pasting in visual
 map("v", "p", '"_dP')
 map("s", "p", "p")
 
--- Windows
-map("n", "<leader>w=", "<C-w>=", { desc = "Balance windows" })
-map("n", "<leader>wc", "<C-w>c", { desc = "Close window" })
-del("n", "<leader>wd")
-map("n", "<leader>wm", "<C-w>_<C-w>|", { desc = "Maximize window" })
-map("n", "<leader>wM", "<C-w>p<C-w>_<C-w>|", { desc = "Minimize window" })
-map("n", "<leader>wo", "<C-w>o", { desc = "Close other windows" })
-map("n", "<leader>ws", "<C-w>s", { desc = "Split window below" })
-map("n", "<leader>wv", "<C-w>v", { desc = "Split window right" })
+-- Saner defaults for n and N
+map("n", "n", "'Nn'[v:searchforward].'zv'", { expr = true, desc = "Next search result" })
+map("x", "n", "'Nn'[v:searchforward]", { expr = true, desc = "Next search result" })
+map("o", "n", "'Nn'[v:searchforward]", { expr = true, desc = "Next search result" })
+map("n", "N", "'nN'[v:searchforward].'zv'", { expr = true, desc = "Prev search result" })
+map("x", "N", "'nN'[v:searchforward]", { expr = true, desc = "Prev search result" })
+map("o", "N", "'nN'[v:searchforward]", { expr = true, desc = "Prev search result" })
+
+-- Better indenting
+map("v", "<", "<gv")
+map("v", ">", ">gv")
+
+-- Clear search with <esc>
+map({ "i", "n" }, "<esc>", "<cmd>noh<cr><esc>", { desc = "Escape and clear hlsearch" })
+
+-- save file
+map({ "i", "x", "n", "s" }, "<C-s>", "<cmd>w<cr><esc>", { desc = "Save file" })
+
+-- Lazy
+map("n", "<leader>l", "<cmd>Lazy<cr>", { desc = "Lazy" })
+
+-- Quit
+map("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit all" })
 
 -- Buffers
 map("n", "<leader>bb", "<cmd>e #<cr>", { desc = "Switch to other buffer" })
 
--- Disabled from default Lazyvim
-del({ "n", "x" }, "j")
-del({ "n", "x" }, "k")
-del("n", "<leader>gG")
-del("n", "<leader>ft")
-del("n", "<leader>fT")
+-- Toggle options
+map("n", "<leader>td", function()
+	local enabled = not vim.diagnostic.is_disabled()
+	if enabled then
+		vim.diagnostic.disable()
+		notify.warn("Disabled diagnostics")
+	else
+		vim.diagnostic.enable()
+		notify.info("Enabled diagnostics")
+	end
+end, { desc = "Toggle diagnostics" })
+
+map("n", "<leader>ts", function()
+	local enabled = vim.opt_local.spell
+	if enabled then
+		vim.opt_local.spell = false
+		notify.warn("Disabled spell")
+	else
+		vim.opt_local.spell = true
+		notify.info("Enabled spell")
+	end
+end, { desc = "Toggle spell" })
+
+map("n", "<leader>tw", function()
+	local enabled = vim.opt_local.wrap
+	if enabled then
+		vim.opt_local.wrap = false
+		notify.warn("Disabled word wrap")
+	else
+		vim.opt_local.wrap = true
+		notify.info("Enabled word wrap")
+	end
+end, { desc = "Toggle word wrap" })

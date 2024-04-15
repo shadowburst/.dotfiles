@@ -2,24 +2,22 @@ return {
 	{
 		"telescope.nvim",
 		dependencies = {
-			{
-				"nvim-telescope/telescope-fzf-native.nvim",
-				build = "make",
-				enabled = vim.fn.executable("make") == 1,
-			},
-			{
-				"debugloop/telescope-undo.nvim",
-				keys = {
-					{
-						"<leader>su",
-						"<cmd>Telescope undo<cr>",
-						desc = "Search undos",
-					},
-				},
-			},
+			"folke/edgy.nvim",
+			"rcarriga/nvim-notify",
+			"nvim-telescope/telescope-fzf-native.nvim",
 		},
 		opts = {
 			defaults = {
+				prompt_prefix = " ",
+				selection_caret = " ",
+				layout_config = {
+					prompt_position = "top",
+				},
+				sorting_strategy = "ascending",
+				get_selection_window = function()
+					require("edgy").goto_main()
+					return 0
+				end,
 				file_ignore_patterns = {
 					"^.git/*",
 					"^.vim/*",
@@ -29,8 +27,6 @@ return {
 					"^node_modules/*",
 					"^vendor/*",
 				},
-				layout_config = { prompt_position = "top" },
-				sorting_strategy = "ascending",
 				mappings = {
 					i = {
 						["<C-y>"] = function(...)
@@ -59,6 +55,7 @@ return {
 			pickers = {
 				buffers = {
 					sort_mru = true,
+					sort_lastused = true,
 				},
 				find_files = {
 					hidden = true,
@@ -75,33 +72,57 @@ return {
 						"--hidden",
 					},
 				},
+				current_buffer_fuzzy_find = {
+					preview = false,
+				},
 			},
 		},
 		config = function(_, opts)
 			local telescope = require("telescope")
 
 			telescope.setup(opts)
-			telescope.load_extension("fzf")
-			telescope.load_extension("undo")
+			pcall(telescope.load_extension, "fzf")
+			pcall(telescope.load_extension, "notify")
 		end,
 		keys = {
 			{ "<leader><leader>", "<cmd>Telescope find_files<cr>", desc = "Find files" },
+			{ "<leader>,", "<cmd>Telescope buffers<cr>", desc = "Switch buffer" },
+			{ "<leader>/", "<cmd>Telescope live_grep<cr>", desc = "Grep in files" },
+			{ "<leader>:", "<cmd>Telescope commands<cr>", desc = "Commands" },
 			{
 				"<leader>.",
 				function()
 					require("telescope.builtin").find_files({ cwd = require("telescope.utils").buffer_dir() })
 				end,
-				desc = "Find files",
+				desc = "Find files (cwd)",
 			},
+			-- Files
 			{ "<leader>fr", "<cmd>Telescope oldfiles only_cwd=true<cr>", desc = "Recent files" },
-			{ "<leader>gc", "<cmd>Telescope git_commits<cr>", desc = "Commits" },
-			{ "<leader>gf", "<cmd>Telescope git_bcommits<cr>", desc = "File history" },
-			{ "<leader>gs", "<cmd>Telescope git_status<cr>", desc = "Status" },
-			{ "<leader>sG", "<cmd>Telescope live_grep grep_open_files=true<cr>", desc = "Grep (Open buffers)" },
-			{ "<leader>fR", false },
-			{ "<leader>sa", false },
-			{ "<leader>sR", false },
-			{ "<leader>sW", false },
+			-- Git
+			{ "<leader>gc", "<cmd>Telescope git_commits<CR>", desc = "Commits" },
+			{ "<leader>gf", "<cmd>Telescope git_bcommits<CR>", desc = "Buffer commits" },
+			{ "<leader>gs", "<cmd>Telescope git_status<CR>", desc = "Status" },
+			-- Notifications
+			{ "<leader>nn", "<cmd>Telescope notify<cr>", desc = "Notifications" },
+			-- Search
+			{ "<leader>sb", "<cmd>Telescope current_buffer_fuzzy_find<cr>", desc = "Search in buffer" },
+			{ "<leader>sC", "<cmd>Telescope command_history<cr>", desc = "Command history" },
+			{ "<leader>sc", "<cmd>Telescope commands<cr>", desc = "Commands" },
+			{ "<leader>sd", "<cmd>Telescope diagnostics bufnr=0<cr>", desc = "Document diagnostics" },
+			{ "<leader>sD", "<cmd>Telescope diagnostics<cr>", desc = "Workspace diagnostics" },
+			{ "<leader>sg", "<cmd>Telescope live_grep grep_open_files=true<cr>", desc = "Grep (open buffers)" },
+			{ "<leader>sh", "<cmd>Telescope help_tags<cr>", desc = "Help pages" },
+			{ "<leader>sH", "<cmd>Telescope highlights<cr>", desc = "Search highlight groups" },
+			{ "<leader>sk", "<cmd>Telescope keymaps<cr>", desc = "Key maps" },
+			{ "<leader>sM", "<cmd>Telescope man_pages<cr>", desc = "Man pages" },
+			{ "<leader>sm", "<cmd>Telescope marks<cr>", desc = "Jump to mark" },
+			{ "<leader>so", "<cmd>Telescope vim_options<cr>", desc = "Options" },
+			{ "<leader>sw", "<cmd>Telescope grep_string<cr>", desc = "Word" },
 		},
+	},
+	{
+		"nvim-telescope/telescope-fzf-native.nvim",
+		build = "make",
+		enabled = vim.fn.executable("make") == 1,
 	},
 }

@@ -1,5 +1,47 @@
 return {
 	{
+		"max397574/better-escape.nvim",
+		event = "InsertEnter",
+		opts = {
+			mapping = { "jk", "kj" },
+		},
+	},
+	{
+		"folke/flash.nvim",
+		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
+		opts = {
+			modes = {
+				search = {
+					highlight = {
+						backdrop = true,
+					},
+					search = {
+						wrap = false,
+						multi_window = false,
+					},
+				},
+			},
+		},
+		keys = {
+			{
+				"r",
+				mode = "o",
+				function()
+					require("flash").remote()
+				end,
+				desc = "Remote",
+			},
+			{
+				"R",
+				mode = { "o", "x" },
+				function()
+					require("flash").treesitter_search()
+				end,
+				desc = "Treesitter search",
+			},
+		},
+	},
+	{
 		"ThePrimeagen/harpoon",
 		branch = "harpoon2",
 		opts = {
@@ -84,6 +126,27 @@ return {
 					require("harpoon"):list():select(4)
 				end,
 				desc = "Harpoon to file 4",
+			},
+		},
+	},
+	{
+		"Rolv-Apneseth/tfm.nvim",
+		opts = {
+			replace_netrw = true,
+			keybindings = {
+				["<esc><esc>"] = "<esc>",
+			},
+			ui = {
+				border = "none",
+			},
+		},
+		keys = {
+			{
+				"<leader>e",
+				function()
+					require("tfm").open(vim.fn.expand("%"))
+				end,
+				desc = "File manager",
 			},
 		},
 	},
