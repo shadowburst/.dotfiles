@@ -21,7 +21,7 @@ return {
 	},
 	{
 		"lewis6991/gitsigns.nvim",
-		event = { "BufReadPre", "BufNewFile" },
+		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
 		opts = {
 			current_line_blame = true,
 			preview_config = {
@@ -54,8 +54,10 @@ return {
 	{
 		"NeogitOrg/neogit",
 		dependencies = {
-			"nvim-lua/plenary.nvim",
 			"sindrets/diffview.nvim",
+			"nvim-lua/plenary.nvim",
+			"nvim-tree/nvim-web-devicons",
+			"nvim-telescope/telescope.nvim",
 		},
 		opts = {
 			disable_hint = true,
