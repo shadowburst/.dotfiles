@@ -1,48 +1,17 @@
 return {
 	{
-		"Exafunction/codeium.vim",
-		event = "BufEnter",
-	},
-	{
-		"rafamadriz/friendly-snippets",
-		config = function()
-			require("luasnip.loaders.from_vscode").lazy_load()
-		end,
-	},
-	{
-		"L3MON4D3/LuaSnip",
-		dependencies = {
-			"rafamadriz/friendly-snippets",
-		},
-		build = (function()
-			if vim.fn.has("win32") == 1 or vim.fn.executable("make") == 0 then
-				return
-			end
-			return "make install_jsregexp"
-		end)(),
-	},
-	{
-		"danymat/neogen",
-		dependencies = {
-			"L3MON4D3/LuaSnip",
-		},
-		opts = {
-			snippet_engine = "luasnip",
-		},
-		keys = {
-			{ "<leader>cg", "<cmd>Neogen<cr>", desc = "Generate annotations" },
-		},
-	},
-	{
 		"hrsh7th/nvim-cmp",
 		dependencies = {
+			"hrsh7th/cmp-cmdline",
 			"saadparwaiz1/cmp_luasnip",
 			"hrsh7th/cmp-nvim-lsp",
 			"hrsh7th/cmp-path",
-			"hrsh7th/cmp-cmdline",
 			"onsails/lspkind.nvim",
 			"L3MON4D3/LuaSnip",
-			"roobert/tailwindcss-colorizer-cmp.nvim",
+			{
+				"roobert/tailwindcss-colorizer-cmp.nvim",
+				opts = {},
+			},
 		},
 		event = "InsertEnter",
 		config = function()
@@ -119,9 +88,5 @@ return {
 				}),
 			})
 		end,
-	},
-	{
-		"roobert/tailwindcss-colorizer-cmp.nvim",
-		opts = {},
 	},
 }

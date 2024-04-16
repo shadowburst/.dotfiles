@@ -5,8 +5,11 @@ return {
 			"WhoIsSethDaniel/mason-tool-installer.nvim",
 			"williamboman/mason-lspconfig.nvim",
 			"williamboman/mason.nvim",
-			"folke/neodev.nvim",
 			"b0o/SchemaStore.nvim",
+			{
+				"folke/neodev.nvim",
+				opts = {},
+			},
 		},
 		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
 		config = function()
@@ -182,9 +185,5 @@ return {
 				},
 			})
 		end,
-	},
-	{
-		"folke/neodev.nvim",
-		opts = {},
 	},
 }
