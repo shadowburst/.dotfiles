@@ -31,7 +31,7 @@ return {
 			{
 				"<leader>H",
 				function()
-					require("harpoon"):list():append()
+					require("harpoon"):list():add()
 					vim.notify("Harpooned file")
 				end,
 				desc = "Harpoon file",
