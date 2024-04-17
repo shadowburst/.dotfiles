@@ -88,7 +88,7 @@ return {
 			{ "<leader><leader>", "<cmd>Telescope find_files<cr>", desc = "Find files" },
 			{ "<leader>,", "<cmd>Telescope buffers<cr>", desc = "Switch buffer" },
 			{ "<leader>/", "<cmd>Telescope live_grep<cr>", desc = "Grep in files" },
-			{ "<leader>:", "<cmd>Telescope commands<cr>", desc = "Commands" },
+			{ "<leader>:", "<cmd>Telescope command_history<cr>", desc = "Command history" },
 			{
 				"<leader>.",
 				function()
@@ -106,7 +106,6 @@ return {
 			{ "<leader>nn", "<cmd>Telescope notify<cr>", desc = "Notifications" },
 			-- Search
 			{ "<leader>sb", "<cmd>Telescope current_buffer_fuzzy_find<cr>", desc = "Search in buffer" },
-			{ "<leader>sC", "<cmd>Telescope command_history<cr>", desc = "Command history" },
 			{ "<leader>sc", "<cmd>Telescope commands<cr>", desc = "Commands" },
 			{ "<leader>sd", "<cmd>Telescope diagnostics bufnr=0<cr>", desc = "Document diagnostics" },
 			{ "<leader>sD", "<cmd>Telescope diagnostics<cr>", desc = "Workspace diagnostics" },
@@ -117,6 +116,8 @@ return {
 			{ "<leader>sM", "<cmd>Telescope man_pages<cr>", desc = "Man pages" },
 			{ "<leader>sm", "<cmd>Telescope marks<cr>", desc = "Jump to mark" },
 			{ "<leader>so", "<cmd>Telescope vim_options<cr>", desc = "Options" },
+			{ "<leader>ss", "<cmd>Telescope lsp_document_symbols<cr>", desc = "Document symbols" },
+			{ "<leader>sS", "<cmd>Telescope lsp_dynamic_workspace_symbols<cr>", desc = "Workspace symbols" },
 			{ "<leader>sw", "<cmd>Telescope grep_string<cr>", desc = "Word" },
 		},
 	},

@@ -27,13 +27,11 @@ return {
 					end
 
 					map("gd", "<cmd>Telescope lsp_definitions<cr>", "Goto definition")
+					map("gD", "<cmd>Telescope lsp_type_definitions<cr>", "Goto type definition")
 					map("gi", "<cmd>Telescope lsp_implementations<cr>", "Goto implementation")
 					map("gr", "<cmd>Telescope lsp_references<cr>", "Goto references")
 					map("K", vim.lsp.buf.hover, "Hover documentation")
 					map("<leader>ca", vim.lsp.buf.code_action, "Code action")
-					map("<leader>cd", "<cmd>Telescope lsp_type_definitions<cr>", "Type definition")
-					map("<leader>cs", "<cmd>Telescope lsp_document_symbols<cr>", "Document symbols")
-					map("<leader>cS", "<cmd>Telescope lsp_dynamic_workspace_symbols<cr>", "Workspace symbols")
 				end,
 			})
 
