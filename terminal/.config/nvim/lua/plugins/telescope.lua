@@ -4,7 +4,11 @@ return {
 		dependencies = {
 			"folke/edgy.nvim",
 			"rcarriga/nvim-notify",
-			"nvim-telescope/telescope-fzf-native.nvim",
+			{
+				"nvim-telescope/telescope-fzf-native.nvim",
+				build = "make",
+				enabled = vim.fn.executable("make") == 1,
+			},
 		},
 		opts = {
 			defaults = {
@@ -120,10 +124,5 @@ return {
 			{ "<leader>sS", "<cmd>Telescope lsp_dynamic_workspace_symbols<cr>", desc = "Workspace symbols" },
 			{ "<leader>sw", "<cmd>Telescope grep_string<cr>", desc = "Word" },
 		},
-	},
-	{
-		"nvim-telescope/telescope-fzf-native.nvim",
-		build = "make",
-		enabled = vim.fn.executable("make") == 1,
 	},
 }
