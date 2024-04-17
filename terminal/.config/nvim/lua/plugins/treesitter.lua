@@ -7,7 +7,8 @@ return {
 			{
 				"nvim-treesitter/nvim-treesitter-context",
 				opts = {
-					max_lines = 3,
+					max_lines = 5,
+					mode = "topline",
 				},
 			},
 		},
@@ -62,5 +63,15 @@ return {
 				},
 			})
 		end,
+	},
+	{
+		"windwp/nvim-ts-autotag",
+		dependencies = {
+			"nvim-treesitter/nvim-treesitter",
+		},
+		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
+		opts = {
+			enable = true,
+		},
 	},
 }
