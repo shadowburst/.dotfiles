@@ -16,6 +16,9 @@ return {
 			right = {
 				{ ft = "help" },
 			},
+			animate = {
+				enabled = false,
+			},
 			options = {
 				bottom = { size = 0.5 },
 				right = { size = 0.5 },
