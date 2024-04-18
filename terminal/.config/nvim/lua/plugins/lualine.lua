@@ -10,20 +10,11 @@ return {
 		},
 		event = "VeryLazy",
 		opts = function()
-			local theme = require("tokyonight.colors").moon()
+			local colors = require("tokyonight.colors").moon()
 
-			local colors = {
-				bg = theme.bg,
-				fg = theme.fg,
-				yellow = theme.yellow,
-				cyan = theme.cyan,
-				darkblue = theme.darkblue,
-				green = theme.green,
-				orange = theme.orange,
-				magenta = theme.magenta,
-				blue = theme.blue,
-				red = theme.red,
-			}
+			local theme = require("lualine.themes.tokyonight")
+
+			theme.normal.c.bg = colors.bg
 
 			local conditions = {
 				buffer_not_empty = function()
@@ -32,11 +23,16 @@ return {
 				hide_in_width = function()
 					return vim.fn.winwidth(0) > 80
 				end,
+				check_git_workspace = function()
+					local filepath = vim.fn.expand("%:p:h")
+					local gitdir = vim.fn.finddir(".git", filepath .. ";")
+					return gitdir and #gitdir > 0 and #gitdir < #filepath
+				end,
 			}
 
 			return {
 				options = {
-					theme = "tokyonight",
+					theme = theme,
 					component_separators = "",
 					section_separators = "",
 					disabled_filetypes = {
@@ -56,6 +52,11 @@ return {
 						},
 						{
 							"mode",
+							separator = {
+								left = "",
+								right = "",
+							},
+							padding = 1,
 							color = function()
 								local mode_color = {
 									n = colors.green,
@@ -81,23 +82,19 @@ return {
 								}
 								return { fg = colors.bg, bg = mode_color[vim.fn.mode()], gui = "bold" }
 							end,
-							separator = {
-								left = "",
-								right = "",
-							},
 						},
 						{
 							"filename",
 							cond = conditions.buffer_not_empty,
-							color = function()
-								return vim.bo.modified and { fg = colors.red, gui = "bold" }
-									or { fg = colors.fg, gui = "bold" }
-							end,
+							padding = 1,
 							symbols = {
 								modified = "",
 								readonly = "",
 							},
-							padding = 2,
+							color = function()
+								return vim.bo.modified and { fg = colors.red, gui = "bold" }
+									or { fg = colors.fg, gui = "bold" }
+							end,
 						},
 						{
 							"diagnostics",
@@ -123,26 +120,32 @@ return {
 							end,
 						},
 						{
-							"branch",
-							icon = "",
-							color = { fg = colors.magenta, gui = "bold" },
-						},
-						{
 							"diff",
-							symbols = { added = " ", modified = "柳 ", removed = " " },
+							cond = conditions.hide_in_width,
+							symbols = { added = " ", modified = "柳", removed = " " },
 							diff_color = {
 								added = { fg = colors.green },
 								modified = { fg = colors.orange },
 								removed = { fg = colors.red },
 							},
-							cond = conditions.hide_in_width,
+						},
+						{
+							"branch",
+							cond = conditions.check_git_workspace,
+							separator = {
+								left = "",
+								right = "",
+							},
+							padding = 1,
+							icon = "",
+							color = { fg = colors.bg, bg = colors.magenta, gui = "bold" },
 						},
 						{
 							function()
 								return "▊"
 							end,
 							color = { fg = colors.blue },
-							padding = { left = 1 },
+							padding = { left = 1, right = 0 },
 						},
 					},
 					lualine_y = {},
