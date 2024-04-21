@@ -1,6 +1,9 @@
 return {
 	{
 		"folke/edgy.nvim",
+		dependencies = {
+			"folke/tokyonight.nvim",
+		},
 		event = "VeryLazy",
 		opts = {
 			bottom = {
@@ -13,6 +16,9 @@ return {
 				"Trouble",
 				{ ft = "qf", title = "QuickFix" },
 			},
+			left = {
+				{ ft = "undotree" },
+			},
 			right = {
 				{ ft = "help" },
 			},
@@ -24,5 +30,13 @@ return {
 				right = { size = 0.5 },
 			},
 		},
+		config = function(_, opts)
+			require("edgy").setup(opts)
+
+			local colors = require("tokyonight.colors").moon()
+
+			vim.api.nvim_set_hl(0, "EdgyTitle", { bg = colors.bg_dark, fg = colors.blue, bold = true })
+			vim.api.nvim_set_hl(0, "EdgyIconActive", { bg = colors.bg_dark, fg = colors.orange })
+		end,
 	},
 }
