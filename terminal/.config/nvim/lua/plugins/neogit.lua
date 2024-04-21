@@ -9,15 +9,7 @@ return {
 		opts = {
 			disable_hint = true,
 			graph_style = "unicode",
-			ignored_settings = {
-				"NeogitPushPopup--force-with-lease",
-				"NeogitPushPopup--force",
-				"NeogitPushPopup--set-upstream",
-				"NeogitPullPopup--rebase",
-				"NeogitCommitPopup--allow-empty",
-				"NeogitRevertPopup--no-edit",
-				"NeogitLogPopup--",
-			},
+			remember_settings = false,
 			commit_editor = {
 				kind = "split",
 			},
