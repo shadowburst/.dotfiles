@@ -15,20 +15,6 @@ return {
 		},
 		keys = {
 			{
-				"<S-h>",
-				function()
-					require("harpoon"):list():prev()
-				end,
-				desc = "Harpoon to previous marked file",
-			},
-			{
-				"<S-l>",
-				function()
-					require("harpoon"):list():next()
-				end,
-				desc = "Harpoon to next marked file",
-			},
-			{
 				"<leader>H",
 				function()
 					require("harpoon"):list():add()
