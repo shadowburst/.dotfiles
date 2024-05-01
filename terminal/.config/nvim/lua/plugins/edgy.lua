@@ -26,7 +26,7 @@ return {
 				enabled = false,
 			},
 			options = {
-				bottom = { size = 0.5 },
+				bottom = { size = 0.3 },
 				right = { size = 0.5 },
 			},
 		},
