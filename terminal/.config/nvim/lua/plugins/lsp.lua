@@ -26,6 +26,7 @@ return {
 						require("utils.keys").map("n", keys, func, { buffer = event.buf, desc = desc })
 					end
 
+					map("cr", vim.lsp.buf.rename, "Rename variable")
 					map("gd", "<cmd>Telescope lsp_definitions<cr>", "Goto definition")
 					map("gD", "<cmd>Telescope lsp_type_definitions<cr>", "Goto type definition")
 					map("gi", "<cmd>Telescope lsp_implementations<cr>", "Goto implementation")
