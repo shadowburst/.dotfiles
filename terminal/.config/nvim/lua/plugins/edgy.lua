@@ -13,7 +13,15 @@ return {
 						return vim.api.nvim_win_get_config(win).relative == ""
 					end,
 				},
-				"Trouble",
+				{
+					ft = "trouble",
+					filter = function(buf, win)
+						return vim.w[win].trouble
+							and vim.w[win].trouble.type == "split"
+							and vim.w[win].trouble.relative == "editor"
+							and not vim.w[win].trouble_preview
+					end,
+				},
 				{ ft = "qf", title = "QuickFix" },
 			},
 			left = {
