@@ -2,7 +2,6 @@ return {
 	{
 		"folke/noice.nvim",
 		dependencies = {
-			"smjonas/inc-rename.nvim",
 			"MunifTanjim/nui.nvim",
 			"rcarriga/nvim-notify",
 			{
