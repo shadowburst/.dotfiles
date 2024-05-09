@@ -17,6 +17,7 @@ return {
 				["<leader>q"] = { name = "+quit" },
 				["<leader>s"] = { name = "+search" },
 				["<leader>t"] = { name = "+toggle" },
+				["<leader>v"] = { name = "+neovim" },
 				["<leader>w"] = { name = "+windows" },
 				["<leader>x"] = { name = "+diagnostics/quickfix" },
 			})
