@@ -1,6 +1,9 @@
 return {
 	{
 		"echasnovski/mini.files",
+		dependencies = {
+			"nvim-tree/nvim-web-devicons",
+		},
 		opts = {
 			mappings = {
 				go_in_plus = "l",
