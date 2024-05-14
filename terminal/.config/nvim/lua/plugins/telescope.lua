@@ -1,7 +1,6 @@
 return {
 	{
 		"telescope.nvim",
-		commit = "29fddf76bc3b75224f8a974f15139627ffb435d5",
 		dependencies = {
 			"folke/edgy.nvim",
 			"rcarriga/nvim-notify",
@@ -104,7 +103,7 @@ return {
 			-- Notifications
 			{ "<leader>nn", "<cmd>Telescope notify<cr>", desc = "Notifications" },
 			-- Search
-			{ "<leader>sb", "<cmd>Telescope current_buffer_fuzzy_find<cr>", desc = "Search in buffer" },
+			{ "<leader>sb", "<cmd>Telescope current_buffer_fuzzy_find<cr>", desc = "In buffer" },
 			{ "<leader>sc", "<cmd>Telescope commands<cr>", desc = "Commands" },
 			{ "<leader>sd", "<cmd>Telescope diagnostics bufnr=0<cr>", desc = "Document diagnostics" },
 			{ "<leader>sD", "<cmd>Telescope diagnostics<cr>", desc = "Workspace diagnostics" },
@@ -118,7 +117,24 @@ return {
 			{ "<leader>sp", "<cmd>Telescope pickers<cr>", desc = "Pickers" },
 			{ "<leader>ss", "<cmd>Telescope lsp_document_symbols<cr>", desc = "Document symbols" },
 			{ "<leader>sS", "<cmd>Telescope lsp_dynamic_workspace_symbols<cr>", desc = "Workspace symbols" },
-			{ "<leader>sw", "<cmd>Telescope grep_string<cr>", desc = "Word" },
+			{
+				"<leader>sw",
+				function()
+					require("telescope.builtin").live_grep({
+						default_text = vim.fn.expand("<cword>"),
+					})
+				end,
+				desc = "For <cword>",
+			},
+			{
+				"<leader>sW",
+				function()
+					require("telescope.builtin").live_grep({
+						default_text = vim.fn.expand("<cWORD>"),
+					})
+				end,
+				desc = "For <cWORD>",
+			},
 		},
 	},
 }
