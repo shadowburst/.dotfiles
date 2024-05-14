@@ -94,13 +94,7 @@ return {
 			{ "<leader>,", "<cmd>Telescope buffers<cr>", desc = "Switch buffer" },
 			{ "<leader>/", "<cmd>Telescope live_grep<cr>", desc = "Grep in files" },
 			{ "<leader>:", "<cmd>Telescope command_history<cr>", desc = "Command history" },
-			{
-				"<leader>.",
-				function()
-					require("telescope.builtin").find_files({ cwd = require("telescope.utils").buffer_dir() })
-				end,
-				desc = "Find files (cwd)",
-			},
+			{ "<leader>.", "<cmd>Telescope resume<cr>", desc = "Repeat last search" },
 			-- Files
 			{ "<leader>fr", "<cmd>Telescope oldfiles only_cwd=true<cr>", desc = "Recent files" },
 			-- Git
@@ -121,6 +115,7 @@ return {
 			{ "<leader>sM", "<cmd>Telescope man_pages<cr>", desc = "Man pages" },
 			{ "<leader>sm", "<cmd>Telescope marks<cr>", desc = "Jump to mark" },
 			{ "<leader>so", "<cmd>Telescope vim_options<cr>", desc = "Options" },
+			{ "<leader>sp", "<cmd>Telescope pickers<cr>", desc = "Pickers" },
 			{ "<leader>ss", "<cmd>Telescope lsp_document_symbols<cr>", desc = "Document symbols" },
 			{ "<leader>sS", "<cmd>Telescope lsp_dynamic_workspace_symbols<cr>", desc = "Workspace symbols" },
 			{ "<leader>sw", "<cmd>Telescope grep_string<cr>", desc = "Word" },
