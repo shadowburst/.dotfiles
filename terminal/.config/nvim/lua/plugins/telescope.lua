@@ -31,6 +31,11 @@ return {
 					"^node_modules/*",
 					"^vendor/*",
 				},
+				cache_picker = {
+					num_pickers = 15,
+					limit_entries = 100,
+					ignore_empty_prompts = true,
+				},
 				mappings = {
 					i = {
 						["<C-y>"] = function(...)
