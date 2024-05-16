@@ -5,13 +5,9 @@ local notify = require("utils.notify")
 map("v", "p", '"_dP')
 map("s", "p", "p")
 
--- Saner defaults for n and N
-map("n", "n", "'Nn'[v:searchforward].'zv'", { expr = true, desc = "Next search result" })
-map("x", "n", "'Nn'[v:searchforward]", { expr = true, desc = "Next search result" })
-map("o", "n", "'Nn'[v:searchforward]", { expr = true, desc = "Next search result" })
-map("n", "N", "'nN'[v:searchforward].'zv'", { expr = true, desc = "Prev search result" })
-map("x", "N", "'nN'[v:searchforward]", { expr = true, desc = "Prev search result" })
-map("o", "N", "'nN'[v:searchforward]", { expr = true, desc = "Prev search result" })
+-- Center screen on search
+map("n", "n", "nzzzv")
+map("n", "N", "Nzzzv")
 
 -- Better indenting
 map("v", "<", "<gv")
