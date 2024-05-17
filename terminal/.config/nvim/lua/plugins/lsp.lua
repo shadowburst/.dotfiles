@@ -6,6 +6,7 @@ return {
 			"williamboman/mason-lspconfig.nvim",
 			"williamboman/mason.nvim",
 			"b0o/SchemaStore.nvim",
+			"telescope.nvim",
 			{
 				"folke/neodev.nvim",
 				opts = {},
