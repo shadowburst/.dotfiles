@@ -57,12 +57,10 @@ return {
 			require("nvim-treesitter.configs").setup(opts)
 
 			vim.filetype.add({
-				filename = {
-					[".env"] = "dotenv",
-				},
 				pattern = {
 					[".*/kitty/.+%.conf"] = "bash",
 					[".*/hypr/.+%.conf"] = "hyprlang",
+					["%.env%.[%w_.-]+"] = "sh",
 				},
 			})
 		end,
