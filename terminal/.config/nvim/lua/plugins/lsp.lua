@@ -41,9 +41,9 @@ return {
 
 			require("mason").setup()
 
-			local mason_registry = require("mason-registry")
-			local vue_language_server_path = mason_registry.get_package("vue-language-server"):get_install_path()
-				.. "/node_modules/@vue/language-server"
+			local vue_typescript_plugin = require("mason-registry")
+				.get_package("vue-language-server")
+				:get_install_path() .. "/node_modules/@vue/language-server" .. "/node_modules/@vue/typescript-plugin"
 
 			local servers = {
 				bashls = {},
@@ -126,20 +126,22 @@ return {
 						plugins = {
 							{
 								name = "@vue/typescript-plugin",
-								location = vue_language_server_path,
-								languages = { "vue" },
+								location = vue_typescript_plugin,
+								languages = { "javascript", "typescript", "vue" },
 							},
 						},
 					},
-					filetypes = { "typescript", "javascript", "javascriptreact", "typescriptreact" },
-				},
-				volar = {
-					init_options = {
-						vue = {
-							hybridMode = false,
-						},
+					filetypes = {
+						"javascript",
+						"javascriptreact",
+						"javascript.jsx",
+						"typescript",
+						"typescriptreact",
+						"typescript.tsx",
+						"vue",
 					},
 				},
+				volar = {},
 				yamlls = {
 					settings = {
 						yaml = {
