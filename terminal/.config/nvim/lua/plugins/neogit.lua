@@ -12,6 +12,7 @@ return {
 			remember_settings = false,
 			commit_editor = {
 				kind = "split",
+				show_staged_diff = false,
 			},
 			integrations = {
 				telescope = true,
