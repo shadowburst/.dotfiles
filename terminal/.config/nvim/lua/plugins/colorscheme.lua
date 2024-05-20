@@ -8,6 +8,8 @@ return {
 			on_highlights = function(hl, c)
 				hl.CursorLineNr = { fg = c.blue }
 				hl.LineNr = { fg = c.fg_dark }
+				hl.LineNrAbove = hl.LineNr
+				hl.LineNrBelow = hl.LineNr
 			end,
 		},
 		config = function(_, opts)
