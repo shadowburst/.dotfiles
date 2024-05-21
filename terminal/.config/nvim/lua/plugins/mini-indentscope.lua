@@ -18,6 +18,7 @@ return {
 					"lazy",
 					"mason",
 					"notify",
+					"tfm",
 				},
 				callback = function()
 					vim.b.miniindentscope_disable = true
