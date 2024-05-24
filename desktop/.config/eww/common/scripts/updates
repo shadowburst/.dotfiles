@@ -2,7 +2,7 @@
 
 updates="$( (
 	checkupdates
-	yay -Qua --devel
+  paru -Qua
 ) | column -t | cut -c 1-70 | sort)"
 
 if [[ -n "$updates" ]]; then

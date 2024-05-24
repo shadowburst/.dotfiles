@@ -16,7 +16,7 @@ case $1 in
 	eww open "torrents-$2"
 	;;
 "updates")
-	$TERMINAL -e bash -c "yay -Syu --devel; echo Done - Press enter to exit...; read _"
+	$TERMINAL -e bash -c "paru -Syu; echo Done - Press enter to exit...; read _"
 	;;
 "volume")
 	pavucontrol
