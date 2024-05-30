@@ -28,6 +28,9 @@ map("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit all" })
 -- Buffers
 map("n", "<leader>bb", "<cmd>e #<cr>", { desc = "Switch to other buffer" })
 
+-- Quickfix
+map("n", "<leader>xq", "<cmd>clist<cr>", { desc = "Quickfix list" })
+
 -- Toggle options
 map("n", "<leader>td", function()
 	local enabled = not vim.diagnostic.is_disabled()
