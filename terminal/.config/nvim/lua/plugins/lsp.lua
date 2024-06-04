@@ -7,10 +7,6 @@ return {
 			"williamboman/mason.nvim",
 			"b0o/SchemaStore.nvim",
 			"telescope.nvim",
-			{
-				"folke/neodev.nvim",
-				opts = {},
-			},
 		},
 		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
 		config = function()
