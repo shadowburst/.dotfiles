@@ -25,6 +25,7 @@ return {
 				["markdown"] = { "prettierd" },
 				["markdown.mdx"] = { "prettierd" },
 				["scss"] = { "prettierd" },
+				["sh"] = { "shfmt" },
 				["svg"] = { "xmlformat" },
 				["typescript"] = { "prettierd" },
 				["typescriptreact"] = { "prettierd" },
