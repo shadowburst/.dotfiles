@@ -1,0 +1,108 @@
+@use 'sass:list';
+@use 'sass:map';
+
+@mixin transition($type: null) {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+
+    @if not $type {
+        transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke,
+            opacity, box-shadow, transform, filter, backdrop-filter;
+    }
+    @if $type == 'all' {
+        transition-property: all;
+    }
+    @if $type == 'colors' {
+        transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke;
+    }
+    @if $type == 'none' {
+        transition-property: none;
+    }
+    @if $type == 'opacity' {
+        transition-property: opacity;
+    }
+}
+
+@mixin spacing($attribute, $size, $direction: null) {
+    $size: 0.25rem * $size;
+
+    @if not $direction {
+        #{$attribute}: $size;
+    }
+    @if $direction == 'l' or $direction == 'x' {
+        #{$attribute}-left: $size;
+    }
+    @if $direction == 'r' or $direction == 'x' {
+        #{$attribute}-right: $size;
+    }
+    @if $direction == 't' or $direction == 'y' {
+        #{$attribute}-top: $size;
+    }
+    @if $direction == 'b' or $direction == 'y' {
+        #{$attribute}-bottom: $size;
+    }
+}
+@mixin m($size: 3, $direction: null) {
+    @include spacing(margin, $size, $direction);
+}
+@mixin p($size: 3, $direction: null) {
+    @include spacing(padding, $size, $direction);
+}
+@mixin rounded($breakpoint: md, $direction: null) {
+    $breakpoints: (
+        0: 0,
+        sm: 8px,
+        md: 11px,
+        lg: 20px,
+        full: 100px,
+    );
+    $size: map.get($breakpoints, $breakpoint);
+
+    @if not $direction {
+        border-radius: $size;
+    }
+    @if $direction == 'l' {
+        border-radius: $size 0 0 $size;
+    }
+    @if $direction == 'r' {
+        border-radius: 0 $size $size 0;
+    }
+    @if $direction == 't' {
+        border-radius: $size $size 0 0;
+    }
+    @if $direction == 'b' {
+        border-radius: 0 0 $size $size;
+    }
+}
+@mixin border($color: $bg, $size: 2, $direction: null, $style: solid) {
+    $size: #{$size}px;
+
+    border-color: $color;
+    border-style: $style;
+
+    @if not $direction {
+        border-width: $size;
+    }
+    @if $direction == 'l' or $direction == 'x' {
+        border-left-width: $size;
+    }
+    @if $direction == 'r' or $direction == 'x' {
+        border-right-width: $size;
+    }
+    @if $direction == 't' or $direction == 'y' {
+        border-top-width: $size;
+    }
+    @if $direction == 'b' or $direction == 'y' {
+        border-bottom-width: $size;
+    }
+}
+@mixin bg($color: $bg) {
+    background-color: $color;
+}
+@mixin text($color: $fg) {
+    color: $color;
+}
+@mixin font($size: 1rem, $weight: 500) {
+    font-size: $size;
+    font-weight: $weight;
+}

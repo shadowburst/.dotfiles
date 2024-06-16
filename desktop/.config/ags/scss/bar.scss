@@ -1,0 +1,108 @@
+@import './colors.scss';
+
+.bar {
+    @include bg;
+    @include text;
+
+    circular-progress {
+        @include transition(colors);
+        @include bg($border);
+        @include font(2px);
+        min-height: 1rem;
+
+        image {
+            @include font(0.8rem);
+        }
+    }
+
+    @mixin card() {
+        @include m(1);
+        @include rounded(full);
+        @include bg($card);
+    }
+
+    @mixin pill() {
+        @include card;
+        @include p(1, y);
+
+        label {
+            @include text($fg);
+            @include font(0.8rem, bold);
+        }
+    }
+
+    .battery {
+        @include pill;
+        @include p(2, l);
+        @include text($primary);
+
+        &.warning {
+            @include text($warning);
+        }
+
+        &.danger {
+            @include text($danger);
+        }
+    }
+
+    .media {
+        @include pill;
+        @include m(3, l);
+        @include p(0, l);
+        @include p(2, r);
+        @include text($primary);
+    }
+
+    .volume {
+        @include pill;
+        @include p(2, r);
+        @include text($primary);
+
+        image {
+            @include text($primary);
+        }
+
+        & .hidden {
+            @include text(transparent);
+        }
+    }
+
+    .window {
+        @include m(3, l);
+        @include p(1, t);
+
+        label.title {
+            @include font(0.8rem);
+        }
+        label.class {
+            @include m(-1, t);
+            @include font(1rem, bold);
+        }
+    }
+
+    .workspaces {
+        @include card;
+        @include p(1, x);
+
+        button {
+            @include m(1);
+            @include rounded(full);
+            @include bg(transparent);
+            @include p(2, x);
+            @include p(1, y);
+
+            label {
+                @include m(-2, y);
+                @include font(1.8rem);
+            }
+
+            &.active {
+                @include bg($primary);
+                @include text($bg);
+            }
+            &.occupied {
+                @include text($primary);
+            }
+        }
+    }
+}
