@@ -3,17 +3,17 @@ const hyprland = await Service.import('hyprland');
 const workspaceNames = ['', '', '', '', '', '', ''];
 
 /**
- * @param {number} monitorIndex
+ * @param {number} monitorId
  */
-export default function Workspaces(monitorIndex = 0) {
+export default function Workspaces(monitorId = 0) {
     return Widget.Box({
         className: 'workspaces',
-        children: Utils.merge([hyprland.bind('monitors'), hyprland.bind('workspaces')], (monitors) =>
+        children: Utils.merge([hyprland.bind('monitors'), hyprland.bind('workspaces')], () =>
             workspaceNames.map((name, index) => {
                 const workspaceId = index + 1;
 
                 let className = '';
-                if (monitors[monitorIndex]?.activeWorkspace.id === workspaceId) {
+                if (hyprland.getMonitor(monitorId)?.activeWorkspace.id === workspaceId) {
                     className = 'active';
                 } else if ((hyprland.getWorkspace(workspaceId)?.windows ?? 0) > 0) {
                     className = 'occupied';

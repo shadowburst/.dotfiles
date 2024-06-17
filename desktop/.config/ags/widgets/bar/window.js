@@ -3,21 +3,15 @@ import { string } from '../../utils/index.js';
 const hyprland = await Service.import('hyprland');
 
 /**
- * @param {number} monitorIndex
+ * @param {number} monitorId
  */
-export default function Window(monitorIndex = 0) {
-    const client = Utils.merge([hyprland.bind('monitors'), hyprland.bind('workspaces')], (monitors, workspaces) => {
-        const monitor = monitors[monitorIndex];
-        if (!monitor) {
+export default function Window(monitorId = 0) {
+    const client = hyprland.bind('active').as((active) => {
+        if (monitorId !== active.monitor.id) {
             return;
         }
 
-        const workspace = workspaces[monitor.activeWorkspace.id - 1];
-        if (!workspace) {
-            return;
-        }
-
-        return hyprland.getClient(workspace.lastwindow);
+        return active.client;
     });
 
     return Widget.Box({
@@ -27,12 +21,12 @@ export default function Window(monitorIndex = 0) {
         children: [
             Widget.Label({
                 className: 'title',
-                label: client.as((c) => string.truncate(c?.title ?? '')),
+                label: client.as((c) => string.capitalize(string.truncate(c?.title ?? ''))),
                 xalign: 0,
             }),
             Widget.Label({
                 className: 'class',
-                label: client.as((c) => string.truncate(c?.class ?? '')),
+                label: client.as((c) => string.capitalize(string.truncate(c?.class ?? ''))),
                 xalign: 0,
             }),
         ],

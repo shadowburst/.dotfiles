@@ -8,18 +8,18 @@ import Window from './window.js';
 import Workspaces from './workspaces.js';
 
 /**
- * @param {number} monitor
+ * @param {number} monitorId
  */
-export default function Bar(monitor = 0) {
+export default function Bar(monitorId = 0) {
     return Widget.Window({
-        name: `bar-${monitor}`,
+        name: `bar-${monitorId}`,
         className: 'bar',
-        monitor,
+        monitor: monitorId,
         anchor: ['top', 'left', 'right'],
         exclusivity: 'exclusive',
         child: Widget.CenterBox({
             startWidget: Widget.Box({
-                children: [Window(monitor), Media()],
+                children: [Window(monitorId), Media()],
             }),
             centerWidget: Widget.CenterBox({
                 homogeneous: true,
@@ -28,7 +28,7 @@ export default function Bar(monitor = 0) {
                     children: [Battery()],
                 }),
                 centerWidget: Widget.Box({
-                    children: [Workspaces(monitor)],
+                    children: [Workspaces(monitorId)],
                 }),
                 endWidget: Widget.Box({
                     children: [Volume()],
