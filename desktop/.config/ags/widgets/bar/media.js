@@ -21,9 +21,6 @@ export default function Media() {
                 return [
                     Widget.Button({
                         className: 'media',
-                        onPrimaryClick: player.playPause,
-                        onScrollUp: player.next,
-                        onScrollDown: player.previous,
                         child: Widget.Box({
                             children: [
                                 Widget.CircularProgress({
@@ -48,6 +45,9 @@ export default function Media() {
                                 }),
                             ],
                         }),
+                        onPrimaryClick: player.playPause,
+                        onScrollUp: player.next,
+                        onScrollDown: player.previous,
                     }),
                 ];
             }),

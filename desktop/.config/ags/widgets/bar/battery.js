@@ -1,6 +1,6 @@
 const battery = await Service.import('battery');
 
-function Battery() {
+export default function Battery() {
     return Widget.Box({
         className: battery.bind('percent').as((p) => {
             if (p > 40) return 'battery';
@@ -23,5 +23,3 @@ function Battery() {
         ],
     });
 }
-
-export default Battery;

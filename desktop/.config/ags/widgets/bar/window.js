@@ -7,11 +7,13 @@ const hyprland = await Service.import('hyprland');
  */
 export default function Window(monitorId = 0) {
     const client = hyprland.bind('active').as((active) => {
-        if (monitorId !== active.monitor.id) {
+        const c = hyprland.getClient(active.client.address);
+
+        if (c?.monitor !== monitorId) {
             return;
         }
 
-        return active.client;
+        return c;
     });
 
     return Widget.Box({

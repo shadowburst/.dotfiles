@@ -14,7 +14,8 @@ function Wifi() {
             inverted: false,
         }),
         Widget.Label({
-            label: network.wifi.bind('ssid').as((ssid) => ssid || 'No connection'),
+            visible: network.wifi.bind('ssid').as((ssid) => ssid?.length),
+            label: network.wifi.bind('ssid').as((ssid) => ssid ?? ''),
         }),
     ];
 }
@@ -46,5 +47,7 @@ export default function Network() {
         child: Widget.Box({
             children: network.bind('primary').as((primary) => (primary === 'wired' ? Wired() : Wifi())),
         }),
+        onPrimaryClick: () => Utils.execAsync(['bash', '-c', '$TERMINAL -e nmtui']),
+        onSecondaryClick: network.toggleWifi,
     });
 }

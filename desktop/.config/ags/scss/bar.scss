@@ -1,3 +1,4 @@
+@use 'sass:color';
 @import './colors.scss';
 
 .bar {
@@ -31,10 +32,19 @@
         }
     }
 
+    @mixin button($color: $primary) {
+        &:hover {
+            @include bg(rgba($color, 0.1));
+        }
+    }
+
     .battery {
         @include pill;
-        @include p(2, l);
         @include text($primary);
+
+        label {
+            @include m(3, l);
+        }
 
         &.warning {
             @include text($warning);
@@ -45,22 +55,46 @@
         }
     }
 
-    .media {
+    .bluetooth {
         @include pill;
-        @include m(3, l);
-        @include p(0, l);
-        @include p(2, r);
-        @include text($primary);
-    }
-
-    .network {
-        @include pill;
-        @include p(2, r);
-        @include p(0, l);
+        @include button;
         @include text($primary);
 
         image {
             @include text($primary);
+        }
+
+        label {
+            @include m(3, r);
+        }
+
+        &.muted {
+            @include text($muted);
+        }
+    }
+
+    .media {
+        @include pill;
+        @include button;
+        @include m(3, l);
+        @include text($primary);
+
+        label {
+            @include m(3, r);
+        }
+    }
+
+    .network {
+        @include pill;
+        @include button;
+        @include text($primary);
+
+        image {
+            @include text($primary);
+        }
+
+        label {
+            @include m(3, r);
         }
 
         &.warning {
@@ -74,11 +108,15 @@
 
     .volume {
         @include pill;
-        @include p(2, r);
+        @include button;
         @include text($primary);
 
         image {
             @include text($primary);
+        }
+
+        label {
+            @include m(3, r);
         }
 
         &.muted {
@@ -104,9 +142,9 @@
         @include p(1, x);
 
         button {
+            @include button;
             @include m(1);
             @include rounded(full);
-            @include bg(transparent);
             @include p(2, x);
             @include p(1, y);
 

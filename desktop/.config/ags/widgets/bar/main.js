@@ -1,4 +1,5 @@
 import Battery from './battery.js';
+import Bluetooth from './bluetooth.js';
 import Clock from './clock.js';
 import Media from './media.js';
 import Network from './network.js';
@@ -32,7 +33,7 @@ export default function Bar(monitorId = 0) {
                     children: [Workspaces(monitorId)],
                 }),
                 endWidget: Widget.Box({
-                    children: [Volume(), Network()],
+                    children: [Volume(), Network(), Bluetooth()],
                 }),
             }),
             endWidget: Widget.Box({
