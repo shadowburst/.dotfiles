@@ -53,6 +53,25 @@
         @include text($primary);
     }
 
+    .network {
+        @include pill;
+        @include p(2, r);
+        @include p(0, l);
+        @include text($primary);
+
+        image {
+            @include text($primary);
+        }
+
+        &.warning {
+            @include text($warning);
+        }
+
+        &.muted {
+            @include text($muted);
+        }
+    }
+
     .volume {
         @include pill;
         @include p(2, r);
@@ -62,8 +81,8 @@
             @include text($primary);
         }
 
-        & .hidden {
-            @include text(transparent);
+        &.muted {
+            @include text($muted);
         }
     }
 

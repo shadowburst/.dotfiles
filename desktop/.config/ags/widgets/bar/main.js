@@ -1,6 +1,7 @@
 import Battery from './battery.js';
 import Clock from './clock.js';
 import Media from './media.js';
+import Network from './network.js';
 import Notification from './notifications.js';
 import SysTray from './systray.js';
 import Volume from './volume.js';
@@ -31,7 +32,7 @@ export default function Bar(monitorId = 0) {
                     children: [Workspaces(monitorId)],
                 }),
                 endWidget: Widget.Box({
-                    children: [Volume()],
+                    children: [Volume(), Network()],
                 }),
             }),
             endWidget: Widget.Box({

@@ -10,7 +10,9 @@ function Volume() {
     };
 
     return Widget.Box({
-        className: 'volume',
+        className: Utils.merge([audio.speaker.bind('volume'), audio.speaker.bind('is_muted')], (volume, isMuted) =>
+            !isMuted && volume > 0 ? 'volume' : 'volume muted'
+        ),
         children: [
             Widget.CircularProgress({
                 value: Utils.merge([audio.speaker.bind('volume'), audio.speaker.bind('is_muted')], (volume, isMuted) =>
@@ -31,10 +33,6 @@ function Volume() {
                 startAt: 0.75,
                 rounded: true,
                 inverted: false,
-                className: Utils.merge(
-                    [audio.speaker.bind('volume'), audio.speaker.bind('is_muted')],
-                    (volume, isMuted) => (!isMuted && volume > 0 ? '' : 'hidden')
-                ),
             }),
             Widget.Label({
                 label: audio.speaker.bind('volume').as((volume) => `${Math.round(volume * 100)}%`),
