@@ -106,6 +106,20 @@
         }
     }
 
+    .updates {
+        @include pill;
+        @include button;
+        @include text($success);
+
+        label {
+            @include m(3, r);
+        }
+
+        &.muted {
+            @include text($muted);
+        }
+    }
+
     .volume {
         @include pill;
         @include button;

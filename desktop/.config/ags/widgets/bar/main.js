@@ -6,6 +6,7 @@ import Network from './network.js';
 import Notification from './notifications.js';
 import SysTray from './systray.js';
 import Volume from './volume.js';
+import Updates from './updates.js';
 import Window from './window.js';
 import Workspaces from './workspaces.js';
 
@@ -38,7 +39,7 @@ export default function Bar(monitorId = 0) {
             }),
             endWidget: Widget.Box({
                 hpack: 'end',
-                children: [Clock(), SysTray()],
+                children: [Updates(), Clock(), SysTray()],
             }),
         }),
     });
