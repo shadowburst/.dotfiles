@@ -10,32 +10,32 @@ class UpdatesService extends Service {
         );
     }
 
-    #list = '';
+    _list = '';
 
     get list() {
-        return this.#list;
+        return this._list;
     }
 
     get count() {
-        return this.#list.split('\n').length;
+        return this._list.split('\n').length;
     }
 
     constructor() {
         super();
 
         // Every hour
-        Utils.interval(3600000, () => this.#onChange());
+        Utils.interval(3600000, () => this._updateList());
 
-        this.#onChange();
+        this._updateList();
     }
 
-    async #onChange() {
+    async _updateList() {
         const value = await Utils.execAsync([
             'bash',
             '-c',
             '(checkupdates; paru -Qua) | column -t | cut -c 1-70 | sort',
         ]);
-        this.#list = value;
+        this._list = value;
         this.notify('list');
         this.notify('count');
     }
