@@ -1,9 +1,11 @@
 import Battery from './battery.js';
 import Bluetooth from './bluetooth.js';
 import Clock from './clock.js';
+import Cpu from './cpu.js';
 import Media from './media.js';
 import Network from './network.js';
 import Notification from './notifications.js';
+import Ram from './ram.js';
 import SysTray from './systray.js';
 import Volume from './volume.js';
 import Updates from './updates.js';
@@ -28,7 +30,7 @@ export default function Bar(monitorId = 0) {
                 homogeneous: true,
                 startWidget: Widget.Box({
                     hpack: 'end',
-                    children: [Battery()],
+                    children: [Cpu(), Ram(), Battery()],
                 }),
                 centerWidget: Widget.Box({
                     children: [Workspaces(monitorId)],

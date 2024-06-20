@@ -73,6 +73,23 @@
         }
     }
 
+    .cpu {
+        @include pill;
+        @include text($primary);
+
+        label {
+            @include m(3, l);
+        }
+
+        &.warning {
+            @include text($warning);
+        }
+
+        &.danger {
+            @include text($danger);
+        }
+    }
+
     .media {
         @include pill;
         @include button;
@@ -103,6 +120,23 @@
 
         &.muted {
             @include text($muted);
+        }
+    }
+
+    .ram {
+        @include pill;
+        @include text($primary);
+
+        label {
+            @include m(3, l);
+        }
+
+        &.warning {
+            @include text($warning);
+        }
+
+        &.danger {
+            @include text($danger);
         }
     }
 
