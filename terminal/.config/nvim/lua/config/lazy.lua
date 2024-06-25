@@ -26,6 +26,12 @@ require("lazy").setup("plugins", {
 		backdrop = 100,
 		border = "rounded",
 	},
+	pkg = {
+		sources = {
+			"lazy",
+			"packspec",
+		},
+	},
 })
 
 vim.api.nvim_create_autocmd("User", {
