@@ -95,7 +95,7 @@ return {
 		end,
 		keys = {
 			{ "<leader><leader>", "<cmd>Telescope find_files<cr>", desc = "Find files" },
-			{ "<leader>,", "<cmd>Telescope buffers<cr>", desc = "Switch buffer" },
+			{ "<leader>,", "<cmd>Telescope buffers ignore_current_buffer=true<cr>", desc = "Switch buffer" },
 			{ "<leader>/", "<cmd>Telescope live_grep<cr>", desc = "Grep in files" },
 			{ "<leader>:", "<cmd>Telescope command_history<cr>", desc = "Command history" },
 			{ "<leader>.", "<cmd>Telescope resume<cr>", desc = "Repeat last search" },
