@@ -3,10 +3,12 @@ import { string } from '../../utils/index.js';
 const mpris = await Service.import('mpris');
 
 export default function Media() {
-    const currentPlayer = Variable(mpris.getPlayer() ?? undefined);
+    const currentPlayer = Variable(mpris.getPlayer());
 
     mpris.connect('changed', () => {
-        currentPlayer.value = mpris.players.find((player) => player.play_back_status !== 'Stopped');
+        const player = mpris.getPlayer();
+
+        currentPlayer.value = !player || player.length <= 0 ? null : player;
     });
 
     return Widget.Revealer({
@@ -37,8 +39,7 @@ export default function Media() {
                                     rounded: true,
                                     inverted: false,
                                 }).poll(1000, (self) => {
-                                    self.value =
-                                        player != null && player.length > 0 ? player.position / player.length : 0;
+                                    self.value = player.position / player.length;
                                 }),
                                 Widget.Label({
                                     label: player.bind('track_title').as((title) => string.truncate(title)),

@@ -1,4 +1,5 @@
-import Bar from './widgets/bar/main.js';
+import Torrents from './modules/windows/torrents/torrents.js';
+import Bar from './modules/bar/bar.js';
 
 const scss = `${App.configDir}/scss/main.scss`;
 const css = '/tmp/ags-style.css';
@@ -18,6 +19,7 @@ function openWindows() {
     App.config({ windows: createWindows() });
 }
 
+App.addIcons(`${App.configDir}/icons`);
 App.config({
     style: css,
     windows: createWindows(),

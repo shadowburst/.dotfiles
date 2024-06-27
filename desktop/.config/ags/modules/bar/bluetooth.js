@@ -4,11 +4,29 @@ export default function Bluetooth() {
     const device = bluetooth.bind('connected_devices').as((devices) => (devices.length > 0 ? devices[0] : null));
 
     return Widget.Button({
-        className: bluetooth.bind('enabled').as((enabled) => (enabled ? 'bluetooth' : 'bluetooth muted')),
+        className: Utils.merge([bluetooth.bind('enabled'), device], (enabled, device) => {
+            if (!enabled) {
+                return 'bluetooth muted';
+            }
+
+            if (!device?.battery_percentage) {
+                return 'bluetooth';
+            }
+
+            if (device.battery_percentage < 20) {
+                return 'bluetooth danger';
+            }
+
+            if (device.battery_percentage < 40) {
+                return 'bluetooth warning';
+            }
+
+            return 'bluetooth';
+        }),
         child: Widget.Box({
             children: [
                 Widget.CircularProgress({
-                    value: device.as((d) => d?.battery_percentage ?? 100),
+                    value: device.as((d) => (d?.battery_percentage ? d.battery_percentage / 100 : 1)),
                     child: Widget.Icon({
                         icon: bluetooth
                             .bind('enabled')

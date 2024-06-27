@@ -1,5 +1,0 @@
-(include "./common/variables.yuck")
-(include "./common/widgets.yuck")
-
-(include "./bar/eww.yuck")
-(include "./windows/eww.yuck")

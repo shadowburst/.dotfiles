@@ -8,9 +8,6 @@ export default function Cpu() {
             return 'cpu danger';
         }),
         children: [
-            Widget.Label({
-                label: system.bind('cpu').as((cpu) => `${cpu}%`),
-            }),
             Widget.CircularProgress({
                 value: system.bind('cpu').as((cpu) => cpu / 100),
                 child: Widget.Icon({
@@ -19,6 +16,9 @@ export default function Cpu() {
                 startAt: 0.75,
                 rounded: true,
                 inverted: false,
+            }),
+            Widget.Label({
+                label: system.bind('cpu').as((cpu) => `${cpu}%`),
             }),
         ],
     });

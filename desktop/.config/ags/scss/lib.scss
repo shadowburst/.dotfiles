@@ -106,3 +106,33 @@
     font-size: $size;
     font-weight: $weight;
 }
+
+@mixin button($color: $primary) {
+    @include transition(colors);
+
+    &:hover {
+        @include bg(rgba($color, 0.1));
+    }
+
+    &.primary:hover {
+        @include text($primary);
+    }
+    &.secondary:hover {
+        @include text($secondary);
+    }
+    &.success:hover {
+        @include text($success);
+    }
+    &.warning:hover {
+        @include text($warning);
+    }
+    &.danger:hover {
+        @include text($danger);
+    }
+}
+
+@mixin card() {
+    @include m(1);
+    @include rounded;
+    @include bg($card);
+}

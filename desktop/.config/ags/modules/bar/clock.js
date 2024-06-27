@@ -4,7 +4,7 @@ const date = Variable('', {
 
 export default function Clock() {
     return Widget.Label({
-        class_name: 'clock',
+        className: 'clock',
         label: date.bind(),
     });
 }

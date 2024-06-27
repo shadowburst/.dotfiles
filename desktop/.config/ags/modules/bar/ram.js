@@ -8,9 +8,6 @@ export default function Ram() {
             return 'ram danger';
         }),
         children: [
-            Widget.Label({
-                label: system.bind('ram').as((ram) => `${ram}%`),
-            }),
             Widget.CircularProgress({
                 value: system.bind('ram').as((ram) => ram / 100),
                 child: Widget.Icon({
@@ -19,6 +16,9 @@ export default function Ram() {
                 startAt: 0.75,
                 rounded: true,
                 inverted: false,
+            }),
+            Widget.Label({
+                label: system.bind('ram').as((ram) => `${ram}%`),
             }),
         ],
     });

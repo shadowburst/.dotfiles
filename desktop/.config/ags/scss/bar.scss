@@ -1,4 +1,3 @@
-@use 'sass:color';
 @import './colors.scss';
 
 .bar {
@@ -9,134 +8,83 @@
         @include transition(colors);
         @include bg($border);
         @include font(2px);
-        min-height: 1rem;
+        min-height: 2rem;
 
         image {
             @include font(0.8rem);
         }
     }
 
-    @mixin card() {
-        @include m(1);
-        @include rounded(full);
-        @include bg($card);
-    }
-
     @mixin pill() {
         @include card;
         @include p(1, y);
+        @include text($primary);
 
         label {
             @include text($fg);
             @include font(0.8rem, bold);
+            @include m(2, r);
         }
-    }
 
-    @mixin button($color: $primary) {
-        &:hover {
-            @include bg(rgba($color, 0.1));
+        &.success {
+            @include text($success);
+        }
+
+        &.warning {
+            @include text($warning);
+        }
+
+        &.danger {
+            @include text($danger);
+        }
+
+        &.muted {
+            @include text($muted);
         }
     }
 
     .battery {
         @include pill;
-        @include text($primary);
-
-        label {
-            @include m(3, l);
-        }
-
-        &.warning {
-            @include text($warning);
-        }
-
-        &.danger {
-            @include text($danger);
-        }
     }
 
     .bluetooth {
         @include pill;
         @include button;
-        @include text($primary);
+    }
 
-        image {
-            @include text($primary);
-        }
-
-        label {
-            @include m(3, r);
-        }
-
-        &.muted {
-            @include text($muted);
-        }
+    .clock {
+        @include pill;
+        @include m(2, r);
+        @include p(2, x);
+        @include text;
+        @include font(1.2rem, bold);
     }
 
     .cpu {
         @include pill;
-        @include text($primary);
-
-        label {
-            @include m(3, l);
-        }
-
-        &.warning {
-            @include text($warning);
-        }
-
-        &.danger {
-            @include text($danger);
-        }
     }
 
     .media {
         @include pill;
         @include button;
-        @include m(3, l);
-        @include text($primary);
-
-        label {
-            @include m(3, r);
-        }
     }
 
     .network {
         @include pill;
         @include button;
-        @include text($primary);
-
-        image {
-            @include text($primary);
-        }
-
-        label {
-            @include m(3, r);
-        }
-
-        &.warning {
-            @include text($warning);
-        }
-
-        &.muted {
-            @include text($muted);
-        }
     }
 
     .ram {
         @include pill;
-        @include text($primary);
+    }
 
-        label {
-            @include m(3, l);
-        }
+    .torrents {
+        @include pill;
+        @include button;
 
-        &.warning {
-            @include text($warning);
-        }
-
-        &.danger {
-            @include text($danger);
+        label:first-child {
+            @include m(2, l);
+            @include m(0, r);
         }
     }
 
@@ -144,37 +92,19 @@
         @include pill;
         @include button;
         @include text($success);
-
-        label {
-            @include m(3, r);
-        }
-
-        &.muted {
-            @include text($muted);
-        }
     }
 
     .volume {
         @include pill;
         @include button;
-        @include text($primary);
 
         image {
             @include text($primary);
         }
-
-        label {
-            @include m(3, r);
-        }
-
-        &.muted {
-            @include text($muted);
-        }
     }
 
     .window {
-        @include m(3, l);
-        @include p(1, t);
+        @include m(1);
 
         label.title {
             @include font(0.8rem);
@@ -187,14 +117,15 @@
 
     .workspaces {
         @include card;
+        @include m(2, l);
         @include p(1, x);
 
         button {
             @include button;
             @include m(1);
-            @include rounded(full);
+            @include rounded;
             @include p(2, x);
-            @include p(1, y);
+            @include p(1.1, y);
 
             label {
                 @include m(-2, y);

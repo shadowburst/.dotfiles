@@ -8,17 +8,19 @@ export default function Battery() {
             return 'battery danger';
         }),
         children: [
-            Widget.Label({
-                label: battery.bind('percent').as((p) => `${p}%`),
-            }),
             Widget.CircularProgress({
                 value: battery.bind('percent').as((p) => (p > 0 ? p / 100 : 0)),
                 child: Widget.Icon({
-                    icon: battery.bind('icon_name'),
+                    icon: Utils.merge([battery.bind('charging'), battery.bind('icon_name')], (charging, name) =>
+                        charging ? 'thunderbolt-symbolic' : name
+                    ),
                 }),
                 startAt: 0.75,
                 rounded: true,
                 inverted: false,
+            }),
+            Widget.Label({
+                label: battery.bind('percent').as((p) => `${p}%`),
             }),
         ],
     });

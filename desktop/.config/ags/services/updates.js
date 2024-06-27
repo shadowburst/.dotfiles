@@ -4,20 +4,21 @@ class UpdatesService extends Service {
             this,
             {},
             {
-                list: ['string', 'r'],
-                count: ['int', 'r'],
+                list: ['jsobject'],
+                count: ['int'],
             }
         );
     }
 
-    _list = '';
+    /** @type {string[]} */
+    _list = [];
 
     get list() {
         return this._list;
     }
 
     get count() {
-        return this._list.split('\n').length;
+        return this._list.length;
     }
 
     constructor() {
@@ -25,8 +26,6 @@ class UpdatesService extends Service {
 
         // Every hour
         Utils.interval(3600000, () => this._updateList());
-
-        this._updateList();
     }
 
     async _updateList() {
@@ -35,9 +34,14 @@ class UpdatesService extends Service {
             '-c',
             '(checkupdates; paru -Qua) | column -t | cut -c 1-70 | sort',
         ]);
-        this._list = value;
+        this._list = value.split('\n').filter((line) => line.length > 0);
         this.notify('list');
         this.notify('count');
+    }
+
+    async update() {
+        await Utils.execAsync(['bash', '-c', 'paru -Syu; echo Done - Press enter to exit...; read _']);
+        this._updateList();
     }
 }
 

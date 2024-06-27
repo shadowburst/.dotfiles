@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-transmission-remote -t "$1" --start

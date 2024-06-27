@@ -1,0 +1,95 @@
+.window {
+    @mixin window() {
+        @include m(1, t);
+        @include rounded;
+        @include bg($bg);
+        @include p(4);
+        @include text($fg);
+        min-width: 30rem;
+    }
+
+    @mixin title() {
+        @include m(4, b);
+        @include font(1.6rem, bold);
+    }
+
+    .torrents {
+        @include window;
+
+        .title {
+            @include title;
+            @include m(2, b);
+        }
+
+        button {
+            @include button;
+            @include rounded;
+            @include p(2);
+
+            image {
+                @include font(1.4rem);
+            }
+        }
+
+        .torrent {
+            @include m(2, t);
+            @include rounded;
+            @include bg($card);
+            @include p(3, x);
+            @include p(3, y);
+
+            .name {
+                @include m(2, b);
+                @include font(1.1rem, bold);
+            }
+
+            .details {
+                @include m(1, b);
+            }
+
+            .progress {
+                @include m(1, t);
+                @include font(0.7rem);
+
+                image {
+                    @include m(1, r);
+                }
+
+                label {
+                    @include m(2, r);
+                }
+            }
+
+            levelbar {
+                @include m(3, y);
+
+                & trough,
+                & trough block {
+                    @include rounded(full);
+
+                    min-height: 1rem;
+                }
+
+                & trough {
+                    @include bg($muted);
+
+                    & block.filled {
+                        @include bg($primary);
+                    }
+                }
+
+                &.paused trough block.filled {
+                    @include bg($warning);
+                }
+
+                &.finished block.filled {
+                    @include bg($success);
+                }
+            }
+
+            .actions {
+                @include m(2, l);
+            }
+        }
+    }
+}
