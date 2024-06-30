@@ -8,6 +8,7 @@ export default function Torrents() {
         name: 'torrents',
         className: 'window',
         anchor: ['top', 'right'],
+        margins: [0, 500, 0, 0],
         monitor: hyprland.active.monitor.bind('id'),
         child: Widget.Box({
             className: 'torrents',

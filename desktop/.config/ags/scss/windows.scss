@@ -14,7 +14,6 @@
 
     .torrents {
         @include window;
-        @include m(125, r);
 
         .title {
             @include title;

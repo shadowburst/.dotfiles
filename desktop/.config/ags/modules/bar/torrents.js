@@ -1,6 +1,5 @@
 import * as windows from '../windows/index.js';
 import torrents from '../../services/torrents.js';
-import Torrents from '../windows/torrents/torrents.js';
 
 export default function () {
     return Widget.Revealer({
@@ -35,7 +34,7 @@ export default function () {
                 ],
             }),
             onPrimaryClickRelease: () => {
-                windows.open(Torrents());
+                windows.open('torrents');
             },
         }),
     });
