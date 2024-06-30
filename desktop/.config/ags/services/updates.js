@@ -40,7 +40,7 @@ class UpdatesService extends Service {
     }
 
     async update() {
-        await Utils.execAsync(['bash', '-c', 'paru -Syu; echo Done - Press enter to exit...; read _']);
+        await Utils.execAsync(['bash', '-c', '$TERMINAL -e paru -Syu']);
         this._updateList();
     }
 }

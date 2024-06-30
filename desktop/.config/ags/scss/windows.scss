@@ -1,7 +1,6 @@
 .window {
     @mixin window() {
-        @include m(1, t);
-        @include rounded;
+        @include rounded(md, b);
         @include bg($bg);
         @include p(4);
         @include text($fg);
@@ -15,6 +14,7 @@
 
     .torrents {
         @include window;
+        @include m(125, r);
 
         .title {
             @include title;

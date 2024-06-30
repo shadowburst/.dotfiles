@@ -7,9 +7,6 @@ kanshi &
 # Idle daemon
 hypridle &
 
-# Launch EWW daemon
-eww daemon &
-
 # Theme settings
 hyprctl setcursor Bibata-Modern-Classic 24 &
 

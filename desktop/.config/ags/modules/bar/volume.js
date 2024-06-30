@@ -10,9 +10,7 @@ export default function Volume() {
     };
 
     return Widget.Button({
-        className: Utils.merge([audio.speaker.bind('volume'), audio.speaker.bind('is_muted')], (volume, isMuted) =>
-            !isMuted && volume > 0 ? 'volume' : 'volume muted'
-        ),
+        className: audio.speaker.bind('is_muted').as((isMuted) => (isMuted ? 'volume muted' : 'volume')),
         child: Widget.Box({
             children: [
                 Widget.CircularProgress({

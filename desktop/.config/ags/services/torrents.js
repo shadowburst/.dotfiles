@@ -1,12 +1,10 @@
 import GLib from 'gi://GLib';
 
 /**
- * @typedef Torrent
+ * @typedef TransmissionTorrent
  * @type {object}
  * @property {number} id
  * @property {string} name
- * @property {number} percent
- * @property {boolean} paused
  * @property {boolean} isFinished
  * @property {number} error
  * @property {string} errorString
@@ -14,10 +12,23 @@ import GLib from 'gi://GLib';
  * @property {number} leftUntilDone
  * @property {number} rateDownload
  * @property {number} rateUpload
- * @property {number} size
  * @property {number} sizeWhenDone
  * @property {number} status
  * @property {number} uploadRatio
+ */
+
+/**
+ * @typedef Torrent
+ * @type {object}
+ * @property {number} id
+ * @property {string} name
+ * @property {boolean} paused
+ * @property {boolean} finished
+ * @property {number} size
+ * @property {number} percent
+ * @property {number} eta
+ * @property {number} rate_download
+ * @property {number} rate_upload
  */
 
 class TorrentService extends Service {
@@ -48,12 +59,12 @@ class TorrentService extends Service {
 
     /** @type {Torrent[]} */
     get downloads() {
-        return this.torrents.filter((t) => !t.isFinished);
+        return this.torrents.filter((t) => !t.finished);
     }
 
     /** @type {Torrent[]} */
     get uploads() {
-        return this.torrents.filter((t) => t.isFinished);
+        return this.torrents.filter((t) => t.finished);
     }
 
     /** @type {number} */
@@ -73,7 +84,7 @@ class TorrentService extends Service {
             return 'finished';
         }
 
-        if (this.downloads.some((torrent) => torrent.status === 4)) {
+        if (this.downloads.some((torrent) => !torrent.paused)) {
             return 'downloading';
         }
 
@@ -88,13 +99,21 @@ class TorrentService extends Service {
 
     async _updateState() {
         const value = JSON.parse(await Utils.execAsync('transmission-remote -j -l'));
-        this._torrents = value.arguments.torrents;
-        this._torrents = this._torrents.map((torrent) => ({
-            ...torrent,
-            isFinished: torrent.leftUntilDone === 0,
+
+        /** @type {TransmissionTorrent[]} */
+        const transmissionTorrents = value.arguments.torrents;
+
+        this._torrents = transmissionTorrents.map((torrent) => ({
+            id: torrent.id,
+            name: torrent.name,
             paused: torrent.status === 0,
-            percent: (torrent.sizeWhenDone - torrent.leftUntilDone) / torrent.sizeWhenDone,
+            finished: torrent.sizeWhenDone > 0 && torrent.leftUntilDone === 0,
             size: torrent.sizeWhenDone - torrent.leftUntilDone,
+            percent:
+                torrent.sizeWhenDone > 0 ? (torrent.sizeWhenDone - torrent.leftUntilDone) / torrent.sizeWhenDone : 0,
+            eta: torrent.eta,
+            rate_download: torrent.rateDownload,
+            rate_upload: torrent.rateUpload,
         }));
         this.notify('torrents');
         this.notify('downloads');
@@ -119,7 +138,7 @@ class TorrentService extends Service {
                 operation = '--start';
             }
         } else {
-            if (this.torrents.every((t) => t.paused || t.isFinished)) {
+            if (this.torrents.every((t) => t.paused || t.finished)) {
                 operation = '--start';
             }
         }
@@ -133,7 +152,7 @@ class TorrentService extends Service {
      * @param {number} id
      */
     async remove(id) {
-        const operation = this.torrents.find((t) => t.id === id)?.isFinished ? '--remove' : '--remove-and-delete';
+        const operation = this.torrents.find((t) => t.id === id)?.finished ? '--remove' : '--remove-and-delete';
 
         await Utils.execAsync(`transmission-remote -t ${id} ${operation}`);
 

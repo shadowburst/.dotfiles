@@ -1,4 +1,3 @@
-import Backdrop from '../backdrop/backdrop.js';
 import torrents from '../../../services/torrents.js';
 import { format, string } from '../../../utils/index.js';
 
@@ -42,7 +41,7 @@ export default function Torrents() {
                 }),
                 ...[...downloads, ...uploads].map((torrent) => {
                     let levelbarClass = torrent.paused ? 'paused' : '';
-                    levelbarClass = torrent.isFinished ? 'finished' : levelbarClass;
+                    levelbarClass = torrent.finished ? 'finished' : levelbarClass;
 
                     return Widget.Box({
                         className: 'torrent',
@@ -59,7 +58,7 @@ export default function Torrents() {
                                     Widget.Label({
                                         className: 'details',
                                         xalign: 0,
-                                        label: `${format.bytes(torrent.size)} (${format.percent(torrent.percent)})  -  ${torrent.isFinished ? 'Finished' : format.seconds(torrent.eta)}`,
+                                        label: `${format.bytes(torrent.size)} (${format.percent(torrent.percent)})  -  ${torrent.finished ? 'Finished' : format.seconds(torrent.eta)}`,
                                     }),
                                     Widget.LevelBar({
                                         className: levelbarClass,
@@ -74,14 +73,14 @@ export default function Torrents() {
                                                 size: 10,
                                             }),
                                             Widget.Label({
-                                                label: `${format.bytes(torrent.rateDownload)}/s`,
+                                                label: `${format.bytes(torrent.rate_download)}/s`,
                                             }),
                                             Widget.Icon({
                                                 icon: 'chevron-up-symbolic',
                                                 size: 10,
                                             }),
                                             Widget.Label({
-                                                label: `${format.bytes(torrent.rateUpload)}/s`,
+                                                label: `${format.bytes(torrent.rate_upload)}/s`,
                                             }),
                                         ],
                                     }),
@@ -92,7 +91,7 @@ export default function Torrents() {
                                 vertical: true,
                                 hpack: 'center',
                                 children: [
-                                    ...(torrent.isFinished
+                                    ...(torrent.finished
                                         ? []
                                         : [
                                               Widget.Button({
@@ -122,9 +121,4 @@ export default function Torrents() {
             ]),
         }),
     });
-}
-
-export function openTorrents() {
-    App.addWindow(Backdrop());
-    App.addWindow(Torrents());
 }
