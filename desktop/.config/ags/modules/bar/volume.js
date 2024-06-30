@@ -31,8 +31,6 @@ export default function Volume() {
                         ),
                     }),
                     startAt: 0.75,
-                    rounded: true,
-                    inverted: false,
                 }),
                 Widget.Label({
                     label: audio.speaker.bind('volume').as((volume) => `${Math.round(volume * 100)}%`),

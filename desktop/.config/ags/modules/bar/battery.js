@@ -16,8 +16,6 @@ export default function Battery() {
                     ),
                 }),
                 startAt: 0.75,
-                rounded: true,
-                inverted: false,
             }),
             Widget.Label({
                 label: battery.bind('percent').as((p) => `${p}%`),

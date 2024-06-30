@@ -10,11 +10,9 @@ function Wifi() {
                 icon: network.wifi.bind('icon_name'),
             }),
             startAt: 0.75,
-            rounded: true,
-            inverted: false,
         }),
         Widget.Label({
-            visible: network.wifi.bind('ssid').as((ssid) => ssid?.length),
+            visible: network.wifi.bind('ssid').as((ssid) => ssid != null && ssid.length > 0),
             label: network.wifi.bind('ssid').as((ssid) => ssid ?? ''),
         }),
     ];
@@ -28,8 +26,6 @@ function Wired() {
                 icon: network.wired.bind('icon_name'),
             }),
             startAt: 0.75,
-            rounded: true,
-            inverted: false,
         }),
         Widget.Label({
             label: network.wired.bind('state').as(string.capitalize),

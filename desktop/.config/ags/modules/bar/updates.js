@@ -13,9 +13,6 @@ export default function Updates() {
                         child: Widget.Icon({
                             icon: 'browser-download-symbolic',
                         }),
-                        startAt: 0.75,
-                        rounded: true,
-                        inverted: false,
                     }),
                     Widget.Label({
                         label: updates.bind('count').as((count) => `${count} updates`),

@@ -33,8 +33,6 @@ export default function Bluetooth() {
                             .as((enabled) => (enabled ? 'bluetooth-active-symbolic' : 'bluetooth-disabled-symbolic')),
                     }),
                     startAt: 0.75,
-                    rounded: true,
-                    inverted: false,
                 }),
                 Widget.Label({
                     visible: device.as((d) => d != null),

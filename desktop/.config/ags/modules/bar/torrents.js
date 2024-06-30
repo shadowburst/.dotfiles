@@ -28,8 +28,6 @@ export default function () {
                             icon: 'download-symbolic',
                         }),
                         startAt: 0.75,
-                        rounded: true,
-                        inverted: false,
                     }),
                     Widget.Label({
                         label: torrents.bind('uploads').as((uploads) => `${uploads.length}`),

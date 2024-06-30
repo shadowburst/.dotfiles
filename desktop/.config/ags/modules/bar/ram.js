@@ -14,8 +14,6 @@ export default function Ram() {
                     icon: 'ram-symbolic',
                 }),
                 startAt: 0.75,
-                rounded: true,
-                inverted: false,
             }),
             Widget.Label({
                 label: system.bind('ram').as((ram) => `${ram}%`),

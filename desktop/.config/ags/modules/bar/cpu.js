@@ -14,8 +14,6 @@ export default function Cpu() {
                     icon: 'cpu-symbolic',
                 }),
                 startAt: 0.75,
-                rounded: true,
-                inverted: false,
             }),
             Widget.Label({
                 label: system.bind('cpu').as((cpu) => `${cpu}%`),

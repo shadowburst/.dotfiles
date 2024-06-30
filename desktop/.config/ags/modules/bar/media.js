@@ -36,8 +36,6 @@ export default function Media() {
                                             ),
                                     }),
                                     startAt: 0.75,
-                                    rounded: true,
-                                    inverted: false,
                                 }).poll(1000, (self) => {
                                     self.value = player.position / player.length;
                                 }),
