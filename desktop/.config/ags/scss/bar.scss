@@ -74,6 +74,15 @@
         @include button;
     }
 
+    .notifications {
+        @include pill;
+        @include button;
+
+        image {
+            @include text($primary);
+        }
+    }
+
     .ram {
         @include pill;
     }

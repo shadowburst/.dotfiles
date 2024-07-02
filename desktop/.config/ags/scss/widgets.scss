@@ -1,0 +1,30 @@
+.notification {
+    @include m(1, t);
+    @include m(1, r);
+    @include rounded;
+    @include bg($bg);
+    @include p(3);
+    @include text($fg);
+    min-width: 30rem;
+
+    image {
+        @include m(2, r);
+        @include font(3rem);
+    }
+
+    .title {
+        @include m(1, b);
+        @include font(1.4rem, bold);
+    }
+
+    .actions {
+        @include m(5, t);
+
+        button {
+            @include button;
+            @include rounded;
+            @include bg($card);
+            @include p(2);
+        }
+    }
+}

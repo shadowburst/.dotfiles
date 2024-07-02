@@ -33,9 +33,7 @@ export default function () {
                     }),
                 ],
             }),
-            onPrimaryClickRelease: () => {
-                windows.open('torrents');
-            },
+            onPrimaryClickRelease: () => windows.open('torrents'),
         }),
     });
 }

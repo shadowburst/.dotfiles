@@ -125,10 +125,7 @@ class TorrentService extends Service {
         this._timeout = setTimeout(() => this._updateState(), this.downloads.some((t) => !t.paused) ? 1000 : 15000);
     }
 
-    /**
-     * @param {number|null} id
-     */
-    async togglePause(id = null) {
+    async togglePause(/** @type {number|null} */ id = null) {
         const target = id ?? 'all';
         let operation = '--stop';
 
@@ -148,10 +145,7 @@ class TorrentService extends Service {
         this._updateState();
     }
 
-    /**
-     * @param {number} id
-     */
-    async remove(id) {
+    async remove(/** @type {number} */ id) {
         const operation = this.torrents.find((t) => t.id === id)?.finished ? '--remove' : '--remove-and-delete';
 
         await Utils.execAsync(`transmission-remote -t ${id} ${operation}`);

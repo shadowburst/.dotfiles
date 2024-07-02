@@ -4,7 +4,7 @@ import Clock from './clock.js';
 import Cpu from './cpu.js';
 import Media from './media.js';
 import Network from './network.js';
-import Notification from './notifications.js';
+import Notifications from './notifications.js';
 import Ram from './ram.js';
 import SysTray from './systray.js';
 import Torrents from './torrents.js';
@@ -29,7 +29,18 @@ export default function Bar(monitorId = 0) {
             }),
             endWidget: Widget.Box({
                 hpack: 'end',
-                children: [Torrents(), Updates(), Bluetooth(), Network(), Volume(), Cpu(), Ram(), Battery(), Clock()],
+                children: [
+                    Torrents(),
+                    Updates(),
+                    Bluetooth(),
+                    Network(),
+                    Volume(),
+                    Cpu(),
+                    Ram(),
+                    Battery(),
+                    Clock(),
+                    Notifications(),
+                ],
             }),
         }),
     });

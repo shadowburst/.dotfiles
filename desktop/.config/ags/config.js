@@ -1,5 +1,5 @@
-import Torrents from './modules/windows/torrents/torrents.js';
 import Bar from './modules/bar/bar.js';
+import Popups from './modules/windows/popups.js';
 
 const scss = `${App.configDir}/scss/main.scss`;
 const css = '/tmp/ags-style.css';
@@ -8,7 +8,7 @@ Utils.exec(`sass ${scss} ${css}`);
 const hyprland = await Service.import('hyprland');
 
 function createWindows() {
-    return hyprland.monitors.map((monitor) => Bar(monitor.id));
+    return [...hyprland.monitors.map((monitor) => Bar(monitor.id)), Popups()];
     //.map((win) => win.on('destroy', (self) => App.removeWindow(self)));
 }
 

@@ -1,5 +1,5 @@
-import Backdrop from './backdrop/backdrop.js';
-import Torrents from './torrents/torrents.js';
+import Backdrop from './backdrop.js';
+import Torrents from './torrents.js';
 
 export function closeAll() {
     for (const win of App.windows.filter((win) => !win.name?.startsWith('bar-'))) {
@@ -7,10 +7,7 @@ export function closeAll() {
     }
 }
 
-/**
- * @param {'torrents'} name
- */
-export function open(name) {
+export function open(/** @type {'torrents'} */ name) {
     if (App.windows.some((win) => win.name === name)) {
         return;
     }

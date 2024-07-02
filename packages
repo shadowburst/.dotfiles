@@ -1,4 +1,3 @@
-acpilight
 alacritty
 alsa-firmware
 bat
@@ -9,9 +8,9 @@ brightnessctl
 cmake
 cronie
 cups
+dart-sass
 discord
 docker
-dunst
 exa
 fd
 ffmpegthumbnailer
@@ -22,6 +21,7 @@ fuse2
 fzf
 gamemode
 gimp
+gnome-bluetooth-3.0
 gnome-calculator
 gnome-keyring
 gparted

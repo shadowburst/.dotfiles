@@ -1,5 +1,5 @@
-import torrents from '../../../services/torrents.js';
-import { format, string } from '../../../utils/index.js';
+import torrents from '../../services/torrents.js';
+import { format, string } from '../../utils/index.js';
 
 const hyprland = await Service.import('hyprland');
 

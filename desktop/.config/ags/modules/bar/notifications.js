@@ -1,19 +1,17 @@
 const notifications = await Service.import('notifications');
 
-function Notification() {
-    const popups = notifications.bind('popups');
-    return Widget.Box({
-        class_name: 'notification',
-        visible: popups.as((p) => p.length > 0),
-        children: [
-            Widget.Icon({
-                icon: 'preferences-system-notifications-symbolic',
+export default function Notifications() {
+    return Widget.Button({
+        className: notifications.bind('dnd').as((dnd) => (dnd ? 'notifications muted' : 'notifications')),
+        child: Widget.CircularProgress({
+            value: 1,
+            child: Widget.Icon({
+                icon: Utils.merge(
+                    [notifications.bind('notifications'), notifications.bind('dnd')],
+                    (notifs, dnd) => `notification-${dnd ? 'disabled-' : ''}${notifs.length > 0 ? 'new-' : ''}symbolic`
+                ),
             }),
-            Widget.Label({
-                label: popups.as((p) => p[0]?.summary || ''),
-            }),
-        ],
+        }),
+        onSecondaryClickRelease: () => (notifications.dnd = !notifications.dnd),
     });
 }
-
-export default Notification;
