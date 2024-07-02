@@ -9,16 +9,14 @@ export default function Bluetooth() {
                 return 'bluetooth muted';
             }
 
-            if (!device?.battery_percentage) {
-                return 'bluetooth';
-            }
+            if (device?.battery_percentage) {
+                if (device.battery_percentage < 20) {
+                    return 'bluetooth danger';
+                }
 
-            if (device.battery_percentage < 20) {
-                return 'bluetooth danger';
-            }
-
-            if (device.battery_percentage < 40) {
-                return 'bluetooth warning';
+                if (device.battery_percentage < 40) {
+                    return 'bluetooth warning';
+                }
             }
 
             return 'bluetooth';
