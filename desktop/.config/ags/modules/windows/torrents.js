@@ -1,3 +1,4 @@
+import * as windows from './index.js';
 import torrents from '../../services/torrents.js';
 import { format, string } from '../../utils/index.js';
 
@@ -65,7 +66,10 @@ function Torrent(/** @type {import('../../services/torrents.js').Torrent} */ tor
                 children: [
                     Widget.Button({
                         className: 'primary',
-                        visible: torrent.bind('paused'),
+                        visible: Utils.merge(
+                            [torrent.bind('paused'), torrent.bind('finished')],
+                            (paused, finished) => paused && !finished
+                        ),
                         child: Widget.Icon({
                             icon: 'media-playback-start-symbolic',
                             size: 18,
@@ -99,6 +103,12 @@ function Torrent(/** @type {import('../../services/torrents.js').Torrent} */ tor
 }
 
 export default function Torrents() {
+    torrents.connect('torrent-removed', () => {
+        if (torrents.torrents.length === 0) {
+            windows.closeAll();
+        }
+    });
+
     return Widget.Window({
         name: 'torrents',
         className: 'window',
