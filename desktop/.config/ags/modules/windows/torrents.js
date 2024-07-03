@@ -3,6 +3,101 @@ import { format, string } from '../../utils/index.js';
 
 const hyprland = await Service.import('hyprland');
 
+function Torrent(/** @type {import('../../services/torrents.js').Torrent} */ torrent) {
+    return Widget.Box({
+        className: 'torrent',
+        attribute: {
+            id: torrent.id,
+        },
+        children: [
+            Widget.Box({
+                vertical: true,
+                expand: true,
+                children: [
+                    Widget.Label({
+                        className: 'name',
+                        xalign: 0,
+                        label: torrent.bind('name').as((name) => string.truncate(name, 50)),
+                    }),
+                    Widget.Label({
+                        className: 'details',
+                        xalign: 0,
+                        label: Utils.merge(
+                            [torrent.bind('size'), torrent.bind('percent'), torrent.bind('eta')],
+                            (size, percent, eta) =>
+                                `${format.bytes(size)} (${format.percent(percent)})  -  ${torrent.finished ? 'Finished' : format.seconds(eta)}`
+                        ),
+                    }),
+                    Widget.LevelBar({
+                        classNames: Utils.merge(
+                            [torrent.bind('paused'), torrent.bind('finished')],
+                            (paused, finished) => [paused ? 'paused' : '', finished ? 'finished' : '']
+                        ),
+                        widthRequest: 200,
+                        value: torrent.bind('percent'),
+                    }),
+                    Widget.Box({
+                        className: 'progress',
+                        children: [
+                            Widget.Icon({
+                                icon: 'chevron-down-symbolic',
+                                size: 10,
+                            }),
+                            Widget.Label({
+                                label: torrent
+                                    .bind('rate_download')
+                                    .as((rateDownload) => `${format.bytes(rateDownload)}/s`),
+                            }),
+                            Widget.Icon({
+                                icon: 'chevron-up-symbolic',
+                                size: 10,
+                            }),
+                            Widget.Label({
+                                label: torrent.bind('rate_upload').as((rateUpload) => `${format.bytes(rateUpload)}/s`),
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            Widget.Box({
+                className: 'actions',
+                vertical: true,
+                children: [
+                    Widget.Button({
+                        className: 'primary',
+                        visible: torrent.bind('paused'),
+                        child: Widget.Icon({
+                            icon: 'media-playback-start-symbolic',
+                            size: 18,
+                        }),
+                        onPrimaryClick: () => torrent.resume(),
+                    }),
+                    Widget.Button({
+                        className: 'primary',
+                        visible: Utils.merge(
+                            [torrent.bind('paused'), torrent.bind('finished')],
+                            (paused, finished) => !paused && !finished
+                        ),
+                        child: Widget.Icon({
+                            icon: 'media-playback-pause-symbolic',
+                            size: 18,
+                        }),
+                        onPrimaryClick: () => torrent.pause(),
+                    }),
+                    Widget.Button({
+                        className: 'danger',
+                        child: Widget.Icon({
+                            icon: 'remove-symbolic',
+                            size: 18,
+                        }),
+                        onPrimaryClick: () => torrent.remove(),
+                    }),
+                ],
+            }),
+        ],
+    });
+}
+
 export default function Torrents() {
     return Widget.Window({
         name: 'torrents',
@@ -13,7 +108,7 @@ export default function Torrents() {
         child: Widget.Box({
             className: 'torrents',
             vertical: true,
-            children: Utils.merge([torrents.bind('downloads'), torrents.bind('uploads')], (downloads, uploads) => [
+            children: [
                 Widget.CenterBox({
                     startWidget: Widget.Label({
                         className: 'title',
@@ -23,103 +118,70 @@ export default function Torrents() {
                     endWidget: Widget.Box({
                         vpack: 'start',
                         hpack: 'end',
-                        children:
-                            downloads.length > 0
-                                ? [
-                                      Widget.Button({
-                                          className: 'primary',
-                                          child: Widget.Icon({
-                                              icon: downloads.some((torrent) => !torrent.paused)
-                                                  ? 'media-playback-pause-symbolic'
-                                                  : 'media-playback-start-symbolic',
-                                              size: 20,
-                                          }),
-                                          onPrimaryClick: () => torrents.togglePause(),
-                                      }),
-                                  ]
-                                : [],
-                    }),
-                }),
-                ...[...downloads, ...uploads].map((torrent) => {
-                    let levelbarClass = torrent.paused ? 'paused' : '';
-                    levelbarClass = torrent.finished ? 'finished' : levelbarClass;
-
-                    return Widget.Box({
-                        className: 'torrent',
                         children: [
-                            Widget.Box({
-                                vertical: true,
-                                expand: true,
-                                children: [
-                                    Widget.Label({
-                                        className: 'name',
-                                        xalign: 0,
-                                        label: string.truncate(torrent.name, 50),
-                                    }),
-                                    Widget.Label({
-                                        className: 'details',
-                                        xalign: 0,
-                                        label: `${format.bytes(torrent.size)} (${format.percent(torrent.percent)})  -  ${torrent.finished ? 'Finished' : format.seconds(torrent.eta)}`,
-                                    }),
-                                    Widget.LevelBar({
-                                        className: levelbarClass,
-                                        widthRequest: 200,
-                                        value: torrent.percent,
-                                    }),
-                                    Widget.Box({
-                                        className: 'progress',
-                                        children: [
-                                            Widget.Icon({
-                                                icon: 'chevron-down-symbolic',
-                                                size: 10,
-                                            }),
-                                            Widget.Label({
-                                                label: `${format.bytes(torrent.rate_download)}/s`,
-                                            }),
-                                            Widget.Icon({
-                                                icon: 'chevron-up-symbolic',
-                                                size: 10,
-                                            }),
-                                            Widget.Label({
-                                                label: `${format.bytes(torrent.rate_upload)}/s`,
-                                            }),
-                                        ],
-                                    }),
-                                ],
+                            Widget.Button({
+                                className: 'danger',
+                                visible: torrents.bind('status').as((status) => status === 'finished'),
+                                child: Widget.Icon({
+                                    icon: 'remove-symbolic',
+                                    size: 18,
+                                }),
+                                onPrimaryClick: () => torrents.removeAll(),
                             }),
-                            Widget.Box({
-                                className: 'actions',
-                                vertical: true,
-                                hpack: 'center',
-                                children: [
-                                    ...(torrent.finished
-                                        ? []
-                                        : [
-                                              Widget.Button({
-                                                  className: 'primary',
-                                                  child: Widget.Icon({
-                                                      icon: torrent.paused
-                                                          ? 'media-playback-start-symbolic'
-                                                          : 'media-playback-pause-symbolic',
-                                                      size: 18,
-                                                  }),
-                                                  onPrimaryClick: () => torrents.togglePause(torrent.id),
-                                              }),
-                                          ]),
-                                    Widget.Button({
-                                        className: 'danger',
-                                        child: Widget.Icon({
-                                            icon: 'remove-symbolic',
-                                            size: 18,
-                                        }),
-                                        onPrimaryClick: () => torrents.remove(torrent.id),
-                                    }),
-                                ],
+                            Widget.Button({
+                                className: 'primary',
+                                visible: torrents.bind('status').as((status) => status === 'paused'),
+                                child: Widget.Icon({
+                                    icon: 'media-playback-start-symbolic',
+                                    size: 18,
+                                }),
+                                onPrimaryClick: () => torrents.resumeAll(),
+                            }),
+                            Widget.Button({
+                                className: 'primary',
+                                visible: torrents.bind('status').as((status) => status === 'downloading'),
+                                child: Widget.Icon({
+                                    icon: 'media-playback-pause-symbolic',
+                                    size: 18,
+                                }),
+                                onPrimaryClick: () => torrents.pauseAll(),
                             }),
                         ],
-                    });
+                    }),
                 }),
-            ]),
+                Widget.Box({
+                    vertical: true,
+                    children: torrents.torrents.map(Torrent),
+                })
+                    .hook(
+                        torrents,
+                        (self, /** @type {import('../../services/torrents.js').Torrent} */ torrent) => {
+                            if (torrent) {
+                                self.children = [Torrent(torrent), ...self.children];
+                            }
+                        },
+                        'torrent-added'
+                    )
+                    .hook(
+                        torrents,
+                        (self, /** @type {import('../../services/torrents.js').Torrent} */ torrent) => {
+                            if (torrent) {
+                                self.children = [
+                                    ...self.children.filter((t) => t.attribute.id !== torrent.id),
+                                    Torrent(torrent),
+                                ];
+                            }
+                        },
+                        'torrent-finished'
+                    )
+                    .hook(
+                        torrents,
+                        (self, /** @type {number} */ id) => {
+                            self.children.find((t) => t.attribute.id === id)?.destroy();
+                        },
+                        'torrent-removed'
+                    ),
+            ],
         }),
     });
 }
