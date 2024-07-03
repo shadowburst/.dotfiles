@@ -10,7 +10,7 @@ return {
 		},
 		event = "VeryLazy",
 		opts = function()
-			local colors = require("tokyonight.colors").moon()
+			local colors = require("tokyonight.colors").setup()
 
 			local theme = require("lualine.themes.tokyonight")
 
