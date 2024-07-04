@@ -23,13 +23,13 @@ return {
 						require("utils.keys").map("n", keys, func, { buffer = event.buf, desc = desc })
 					end
 
-					map("cr", vim.lsp.buf.rename, "Rename variable")
 					map("gd", "<cmd>Telescope lsp_definitions<cr>", "Goto definition")
 					map("gD", "<cmd>Telescope lsp_type_definitions<cr>", "Goto type definition")
 					map("gi", "<cmd>Telescope lsp_implementations<cr>", "Goto implementation")
 					map("gr", "<cmd>Telescope lsp_references<cr>", "Goto references")
 					map("K", vim.lsp.buf.hover, "Hover documentation")
 					map("<leader>ca", vim.lsp.buf.code_action, "Code action")
+					map("<leader>cr", vim.lsp.buf.rename, "Rename variable")
 				end,
 			})
 
@@ -38,20 +38,11 @@ return {
 
 			require("mason").setup()
 
-			local vue_typescript_plugin = require("mason-registry")
-				.get_package("vue-language-server")
-				:get_install_path() .. "/node_modules/@vue/language-server" .. "/node_modules/@vue/typescript-plugin"
-
 			local servers = {
 				bashls = {},
 				cssls = {},
 				dockerls = {},
 				docker_compose_language_service = {},
-				eslint = {
-					settings = {
-						workingDirectories = { mode = "auto" },
-					},
-				},
 				gopls = {
 					settings = {
 						gopls = {
@@ -118,16 +109,14 @@ return {
 				tailwindcss = {
 					filetypes_exclude = { "markdown", "php" },
 				},
-				tsserver = {
+				volar = {
 					init_options = {
-						plugins = {
-							{
-								name = "@vue/typescript-plugin",
-								location = vue_typescript_plugin,
-								languages = { "javascript", "typescript", "vue" },
-							},
+						vue = {
+							hybridMode = false,
 						},
 					},
+				},
+				vtsls = {
 					filetypes = {
 						"javascript",
 						"javascriptreact",
@@ -137,8 +126,42 @@ return {
 						"typescript.tsx",
 						"vue",
 					},
+					settings = {
+						complete_function_calls = true,
+						vtsls = {
+							enableMoveToFileCodeAction = true,
+							autoUseWorkspaceTsdk = true,
+							experimental = {
+								completion = {
+									enableServerSideFuzzyMatch = true,
+								},
+							},
+							tsserver = {
+								globalPlugins = {
+									{
+										name = "@vue/typescript-plugin",
+										location = require("mason-registry")
+											.get_package("vue-language-server")
+											:get_install_path() .. "/node_modules/@vue/language-server",
+										languages = { "vue" },
+										configNamespace = "typescript",
+										enableForWorkspaceTypeScriptVersions = true,
+									},
+								},
+							},
+						},
+						javascript = {
+							suggest = {
+								completeFunctionCalls = true,
+							},
+						},
+						typescript = {
+							suggest = {
+								completeFunctionCalls = true,
+							},
+						},
+					},
 				},
-				volar = {},
 				yamlls = {
 					settings = {
 						yaml = {
@@ -155,7 +178,6 @@ return {
 			local ensure_installed = vim.tbl_keys(servers or {})
 			vim.list_extend(ensure_installed, {
 				"blade-formatter",
-				"eslint_d",
 				"gofumpt",
 				"goimports",
 				"hadolint",
