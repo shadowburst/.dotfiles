@@ -18,7 +18,3 @@ brightnessctl -s set 40%
 
 # Launch torrents daemon
 transmission-daemon &
-
-# Launch applets
-blueman-applet &
-nm-applet &
