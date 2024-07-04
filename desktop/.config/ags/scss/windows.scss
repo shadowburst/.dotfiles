@@ -12,6 +12,22 @@
         @include font(1.6rem, bold);
     }
 
+    .power {
+        @include window;
+        @include rounded;
+
+        button {
+            @include button;
+            @include m(2);
+            @include rounded;
+            @include p(2);
+
+            image {
+                @include font(8rem);
+            }
+        }
+    }
+
     .torrents {
         @include window;
 

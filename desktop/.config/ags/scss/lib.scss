@@ -110,23 +110,29 @@
 @mixin button($color: $primary) {
     @include transition(colors);
 
-    &:hover {
+    &:hover,
+    &:focus {
         @include bg(rgba($color, 0.1));
     }
 
-    &.primary:hover {
+    &.primary:hover,
+    &.primary:focus {
         @include text($primary);
     }
-    &.secondary:hover {
+    &.secondary:hover,
+    &.secondary:focus {
         @include text($secondary);
     }
-    &.success:hover {
+    &.success:hover,
+    &.success:focus {
         @include text($success);
     }
-    &.warning:hover {
+    &.warning:hover,
+    &.warning:focus {
         @include text($warning);
     }
-    &.danger:hover {
+    &.danger:hover,
+    &.danger:focus {
         @include text($danger);
     }
 }
