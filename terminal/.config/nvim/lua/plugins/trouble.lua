@@ -2,10 +2,7 @@ return {
 	{
 		"folke/trouble.nvim",
 		dependencies = {
-			{
-				"nvim-tree/nvim-web-devicons",
-				opts = {},
-			},
+			"echasnovski/mini.icons",
 		},
 		cmd = { "Trouble" },
 		opts = {

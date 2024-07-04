@@ -2,6 +2,7 @@ return {
 	{
 		"telescope.nvim",
 		dependencies = {
+			"echasnovski/mini.icons",
 			"folke/edgy.nvim",
 			"rcarriga/nvim-notify",
 			{

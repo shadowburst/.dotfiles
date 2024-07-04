@@ -2,6 +2,7 @@ return {
 	{
 		"folke/noice.nvim",
 		dependencies = {
+			"echasnovski/mini.icons",
 			"MunifTanjim/nui.nvim",
 			"rcarriga/nvim-notify",
 			{
