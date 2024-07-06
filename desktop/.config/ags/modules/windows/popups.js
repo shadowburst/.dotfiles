@@ -9,8 +9,9 @@ export default function () {
     return Widget.Window({
         name: 'popups',
         className: 'window',
-        anchor: ['top', 'right'],
         monitor: hyprland.active.monitor.bind('id'),
+        layer: 'overlay',
+        anchor: ['top', 'right'],
         child: Widget.Box({
             css: 'min-width: 2px; min-height: 2px;',
             child: Widget.Box({

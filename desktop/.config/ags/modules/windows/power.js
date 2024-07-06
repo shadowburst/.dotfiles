@@ -31,8 +31,8 @@ export default function Power() {
         name: 'power',
         className: 'window',
         monitor: hyprland.active.monitor.bind('id'),
-        anchor: ['top'],
         layer: 'overlay',
+        anchor: ['top'],
         keymode: 'exclusive',
         child: Widget.Box({
             className: 'power',
@@ -42,7 +42,8 @@ export default function Power() {
                     isFocus: focused.bind().as((value) => value === index),
                     className: 'primary',
                     child: Widget.Icon(b.icon),
-                    onPrimaryClickRelease: b.action,
+                    onPrimaryClickRelease: () => b.action(),
+                    onHover: () => (focused.value = index),
                 })
                     .keybind('Return', () => b.action())
                     .keybind('leftarrow', () => (focused.value = Math.max(0, focused.value - 1)))
