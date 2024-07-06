@@ -23,6 +23,7 @@ export default function Bar(/** @type {number} */ monitorId = 0) {
             startWidget: Widget.Box({
                 children: [Workspaces(monitorId), Media(), Window(monitorId)],
             }),
+            centerWidget: Clock(),
             endWidget: Widget.Box({
                 hpack: 'end',
                 children: [
@@ -34,7 +35,6 @@ export default function Bar(/** @type {number} */ monitorId = 0) {
                     Cpu(),
                     Ram(),
                     Battery(),
-                    Clock(),
                     Notifications(),
                 ],
             }),
