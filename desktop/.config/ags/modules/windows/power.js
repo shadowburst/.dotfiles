@@ -1,31 +1,31 @@
 import * as windows from './index.js';
 const hyprland = await Service.import('hyprland');
 
+/** @type {{icon: string, action: () => void}[]} */
+const buttons = [
+    {
+        icon: 'changes-prevent-symbolic',
+        action: () => {
+            windows.closeAll();
+            Utils.execAsync(['bash', '-c', 'sleep 0.1 && loginctl lock-session']);
+        },
+    },
+    {
+        icon: 'system-reboot-symbolic',
+        action: () => Utils.execAsync('systemctl reboot'),
+    },
+    {
+        icon: 'system-shutdown-symbolic',
+        action: () => Utils.execAsync('systemctl poweroff'),
+    },
+    {
+        icon: 'system-log-out-symbolic',
+        action: () => hyprland.messageAsync('dispatch exit 0'),
+    },
+];
+
 export default function Power() {
     const focused = Variable(0);
-
-    /** @type {{icon: string, action: () => void}[]} */
-    const buttons = [
-        {
-            icon: 'changes-prevent-symbolic',
-            action: () => {
-                windows.closeAll();
-                Utils.execAsync(['bash', '-c', 'sleep 0.1 && loginctl lock-session']);
-            },
-        },
-        {
-            icon: 'system-reboot-symbolic',
-            action: () => Utils.execAsync('systemctl reboot'),
-        },
-        {
-            icon: 'system-shutdown-symbolic',
-            action: () => Utils.execAsync('systemctl poweroff'),
-        },
-        {
-            icon: 'system-log-out-symbolic',
-            action: () => hyprland.messageAsync('dispatch exit 0'),
-        },
-    ];
 
     return Widget.Window({
         name: 'power',
@@ -33,6 +33,7 @@ export default function Power() {
         monitor: hyprland.active.monitor.bind('id'),
         layer: 'overlay',
         anchor: ['top'],
+        exclusivity: 'ignore',
         keymode: 'exclusive',
         child: Widget.Box({
             className: 'power',
