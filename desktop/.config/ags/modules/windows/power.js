@@ -31,6 +31,7 @@ export default function Power() {
         name: 'power',
         className: 'window',
         monitor: hyprland.active.monitor.bind('id'),
+        anchor: ['top'],
         layer: 'overlay',
         keymode: 'exclusive',
         child: Widget.Box({

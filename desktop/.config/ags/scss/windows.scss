@@ -1,3 +1,8 @@
+.backdrop.dark {
+    @include bg($bg);
+    opacity: 0.5;
+}
+
 .window {
     @mixin window() {
         @include rounded(md, b);
@@ -14,7 +19,6 @@
 
     .power {
         @include window;
-        @include rounded;
 
         button {
             @include button;

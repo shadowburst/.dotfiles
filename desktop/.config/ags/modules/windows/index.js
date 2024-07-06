@@ -19,7 +19,7 @@ export function open(/** @type {WindowName} */ name) {
     }
 
     closeAll();
-    App.addWindow(Backdrop());
+    App.addWindow(Backdrop(['power'].includes(name)));
 
     switch (name) {
         case 'power':
