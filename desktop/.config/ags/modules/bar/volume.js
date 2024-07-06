@@ -10,7 +10,7 @@ export default function Volume() {
     };
 
     return Widget.Button({
-        className: audio.speaker.bind('is_muted').as((isMuted) => (isMuted ? 'volume muted' : 'volume')),
+        classNames: audio.speaker.bind('is_muted').as((isMuted) => ['volume', isMuted ? 'muted' : '']),
         child: Widget.Box({
             children: [
                 Widget.CircularProgress({

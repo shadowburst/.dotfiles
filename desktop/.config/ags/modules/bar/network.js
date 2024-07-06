@@ -35,10 +35,14 @@ function Wired() {
 
 export default function Network() {
     return Widget.Button({
-        className: network.bind('connectivity').as((connectivity) => {
-            if (connectivity === 'full') return 'network';
-            if (connectivity === 'limited') return 'network warning';
-            return 'network muted';
+        classNames: network.bind('connectivity').as((connectivity) => {
+            const classes = ['network'];
+            if (connectivity === 'full') {
+                classes.push('connected');
+            } else if (connectivity === 'limited') {
+                classes.push('connected warning');
+            }
+            return classes;
         }),
         child: Widget.Box({
             children: network.bind('primary').as((primary) => (primary === 'wired' ? Wired() : Wifi())),

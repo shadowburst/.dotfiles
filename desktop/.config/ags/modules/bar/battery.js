@@ -2,10 +2,14 @@ const battery = await Service.import('battery');
 
 export default function Battery() {
     return Widget.Box({
-        className: battery.bind('percent').as((p) => {
-            if (p > 40) return 'battery';
-            if (p > 20) return 'battery warning';
-            return 'battery danger';
+        classNames: battery.bind('percent').as((p) => {
+            const classes = ['battery'];
+            if (p <= 20) {
+                classes.push('danger');
+            } else if (p <= 40) {
+                classes.push('warning');
+            }
+            return classes;
         }),
         children: [
             Widget.CircularProgress({

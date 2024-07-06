@@ -6,17 +6,13 @@ import Media from './media.js';
 import Network from './network.js';
 import Notifications from './notifications.js';
 import Ram from './ram.js';
-import SysTray from './systray.js';
 import Torrents from './torrents.js';
 import Volume from './volume.js';
 import Updates from './updates.js';
 import Window from './window.js';
 import Workspaces from './workspaces.js';
 
-/**
- * @param {number} monitorId
- */
-export default function Bar(monitorId = 0) {
+export default function Bar(/** @type {number} */ monitorId = 0) {
     return Widget.Window({
         name: `bar-${monitorId}`,
         className: 'bar',

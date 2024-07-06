@@ -4,22 +4,20 @@ export default function Bluetooth() {
     const device = bluetooth.bind('connected_devices').as((devices) => (devices.length > 0 ? devices[0] : null));
 
     return Widget.Button({
-        className: Utils.merge([bluetooth.bind('enabled'), device], (enabled, device) => {
+        classNames: Utils.merge([bluetooth.bind('enabled'), device], (enabled, d) => {
+            const classes = ['bluetooth'];
+
             if (!enabled) {
-                return 'bluetooth muted';
-            }
-
-            if (device?.battery_percentage) {
-                if (device.battery_percentage < 20) {
-                    return 'bluetooth danger';
-                }
-
-                if (device.battery_percentage < 40) {
-                    return 'bluetooth warning';
+                classes.push('muted');
+            } else if (d?.battery_percentage) {
+                if (d.battery_percentage <= 20) {
+                    classes.push('danger');
+                } else if (d.battery_percentage <= 40) {
+                    classes.push('warning');
                 }
             }
 
-            return 'bluetooth';
+            return classes;
         }),
         child: Widget.Box({
             children: [
@@ -39,6 +37,6 @@ export default function Bluetooth() {
             ],
         }),
         onPrimaryClick: () => Utils.execAsync('blueman-manager'),
-        onSecondaryClick: bluetooth.toggle,
+        onSecondaryClick: () => bluetooth.toggle(),
     });
 }

@@ -44,9 +44,9 @@ export default function Media() {
                                 }),
                             ],
                         }),
-                        onPrimaryClick: player.playPause,
-                        onScrollUp: player.next,
-                        onScrollDown: player.previous,
+                        onPrimaryClick: () => player.playPause(),
+                        onScrollUp: () => player.next(),
+                        onScrollDown: () => player.previous(),
                     }),
                 ];
             }),

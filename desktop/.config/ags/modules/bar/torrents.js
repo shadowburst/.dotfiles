@@ -6,16 +6,13 @@ export default function () {
         revealChild: torrents.bind('torrents').as((torrents) => torrents.length > 0),
         transition: 'slide_left',
         child: Widget.Button({
-            className: torrents.bind('status').as((status) => {
-                switch (status) {
-                    case 'paused':
-                        return 'torrents warning';
-                    case 'finished':
-                        return 'torrents success';
-                    default:
-                        return 'torrents';
-                }
-            }),
+            classNames: torrents
+                .bind('status')
+                .as((status) => [
+                    'torrents',
+                    status === 'paused' ? 'warning' : '',
+                    status === 'finished' ? 'success' : '',
+                ]),
             child: Widget.Box({
                 children: [
                     Widget.Label({

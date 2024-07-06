@@ -10,16 +10,14 @@ export default function Updates() {
                 children: [
                     Widget.CircularProgress({
                         value: 1,
-                        child: Widget.Icon({
-                            icon: 'browser-download-symbolic',
-                        }),
+                        child: Widget.Icon('browser-download-symbolic'),
                     }),
                     Widget.Label({
                         label: updates.bind('count').as((count) => `${count} updates`),
                     }),
                 ],
             }),
-            onPrimaryClick: updates.update,
+            onPrimaryClick: () => updates.update(),
             tooltipText: updates.bind('list').as((list) => list.join('\n')),
         }),
     });

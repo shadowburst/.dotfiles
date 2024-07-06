@@ -2,7 +2,7 @@ const notifications = await Service.import('notifications');
 
 export default function Notifications() {
     return Widget.Button({
-        className: notifications.bind('dnd').as((dnd) => (dnd ? 'notifications muted' : 'notifications')),
+        classNames: notifications.bind('dnd').as((dnd) => ['notifications', dnd ? 'muted' : '']),
         child: Widget.CircularProgress({
             value: 1,
             child: Widget.Icon({
