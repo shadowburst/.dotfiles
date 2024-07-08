@@ -1,8 +1,4 @@
-/**
- * @param {number} value
- * @returns {string}
- */
-export function bytes(value) {
+export function bytes(/** @type {number} */ value) /** @type {string} */ {
     const gb = Math.pow(1024, 3);
     if (value > gb) {
         return `${(value / gb).toFixed(2)} GB`;
@@ -16,19 +12,11 @@ export function bytes(value) {
     return `${(value / 1024).toFixed(2)} KB`;
 }
 
-/**
- * @param {number} value
- * @returns {string}
- */
-export function percent(value) {
+export function percent(/** @type {number} */ value) /** @type {string} */ {
     return `${(value * 100).toFixed(2)}%`;
 }
 
-/**
- * @param {number} value
- * @returns {string}
- */
-export function seconds(value) {
+export function seconds(/** @type {number} */ value) /** @type {string} */ {
     if (value < 0) {
         return 'Unknown';
     }
