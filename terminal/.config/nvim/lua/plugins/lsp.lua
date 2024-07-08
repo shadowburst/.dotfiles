@@ -109,13 +109,7 @@ return {
 				tailwindcss = {
 					filetypes_exclude = { "markdown", "php" },
 				},
-				volar = {
-					init_options = {
-						vue = {
-							hybridMode = false,
-						},
-					},
-				},
+				volar = {},
 				vtsls = {
 					filetypes = {
 						"javascript",
