@@ -75,6 +75,6 @@ export default function Applications() {
                     }),
                 }),
             ],
-        }),
+        }).keybind('Escape', () => windows.closeAll()),
     });
 }
