@@ -1,3 +1,4 @@
+import Applications from './applications.js';
 import Backdrop from './backdrop.js';
 import Power from './power.js';
 import Torrents from './torrents.js';
@@ -5,7 +6,7 @@ import Updates from './updates.js';
 
 /**
  * @typedef WindowName
- * @type {'power'|'torrents'|'updates'}
+ * @type {'applications'|'power'|'torrents'|'updates'}
  */
 
 export function closeAll() {
@@ -20,9 +21,12 @@ export function open(/** @type {WindowName} */ name) {
     }
 
     closeAll();
-    App.addWindow(Backdrop(['power'].includes(name)));
+    App.addWindow(Backdrop(['applications', 'power'].includes(name)));
 
     switch (name) {
+        case 'applications':
+            App.addWindow(Applications());
+            break;
         case 'power':
             App.addWindow(Power());
             break;
