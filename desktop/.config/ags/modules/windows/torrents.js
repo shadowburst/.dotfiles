@@ -159,38 +159,43 @@ export default function Torrents() {
                         ],
                     }),
                 }),
-                Widget.Box({
-                    vertical: true,
-                    children: torrents.torrents.map(Torrent),
-                })
-                    .hook(
-                        torrents,
-                        (self, /** @type {import('../../services/torrents.js').Torrent} */ torrent) => {
-                            if (torrent) {
-                                self.children = [Torrent(torrent), ...self.children];
-                            }
-                        },
-                        'torrent-added'
-                    )
-                    .hook(
-                        torrents,
-                        (self, /** @type {import('../../services/torrents.js').Torrent} */ torrent) => {
-                            if (torrent) {
-                                self.children = [
-                                    ...self.children.filter((t) => t.attribute.id !== torrent.id),
-                                    Torrent(torrent),
-                                ];
-                            }
-                        },
-                        'torrent-finished'
-                    )
-                    .hook(
-                        torrents,
-                        (self, /** @type {number} */ id) => {
-                            self.children.find((t) => t.attribute.id === id)?.destroy();
-                        },
-                        'torrent-removed'
-                    ),
+                Widget.Scrollable({
+                    hscroll: 'never',
+                    vscroll: 'automatic',
+                    css: torrents.bind('torrents').as((list) => `min-height: ${Math.min(5, list.length) * 7.5}rem`),
+                    child: Widget.Box({
+                        vertical: true,
+                        children: torrents.torrents.map(Torrent),
+                    })
+                        .hook(
+                            torrents,
+                            (self, /** @type {import('../../services/torrents.js').Torrent} */ torrent) => {
+                                if (torrent) {
+                                    self.children = [Torrent(torrent), ...self.children];
+                                }
+                            },
+                            'torrent-added'
+                        )
+                        .hook(
+                            torrents,
+                            (self, /** @type {import('../../services/torrents.js').Torrent} */ torrent) => {
+                                if (torrent) {
+                                    self.children = [
+                                        ...self.children.filter((t) => t.attribute.id !== torrent.id),
+                                        Torrent(torrent),
+                                    ];
+                                }
+                            },
+                            'torrent-finished'
+                        )
+                        .hook(
+                            torrents,
+                            (self, /** @type {number} */ id) => {
+                                self.children.find((t) => t.attribute.id === id)?.destroy();
+                            },
+                            'torrent-removed'
+                        ),
+                }),
             ],
         }),
     });
