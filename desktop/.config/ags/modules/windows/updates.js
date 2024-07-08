@@ -61,12 +61,14 @@ export default function Updates() {
                                                 Widget.Label({
                                                     className: 'old',
                                                     label: update.old_version,
+                                                    truncate: 'start',
                                                     xalign: 1,
                                                 }),
                                                 Widget.Icon('chevron-right-symbolic'),
                                                 Widget.Label({
                                                     className: 'new',
                                                     label: update.new_version,
+                                                    truncate: 'start',
                                                     xalign: 0,
                                                 }),
                                             ],
