@@ -111,4 +111,28 @@
             }
         }
     }
+
+    .updates {
+        @include window;
+
+        .title {
+            @include title;
+        }
+
+        button {
+            @include button;
+            @include rounded;
+            @include p(2);
+        }
+
+        .update {
+            label.new {
+                @include text($success);
+            }
+
+            image {
+                @include font(0.8rem);
+            }
+        }
+    }
 }

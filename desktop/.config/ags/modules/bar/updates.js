@@ -1,3 +1,4 @@
+import * as windows from '../windows/index.js';
 import updates from '../../services/updates.js';
 
 export default function Updates() {
@@ -17,8 +18,7 @@ export default function Updates() {
                     }),
                 ],
             }),
-            onPrimaryClick: () => updates.update(),
-            tooltipText: updates.bind('list').as((list) => list.join('\n')),
+            onPrimaryClick: () => windows.open('updates'),
         }),
     });
 }
