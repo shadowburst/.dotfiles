@@ -1,4 +1,5 @@
 import * as windows from './index.js';
+
 const hyprland = await Service.import('hyprland');
 
 export default function Backdrop(/** @type {boolean} */ dark = false) {

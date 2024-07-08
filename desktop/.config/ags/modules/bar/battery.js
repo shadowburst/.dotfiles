@@ -1,7 +1,8 @@
+import * as windows from '../windows/index.js';
 const battery = await Service.import('battery');
 
 export default function Battery() {
-    return Widget.Box({
+    return Widget.Button({
         classNames: battery.bind('percent').as((p) => {
             const classes = ['battery'];
             if (p <= 20) {
@@ -11,19 +12,22 @@ export default function Battery() {
             }
             return classes;
         }),
-        children: [
-            Widget.CircularProgress({
-                value: battery.bind('percent').as((p) => (p > 0 ? p / 100 : 0)),
-                child: Widget.Icon({
-                    icon: Utils.merge([battery.bind('charging'), battery.bind('icon_name')], (charging, name) =>
-                        charging ? 'thunderbolt-symbolic' : name
-                    ),
+        child: Widget.Box({
+            children: [
+                Widget.CircularProgress({
+                    value: battery.bind('percent').as((p) => (p > 0 ? p / 100 : 0)),
+                    child: Widget.Icon({
+                        icon: Utils.merge([battery.bind('charging'), battery.bind('icon_name')], (charging, name) =>
+                            charging ? 'thunderbolt-symbolic' : name
+                        ),
+                    }),
+                    startAt: 0.75,
                 }),
-                startAt: 0.75,
-            }),
-            Widget.Label({
-                label: battery.bind('percent').as((p) => `${p}%`),
-            }),
-        ],
+                Widget.Label({
+                    label: battery.bind('percent').as((p) => `${p}%`),
+                }),
+            ],
+        }),
+        onPrimaryClickRelease: () => windows.open('power-profiles'),
     });
 }

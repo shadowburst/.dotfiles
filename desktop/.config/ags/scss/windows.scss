@@ -34,6 +34,26 @@
         }
     }
 
+    .power-profiles {
+        @include window;
+
+        .title {
+            @include title;
+        }
+
+        button {
+            @include button;
+            @include m(2);
+            @include rounded;
+            @include p(2);
+
+            image {
+                @include m(2, b);
+                @include font(4rem);
+            }
+        }
+    }
+
     .power {
         @include window;
 

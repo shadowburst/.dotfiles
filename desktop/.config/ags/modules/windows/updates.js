@@ -1,6 +1,7 @@
 import * as windows from './index.js';
 import { string } from '../../utils/index.js';
 import updates from '../../services/updates.js';
+
 const hyprland = await Service.import('hyprland');
 
 export default function Updates() {

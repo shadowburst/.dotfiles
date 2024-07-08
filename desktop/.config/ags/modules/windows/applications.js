@@ -1,5 +1,6 @@
 import * as windows from './index.js';
 import { array } from '../../utils/index.js';
+
 const applications = await Service.import('applications');
 const hyprland = await Service.import('hyprland');
 

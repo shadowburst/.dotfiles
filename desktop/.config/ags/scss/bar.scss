@@ -44,12 +44,13 @@
     }
 
     .battery {
+        @include button;
         @include pill;
     }
 
     .bluetooth {
-        @include pill;
         @include button;
+        @include pill;
     }
 
     .clock {
@@ -65,18 +66,18 @@
     }
 
     .media {
-        @include pill;
         @include button;
+        @include pill;
     }
 
     .network {
-        @include pill;
         @include button;
+        @include pill;
     }
 
     .notifications {
-        @include pill;
         @include button;
+        @include pill;
 
         image {
             @include text($primary);
@@ -88,8 +89,8 @@
     }
 
     .torrents {
-        @include pill;
         @include button;
+        @include pill;
 
         label:first-child {
             @include m(2, l);
@@ -98,14 +99,14 @@
     }
 
     .updates {
-        @include pill;
         @include button;
+        @include pill;
         @include text($success);
     }
 
     .volume {
-        @include pill;
         @include button;
+        @include pill;
 
         image {
             @include text($primary);
