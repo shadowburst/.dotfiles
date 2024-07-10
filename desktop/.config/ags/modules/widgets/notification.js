@@ -37,13 +37,14 @@ export default function Notification(
                     children: [
                         Widget.Label({
                             className: 'title',
-                            xalign: 0,
                             label: n.summary,
+                            xalign: 0,
                             wrap: true,
                         }),
                         Widget.Label({
                             className: 'body',
                             label: n.body,
+                            xalign: 0,
                             wrap: true,
                         }),
                     ],

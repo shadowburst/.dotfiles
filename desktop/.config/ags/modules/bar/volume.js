@@ -1,14 +1,14 @@
 const audio = await Service.import('audio');
 
-export default function Volume() {
-    const icons = {
-        101: 'overamplified',
-        67: 'high',
-        34: 'medium',
-        1: 'low',
-        0: 'muted',
-    };
+const icons = {
+    101: 'overamplified',
+    67: 'high',
+    34: 'medium',
+    1: 'low',
+    0: 'muted',
+};
 
+export default function Volume() {
     return Widget.Button({
         classNames: audio.speaker.bind('is_muted').as((isMuted) => ['volume', isMuted ? 'muted' : '']),
         child: Widget.Box({

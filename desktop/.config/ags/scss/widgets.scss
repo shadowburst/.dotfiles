@@ -27,4 +27,25 @@
             @include p(2);
         }
     }
+
+    levelbar {
+        & trough,
+        & trough block {
+            @include rounded(full);
+
+            min-height: 1rem;
+        }
+
+        & trough {
+            @include bg($muted);
+
+            & block.filled {
+                @include bg($primary);
+            }
+        }
+
+        &.muted trough block.filled {
+            @include bg($muted);
+        }
+    }
 }
