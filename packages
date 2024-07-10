@@ -27,6 +27,7 @@ gnome-keyring
 gparted
 grim
 grub-customizer
+gvfs
 htop
 hyprland
 hyprpaper
@@ -79,6 +80,7 @@ trash-cli
 tree
 unarchiver
 unzip
+upower
 virt-manager
 wget
 wireplumber
