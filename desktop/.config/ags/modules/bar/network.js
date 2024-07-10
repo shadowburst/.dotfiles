@@ -5,7 +5,7 @@ const network = await Service.import('network');
 function Wifi() {
     return [
         Widget.CircularProgress({
-            value: network.wifi.bind('strength'),
+            value: network.wifi.bind('strength').as((strength) => strength / 100),
             child: Widget.Icon({
                 icon: network.wifi.bind('icon_name'),
             }),
