@@ -1,6 +1,6 @@
 import brightness from '../../services/brightness.js';
-import BrightnessOsd from '../widgets/BrightnessOsd.js';
-import VolumeOsd from '../widgets/VolumeOsd.js';
+import BrightnessOsd from '../widgets/brightness-osd.js';
+import VolumeOsd from '../widgets/volume-osd.js';
 import Notification from '../widgets/notification.js';
 
 const audio = await Service.import('audio');
