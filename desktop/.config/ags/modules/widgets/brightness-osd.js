@@ -14,7 +14,6 @@ export default function BrightnessOsd() {
             Widget.Icon({
                 icon: brightness.bind('value').as((value) => {
                     const icon = [67, 34, 1, 0].find((threshold) => threshold <= value * 100);
-                    console.log(value, icon);
 
                     return `display-brightness-${icons[icon]}-symbolic`;
                 }),
