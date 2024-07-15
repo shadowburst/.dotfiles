@@ -37,10 +37,8 @@ export default function Network() {
     return Widget.Button({
         classNames: network.bind('connectivity').as((connectivity) => {
             const classes = ['network'];
-            if (connectivity === 'full') {
-                classes.push('connected');
-            } else if (connectivity === 'limited') {
-                classes.push('connected warning');
+            if (connectivity === 'limited') {
+                classes.push('warning');
             }
             return classes;
         }),
@@ -48,6 +46,6 @@ export default function Network() {
             children: network.bind('primary').as((primary) => (primary === 'wired' ? Wired() : Wifi())),
         }),
         onPrimaryClick: () => Utils.execAsync(['bash', '-c', '$TERMINAL -e nmtui']),
-        onSecondaryClick: network.toggleWifi,
+        onSecondaryClick: () => network.toggleWifi(),
     });
 }
