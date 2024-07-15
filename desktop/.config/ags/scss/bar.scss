@@ -113,6 +113,11 @@
         }
     }
 
+    .vpn {
+        @include button;
+        @include pill;
+    }
+
     .window {
         @include m(1);
 

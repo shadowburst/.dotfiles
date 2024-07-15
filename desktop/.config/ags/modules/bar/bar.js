@@ -7,6 +7,7 @@ import Network from './network.js';
 import Notifications from './notifications.js';
 import Ram from './ram.js';
 import Torrents from './torrents.js';
+import Vpn from './vpn.js';
 import Volume from './volume.js';
 import Updates from './updates.js';
 import Window from './window.js';
@@ -31,6 +32,7 @@ export default function Bar(/** @type {number} */ monitorId = 0) {
                     Updates(),
                     Bluetooth(),
                     Network(),
+                    Vpn(),
                     Volume(),
                     Cpu(),
                     Ram(),
