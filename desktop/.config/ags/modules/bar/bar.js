@@ -32,7 +32,7 @@ export default function Bar(/** @type {number} */ monitorId = 0) {
                     Updates(),
                     Bluetooth(),
                     Network(),
-                    Vpn(),
+                    // Vpn(),
                     Volume(),
                     Cpu(),
                     Ram(),

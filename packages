@@ -82,6 +82,7 @@ unzip
 upower
 virt-manager
 wget
+wireguard-tools
 wireplumber
 wl-clipboard
 xdg-desktop-portal-gtk
