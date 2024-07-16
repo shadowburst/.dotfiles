@@ -8,7 +8,7 @@ return {
 			"b0o/SchemaStore.nvim",
 			"telescope.nvim",
 		},
-		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
+		lazy = false,
 		config = function()
 			local signs = { Error = " ", Warn = " ", Hint = "󰌶 ", Info = " " }
 			for type, icon in pairs(signs) do
@@ -92,9 +92,6 @@ return {
 					},
 				},
 				lua_ls = {
-					root_dir = function()
-						return vim.loop.cwd()
-					end,
 					settings = {
 						Lua = {
 							workspace = {
@@ -187,7 +184,6 @@ return {
 				"yamlfmt",
 				"yamllint",
 			})
-			require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
 
 			require("mason-lspconfig").setup({
 				handlers = {
@@ -198,6 +194,8 @@ return {
 					end,
 				},
 			})
+
+			require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
 		end,
 	},
 }
