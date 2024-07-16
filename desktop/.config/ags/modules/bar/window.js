@@ -2,10 +2,7 @@ import { string } from '../../utils/index.js';
 
 const hyprland = await Service.import('hyprland');
 
-/**
- * @param {number} monitorId
- */
-export default function Window(monitorId = 0) {
+export default function Window(/** @type {number} */ monitorId = 0) {
     const client = hyprland.bind('active').as((active) => {
         const c = hyprland.getClient(active.client.address);
 
