@@ -2,25 +2,29 @@ return {
 	{
 		"folke/which-key.nvim",
 		event = "VeryLazy",
-		config = function(_, opts)
-			local wk = require("which-key")
-			wk.setup(opts)
-			wk.register({
-				mode = { "n", "v" },
-				["g"] = { name = "+goto" },
-				["<leader>b"] = { name = "+buffers" },
-				["<leader>c"] = { name = "+code" },
-				["<leader>f"] = { name = "+file/find" },
-				["<leader>g"] = { name = "+git" },
-				["<leader>h"] = { name = "+harpoon" },
-				["<leader>n"] = { name = "+notifications" },
-				["<leader>q"] = { name = "+quit" },
-				["<leader>s"] = { name = "+search" },
-				["<leader>t"] = { name = "+toggle" },
-				["<leader>v"] = { name = "+neovim" },
-				["<leader>w"] = { name = "+windows" },
-				["<leader>x"] = { name = "+diagnostics/quickfix" },
-			})
-		end,
+		opts = {
+			preset = "modern",
+			icons = {
+				mappings = false,
+			},
+			spec = {
+				{
+					mode = { "n", "v" },
+					{ "g", group = "goto" },
+					{ "<leader>b", group = "buffers" },
+					{ "<leader>c", group = "code" },
+					{ "<leader>f", group = "file/find" },
+					{ "<leader>g", group = "git" },
+					{ "<leader>h", group = "harpoon" },
+					{ "<leader>n", group = "notifications" },
+					{ "<leader>q", group = "quit" },
+					{ "<leader>s", group = "search" },
+					{ "<leader>t", group = "toggle" },
+					{ "<leader>v", group = "neovim" },
+					{ "<leader>w", group = "windows" },
+					{ "<leader>x", group = "diagnostics/quickfix" },
+				},
+			},
+		},
 	},
 }
