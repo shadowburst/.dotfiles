@@ -125,7 +125,6 @@
             @include font(0.8rem);
         }
         label.class {
-            @include m(-1, t);
             @include font(1rem, bold);
         }
     }

@@ -19,6 +19,7 @@ export default function Window(monitorId = 0) {
     return Widget.Box({
         className: 'window',
         vertical: true,
+        homogeneous: true,
         visible: client.as((client) => client != null),
         children: [
             Widget.Label({
