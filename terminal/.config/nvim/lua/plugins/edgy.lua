@@ -44,6 +44,7 @@ return {
 			local colors = require("tokyonight.colors").setup()
 
 			vim.api.nvim_set_hl(0, "EdgyTitle", { bg = colors.bg_dark, fg = colors.blue, bold = true })
+			vim.api.nvim_set_hl(0, "EdgyWinBar", { bg = colors.bg_dark })
 			vim.api.nvim_set_hl(0, "EdgyIconActive", { bg = colors.bg_dark, fg = colors.orange })
 		end,
 	},
