@@ -11,7 +11,7 @@ import Updates from './updates.js';
  */
 
 export function closeAll() {
-    for (const win of App.windows.filter((win) => !win.name?.startsWith('bar-'))) {
+    for (const win of App.windows.filter((win) => !win.name?.startsWith('bar-') && !['popups'].includes(win.name))) {
         App.removeWindow(win);
     }
 }
