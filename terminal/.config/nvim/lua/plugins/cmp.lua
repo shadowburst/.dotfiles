@@ -6,8 +6,8 @@ return {
 			"saadparwaiz1/cmp_luasnip",
 			"hrsh7th/cmp-nvim-lsp",
 			"hrsh7th/cmp-path",
-			"onsails/lspkind.nvim",
 			"L3MON4D3/LuaSnip",
+			"echasnovski/mini.icons",
 			{
 				"roobert/tailwindcss-colorizer-cmp.nvim",
 				opts = {},
@@ -17,6 +17,7 @@ return {
 		config = function()
 			local luasnip = require("luasnip")
 			local cmp = require("cmp")
+			local mini_icons = require("mini.icons")
 			luasnip.config.setup({})
 
 			cmp.setup({
@@ -60,8 +61,10 @@ return {
 					expandable_indicator = true,
 					fields = { "abbr", "kind", "menu" },
 					format = function(entry, item)
-						local format_kinds = require("lspkind").cmp_format()
-						format_kinds(entry, item)
+						local icon, _, _ = mini_icons.get("lsp", item.kind)
+						if icon then
+							item.kind = icon .. " " .. item.kind
+						end
 						return require("tailwindcss-colorizer-cmp").formatter(entry, item)
 					end,
 				},
