@@ -2,8 +2,8 @@ return {
 	{
 		"nvim-treesitter/nvim-treesitter-context",
 		opts = {
-			max_lines = 5,
-			mode = "topline",
+			max_lines = 3,
+			mode = "cursor",
 		},
 	},
 }
