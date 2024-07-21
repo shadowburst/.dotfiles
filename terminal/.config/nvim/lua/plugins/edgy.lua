@@ -29,6 +29,7 @@ return {
 			},
 			right = {
 				{ ft = "help" },
+				{ ft = "grug-far" },
 			},
 			animate = {
 				enabled = false,
