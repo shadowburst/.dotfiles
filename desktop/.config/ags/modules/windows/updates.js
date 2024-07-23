@@ -57,11 +57,11 @@ export default function Updates() {
                                             xalign: 0,
                                         }),
                                         Widget.Box({
-                                            homogeneous: true,
                                             children: [
                                                 Widget.Label({
                                                     className: 'old',
                                                     label: update.old_version,
+                                                    expand: true,
                                                     truncate: 'start',
                                                     xalign: 1,
                                                 }),
@@ -69,6 +69,7 @@ export default function Updates() {
                                                 Widget.Label({
                                                     className: 'new',
                                                     label: update.new_version,
+                                                    expand: true,
                                                     truncate: 'start',
                                                     xalign: 0,
                                                 }),
