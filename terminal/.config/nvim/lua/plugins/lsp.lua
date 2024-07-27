@@ -103,6 +103,7 @@ return {
 						},
 					},
 				},
+				marksman = {},
 				tailwindcss = {
 					filetypes_exclude = { "markdown", "php" },
 				},
@@ -174,8 +175,8 @@ return {
 				"hadolint",
 				"jq",
 				"luacheck",
-				"markdownlint",
-				"marksman",
+				"markdownlint-cli2",
+				"markdown-toc",
 				"prettierd",
 				"shellcheck",
 				"shfmt",
