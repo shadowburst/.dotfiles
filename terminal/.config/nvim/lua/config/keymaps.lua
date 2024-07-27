@@ -33,9 +33,9 @@ map("n", "<leader>xq", "<cmd>clist<cr>", { desc = "Quickfix list" })
 
 -- Toggle options
 map("n", "<leader>td", function()
-	local enabled = not vim.diagnostic.is_disabled()
+	local enabled = vim.diagnostic.is_enabled()
 	if enabled then
-		vim.diagnostic.disable()
+		vim.diagnostic.enable(false)
 		notify.warn("Disabled diagnostics")
 	else
 		vim.diagnostic.enable()
