@@ -81,6 +81,17 @@ return {
 							end,
 						},
 						{
+							function()
+								local grapple = require("grapple")
+								return grapple.app().settings.statusline.icon .. grapple.name_or_index()
+							end,
+							cond = function()
+								return package.loaded["grapple"] and require("grapple").exists()
+							end,
+							padding = { left = 1, right = 0 },
+							color = { fg = colors.blue },
+						},
+						{
 							"filename",
 							cond = conditions.buffer_not_empty,
 							padding = 1,
