@@ -122,7 +122,7 @@
         @include m(1);
 
         label.title {
-            @include font(0.8rem);
+            @include font(0.7rem);
         }
         label.class {
             @include font(1rem, bold);
