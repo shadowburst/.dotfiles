@@ -42,10 +42,15 @@ return {
 				mapping = cmp.mapping.preset.insert({
 					["<C-u>"] = cmp.mapping.scroll_docs(-4),
 					["<C-d>"] = cmp.mapping.scroll_docs(4),
-					["<C-n>"] = cmp.mapping.select_next_item(),
+					["<C-n>"] = cmp.mapping(function()
+						if cmp.visible() then
+							cmp.select_next_item({})
+						else
+							cmp.complete({})
+						end
+					end),
 					["<C-p>"] = cmp.mapping.select_prev_item(),
 					["<C-y>"] = cmp.mapping.confirm({ select = true }),
-					["<C-Space>"] = cmp.mapping.complete({}),
 					["<C-k>"] = cmp.mapping(function()
 						if luasnip.expand_or_locally_jumpable() then
 							luasnip.expand_or_jump()
