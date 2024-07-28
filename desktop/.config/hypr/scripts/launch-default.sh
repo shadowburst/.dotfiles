@@ -2,24 +2,28 @@
 
 case $(hyprctl monitors -j | jq '.[] | select(.focused == true) | .activeWorkspace.id') in
 1)
-	$BROWSER &
-	;;
+  cmd="$BROWSER"
+  ;;
 2)
-	$TERMINAL -e "tmux-sessionizer" &
-	;;
+  cmd="$TERMINAL -e 'tmux-sessionizer'"
+  ;;
 3)
-	discord &
-	;;
+  cmd="discord"
+  ;;
 4)
-	$TERMINAL -e yazi &
-	;;
+  cmd="$TERMINAL -e yazi"
+  ;;
 5)
-	lutris &
-	;;
+  cmd="lutris"
+  ;;
 6)
-	gimp &
-	;;
+  cmd="gimp"
+  ;;
 7)
-	$TERMINAL &
-	;;
+  cmd="$TERMINAL"
+  ;;
 esac
+
+if [ -n "$cmd" ]; then
+  $SHELL -c "$cmd"
+fi
