@@ -34,6 +34,10 @@ alias mkdir='mkdir -p'
 
 alias yay='paru'
 
+# Always use nvim
+alias vim='nvim'
+alias vi='nvim'
+
 # Extract all files based on type
 function extract
   if test -f $argv
