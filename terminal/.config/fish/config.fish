@@ -66,6 +66,21 @@ function extract
   end
 end
 
+set -Ux FZF_DEFAULT_OPTS "\
+--prompt=' ' --pointer='' \
+--header='' --no-info --margin='2,4' \
+--border=rounded \
+--preview-window=border-left \
+--layout=reverse \
+--highlight-line \
+--color=bg+:#2d3f76,bg:#1e2030,gutter:#1e2030 \
+--color=border:#589ed7,header:#ff966c,separator:#ff966c \
+--color=hl+:#65bcff,hl:#65bcff \
+--color=fg:#c8d3f5,query:#c8d3f5:regular \
+--color=marker:#ff007c,pointer:#ff007c,prompt:#c099ff \
+--color=scrollbar:#589ed7,spinner:#ff007c \
+--bind='ctrl-d:preview-page-down,ctrl-u:preview-page-up,ctrl-y:accept'"
+
 fzf --fish | source
 zoxide init fish | source
 starship init fish | source

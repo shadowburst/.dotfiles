@@ -1,37 +1,31 @@
 #!/usr/bin/env bash
 
 if [[ $# -eq 1 ]]; then
-	selected=$1
+  selected=$1
 else
-	directories=(~ ~/Repos)
-	selected=$(
-		find "${directories[@]}" \
-			-mindepth 1 -maxdepth 1 \
-			-type d -exec test -e '{}/.git' \; \
-			-print |
-			fzf \
-				--prompt=" " \
-				--pointer="" \
-				--header='' --no-info --margin='1,2' \
-				--layout=reverse \
-				--color="16,gutter:-1,bg:-1,bg+:-1,fg+:-1,hl:4,hl+:4,prompt:5,pointer:15" \
-				--preview="tree -a -L 1 -C --dirsfirst --sort=name --noreport {}" \
-				--bind="ctrl-d:preview-page-down,ctrl-u:preview-page-up,ctrl-y:accept"
-	)
+  directories=(~ ~/Repos)
+  selected=$(
+    find "${directories[@]}" \
+      -mindepth 1 -maxdepth 1 \
+      -type d -exec test -e '{}/.git' \; \
+      -print |
+      fzf \
+        --preview="tree -a -L 1 -C --dirsfirst --sort=name --noreport {}"
+  )
 fi
 
 if [[ -z $selected ]]; then
-	exit 0
+  exit 0
 fi
 
 selected_name=$(basename "$selected" | tr . _)
 
 if ! tmux has-session -t="$selected_name" 2>/dev/null; then
-	tmux new-session -ds "$selected_name" -c "$selected" "${EDITOR:-nvim}; ${SHELL:-bash}"
+  tmux new-session -ds "$selected_name" -c "$selected" "${EDITOR:-nvim}; ${SHELL:-bash}"
 fi
 
 if [[ -n $TMUX ]]; then
-	tmux switch-client -t "$selected_name"
+  tmux switch-client -t "$selected_name"
 else
-	tmux attach -t "$selected_name"
+  tmux attach -t "$selected_name"
 fi
