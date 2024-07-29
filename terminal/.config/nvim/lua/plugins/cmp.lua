@@ -3,11 +3,10 @@ return {
 		"hrsh7th/nvim-cmp",
 		dependencies = {
 			"hrsh7th/cmp-cmdline",
-			"saadparwaiz1/cmp_luasnip",
 			"hrsh7th/cmp-nvim-lsp",
 			"hrsh7th/cmp-path",
-			"L3MON4D3/LuaSnip",
 			"echasnovski/mini.icons",
+			"garymjr/nvim-snippets",
 			{
 				"roobert/tailwindcss-colorizer-cmp.nvim",
 				opts = {},
@@ -15,10 +14,8 @@ return {
 		},
 		event = "VeryLazy",
 		config = function()
-			local luasnip = require("luasnip")
 			local cmp = require("cmp")
 			local mini_icons = require("mini.icons")
-			luasnip.config.setup({})
 
 			cmp.setup({
 				window = {
@@ -33,7 +30,7 @@ return {
 				},
 				snippet = {
 					expand = function(args)
-						luasnip.lsp_expand(args.body)
+						vim.snippet.expand(args.body)
 					end,
 				},
 				completion = {
@@ -52,13 +49,17 @@ return {
 					["<C-p>"] = cmp.mapping.select_prev_item(),
 					["<C-y>"] = cmp.mapping.confirm({ select = true }),
 					["<C-k>"] = cmp.mapping(function()
-						if luasnip.expand_or_locally_jumpable() then
-							luasnip.expand_or_jump()
+						if vim.snippet.active({ direction = 1 }) then
+							vim.schedule(function()
+								vim.snippet.jump(1)
+							end)
 						end
 					end, { "i", "s" }),
 					["<C-j>"] = cmp.mapping(function()
-						if luasnip.locally_jumpable(-1) then
-							luasnip.jump(-1)
+						if vim.snippet.active({ direction = -1 }) then
+							vim.schedule(function()
+								vim.snippet.jump(-1)
+							end)
 						end
 					end, { "i", "s" }),
 				}),
@@ -75,7 +76,7 @@ return {
 				},
 				sources = {
 					{ name = "nvim_lsp" },
-					{ name = "luasnip" },
+					{ name = "snippets" },
 					{ name = "path" },
 				},
 			})
