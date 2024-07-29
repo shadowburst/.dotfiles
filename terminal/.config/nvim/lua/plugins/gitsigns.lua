@@ -10,14 +10,20 @@ return {
 				col = 0,
 			},
 			on_attach = function(buffer)
-				local gs = package.loaded.gitsigns
+				local gs = require("gitsigns")
 
 				local function map(mode, l, r, desc)
 					vim.keymap.set(mode, l, r, { buffer = buffer, desc = desc })
 				end
 
+				map("n", "[h", function()
+					gs.nav_hunk("prev")
+				end, "Previous hunk")
+				map("n", "]h", function()
+					gs.nav_hunk("next")
+				end, "Next hunk")
 				map("n", "<leader>gp", gs.preview_hunk, "Preview hunk")
-				map({ "n", "v" }, "<leader>gr", ":Gitsigns reset_hunk<CR>", "Reset hunk")
+				map({ "n", "v" }, "<leader>gr", gs.reset_hunk, "Reset hunk")
 			end,
 			signs = {
 				add = { text = "▎" },
