@@ -100,13 +100,13 @@ if ask "Install desktop ?"; then
   dconf write /org/gnome/desktop/interface/icon-theme "'kora'"
   dconf write /org/gnome/desktop/interface/color-scheme "'prefer-dark'"
   dconf write /org/gnome/desktop/interface/cursor-theme "'Bibata-Modern-Classic'"
-  dconf write /org/gnome/desktop/interface/gtk-theme "'Catppuccin-Macchiato-Standard-Blue-Dark'"
+  dconf write /org/gnome/desktop/interface/gtk-theme "'catppuccin-macchiato-blue-standard+default'"
 
   # Install GTK theme
   if [[ ! -d "$HOME/.themes/Catppuccin-Macchiato-Standard-Blue-Dark" ]]; then
-    wget https://github.com/catppuccin/gtk/releases/download/v0.7.0/Catppuccin-Macchiato-Standard-Blue-Dark.zip
-    unzip ./Catppuccin-Macchiato-Standard-Blue-Dark.zip -d ~/.themes
-    rm -f ./Catppuccin-Macchiato-Standard-Blue-Dark.zip
+    wget https://github.com/catppuccin/gtk/releases/download/v1.0.3/catppuccin-macchiato-blue-standard+default.zip
+    unzip ./catppuccin-macchiato-blue-standard+default.zip -d ~/.themes
+    rm -f ./catppuccin-macchiato-blue-standard+default.zip
   fi
 
   # Install cursor
