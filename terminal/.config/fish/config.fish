@@ -72,7 +72,7 @@ end
 
 set -Ux FZF_DEFAULT_OPTS "\
 --prompt=' ' --pointer='' \
---header='' --no-info --margin='2,4' \
+--header='' --no-info \
 --border=rounded \
 --preview-window=border-left \
 --layout=reverse \
