@@ -11,6 +11,7 @@ return {
 			disable_hint = true,
 			graph_style = "unicode",
 			remember_settings = false,
+			auto_refresh = false,
 			commit_editor = {
 				kind = "split",
 				show_staged_diff = false,
