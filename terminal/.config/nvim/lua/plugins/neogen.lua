@@ -2,10 +2,10 @@ return {
 	{
 		"danymat/neogen",
 		dependencies = {
-			"L3MON4D3/LuaSnip",
+			"garymjr/nvim-snippets",
 		},
 		opts = {
-			snippet_engine = "luasnip",
+			snippet_engine = "nvim",
 		},
 		keys = {
 			{ "<leader>cg", "<cmd>Neogen<cr>", desc = "Generate annotations" },
