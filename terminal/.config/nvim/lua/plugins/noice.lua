@@ -11,6 +11,7 @@ return {
 			},
 		},
 		event = "VeryLazy",
+		cmd = { "Noice" },
 		opts = {
 			presets = {
 				bottom_search = false, -- use a classic bottom cmdline for search
@@ -38,34 +39,10 @@ return {
 			},
 		},
 		keys = {
-			{
-				"<leader>nl",
-				function()
-					require("noice").cmd("last")
-				end,
-				desc = "Noice last message",
-			},
-			{
-				"<leader>nh",
-				function()
-					require("noice").cmd("history")
-				end,
-				desc = "Noice history",
-			},
-			{
-				"<leader>na",
-				function()
-					require("noice").cmd("all")
-				end,
-				desc = "Noice all",
-			},
-			{
-				"<leader>nd",
-				function()
-					require("noice").cmd("dismiss")
-				end,
-				desc = "Dismiss all",
-			},
+			{ "<leader>nl", "<cmd>Noice last<cr>", desc = "Noice last message" },
+			{ "<leader>nh", "<cmd>Noice history<cr>", desc = "Noice history" },
+			{ "<leader>na", "<cmd>Noice all<cr>", desc = "Noice all" },
+			{ "<leader>nd", "<cmd>Noice dismiss<cr>", desc = "Dismiss all" },
 		},
 	},
 }

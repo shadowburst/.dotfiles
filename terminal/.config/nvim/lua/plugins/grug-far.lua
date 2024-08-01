@@ -1,7 +1,7 @@
 return {
 	{
 		"MagicDuck/grug-far.nvim",
-		cmd = "GrugFar",
+		cmd = { "GrugFar" },
 		opts = {
 			startCursorRow = 4,
 			headerMaxWidth = 80,

@@ -10,13 +10,7 @@ return {
 		},
 		keys = {
 			{ "<leader>gd", "<cmd>DiffviewOpen -- %:p <cr>", desc = "Diff this buffer" },
-			{
-				"<leader>gD",
-				function()
-					require("diffview").open({})
-				end,
-				desc = "Diff this repository",
-			},
+			{ "<leader>gD", "<cmd>DiffviewOpen<cr>", desc = "Diff this repository" },
 		},
 	},
 }
