@@ -6,6 +6,7 @@ return {
 			"nvim-lua/plenary.nvim",
 			"nvim-telescope/telescope.nvim",
 		},
+		cmd = { "Neogit" },
 		opts = {
 			disable_hint = true,
 			graph_style = "unicode",
@@ -26,20 +27,8 @@ return {
 			},
 		},
 		keys = {
-			{
-				"<leader>gg",
-				function()
-					require("neogit").open({})
-				end,
-				desc = "Open neogit",
-			},
-			{
-				"<leader>gl",
-				function()
-					require("neogit").open({ "log" })
-				end,
-				desc = "Git logs",
-			},
+			{ "<leader>gg", "<cmd>Neogit<cr>", desc = "Open neogit" },
+			{ "<leader>gl", "<cmd>Neogit log<cr>", desc = "Git logs" },
 		},
 	},
 }
