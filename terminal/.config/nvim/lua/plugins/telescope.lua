@@ -142,17 +142,39 @@ return {
 						search_dirs = { vim.fn.expand("%:p") },
 					})
 				end,
-				desc = "For <cword>",
+				desc = "For <cword> in current file",
+			},
+			{
+				"<leader>sw",
+				function()
+					vim.cmd([[normal! vv]]) -- Needed to make visual selection work
+					require("telescope.builtin").live_grep({
+						default_text = require("utils.string").get_visual_selection(),
+						search_dirs = { vim.fn.expand("%:p") },
+					})
+				end,
+				mode = { "v" },
+				desc = "For selection in current file",
 			},
 			{
 				"<leader>sW",
 				function()
 					require("telescope.builtin").live_grep({
-						default_text = vim.fn.expand("<cWORD>"),
-						search_dirs = { vim.fn.expand("%:p") },
+						default_text = vim.fn.expand("<cword>"),
 					})
 				end,
-				desc = "For <cWORD>",
+				desc = "For <cword> in files",
+			},
+			{
+				"<leader>sW",
+				function()
+					vim.cmd([[normal! vv]]) -- Needed to make visual selection work
+					require("telescope.builtin").live_grep({
+						default_text = require("utils.string").get_visual_selection(),
+					})
+				end,
+				mode = { "v" },
+				desc = "For selection in files",
 			},
 		},
 	},
