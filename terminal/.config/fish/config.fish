@@ -18,11 +18,16 @@ end
 alias grep="grep --color=always"
 
 # Better listing files
-alias ll='exa --icons --group-directories-first --color=always -la'
-alias lt='exa --icons --group-directories-first --color=always -T'
+if command -q exa
+  alias ls='exa --icons --group-directories-first --color=always'
+  alias ll='exa --icons --group-directories-first --color=always -la'
+  alias lt='exa --icons --group-directories-first --color=always -T'
+end
 
 # Better previewing contents
-alias cat='bat --color=always --plain'
+if command -q bat
+  alias cat='bat --color=always --plain'
+end
 
 # Confirm dangerous actions
 alias cp='cp -i'
@@ -70,21 +75,27 @@ function extract
   end
 end
 
-set -Ux FZF_DEFAULT_OPTS "\
---prompt=' ' --pointer='' \
---header='' --no-info \
---border=rounded \
---preview-window=border-left \
---layout=reverse \
---highlight-line \
---color=bg+:#2d3f76,bg:#1e2030,gutter:#1e2030 \
---color=border:#589ed7,header:#ff966c,separator:#ff966c \
---color=hl+:#65bcff,hl:#65bcff \
---color=fg:#c8d3f5,query:#c8d3f5:regular \
---color=marker:#ff007c,pointer:#ff007c,prompt:#c099ff \
---color=scrollbar:#589ed7,spinner:#ff007c \
---bind='ctrl-d:preview-page-down,ctrl-u:preview-page-up,ctrl-y:accept'"
+# Better navigation
+if command -q zoxide
+  zoxide init fish --cmd cd | source
+end
 
-fzf --fish | source
-zoxide init fish | source
+if command -q fzf
+  set -Ux FZF_DEFAULT_OPTS "\
+    --prompt=' ' --pointer='' \
+    --header='' --no-info \
+    --border=rounded \
+    --preview-window=border-left \
+    --layout=reverse \
+    --highlight-line \
+    --color=bg+:#2d3f76,bg:#1e2030,gutter:#1e2030 \
+    --color=border:#589ed7,header:#ff966c,separator:#ff966c \
+    --color=hl+:#65bcff,hl:#65bcff \
+    --color=fg:#c8d3f5,query:#c8d3f5:regular \
+    --color=marker:#ff007c,pointer:#ff007c,prompt:#c099ff \
+    --color=scrollbar:#589ed7,spinner:#ff007c \
+    --bind='ctrl-d:preview-page-down,ctrl-u:preview-page-up,ctrl-y:accept'"
+  fzf --fish | source
+end
+
 starship init fish | source
