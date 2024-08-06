@@ -5,6 +5,9 @@ return {
 		priority = 1000,
 		opts = {
 			style = "moon",
+			plugins = {
+				markdown = true,
+			},
 			on_highlights = function(hl, c)
 				hl.CursorLineNr = { fg = c.blue }
 				hl.LineNr = { fg = c.fg_dark }
