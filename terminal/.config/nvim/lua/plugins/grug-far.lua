@@ -5,6 +5,7 @@ return {
 		opts = {
 			startCursorRow = 4,
 			headerMaxWidth = 80,
+			transient = true,
 		},
 		keys = {
 			{
@@ -17,8 +18,19 @@ return {
 						},
 					})
 				end,
-				mode = { "n", "v" },
-				desc = "Replace in current file",
+				desc = "Replace <cword> in file",
+			},
+			{
+				"<leader>sr",
+				function()
+					require("grug-far").grug_far({
+						prefills = {
+							flags = "--hidden " .. vim.fn.expand("%"),
+						},
+					})
+				end,
+				mode = { "v" },
+				desc = "Replace selection in file",
 			},
 			{
 				"<leader>sR",
@@ -30,8 +42,19 @@ return {
 						},
 					})
 				end,
-				mode = { "n", "v" },
-				desc = "Replace in files",
+				desc = "Replace <cword> in files",
+			},
+			{
+				"<leader>sR",
+				function()
+					require("grug-far").grug_far({
+						prefills = {
+							flags = "--hidden",
+						},
+					})
+				end,
+				mode = { "v" },
+				desc = "Replace selection in files",
 			},
 		},
 	},
