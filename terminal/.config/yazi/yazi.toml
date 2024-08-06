@@ -5,3 +5,9 @@ sort_dir_first = true
 linemode = "none"
 show_hidden = true
 show_symlink = true
+
+[opener]
+extract = [
+  { run = 'ya pub extract --list "$@"', desc = "Extract here", for = "unix" },
+  { run = 'ya pub extract --list %*', desc = "Extract here", for = "windows" },
+]
