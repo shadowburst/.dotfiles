@@ -12,19 +12,21 @@ local ft = {
 }
 
 return {
-	"nvchad/nvim-colorizer.lua",
-	ft = ft,
-	opts = {
-		filetypes = ft,
-		user_default_options = {
-			css = true,
-			sass = { enable = true },
-			tailwind = true,
-			mode = "background",
-			virtualtext_inline = true,
+	{
+		"nvchad/nvim-colorizer.lua",
+		ft = ft,
+		opts = {
+			filetypes = ft,
+			user_default_options = {
+				css = true,
+				sass = { enable = true },
+				tailwind = true,
+				mode = "background",
+				virtualtext_inline = true,
+			},
 		},
+		config = function(_, opts)
+			require("colorizer").setup(opts)
+		end,
 	},
-	config = function(_, opts)
-		require("colorizer").setup(opts)
-	end,
 }
