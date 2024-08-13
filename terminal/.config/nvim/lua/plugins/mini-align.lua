@@ -4,7 +4,7 @@ return {
 		event = "VeryLazy",
 		opts = {
 			mappings = {
-				start = "g=",
+				start = "gA",
 				start_with_preview = "",
 			},
 		},

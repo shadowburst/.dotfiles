@@ -11,6 +11,7 @@ return {
 				{
 					mode = { "n", "v" },
 					{ "g", group = "goto" },
+					{ "ga", group = "Change case" },
 					{ "<leader>b", group = "buffers" },
 					{ "<leader>c", group = "code" },
 					{ "<leader>f", group = "file/find" },
