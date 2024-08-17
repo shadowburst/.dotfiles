@@ -8,7 +8,7 @@ return {
 			"b0o/SchemaStore.nvim",
 			"telescope.nvim",
 		},
-		lazy = false,
+		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
 		config = function()
 			local signs = { Error = " ", Warn = " ", Hint = "󰌶 ", Info = " " }
 			for type, icon in pairs(signs) do

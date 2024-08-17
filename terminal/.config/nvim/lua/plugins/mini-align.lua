@@ -1,7 +1,7 @@
 return {
 	{
 		"echasnovski/mini.align",
-		event = "VeryLazy",
+		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
 		opts = {
 			mappings = {
 				start = "gA",

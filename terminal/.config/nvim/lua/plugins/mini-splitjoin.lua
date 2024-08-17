@@ -3,7 +3,7 @@ local mapping = "gs"
 return {
 	{
 		"echasnovski/mini.splitjoin",
-		event = "VeryLazy",
+		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
 		opts = {
 			mappings = {
 				toggle = mapping,
