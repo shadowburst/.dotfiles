@@ -12,7 +12,7 @@ return {
 				opts = {},
 			},
 		},
-		event = "InsertEnter",
+		event = { "CmdlineEnter", "InsertEnter" },
 		config = function()
 			local cmp = require("cmp")
 			local mini_icons = require("mini.icons")
