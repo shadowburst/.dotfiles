@@ -1,8 +1,0 @@
-profile mobile {
-    output eDP-1 enable mode 1920x1200@59.95Hz scale 1
-}
-
-profile docked {
-    output eDP-1 enable mode 1920x1200@59.95Hz scale 1 position 0,120
-    output DP-1 enable mode 3440x1440@60Hz scale 1 position 1920,0
-}

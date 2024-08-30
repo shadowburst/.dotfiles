@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-ags -r "(await import('file://$XDG_CONFIG_HOME/ags/modules/windows/index.js')).toggle('applications')"
