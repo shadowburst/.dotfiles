@@ -43,4 +43,10 @@
     theme = "catppuccin-macchiato";
     themePackages = with pkgs; [ catppuccin-plymouth ];
   };
+  
+  qt = {
+    enable = true;
+    platformTheme = "qt5ct";
+    style = "kvantum";
+  };
 }
