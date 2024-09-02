@@ -33,5 +33,14 @@
     };
 
     base16Scheme = "${pkgs.base16-schemes}/share/themes/catppuccin-macchiato.yaml";
+    targets = {
+      plymouth.enable = false;
+    };
+  };
+
+  boot.plymouth = {
+    enable = true;
+    theme = "catppuccin-macchiato";
+    themePackages = with pkgs; [ catppuccin-plymouth ];
   };
 }

@@ -26,8 +26,6 @@
 
       timeout = 1;
     };
-
-    plymouth.enable = true;
   };
 
   console.keyMap = "fr";
