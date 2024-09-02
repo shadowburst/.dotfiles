@@ -4,7 +4,7 @@
   users.users.${username} = {
     isNormalUser = true;
     description = "Peter Baudry";
-    extraGroups = [ "audio" "input" "sound" "video" "wheel" ];
+    extraGroups = [ "input" "video" "wheel" ];
     shell = pkgs.fish;
     createHome = true;
   };
@@ -26,7 +26,6 @@
     };
   };
 
-  boot.plymouth.enable = true;
   security.rtkit.enable = true;
 
   nixpkgs.config.allowUnfree = true;
@@ -47,10 +46,14 @@
   };
 
   imports = [
+    ./audio
+    ./bluetooth
+    ./disks
     ./gaming
     ./greetd
     ./hyprland
     ./networking
+    ./power
     # ./printing
     ./ssh
     ./theme

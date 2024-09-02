@@ -4,8 +4,8 @@
   imports = [
     (import ./hardware-configuration.nix)
     
-      inputs.nixos-hardware.nixosModules.dell-xps-13-9310
-      inputs.nixos-hardware.nixosModules.common-gpu-intel
+    inputs.nixos-hardware.nixosModules.dell-xps-13-9310
+    inputs.nixos-hardware.nixosModules.common-gpu-intel
   ];
 
   boot = {
@@ -26,10 +26,13 @@
 
       timeout = 1;
     };
+
+    plymouth.enable = true;
   };
 
+  console.keyMap = "fr";
+
   hardware = {
-    bluetooth.enable = true;
     graphics = {
       enable = true;
       enable32Bit = true;
@@ -38,22 +41,4 @@
   };
 
   networking.hostName = "xps";
-
-  console.keyMap = "fr";
-  
-  services = {
-    blueman.enable = true;
-    fstrim.enable = true;
-    pipewire = {
-      enable = true;
-      audio.enable = true;
-      pulse.enable = true;
-      alsa = {
-        enable = true;
-        support32Bit = true;
-      };
-    };
-    power-profiles-daemon.enable = true;
-    upower.enable = true;
-  };
 }
