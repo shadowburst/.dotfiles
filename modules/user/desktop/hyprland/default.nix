@@ -5,10 +5,10 @@ let
   watch-monitors = pkgs.writeShellScriptBin "watch-monitors" (lib.fileContents ./bin/watch-monitors);
   
   app-menu = pkgs.writeShellScriptBin "app-menu" ''
-    ags -r "(await import('file://${config.home.homeDirectory}/.config/ags/modules/windows/index.js')).toggle('applications')"
+    ags -r "(await import('file://$XDG_CONFIG_HOME/ags/modules/windows/index.js')).toggle('applications')"
   '';
   power-menu = pkgs.writeShellScriptBin "power-menu" ''
-    ags -r "(await import('file://${config.home.homeDirectory}/.config/ags/modules/windows/index.js')).toggle('power')"
+    ags -r "(await import('file://$XDG_CONFIG_HOME/ags/modules/windows/index.js')).toggle('power')"
   '';
 in {
   imports = [
@@ -25,12 +25,6 @@ in {
       "$mod" = "SUPER";
       "$terminal" = config.home.sessionVariables.TERMINAL;
       "$browser" = config.home.sessionVariables.BROWSER;
-      env = [
-        "TERMINAL, ${config.home.sessionVariables.TERMINAL}"
-        "BROWSER, ${config.home.sessionVariables.BROWSER}"
-        "EDITOR, ${config.home.sessionVariables.EDITOR}"
-        "MANPAGER, ${config.home.sessionVariables.MANPAGER}"
-      ];
       monitor = [
         ", highres, auto, 1"
       ];
