@@ -1,10 +1,31 @@
 return {
 	{
 		"max397574/better-escape.nvim",
-		commit = "7e86edafb8c7e73699e0320f225464a298b96d12",
 		event = "InsertEnter",
 		opts = {
-			mapping = { "jk", "kj" },
+			default_mappings = false,
+			mappings = {
+				i = {
+					j = { k = "<Esc>" },
+					k = { j = "<Esc>" },
+				},
+				c = {
+					j = { k = "<Esc>" },
+					k = { j = "<Esc>" },
+				},
+				t = {
+					j = { k = "<C-\\><C-n>" },
+					k = { j = "<C-\\><C-n>" },
+				},
+				v = {
+					j = { k = "<Esc>" },
+					k = { j = "<Esc>" },
+				},
+				s = {
+					j = { k = "<Esc>" },
+					k = { j = "<Esc>" },
+				},
+			},
 		},
 	},
 }
