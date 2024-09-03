@@ -13,7 +13,6 @@ return {
 			end,
 			formatters_by_ft = {
 				["css"] = { "prettierd" },
-				["go"] = { "goimports", "gofumpt" },
 				["graphql"] = { "prettierd" },
 				["html"] = { "prettierd" },
 				["javascript"] = { "prettierd" },
@@ -24,6 +23,7 @@ return {
 				["lua"] = { "stylua" },
 				["markdown"] = { "prettierd" },
 				["markdown.mdx"] = { "prettierd" },
+				["nix"] = { "nixfmt" },
 				["scss"] = { "prettierd" },
 				["sh"] = { "shfmt" },
 				["svg"] = { "xmlformat" },

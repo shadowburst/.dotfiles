@@ -1,15 +1,24 @@
-{ pkgs, stateVersion, username, ... }:
+{
+  pkgs,
+  stateVersion,
+  username,
+  ...
+}:
 
 {
   users.users.${username} = {
     isNormalUser = true;
     description = "Peter Baudry";
-    extraGroups = [ "input" "video" "wheel" ];
+    extraGroups = [
+      "input"
+      "video"
+      "wheel"
+    ];
     shell = pkgs.fish;
     createHome = true;
   };
   programs.fish.enable = true;
-  
+
   time.timeZone = "Europe/Paris";
   i18n = {
     defaultLocale = "en_GB.UTF-8";
@@ -27,6 +36,12 @@
   };
 
   security.rtkit.enable = true;
+  programs.nix-ld = {
+    enable = true;
+    libraries = with pkgs; [
+      stdenv.cc.cc
+    ];
+  };
 
   nixpkgs.config.allowUnfree = true;
   nix = {
@@ -37,7 +52,10 @@
     };
     settings = {
       auto-optimise-store = true;
-      experimental-features = [ "nix-command" "flakes" ];
+      experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
     };
   };
 

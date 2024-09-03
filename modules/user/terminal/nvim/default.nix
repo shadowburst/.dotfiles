@@ -11,18 +11,15 @@
       luajitPackages.luarocks
       nodejs
       nodePackages.npm
-      prettierd
-      shellcheck
-      shfmt
-      stylua
-      yamlfmt
+      python3
+      nixfmt-rfc-style
     ];
   };
 
   xdg.configFile."nvim/init.lua".enable = false;
-  xdg.configFile."nvim".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/modules/user/terminal/nvim/config"; 
+  xdg.configFile."nvim".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/modules/user/terminal/nvim/config";
 
-  home.sessionVariables = { 
+  home.sessionVariables = {
     EDITOR = "nvim";
     MANPAGER = "nvim +Man!";
   };
