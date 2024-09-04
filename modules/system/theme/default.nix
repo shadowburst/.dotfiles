@@ -1,13 +1,18 @@
-{ config, inputs, pkgs, ... }:
+{
+  config,
+  inputs,
+  pkgs,
+  ...
+}:
 
 {
   imports = [ inputs.stylix.nixosModules.stylix ];
 
   stylix = {
     enable = true;
-    
+
     image = ./wallpapers/current.jpg;
-    
+
     fonts = {
       sansSerif = {
         name = "Noto Sans";
@@ -16,9 +21,11 @@
       serif = config.stylix.fonts.sansSerif;
       monospace = {
         name = "JetBrainsMono Nerd Font";
-        package = with pkgs; (nerdfonts.override {
-          fonts = [ "JetBrainsMono" ];
-        });
+        package =
+          with pkgs;
+          (nerdfonts.override {
+            fonts = [ "JetBrainsMono" ];
+          });
       };
       emoji = {
         name = "Noto Color Emoji";
@@ -43,7 +50,7 @@
     theme = "catppuccin-macchiato";
     themePackages = with pkgs; [ catppuccin-plymouth ];
   };
-  
+
   qt = {
     enable = true;
     platformTheme = "qt5ct";

@@ -8,20 +8,22 @@
     };
 
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-    
+
     stylix = {
       url = "github:danth/stylix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    
+
     ags.url = "github:Aylur/ags";
   };
 
-  outputs = { nixpkgs, ... }@inputs: {
-    nixosConfigurations = (
-      import ./hosts {
-        inherit inputs nixpkgs;
-      }
-    );
-  };
+  outputs =
+    { nixpkgs, ... }@inputs:
+    {
+      nixosConfigurations = (
+        import ./hosts {
+          inherit inputs nixpkgs;
+        }
+      );
+    };
 }

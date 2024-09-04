@@ -3,7 +3,7 @@
 {
   programs.kitty = {
     enable = true;
-    font.name = config.stylix.fonts.monospace.name; 
+    font.name = config.stylix.fonts.monospace.name;
     shellIntegration.enableFishIntegration = true;
     settings = {
       cursor_text_color = "background";
@@ -20,7 +20,7 @@
     theme = "Tokyo Night Moon";
   };
 
-  home.sessionVariables = { 
+  home.sessionVariables = {
     TERMINAL = "kitty";
   };
 }

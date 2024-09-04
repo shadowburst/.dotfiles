@@ -4,7 +4,7 @@
   home.packages = with pkgs; [
     transmission_4
   ];
-  
+
   xdg.configFile."transmission-daemon/settings.json".text = ''
     {
       "alt-speed-down": 50,

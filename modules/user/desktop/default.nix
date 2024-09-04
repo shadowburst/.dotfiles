@@ -8,7 +8,7 @@
     ./kitty
     ./mpv
   ];
-  
+
   home.sessionVariables = {
     BROWSER = "brave";
   };

@@ -1,11 +1,18 @@
-{ config, inputs, lib, pkgs, ... }:
+{
+  config,
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   catppuccinKvantum = pkgs.catppuccin-kvantum.override {
     accent = "Blue";
     variant = "Macchiato";
   };
-in {
+in
+{
   stylix = {
     polarity = "dark";
     targets = {
@@ -31,15 +38,15 @@ in {
     platformTheme.name = "qtct";
     style.name = "kvantum";
   };
-  
-  xdg.configFile."Kvantum/kvantum.kvconfig".text = lib.generators.toINI {} {
+
+  xdg.configFile."Kvantum/kvantum.kvconfig".text = lib.generators.toINI { } {
     General.theme = "Catppuccin-Macchiato-Blue";
   };
   xdg.configFile."Kvantum/Catppuccin-Macchiato-Blue".source = "${catppuccinKvantum}/share/Kvantum/Catppuccin-Macchiato-Blue";
-  xdg.configFile."qt5ct/qt5ct.conf".text = lib.generators.toINI {} {
+  xdg.configFile."qt5ct/qt5ct.conf".text = lib.generators.toINI { } {
     Appearance.icon_theme = "Kora";
   };
-  xdg.configFile."qt6ct/qt6ct.conf".text = lib.generators.toINI {} {
+  xdg.configFile."qt6ct/qt6ct.conf".text = lib.generators.toINI { } {
     Appearance.icon_theme = "Kora";
   };
 }

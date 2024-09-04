@@ -1,7 +1,14 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
-  tmux-sessionizer = pkgs.writeShellScriptBin "tmux-sessionizer" (lib.fileContents ./bin/tmux-sessionizer);
+  tmux-sessionizer = pkgs.writeShellScriptBin "tmux-sessionizer" (
+    lib.fileContents ./bin/tmux-sessionizer
+  );
 in
 {
   programs.tmux = {
@@ -11,69 +18,69 @@ in
     mouse = true;
     terminal = "xterm-256color";
     extraConfig = with config.lib.stylix.colors.withHashtag; ''
-        set -ga terminal-overrides ",xterm-256color*:Tc"
+      set -ga terminal-overrides ",xterm-256color*:Tc"
 
-        # +--- Status bar ---+
-        set -g status-position top
-        set -g status-justify absolute-centre
-        set -g status-style 'bg=#222436 fg=#c8d3f5'
+      # +--- Status bar ---+
+      set -g status-position top
+      set -g status-justify absolute-centre
+      set -g status-style 'bg=#222436 fg=#c8d3f5'
 
-        set -g status-left-length 100
-        set -g status-left "#[fg=#82aaff,bg=#222436]#[fg=#222436,bg=#82aaff,bold] #S #[fg=#82aaff,bg=#222436]"
+      set -g status-left-length 100
+      set -g status-left "#[fg=#82aaff,bg=#222436]#[fg=#222436,bg=#82aaff,bold] #S #[fg=#82aaff,bg=#222436]"
 
-        set -g status-right-length 100
-        set -g status-right "#[fg=#82aaff,bg=#222436]#[fg=#222436,bg=#82aaff,bold]  %H:%M #[fg=#82aaff,bg=#222436]"
+      set -g status-right-length 100
+      set -g status-right "#[fg=#82aaff,bg=#222436]#[fg=#222436,bg=#82aaff,bold]  %H:%M #[fg=#82aaff,bg=#222436]"
 
-        set -g window-status-current-format "#[fg=#82aaff,bg=#222436]#[fg=#222436,bg=#82aaff]  #I #W #[fg=#82aaff,bg=#222436]"
-        set -g window-status-format "#[fg=#c8d3f5,bg=#222436,nobold,noitalics,nounderscore]   #I #W "
+      set -g window-status-current-format "#[fg=#82aaff,bg=#222436]#[fg=#222436,bg=#82aaff]  #I #W #[fg=#82aaff,bg=#222436]"
+      set -g window-status-format "#[fg=#c8d3f5,bg=#222436,nobold,noitalics,nounderscore]   #I #W "
 
-        # +--- Borders ---+
-        set -g pane-border-style "fg=#444a73"
-        set -g pane-active-border-style "fg=#82aaff"
-        
-        # +--- Panes ---+
-        set -g pane-border-status top
-        set -g pane-border-format " #{pane_title} "
-        
-        # +--- Sessions ---+
-        bind-key -n M-d detach
-        bind-key -n M-f run-shell "tmux neww tmux-sessionizer"
-        bind-key -n M-q confirm-before "kill-session"
-        
-        # +--- Windows ---+
-        bind-key -n M-w choose-window
-        bind-key -n M-Space next-window
-        bind-key -n M-n new-window
-        bind-key -n M-s split-window -v
-        bind-key -n M-v split-window -h
-        bind-key -n M-H swap-pane -d -t "{left-of}"
-        bind-key -n M-J swap-pane -d -t "{down-of}"
-        bind-key -n M-K swap-pane -d -t "{up-of}"
-        bind-key -n M-L swap-pane -d -t "{right-of}"
-        
-        # +--- Panes ---+
-        bind-key -n M-c confirm-before "kill-pane"
-        bind-key -n M-o confirm-before "kill-pane -a"
-        
-        # +--- Other ---+
-        bind-key r source-file ~/.config/tmux/tmux.conf
-        
-        # +--- Vim integration ---+
-        is_vim="ps -o state= -o comm= -t '#{pane_tty}' | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|n?vim?x?)(diff)?$'"
-        
-        bind-key -n C-h if-shell "$is_vim" "send-keys C-h" "select-pane -L"
-        bind-key -n C-j if-shell "$is_vim" "send-keys C-j" "select-pane -D"
-        bind-key -n C-k if-shell "$is_vim" "send-keys C-k" "select-pane -U"
-        bind-key -n C-l if-shell "$is_vim" "send-keys C-l" "select-pane -R"
-        
-        bind-key -n "M-h" if-shell "$is_vim" "send-keys M-h" "resize-pane -L 1"
-        bind-key -n "M-j" if-shell "$is_vim" "send-keys M-j" "resize-pane -D 1"
-        bind-key -n "M-k" if-shell "$is_vim" "send-keys M-k" "resize-pane -U 1"
-        bind-key -n "M-l" if-shell "$is_vim" "send-keys M-l" "resize-pane -R 1"
+      # +--- Borders ---+
+      set -g pane-border-style "fg=#444a73"
+      set -g pane-active-border-style "fg=#82aaff"
+
+      # +--- Panes ---+
+      set -g pane-border-status top
+      set -g pane-border-format " #{pane_title} "
+
+      # +--- Sessions ---+
+      bind-key -n M-d detach
+      bind-key -n M-f run-shell "tmux neww tmux-sessionizer"
+      bind-key -n M-q confirm-before "kill-session"
+
+      # +--- Windows ---+
+      bind-key -n M-w choose-window
+      bind-key -n M-Space next-window
+      bind-key -n M-n new-window
+      bind-key -n M-s split-window -v
+      bind-key -n M-v split-window -h
+      bind-key -n M-H swap-pane -d -t "{left-of}"
+      bind-key -n M-J swap-pane -d -t "{down-of}"
+      bind-key -n M-K swap-pane -d -t "{up-of}"
+      bind-key -n M-L swap-pane -d -t "{right-of}"
+
+      # +--- Panes ---+
+      bind-key -n M-c confirm-before "kill-pane"
+      bind-key -n M-o confirm-before "kill-pane -a"
+
+      # +--- Other ---+
+      bind-key r source-file ~/.config/tmux/tmux.conf
+
+      # +--- Vim integration ---+
+      is_vim="ps -o state= -o comm= -t '#{pane_tty}' | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|n?vim?x?)(diff)?$'"
+
+      bind-key -n C-h if-shell "$is_vim" "send-keys C-h" "select-pane -L"
+      bind-key -n C-j if-shell "$is_vim" "send-keys C-j" "select-pane -D"
+      bind-key -n C-k if-shell "$is_vim" "send-keys C-k" "select-pane -U"
+      bind-key -n C-l if-shell "$is_vim" "send-keys C-l" "select-pane -R"
+
+      bind-key -n "M-h" if-shell "$is_vim" "send-keys M-h" "resize-pane -L 1"
+      bind-key -n "M-j" if-shell "$is_vim" "send-keys M-j" "resize-pane -D 1"
+      bind-key -n "M-k" if-shell "$is_vim" "send-keys M-k" "resize-pane -U 1"
+      bind-key -n "M-l" if-shell "$is_vim" "send-keys M-l" "resize-pane -R 1"
     '';
   };
 
-  home.packages = [ 
+  home.packages = [
     tmux-sessionizer
   ];
 }

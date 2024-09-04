@@ -1,12 +1,10 @@
-{ pkgs, ... }:
+{ ... }:
 
 {
   programs.hyprland.enable = true;
-  
+
   security = {
-    pam.services.hyprlock = {};
-    polkit = {
-      enable = true;
-    };
+    pam.services.hyprlock = { };
+    polkit.enable = true;
   };
 }

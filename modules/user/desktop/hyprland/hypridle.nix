@@ -15,13 +15,13 @@
           timeout = 30;
           on-timeout = "pidof hyprlock && hyprctl dispatch dpms off";
           on-resume = "hyprctl dispatch dpms on";
-        } 
+        }
         {
           timeout = 120;
           on-timeout = "brightnessctl -s set 5";
           on-resume = "brightnessctl -r";
         }
-      ]; 
+      ];
     };
   };
 }

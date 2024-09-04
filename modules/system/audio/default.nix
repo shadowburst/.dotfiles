@@ -2,9 +2,12 @@
 
 {
   users.users.${username} = {
-    extraGroups = [ "audio" "sound" ];
+    extraGroups = [
+      "audio"
+      "sound"
+    ];
   };
-  
+
   services.pipewire = {
     enable = true;
     audio.enable = true;
