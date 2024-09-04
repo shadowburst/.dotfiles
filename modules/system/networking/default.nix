@@ -2,7 +2,7 @@
 
 {
   users.users.${username}.extraGroups = [ "networkmanager" ];
-  
+
   networking = {
     firewall = {
       enable = true;
@@ -11,8 +11,8 @@
         8008
         8009
       ];
+      checkReversePath = "loose"; # Needed for wireguard VPNs
     };
-
     networkmanager.enable = true;
   };
 
