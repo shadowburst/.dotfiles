@@ -21,7 +21,6 @@ in
     ./hypridle.nix
     ./hyprlock.nix
     ./hyprpaper.nix
-    ./hyprpicker.nix
   ];
 
   wayland.windowManager.hyprland = {
@@ -218,11 +217,13 @@ in
         ", xf86monbrightnessup, exec, brightnessctl -s set 5%+"
 
         # Screenshots
-        ", print, exec, grimshot --notify copy window"
-        "SHIFT, print, exec, grimshot --notify copy area"
-        "CTRL, print, exec, grimshot --notify savecopy window"
-        "CTRL SHIFT, print, exec, grimshot --notify savecopy area"
-        "ALT, print, exec, hyprpicker -a"
+        ", print, exec, hyprshot --freeze --clipboard-only -m window"
+        "SHIFT, print, exec, hyprshot --freeze --clipboard-only -m region"
+        "CTRL, print, exec, hyprshot --freeze -m window"
+        "CTRL SHIFT, print, exec, hyprshot --freeze -m region"
+
+        # Other
+        "$mod, p, exec, hyprpicker -a"
       ];
       plugin = {
         dynamic-cursors = {
@@ -242,6 +243,7 @@ in
     htop
     playerctl
     socat
-    sway-contrib.grimshot
+    hyprpicker
+    hyprshot
   ];
 }
