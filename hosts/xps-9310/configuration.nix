@@ -1,11 +1,15 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   imports = [
-    (import ./hardware-configuration.nix)
-    
     inputs.nixos-hardware.nixosModules.dell-xps-13-9310
     inputs.nixos-hardware.nixosModules.common-gpu-intel
+    ./hardware-configuration.nix
   ];
 
   boot = {
@@ -39,4 +43,6 @@
   };
 
   networking.hostName = "xps";
+
+  services.fprintd.enable = lib.mkForce false;
 }
