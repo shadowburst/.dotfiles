@@ -1,16 +1,22 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   launch-default = pkgs.writeShellScriptBin "launch-default" (lib.fileContents ./bin/launch-default);
   watch-monitors = pkgs.writeShellScriptBin "watch-monitors" (lib.fileContents ./bin/watch-monitors);
-  
+
   app-menu = pkgs.writeShellScriptBin "app-menu" ''
     ags -r "(await import('file://$XDG_CONFIG_HOME/ags/modules/windows/index.js')).toggle('applications')"
   '';
   power-menu = pkgs.writeShellScriptBin "power-menu" ''
     ags -r "(await import('file://$XDG_CONFIG_HOME/ags/modules/windows/index.js')).toggle('power')"
   '';
-in {
+in
+{
   imports = [
     ./hypridle.nix
     ./hyprlock.nix
@@ -21,6 +27,9 @@ in {
   wayland.windowManager.hyprland = {
     enable = true;
     systemd.variables = [ "--all" ];
+    plugins = with pkgs.hyprlandPlugins; [
+      hypr-dynamic-cursors
+    ];
     settings = {
       "$mod" = "SUPER";
       "$terminal" = config.home.sessionVariables.TERMINAL;
@@ -32,6 +41,7 @@ in {
         "1, default:true"
       ];
       exec-once = [
+        "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1 &"
         "${watch-monitors}/bin/watch-monitors"
         "brightnessctl -s set 40%"
         "transmission-daemon"
@@ -59,7 +69,7 @@ in {
       animations = {
         enabled = true;
         bezier = [
-          "ease_in_out, 0.85, 0, 0.15, 1" 
+          "ease_in_out, 0.85, 0, 0.15, 1"
         ];
         animation = [
           "windows, 1, 3, ease_in_out, popin 50%"
@@ -107,6 +117,7 @@ in {
       };
       cursor = {
         no_hardware_cursors = true;
+        default_monitor = "DP-1";
       };
       windowrule = [
         "float, org.gnome.Calculator"
@@ -213,6 +224,15 @@ in {
         "CTRL SHIFT, print, exec, grimshot --notify savecopy area"
         "ALT, print, exec, hyprpicker -a"
       ];
+      plugin = {
+        dynamic-cursors = {
+          mode = "stretch";
+          shake = {
+            nearest = false;
+            threshold = 3.0;
+          };
+        };
+      };
     };
   };
 
@@ -225,4 +245,3 @@ in {
     sway-contrib.grimshot
   ];
 }
-
