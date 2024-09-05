@@ -17,11 +17,7 @@
     brave
     discord
     gimp
-    gnome-calculator
     nautilus
     simple-scan
-    pavucontrol
-    sway-contrib.grimshot
-    wdisplays
   ];
 }

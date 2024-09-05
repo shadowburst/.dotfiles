@@ -19,7 +19,6 @@
   ];
 
   home.packages = with pkgs; [
-    brightnessctl
     curl
     fd
     gcc
@@ -31,7 +30,6 @@
     trash-cli
     tree
     wget
-    wl-clipboard
     unzip
     xdg-utils
   ];

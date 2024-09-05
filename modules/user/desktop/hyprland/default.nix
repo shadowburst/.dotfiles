@@ -241,9 +241,12 @@ in
     brightnessctl
     gnome-calculator
     htop
-    playerctl
-    socat
     hyprpicker
     hyprshot
+    pavucontrol
+    playerctl
+    socat
+    wdisplays
+    wl-clipboard
   ];
 }
