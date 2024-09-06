@@ -13,8 +13,6 @@
   xdg.enable = true;
 
   imports = [
-    ./desktop
-    ./terminal
-    ./theme
+    ./theme.nix
   ];
 }

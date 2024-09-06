@@ -36,6 +36,8 @@
   };
 
   security.rtkit.enable = true;
+
+  # Needed for mason in nvim
   programs.nix-ld = {
     enable = true;
     libraries = with pkgs; [
@@ -64,17 +66,9 @@
   };
 
   imports = [
-    ./audio
-    ./bluetooth
-    ./disks
-    ./gaming
-    ./greetd
-    ./hyprland
-    ./networking
-    ./power
-    # ./printing
-    ./ssh
-    ./theme
-    ./virtualisation
+    ./disks.nix
+    ./networking.nix
+    ./ssh.nix
+    ./virtualisation.nix
   ];
 }
