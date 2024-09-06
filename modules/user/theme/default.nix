@@ -1,10 +1,4 @@
-{
-  config,
-  inputs,
-  lib,
-  pkgs,
-  ...
-}:
+{ lib, pkgs, ... }:
 
 let
   catppuccinKvantum = pkgs.catppuccin-kvantum.override {
@@ -20,6 +14,7 @@ in
       gtk.extraCss = ''
         .window-frame { box-shadow: none; margin: 0; }
       '';
+      fish.enable = false;
       kitty.enable = false;
       tmux.enable = false;
       yazi.enable = false;

@@ -1,4 +1,4 @@
-{ config, host, ... }:
+{ host, ... }:
 
 {
   programs.fish = {
@@ -47,14 +47,17 @@
       ll = "eza -la";
       flake-switch = "sudo nixos-rebuild switch --flake ~/.dotfiles#${host}";
       flake-boot = "sudo nixos-rebuild boot --flake ~/.dotfiles#${host}";
+      flake-update = "nix flake update ~/.dotfiles && flake-switch";
     };
     shellInit = ''
       set TERM xterm-256color
-
       set fish_greeting
       set fish_color_param foreground
-      set fish_color_option cyan
+      set fish_color_command blue
+      set fish_color_option brmagenta
       set fish_color_error red
+      set fish_color_valid_path cyan
+      set fish_pager_color_progress black --background=blue
     '';
   };
 }

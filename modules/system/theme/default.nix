@@ -41,6 +41,7 @@
 
     base16Scheme = "${pkgs.base16-schemes}/share/themes/catppuccin-macchiato.yaml";
     targets = {
+      fish.enable = false;
       plymouth.enable = false;
     };
   };
