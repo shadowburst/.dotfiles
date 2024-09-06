@@ -105,7 +105,6 @@ in
       };
       misc = {
         disable_hyprland_logo = true;
-        vfr = true;
         vrr = 2;
         allow_session_lock_restore = true;
         mouse_move_enables_dpms = true;
