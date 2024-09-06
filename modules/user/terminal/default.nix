@@ -27,6 +27,7 @@
     jq
     ripgrep
     sshfs
+    tldr
     trash-cli
     tree
     wget
