@@ -1,5 +1,7 @@
 { ... }:
 
 {
-
+  imports = [
+    ../../modules/user
+  ];
 }
