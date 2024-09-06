@@ -28,6 +28,9 @@
         show_hidden = true;
         show_symlink = true;
       };
+      preview = {
+        image_delay = 100;
+      };
       opener = {
         extract = [
           {
