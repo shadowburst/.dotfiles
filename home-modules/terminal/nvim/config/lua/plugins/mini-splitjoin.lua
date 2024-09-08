@@ -1,4 +1,4 @@
-local mapping = "gs"
+local mapping = "gS"
 
 return {
 	{
@@ -8,9 +8,6 @@ return {
 			mappings = {
 				toggle = mapping,
 			},
-		},
-		keys = {
-			{ mapping, desc = "Toggle join" },
 		},
 	},
 }
