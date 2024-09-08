@@ -19,7 +19,7 @@ return {
 		keys = {
 			{
 				"s",
-				mode = { "n", "o" },
+				mode = "o",
 				function()
 					require("flash").treesitter()
 				end,
