@@ -14,8 +14,6 @@ return {
 					{ "[", group = "prev" },
 					{ "]", group = "next" },
 					{ "g", group = "goto" },
-					{ "ga", group = "Change case" },
-					{ "gx", desc = "Open with system app" },
 					{ "z", group = "fold" },
 					{
 						"<leader>b",
@@ -42,6 +40,10 @@ return {
 					},
 					{ "<leader>x", group = "diagnostics/quickfix" },
 				},
+			},
+			triggers = {
+				{ "<auto>", mode = "nixsotc" },
+				{ "s", mode = { "n", "v" } },
 			},
 		},
 	},
