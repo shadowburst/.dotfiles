@@ -14,7 +14,15 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    ags.url = "github:Aylur/ags";
+    ags = {
+      url = "github:Aylur/ags";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    hyprpanel = {
+      url = "github:Jas-SinghFSU/HyprPanel";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.ags.follows = "ags";
+    };
   };
 
   outputs =
@@ -38,6 +46,11 @@
                 ;
             };
             modules = with inputs; [
+              {
+                nixpkgs.overlays = [
+                  inputs.hyprpanel.overlay
+                ];
+              }
               ./hosts/${host}/configuration.nix
 
               home-manager.nixosModules.home-manager

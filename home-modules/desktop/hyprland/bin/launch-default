@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-case $(hyprctl monitors -j | jq '.[] | select(.focused == true) | .activeWorkspace.id') in
+workspace=${1:-$(hyprctl monitors -j | jq '.[] | select(.focused == true) | .activeWorkspace.id')}
+case $workspace in
 1)
   cmd="$BROWSER"
   ;;

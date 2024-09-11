@@ -33,7 +33,7 @@ export default function Applications() {
         monitor: hyprland.active.monitor.bind('id'),
         layer: 'overlay',
         anchor: ['top', 'bottom', 'left', 'right'],
-        margins: [100, 100, 100, 100],
+        margins: [100, 100, 0, 100],
         exclusivity: 'ignore',
         keymode: 'exclusive',
         child: Widget.Box({
@@ -60,11 +60,18 @@ export default function Applications() {
                         children: Utils.merge([apps.bind(), hyprland.active.monitor.bind('id')], (list, monitorId) => {
                             const monitor = hyprland.getMonitor(monitorId);
 
+                            const apps = [...list].sort((a, b) => a.name.localeCompare(b.name));
+
+                            const first = apps.shift();
+
+                            if (!first) {
+                                return [];
+                            }
+
                             /** @type {import('resource:///com/github/Aylur/ags/service/applications.js').Application[][]} */
-                            const rows = array.chunk(
-                                list.sort((a, b) => a.name.localeCompare(b.name)),
-                                monitor ? Math.floor(monitor?.width / 350) : 5
-                            );
+                            const rows = [[first]];
+
+                            rows.push(...array.chunk(apps, monitor ? Math.floor(monitor?.width / 350) : 5));
 
                             return rows.map((row) =>
                                 Widget.Box({

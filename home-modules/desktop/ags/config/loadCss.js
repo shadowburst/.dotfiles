@@ -1,6 +1,6 @@
-const scss = `${App.configDir}/scss/main.scss`;
-const css = '/tmp/ags-style.css';
-Utils.exec(`sass ${scss} ${css}`);
+const customScss = `${App.configDir}/scss/main.scss`;
+const customCss = '/tmp/ags/custom/main.css';
+Utils.exec(`sass ${customScss} ${customCss}`);
 
 App.resetCss();
-App.applyCss(css);
+App.applyCss(customCss);

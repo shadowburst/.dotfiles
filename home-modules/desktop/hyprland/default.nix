@@ -8,13 +8,6 @@
 let
   launch-default = pkgs.writeShellScriptBin "launch-default" (lib.fileContents ./bin/launch-default);
   watch-monitors = pkgs.writeShellScriptBin "watch-monitors" (lib.fileContents ./bin/watch-monitors);
-
-  app-menu = pkgs.writeShellScriptBin "app-menu" ''
-    ags -r "(await import('file://$XDG_CONFIG_HOME/ags/modules/windows/index.js')).toggle('applications')"
-  '';
-  power-menu = pkgs.writeShellScriptBin "power-menu" ''
-    ags -r "(await import('file://$XDG_CONFIG_HOME/ags/modules/windows/index.js')).toggle('power')"
-  '';
 in
 {
   imports = [
@@ -46,7 +39,7 @@ in
         "transmission-daemon"
       ];
       exec = [
-        "pkill ags; ags"
+        "pkill ags; hyprpanel"
       ];
       general = {
         border_size = 2;
@@ -58,7 +51,6 @@ in
         rounding = 0;
         drop_shadow = false;
         shadow_range = 4;
-
         blur = {
           enabled = true;
           size = 6;
@@ -191,13 +183,13 @@ in
         "$mod SHIFT CTRL, l, movewindow, mon:r"
 
         # Menus
-        "$mod, a, exec, ${app-menu}/bin/app-menu"
-        "$mod, x, exec, ${power-menu}/bin/power-menu"
+        "$mod, a, exec, app-menu"
+        "$mod, x, exec, power-menu"
 
         # Applications
         "$mod, return, exec, $terminal"
         "$mod, b, exec, $browser"
-        "$mod, d, exec, ${launch-default}/bin/launch-default"
+        "$mod, d, exec, launch-default"
         "$mod, e, exec, $terminal -e yazi"
         "CTRL SHIFT, escape, exec, $terminal -e htop"
         ", xf86calculator, exec, gnome-calculator"
@@ -237,6 +229,8 @@ in
   };
 
   home.packages = with pkgs; [
+    launch-default
+
     brightnessctl
     gnome-calculator
     htop
