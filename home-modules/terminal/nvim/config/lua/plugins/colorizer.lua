@@ -16,6 +16,7 @@ return {
 	{
 		"nvchad/nvim-colorizer.lua",
 		ft = ft,
+		cmd = { "ColorizerToggle" },
 		opts = {
 			filetypes = ft,
 			user_default_options = {
