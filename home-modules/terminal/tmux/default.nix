@@ -23,20 +23,20 @@ in
       # +--- Status bar ---+
       set -g status-position top
       set -g status-justify absolute-centre
-      set -g status-style 'bg=#222436 fg=#c8d3f5'
+      set -g status-style 'bg=${base00} fg=${base05}'
 
       set -g status-left-length 100
-      set -g status-left "#[fg=#82aaff,bg=#222436]#[fg=#222436,bg=#82aaff,bold] #S #[fg=#82aaff,bg=#222436]"
+      set -g status-left "#[fg=${base0D},bg=${base00}]#[fg=${base00},bg=${base0D},bold] #S #[fg=${base0D},bg=${base00}]"
 
       set -g status-right-length 100
-      set -g status-right "#[fg=#82aaff,bg=#222436]#[fg=#222436,bg=#82aaff,bold]  %H:%M #[fg=#82aaff,bg=#222436]"
+      set -g status-right "#[fg=${base0D},bg=${base00}]#[fg=${base00},bg=${base0D},bold]  %H:%M #[fg=${base0D},bg=${base00}]"
 
-      set -g window-status-current-format "#[fg=#82aaff,bg=#222436]#[fg=#222436,bg=#82aaff]  #I #W #[fg=#82aaff,bg=#222436]"
-      set -g window-status-format "#[fg=#c8d3f5,bg=#222436,nobold,noitalics,nounderscore]   #I #W "
+      set -g window-status-current-format "#[fg=${base0D},bg=${base00}]#[fg=${base00},bg=${base0D},bold]  #I #W #[fg=${base0D},bg=${base00}]"
+      set -g window-status-format "#[fg=${base0D},bg=${base00}]   #I #W "
 
       # +--- Borders ---+
-      set -g pane-border-style "fg=#444a73"
-      set -g pane-active-border-style "fg=#82aaff"
+      set -g pane-border-style "fg=${base03}"
+      set -g pane-active-border-style "fg=${base0D}"
 
       # +--- Panes ---+
       set -g pane-border-status top

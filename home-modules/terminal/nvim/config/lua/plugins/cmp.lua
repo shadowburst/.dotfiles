@@ -21,11 +21,11 @@ return {
 				window = {
 					completion = {
 						border = "rounded",
-						winhighlight = "Normal:Pmenu",
+						winhighlight = "Normal:Pmenu,FloatBorder:FloatBorder,CursorLine:PmenuSel,Search:None",
 					},
 					documentation = {
 						border = "rounded",
-						winhighlight = "Normal:Pmenu",
+						winhighlight = "Normal:Pmenu,FloatBorder:FloatBorder,CursorLine:PmenuSel,Search:None",
 					},
 				},
 				snippet = {

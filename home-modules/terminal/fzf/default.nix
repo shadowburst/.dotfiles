@@ -8,30 +8,29 @@
       "--prompt=' '"
       "--pointer=''"
       "--header=''"
-      "--no-info"
       "--border=rounded"
       "--preview-window=border-left"
       "--layout=reverse"
       "--highlight-line"
     ];
-    colors = {
-      bg = "#1e2030";
-      "bg+" = "#2d3f76";
-      gutter = "#1e2030";
-      border = "#589ed7";
-      header = "#ff966c";
-      separator = "#ff966c";
-      hl = "#65bcff";
-      "hl+" = "#65bcff";
-      fg = "#c8d3f5";
-      query = "#c8d3f5:regular";
-      marker = "#ff007c";
-      pointer = "#ff007c";
-      prompt = "#c099ff";
-      scrollbar = "#589ed7";
-      spinner = "#ff007c";
+    colors = with config.lib.stylix.colors.withHashtag; {
+      bg = base01;
+      "bg+" = base02;
+      gutter = base01;
+      border = base0D;
+      header = base09;
+      info = base04;
+      separator = base09;
+      hl = base0D;
+      "hl+" = base0D;
+      fg = base05;
+      query = "${base05}:regular";
+      marker = base08;
+      pointer = base08;
+      prompt = base0E;
+      scrollbar = base0D;
+      spinner = base08;
     };
-
     tmux = {
       enableShellIntegration = true;
     };
