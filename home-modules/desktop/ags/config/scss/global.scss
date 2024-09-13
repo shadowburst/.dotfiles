@@ -1,12 +1,3 @@
 * {
     all: unset;
 }
-
-tooltip {
-    @include bg($bg);
-    @include rounded;
-    @include p(2);
-    @include text($fg);
-
-    font-family: JetBrainsMono Nerd Font Mono;
-}

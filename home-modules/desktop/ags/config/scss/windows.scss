@@ -1,4 +1,4 @@
-.backdrop.dark {
+.backdrop {
     @include bg($bg);
     opacity: 0.8;
 }
@@ -34,26 +34,6 @@
         }
     }
 
-    .power-profiles {
-        @include window;
-
-        .title {
-            @include title;
-        }
-
-        button {
-            @include button;
-            @include m(2);
-            @include rounded;
-            @include p(2);
-
-            image {
-                @include m(2, b);
-                @include font(4rem);
-            }
-        }
-    }
-
     .power {
         @include window;
 
@@ -65,111 +45,6 @@
 
             image {
                 @include font(8rem);
-            }
-        }
-    }
-
-    .torrents {
-        @include window;
-
-        .title {
-            @include title;
-            @include m(2, b);
-        }
-
-        button {
-            @include button;
-            @include rounded;
-            @include p(2);
-
-            image {
-                @include font(1.4rem);
-            }
-        }
-
-        .torrent {
-            @include m(2, t);
-            @include rounded;
-            @include bg($card);
-            @include p(3, x);
-            @include p(3, y);
-
-            .name {
-                @include m(2, b);
-                @include font(1.1rem, bold);
-            }
-
-            .details {
-                @include m(1, b);
-            }
-
-            .progress {
-                @include m(1, t);
-                @include font(0.7rem);
-
-                image {
-                    @include m(1, r);
-                }
-
-                label {
-                    @include m(2, r);
-                }
-            }
-
-            levelbar {
-                @include m(3, y);
-
-                & trough,
-                & trough block {
-                    @include rounded(full);
-
-                    min-height: 1rem;
-                }
-
-                & trough {
-                    @include bg($muted);
-
-                    & block.filled {
-                        @include bg($primary);
-                    }
-                }
-
-                &.paused trough block.filled {
-                    @include bg($warning);
-                }
-
-                &.finished block.filled {
-                    @include bg($success);
-                }
-            }
-
-            .actions {
-                @include m(2, l);
-            }
-        }
-    }
-
-    .updates {
-        @include window;
-
-        .title {
-            @include title;
-        }
-
-        button {
-            @include button;
-            @include rounded;
-            @include p(2);
-        }
-
-        .update {
-            label.new {
-                @include text($success);
-            }
-
-            image {
-                @include m(2, x);
-                @include font(0.8rem);
             }
         }
     }
