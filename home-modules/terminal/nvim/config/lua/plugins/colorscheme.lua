@@ -49,7 +49,7 @@ return {
 				colors.red = macchiato.red
 				colors.red1 = macchiato.maroon
 				colors.teal = macchiato.teal
-				colors.terminal_black = macchiato.overlay0
+				colors.terminal_black = macchiato.surface2
 				colors.yellow = macchiato.yellow
 				colors.git = {
 					add = macchiato.green,
