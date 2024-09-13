@@ -2,10 +2,10 @@
 
 {
   home.packages = with pkgs; [
-    transmission_4
+    fragments
   ];
 
-  xdg.configFile."transmission-daemon/settings.json".text = ''
+  xdg.configFile."fragments/settings.json".text = ''
     {
       "alt-speed-down": 50,
       "alt-speed-enabled": false,
@@ -62,8 +62,8 @@
       "rpc-whitelist": "127.0.0.1",
       "rpc-whitelist-enabled": true,
       "scrape-paused-torrents-enabled": true,
-      "script-torrent-done-enabled": true,
-      "script-torrent-done-filename": "${config.home.homeDirectory}/.config/transmission-daemon/scripts/torrent-done.sh",
+      "script-torrent-done-enabled": false,
+      "script-torrent-done-filename": "",
       "seed-queue-enabled": true,
       "seed-queue-size": 5,
       "speed-limit-down": 5000,
@@ -79,18 +79,4 @@
       "watch-dir-enabled": true
     }
   '';
-
-  xdg.configFile."transmission-daemon/scripts" = {
-    source = ./scripts;
-    recursive = true;
-  };
-
-  xdg.desktopEntries.transmission-magnet = {
-    name = "Transmission (magnet)";
-    type = "Application";
-    noDisplay = true;
-    comment = "Add magnet link to transmission";
-    exec = "transmission-remote -a %u";
-    mimeType = [ "x-scheme-handler/magnet" ];
-  };
 }

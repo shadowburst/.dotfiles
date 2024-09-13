@@ -7,6 +7,7 @@
     ./kanshi
     ./kitty
     ./mpv
+    ./transmission
   ];
 
   home.sessionVariables = {

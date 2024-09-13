@@ -13,7 +13,6 @@
     ./nvim
     ./starship
     ./tmux
-    ./transmission
     ./yazi
     ./zoxide
   ];
