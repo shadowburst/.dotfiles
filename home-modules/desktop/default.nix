@@ -3,6 +3,7 @@
 {
   imports = [
     ./ags
+    ./discord
     ./hyprland
     ./kanshi
     ./kitty
@@ -16,7 +17,6 @@
 
   home.packages = with pkgs; [
     brave
-    discord
     gimp
     nautilus
     simple-scan
