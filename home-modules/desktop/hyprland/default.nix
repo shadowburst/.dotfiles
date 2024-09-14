@@ -143,7 +143,7 @@ in
         "$mod, q, killactive,"
         "$mod, c, togglefloating,"
         "$mod, p, pin,"
-        "$mod, f, fullscreen, 0"
+        "$mod, f, fullscreenstate, 2 -1"
         "ALT, tab, cyclenext,"
         "ALT SHIFT, tab, cyclenext, prev"
         "$mod, h, movefocus, l"
