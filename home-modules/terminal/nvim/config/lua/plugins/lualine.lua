@@ -2,14 +2,15 @@ return {
 	{
 		"nvim-lualine/lualine.nvim",
 		dependencies = {
+			"cbochs/grapple.nvim",
 			"echasnovski/mini.icons",
-			"folke/tokyonight.nvim",
+			"catppuccin/nvim",
 		},
 		event = "VeryLazy",
 		opts = function()
-			local colors = require("tokyonight.colors").setup()
+			local colors = require("catppuccin.palettes").get_palette("macchiato")
 
-			local theme = require("lualine.themes.tokyonight")
+			local theme = require("lualine.themes.catppuccin-macchiato")
 
 			theme.normal.c.bg = colors.bg
 
@@ -61,14 +62,14 @@ return {
 									v = colors.yellow,
 									[""] = colors.yellow,
 									V = colors.yellow,
-									c = colors.magenta,
+									c = colors.mauve,
 									no = colors.red,
 									s = colors.orange,
 									S = colors.orange,
 									[""] = colors.orange,
 									ic = colors.yellow,
-									R = colors.magenta,
-									Rv = colors.magenta,
+									R = colors.mauve,
+									Rv = colors.mauve,
 									cv = colors.red,
 									ce = colors.red,
 									r = colors.cyan,
@@ -77,7 +78,7 @@ return {
 									["!"] = colors.red,
 									t = colors.red,
 								}
-								return { fg = colors.bg, bg = mode_color[vim.fn.mode()], gui = "bold" }
+								return { fg = colors.base, bg = mode_color[vim.fn.mode()], gui = "bold" }
 							end,
 						},
 						{
@@ -101,7 +102,7 @@ return {
 							},
 							color = function()
 								return vim.bo.modified and { fg = colors.red, gui = "bold" }
-									or { fg = colors.fg, gui = "bold" }
+									or { fg = colors.text, gui = "bold" }
 							end,
 						},
 						{
@@ -146,7 +147,7 @@ return {
 							},
 							padding = 1,
 							icon = "",
-							color = { fg = colors.bg, bg = colors.magenta, gui = "bold" },
+							color = { fg = colors.base, bg = colors.mauve, gui = "bold" },
 						},
 						{
 							function()

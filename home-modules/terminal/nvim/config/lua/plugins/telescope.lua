@@ -10,12 +10,11 @@ return {
 				build = "make",
 				enabled = vim.fn.executable("make") == 1,
 			},
-			"folke/tokyonight.nvim",
 		},
 		opts = {
 			defaults = {
 				prompt_prefix = " ",
-				selection_caret = " ",
+				selection_caret = " ",
 				layout_config = {
 					prompt_position = "top",
 				},
@@ -89,13 +88,6 @@ return {
 			telescope.setup(opts)
 			pcall(telescope.load_extension, "fzf")
 			pcall(telescope.load_extension, "notify")
-
-			local colors = require("tokyonight.colors").setup()
-			vim.api.nvim_set_hl(
-				0,
-				"TelescopeSelectionCaret",
-				{ fg = colors.magenta2, bg = vim.api.nvim_get_hl(0, { name = "Visual" }).bg }
-			)
 		end,
 		keys = {
 			{ "<leader><leader>", "<cmd>Telescope find_files<cr>", desc = "Find files" },
