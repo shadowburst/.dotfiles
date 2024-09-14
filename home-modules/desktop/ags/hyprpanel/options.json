@@ -344,55 +344,14 @@
   "theme.bar.buttons.modules.kbLayout.text": "#91d7e3",
   "theme.bar.buttons.notifications.icon_background": "#b7bdf8",
   "bar.layouts": {
-    "0": {
-      "left": [
-        "dashboard",
-        "workspaces",
-        "windowtitle"
-      ],
-      "middle": [
-        "media"
-      ],
+    "*": {
+      "left": ["dashboard", "workspaces", "windowtitle"],
+      "middle": ["media"],
       "right": [
         "volume",
         "network",
         "bluetooth",
         "battery",
-        "clock",
-        "notifications",
-        "power"
-      ]
-    },
-    "1": {
-      "left": [
-        "dashboard",
-        "workspaces",
-        "windowtitle"
-      ],
-      "middle": [
-        "media"
-      ],
-      "right": [
-        "volume",
-        "network",
-        "bluetooth",
-        "battery",
-        "clock",
-        "notifications",
-        "power"
-      ]
-    },
-    "2": {
-      "left": [
-        "dashboard",
-        "workspaces",
-        "windowtitle"
-      ],
-      "middle": [
-        "media"
-      ],
-      "right": [
-        "volume",
         "clock",
         "notifications",
         "power"
@@ -442,3 +401,4 @@
   "bar.customModules.power.leftClick": "power-menu",
   "menus.dashboard.powermenu.avatar.image": "/home/pbaudry/.face"
 }
+
