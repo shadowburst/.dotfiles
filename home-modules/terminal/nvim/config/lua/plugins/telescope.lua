@@ -104,15 +104,7 @@ return {
 			-- Notifications
 			{ "<leader>nn", "<cmd>Telescope notify<cr>", desc = "Notifications" },
 			-- Search
-			{
-				"<leader>sw",
-				function()
-					require("telescope.builtin").live_grep({
-						search_dirs = { vim.fn.expand("%:p") },
-					})
-				end,
-				desc = "In buffer",
-			},
+			{ "<leader>sb", "<cmd>Telescope current_buffer_fuzzy_find<cr>", desc = "Current buffer" },
 			{ "<leader>sc", "<cmd>Telescope commands<cr>", desc = "Commands" },
 			{ "<leader>sd", "<cmd>Telescope diagnostics bufnr=0<cr>", desc = "Document diagnostics" },
 			{ "<leader>sD", "<cmd>Telescope diagnostics<cr>", desc = "Workspace diagnostics" },
