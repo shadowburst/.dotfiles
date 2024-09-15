@@ -249,9 +249,9 @@
   "theme.bar.buttons.windowtitle.hover": "#494d64",
   "theme.bar.buttons.windowtitle.background": "#24273a",
   "theme.bar.buttons.workspaces.numbered_active_text_color": "#181926",
-  "theme.bar.buttons.workspaces.active": "#f5bde6",
-  "theme.bar.buttons.workspaces.occupied": "#f0c6c6",
-  "theme.bar.buttons.workspaces.available": "#91d7e3",
+  "theme.bar.buttons.workspaces.active": "#c6a0f6",
+  "theme.bar.buttons.workspaces.occupied": "#91d7e3",
+  "theme.bar.buttons.workspaces.available": "#b7bdf8",
   "theme.bar.buttons.workspaces.hover": "#494d64",
   "theme.bar.buttons.workspaces.background": "#24273a",
   "theme.bar.buttons.dashboard.icon": "#eed49f",
@@ -345,8 +345,14 @@
   "theme.bar.buttons.notifications.icon_background": "#b7bdf8",
   "bar.layouts": {
     "*": {
-      "left": ["dashboard", "workspaces", "windowtitle"],
-      "middle": ["media"],
+      "left": [
+        "dashboard",
+        "workspaces",
+        "windowtitle"
+      ],
+      "middle": [
+        "media"
+      ],
       "right": [
         "volume",
         "network",
@@ -401,4 +407,3 @@
   "bar.customModules.power.leftClick": "power-menu",
   "menus.dashboard.powermenu.avatar.image": "/home/pbaudry/.face"
 }
-
