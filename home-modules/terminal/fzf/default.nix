@@ -20,7 +20,7 @@
       border = base0D;
       header = base09;
       info = base04;
-      separator = base09;
+      separator = base0D;
       hl = base0D;
       "hl+" = base0D;
       fg = base05;
@@ -28,7 +28,7 @@
       query = "${base05}:regular";
       marker = base08;
       pointer = base08;
-      prompt = base0E;
+      prompt = base0F;
       scrollbar = base0D;
       spinner = base08;
     };
