@@ -95,6 +95,15 @@ in
         mfact = 0.55;
         orientation = "left";
       };
+      group = {
+        groupbar = {
+          font_size = 12;
+          height = 18;
+          text_color = lib.mkForce "rgb(${config.lib.stylix.colors.base05})";
+          "col.active" = lib.mkForce "rgb(${config.lib.stylix.colors.base02})";
+          "col.inactive" = lib.mkForce "rgb(${config.lib.stylix.colors.base00})";
+        };
+      };
       misc = {
         disable_hyprland_logo = true;
         vrr = 2;
@@ -154,6 +163,14 @@ in
         "$mod SHIFT, j, movewindow, d"
         "$mod SHIFT, k, movewindow, u"
         "$mod SHIFT, l, movewindow, r"
+
+        # Groups
+        "$mod, g, togglegroup"
+        "$mod ALT, tab, changegroupactive, f"
+        "$mod ALT, h, movewindoworgroup, l"
+        "$mod ALT, j, movewindoworgroup, d"
+        "$mod ALT, k, movewindoworgroup, u"
+        "$mod ALT, l, movewindoworgroup, r"
 
         # Workspaces
         "$mod, ampersand, focusworkspaceoncurrentmonitor, 1"
