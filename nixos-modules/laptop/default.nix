@@ -11,6 +11,6 @@
     ./hyprland.nix
     ./power.nix
     # ./printing.nix
-    ./theme
+    ./stylix
   ];
 }

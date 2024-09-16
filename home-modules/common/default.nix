@@ -14,6 +14,6 @@
   xdg.enable = true;
 
   imports = [
-    ./theme.nix
+    ./stylix.nix
   ];
 }
