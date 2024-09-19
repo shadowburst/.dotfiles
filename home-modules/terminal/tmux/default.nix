@@ -32,7 +32,7 @@ in
       set -g status-right "#[fg=${base0D},bg=${base00}]#[fg=${base00},bg=${base0D},bold]  %H:%M #[fg=${base0D},bg=${base00}]"
 
       set -g window-status-current-format "#[fg=${base0D},bg=${base00}]#[fg=${base00},bg=${base0D},bold]  #I #W #[fg=${base0D},bg=${base00}]"
-      set -g window-status-format "#[fg=${base0D},bg=${base00}]   #I #W "
+      set -g window-status-format "#[fg=${base05},bg=${base00}]  #I #W "
 
       # +--- Borders ---+
       set -g pane-border-style "fg=${base03}"
