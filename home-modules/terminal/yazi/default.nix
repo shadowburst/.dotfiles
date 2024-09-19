@@ -98,6 +98,14 @@
           desc = "Goto dotfiles";
         }
         {
+          run = "cd ~/Downloads";
+          on = [
+            "g"
+            "D"
+          ];
+          desc = "Goto dotfiles";
+        }
+        {
           run = "cd ~/.config";
           on = [
             "g"
