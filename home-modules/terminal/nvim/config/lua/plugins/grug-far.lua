@@ -11,7 +11,7 @@ return {
 			{
 				"<leader>sr",
 				function()
-					require("grug-far").grug_far({
+					require("grug-far").open({
 						prefills = {
 							search = vim.fn.expand("<cword>"),
 							flags = "--hidden " .. vim.fn.expand("%"),
@@ -23,7 +23,7 @@ return {
 			{
 				"<leader>sr",
 				function()
-					require("grug-far").grug_far({
+					require("grug-far").open({
 						prefills = {
 							flags = "--hidden " .. vim.fn.expand("%"),
 						},
@@ -35,7 +35,7 @@ return {
 			{
 				"<leader>sR",
 				function()
-					require("grug-far").grug_far({
+					require("grug-far").open({
 						prefills = {
 							search = vim.fn.expand("<cword>"),
 							flags = "--hidden",
@@ -47,7 +47,7 @@ return {
 			{
 				"<leader>sR",
 				function()
-					require("grug-far").grug_far({
+					require("grug-far").open({
 						prefills = {
 							flags = "--hidden",
 						},
