@@ -125,12 +125,9 @@ in
       layerrule = [
         "animation slide top, bar-*"
         "animation slide top, backdrop"
-        "blur, backdrop-dar"
-        "xray 0, backdrop-dark"
+        "blur, backdrop"
         "animation slide top, applications"
         "animation slide top, power"
-        "animation slide top, torrents"
-        "animation slide top, updates"
       ];
       windowrulev2 = [
         "opacity 0.0 override, class:^(xwaylandvideobridge)$"
