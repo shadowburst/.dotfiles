@@ -126,6 +126,7 @@ in
         "animation slide top, bar-*"
         "animation slide top, backdrop"
         "blur, backdrop"
+        "xray 0, backdrop"
         "animation slide top, applications"
         "animation slide top, power"
       ];
