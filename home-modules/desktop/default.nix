@@ -19,6 +19,7 @@
     brave
     gimp
     nautilus
+    pdfarranger
     simple-scan
   ];
 }
