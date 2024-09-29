@@ -10,7 +10,7 @@
     ./greetd.nix
     ./hyprland.nix
     ./power.nix
-    # ./printing.nix
+    ./printing.nix
     ./stylix
   ];
 }

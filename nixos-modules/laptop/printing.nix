@@ -1,27 +1,12 @@
 { ... }:
 
 {
-  services.printing.enable = true;
-  hardware = {
-    printers = {
-      ensureDefaultPrinter = "Brother";
-      ensurePrinters = [
-        {
-          name = "Brother";
-          model = "everywhere IPP Everywhere";
-          deviceUri = "ipp://192.168.1.85/ipp/print";
-        }
-      ];
-    };
-    sane = {
+  services = {
+    printing.enable = true;
+    avahi = {
       enable = true;
-      brscan4 = {
-        enable = true;
-        netDevices.Brother = {
-          model = "DCP-J785DW";
-          ip = "192.168.1.85";
-        };
-      };
+      nssmdns4 = true;
+      openFirewall = true;
     };
   };
 }
