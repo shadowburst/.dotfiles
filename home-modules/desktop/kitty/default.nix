@@ -17,7 +17,7 @@
 
       background_opacity = "0.9";
     };
-    theme = "Catppuccin-Macchiato";
+    themeFile = "Catppuccin-Macchiato";
   };
 
   home.sessionVariables = {
