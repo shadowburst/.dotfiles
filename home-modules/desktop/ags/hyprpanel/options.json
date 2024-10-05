@@ -405,5 +405,30 @@
   "theme.bar.menus.menu.notifications.scrollbar.radius": "0.8em",
   "theme.osd.muted_zero": true,
   "bar.customModules.power.leftClick": "power-menu",
-  "menus.dashboard.powermenu.avatar.image": "/home/pbaudry/.face"
+  "menus.dashboard.powermenu.avatar.image": "/home/pbaudry/.face",
+  "theme.bar.buttons.enableBorders": false,
+  "bar.workspaces.showAllActive": false,
+  "bar.windowtitle.custom_title": true,
+  "bar.workspaces.workspaceIconMap": {
+    "1": "",
+    "2": "",
+    "3": "",
+    "4": "",
+    "5": "",
+    "6": "",
+    "7": ""
+  },
+  "bar.workspaces.showWsIcons": false,
+  "bar.workspaces.numbered_active_indicator": "highlight",
+  "theme.bar.buttons.workspaces.smartHighlight": true,
+  "bar.workspaces.monitorSpecific": true,
+  "bar.workspaces.hideUnoccupied": false,
+  "theme.bar.buttons.workspaces.numbered_active_highlight_padding": "0.2em",
+  "theme.bar.buttons.workspaces.numbered_active_highlight_border": "0.2em",
+  "bar.workspaces.show_icons": false,
+  "menus.clock.weather.enabled": false,
+  "theme.bar.buttons.background_hover_opacity": 80,
+  "theme.bar.floating": false,
+  "theme.bar.dropdownGap": "2.3em",
+  "theme.bar.buttons.workspaces.enableBorder": false
 }
