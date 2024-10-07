@@ -208,11 +208,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1728101408,
-        "narHash": "sha256-kOZc6KwXs0AzMVAFEst4pIItXqKQs4SI4zoZaMdvXo0=",
+        "lastModified": 1728260067,
+        "narHash": "sha256-D7EDBS3xx2z8Lyr0jCedIxYSsbfbFyLXe9P4qaBByV4=",
         "owner": "Jas-SinghFSU",
         "repo": "HyprPanel",
-        "rev": "8a727a080e6917011211fb8616144be44763982a",
+        "rev": "493e7b9a8931016e323dbc3d07ffad9c82e80c9d",
         "type": "github"
       },
       "original": {
@@ -223,11 +223,11 @@
     },
     "nixos-hardware": {
       "locked": {
-        "lastModified": 1728056216,
-        "narHash": "sha256-IrO06gFUDTrTlIP3Sz+mRB6WUoO2YsgMtOD3zi0VEt0=",
+        "lastModified": 1728269138,
+        "narHash": "sha256-oKxDImsOvgUZMY4NwXVyUc/c1HiU2qInX+b5BU0yXls=",
         "owner": "NixOS",
         "repo": "nixos-hardware",
-        "rev": "b7ca02c7565fbf6d27ff20dd6dbd49c5b82eef28",
+        "rev": "ecfcd787f373f43307d764762e139a7cdeb9c22b",
         "type": "github"
       },
       "original": {
@@ -282,11 +282,11 @@
         "tinted-tmux": "tinted-tmux"
       },
       "locked": {
-        "lastModified": 1727723275,
-        "narHash": "sha256-k4HrG8TJQ0RqDS1tlDz71kvWFBNQ7qZI9T5Z0qLR85Y=",
+        "lastModified": 1728242323,
+        "narHash": "sha256-GYGx9aK+PCseQO72u6eJc8LJxWhAm2p2+3WXJ42seE8=",
         "owner": "danth",
         "repo": "stylix",
-        "rev": "e7e97059776da7e34b739415a7bc8f80f606b803",
+        "rev": "39e5435c1da9ce50fe36deaf58bd2b94dd4d8249",
         "type": "github"
       },
       "original": {
