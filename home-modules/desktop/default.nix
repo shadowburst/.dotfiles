@@ -5,7 +5,6 @@
     ./ags
     ./discord
     ./hyprland
-    ./kanshi
     ./kitty
     ./mpv
     ./transmission

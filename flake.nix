@@ -69,7 +69,7 @@
                     ;
                 };
                 home-manager.users.${username} = {
-                  imports = [ ./hosts/${host}/home.nix ];
+                  imports = [ ./hosts/${host}/home ];
                 };
               }
             ];
