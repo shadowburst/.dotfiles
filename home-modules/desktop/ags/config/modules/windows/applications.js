@@ -71,7 +71,9 @@ export default function Applications() {
                             /** @type {import('resource:///com/github/Aylur/ags/service/applications.js').Application[][]} */
                             const rows = [[first]];
 
-                            rows.push(...array.chunk(apps, monitor ? Math.floor(monitor?.width / 350) : 5));
+                            rows.push(
+                                ...array.chunk(apps, monitor ? Math.floor(monitor.width / (monitor.scale * 350)) : 5)
+                            );
 
                             return rows.map((row) =>
                                 Widget.Box({
