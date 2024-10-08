@@ -28,7 +28,10 @@
   outputs =
     { nixpkgs, ... }@inputs:
     let
-      hosts = [ "xps-9310" ];
+      hosts = [
+        "xps-9310"
+        "xps-9305"
+      ];
       stateVersion = "24.05";
       username = "pbaudry";
     in
