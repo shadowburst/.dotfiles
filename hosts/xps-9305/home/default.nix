@@ -7,5 +7,6 @@
     ../../../home-modules/terminal
     ../../../home-modules/work
     ./kanshi
+    ./git
   ];
 }
