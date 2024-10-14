@@ -40,6 +40,7 @@ in
       ];
       exec = [
         "pkill ags; hyprpanel"
+        "${pkgs.systemd}/bin/systemctl --user is-active kanshi && ${pkgs.systemd}/bin/systemctl --user reload-or-restart kanshi"
       ];
       general = {
         border_size = 2;
