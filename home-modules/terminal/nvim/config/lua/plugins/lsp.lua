@@ -43,7 +43,6 @@ return {
 				dockerls = {},
 				docker_compose_language_service = {},
 				html = {},
-				intelephense = {},
 				jsonls = {
 					settings = {
 						json = {
@@ -66,6 +65,7 @@ return {
 				},
 				marksman = {},
 				nil_ls = {},
+				phpactor = {},
 				tailwindcss = {
 					filetypes_exclude = { "markdown", "php" },
 				},
