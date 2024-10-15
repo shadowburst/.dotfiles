@@ -345,14 +345,8 @@
   "theme.bar.buttons.notifications.icon_background": "#b7bdf8",
   "bar.layouts": {
     "*": {
-      "left": [
-        "dashboard",
-        "workspaces",
-        "windowtitle"
-      ],
-      "middle": [
-        "media"
-      ],
+      "left": ["dashboard", "workspaces", "windowtitle"],
+      "middle": ["media"],
       "right": [
         "volume",
         "network",
@@ -387,18 +381,6 @@
   "menus.dashboard.shortcuts.right.shortcut3.icon": "󰄀",
   "menus.dashboard.shortcuts.right.shortcut3.command": "hyprshot --freeze -m window",
   "menus.dashboard.shortcuts.right.shortcut3.tooltip": "Screenshot",
-  "menus.dashboard.directories.left.directory1.label": "󱂵  Home",
-  "menus.dashboard.directories.left.directory1.command": "bash -c \"nautilus $HOME/\"",
-  "menus.dashboard.directories.left.directory2.command": "bash -c \"nautilus $HOME/Documents/\"",
-  "menus.dashboard.directories.left.directory2.label": "󱧶  Documents",
-  "menus.dashboard.directories.left.directory3.label": "󰉏  Pictures",
-  "menus.dashboard.directories.left.directory3.command": "bash -c \"nautilus $HOME/Pictures/\"",
-  "menus.dashboard.directories.right.directory1.label": "󰚝  Repos",
-  "menus.dashboard.directories.right.directory1.command": "bash -c \"nautilus $HOME/Repos/\"",
-  "menus.dashboard.directories.right.directory2.command": "bash -c \"nautilus $HOME/Downloads/\"",
-  "menus.dashboard.directories.right.directory3.command": "bash -c \"nautilus $HOME/.local/share/Trash/files\"",
-  "menus.dashboard.directories.right.directory3.label": "󰉘  Trash",
-  "menus.dashboard.directories.right.directory2.label": "󰉍  Downloads",
   "bar.clock.showTime": true,
   "bar.media.show_artist": false,
   "bar.media.show_label": true,
@@ -430,5 +412,8 @@
   "theme.bar.buttons.background_hover_opacity": 80,
   "theme.bar.floating": false,
   "theme.bar.dropdownGap": "2.3em",
-  "theme.bar.buttons.workspaces.enableBorder": false
+  "theme.bar.buttons.workspaces.enableBorder": false,
+  "scalingPriority": "hyprland",
+  "menus.dashboard.directories.enabled": false
 }
+
