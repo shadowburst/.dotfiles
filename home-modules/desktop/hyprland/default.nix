@@ -20,7 +20,7 @@ in
     enable = true;
     systemd.variables = [ "--all" ];
     plugins = with pkgs.hyprlandPlugins; [
-      # hypr-dynamic-cursors
+      hypr-dynamic-cursors
     ];
     settings = {
       "$mod" = "SUPER";
