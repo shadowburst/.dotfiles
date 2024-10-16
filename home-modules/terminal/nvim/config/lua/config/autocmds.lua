@@ -88,3 +88,11 @@ vim.api.nvim_create_autocmd({ "FileType" }, {
 		vim.opt_local.conceallevel = 0
 	end,
 })
+
+vim.api.nvim_create_autocmd("BufReadPost", {
+	desc = "Disable diagnostic for .env files",
+	pattern = ".env",
+	callback = function(ev)
+		vim.diagnostic.enable(false, { bufnr = ev.buf })
+	end,
+})
