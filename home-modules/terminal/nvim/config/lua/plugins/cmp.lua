@@ -79,6 +79,7 @@ return {
 					{ name = "nvim_lsp" },
 					{ name = "snippets" },
 					{ name = "path" },
+					{ name = "buffer" },
 				},
 			})
 
