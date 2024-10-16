@@ -63,3 +63,9 @@ opt.fillchars = {
 	diff = " ",
 	eob = " ",
 }
+
+vim.diagnostic.config({
+	float = {
+		border = "rounded",
+	},
+})
