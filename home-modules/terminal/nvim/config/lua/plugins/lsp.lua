@@ -84,7 +84,7 @@ return {
 						complete_function_calls = true,
 						vtsls = {
 							enableMoveToFileCodeAction = true,
-							autoUseWorkspaceTsdk = true,
+							-- autoUseWorkspaceTsdk = true,
 							experimental = {
 								completion = {
 									enableServerSideFuzzyMatch = true,
