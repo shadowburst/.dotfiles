@@ -47,7 +47,7 @@
       ll = "eza -la";
       flake-switch = "sudo nixos-rebuild switch --flake ~/.dotfiles#${host}";
       flake-boot = "sudo nixos-rebuild boot --flake ~/.dotfiles#${host}";
-      flake-update = "nix flake update ~/.dotfiles && flake-switch";
+      flake-update = "nix flake update --flake ~/.dotfiles && flake-switch";
     };
     shellInit = ''
       set TERM xterm-256color
