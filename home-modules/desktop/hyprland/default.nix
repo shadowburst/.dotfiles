@@ -243,8 +243,7 @@ in
         dynamic-cursors = {
           mode = "stretch";
           shake = {
-            nearest = false;
-            threshold = 3.0;
+            effects = true;
           };
         };
       };
