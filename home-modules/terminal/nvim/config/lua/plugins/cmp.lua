@@ -17,6 +17,7 @@ return {
 		config = function()
 			local cmp = require("cmp")
 			local mini_icons = require("mini.icons")
+			local tailwind_cmp = require("tailwindcss-colorizer-cmp")
 
 			cmp.setup({
 				window = {
@@ -72,7 +73,7 @@ return {
 						if icon then
 							item.kind = icon .. " " .. item.kind
 						end
-						return require("tailwindcss-colorizer-cmp").formatter(entry, item)
+						return tailwind_cmp.formatter(entry, item)
 					end,
 				},
 				sources = {
