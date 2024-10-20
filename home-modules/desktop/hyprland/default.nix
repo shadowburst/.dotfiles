@@ -73,7 +73,7 @@ in
       input = {
         kb_layout = "fr";
         kb_variant = "azerty";
-        kb_options = "caps:swapescape";
+        kb_options = "caps:escape_shifted_capslock";
         numlock_by_default = true;
         follow_mouse = 1;
 
