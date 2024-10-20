@@ -6,7 +6,7 @@ return {
 			"nvim-lua/plenary.nvim",
 			"nvim-telescope/telescope.nvim",
 		},
-		cmd = { "Neogit" },
+		cmd = { "Neogit", "NeogitLogCurrent" },
 		opts = {
 			disable_hint = true,
 			graph_style = "unicode",
@@ -29,7 +29,7 @@ return {
 		},
 		keys = {
 			{ "<leader>gg", "<cmd>Neogit<cr>", desc = "Open neogit" },
-			{ "<leader>gl", "<cmd>Neogit log<cr>", desc = "Git logs" },
+			{ "<leader>gl", "<cmd>NeogitLogCurrent<cr>", desc = "Git logs" },
 		},
 	},
 }
