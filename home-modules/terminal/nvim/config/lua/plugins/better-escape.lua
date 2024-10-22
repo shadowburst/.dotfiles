@@ -1,6 +1,7 @@
 return {
 	{
 		"max397574/better-escape.nvim",
+		enabled = false,
 		event = "InsertEnter",
 		opts = {
 			default_mappings = false,
@@ -12,10 +13,6 @@ return {
 				c = {
 					j = { k = "<Esc>" },
 					k = { j = "<Esc>" },
-				},
-				t = {
-					j = { k = "<C-\\><C-n>" },
-					k = { j = "<C-\\><C-n>" },
 				},
 				v = {
 					j = { k = "<Esc>" },
