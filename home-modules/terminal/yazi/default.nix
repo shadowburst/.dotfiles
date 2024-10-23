@@ -14,7 +14,6 @@
     '';
 
     plugins = {
-      keyjump = ./plugins/keyjump.yazi;
       smart-enter = ./plugins/smart-enter.yazi;
       starship = ./plugins/starship.yazi;
     };
@@ -65,11 +64,6 @@
           run = "plugin smart-enter --sync";
           on = [ "<Enter>" ];
           desc = "Enter the child directory, or open the file";
-        }
-        {
-          run = "plugin keyjump";
-          on = [ "<C-s>" ];
-          desc = "Keyjump";
         }
         # Operations
         {
