@@ -16,6 +16,7 @@
 
   home.packages = with pkgs; [
     brave
+    ente-auth
     gimp
     nautilus
     pdfarranger
