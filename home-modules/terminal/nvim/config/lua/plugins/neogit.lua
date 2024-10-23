@@ -28,8 +28,9 @@ return {
 			},
 		},
 		keys = {
+			{ "<leader>gb", "<cmd>NeogitLogCurrent<cr>", desc = "Current buffer logs" },
 			{ "<leader>gg", "<cmd>Neogit<cr>", desc = "Open neogit" },
-			{ "<leader>gl", "<cmd>NeogitLogCurrent<cr>", desc = "Git logs" },
+			{ "<leader>gl", "<cmd>Neogit log<cr>", desc = "Git logs" },
 		},
 	},
 }

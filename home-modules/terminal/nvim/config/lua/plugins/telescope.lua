@@ -99,7 +99,6 @@ return {
 			{ "<leader>fr", "<cmd>Telescope oldfiles only_cwd=true<cr>", desc = "Recent files" },
 			-- Git
 			{ "<leader>gc", "<cmd>Telescope git_commits<CR>", desc = "Commits" },
-			{ "<leader>gf", "<cmd>Telescope git_bcommits<CR>", desc = "Buffer commits" },
 			{ "<leader>gs", "<cmd>Telescope git_status<CR>", desc = "Status" },
 			-- Notifications
 			{ "<leader>nn", "<cmd>Telescope notify<cr>", desc = "Notifications" },
