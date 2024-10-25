@@ -11,9 +11,6 @@
       luajitPackages.luarocks
       nodejs
       nodePackages.npm
-      php82
-      php82Packages.composer
-      phpactor
       python3
       nixfmt-rfc-style
     ];
