@@ -20,11 +20,11 @@
       };
       serif = config.stylix.fonts.sansSerif;
       monospace = {
-        name = "JetBrainsMono Nerd Font";
+        name = "CaskaydiaCove Nerd Font";
         package =
           with pkgs;
           (nerdfonts.override {
-            fonts = [ "JetBrainsMono" ];
+            fonts = [ "CascadiaCode" ];
           });
       };
       emoji = {
