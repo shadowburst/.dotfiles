@@ -2,8 +2,8 @@
 
 let
   catppuccinKvantum = pkgs.catppuccin-kvantum.override {
-    accent = "Blue";
-    variant = "Macchiato";
+    accent = "blue";
+    variant = "macchiato";
   };
 in
 {
