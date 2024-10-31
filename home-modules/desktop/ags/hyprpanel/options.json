@@ -345,8 +345,14 @@
   "theme.bar.buttons.notifications.icon_background": "#b7bdf8",
   "bar.layouts": {
     "*": {
-      "left": ["dashboard", "workspaces", "windowtitle"],
-      "middle": ["media"],
+      "left": [
+        "dashboard",
+        "workspaces",
+        "windowtitle"
+      ],
+      "middle": [
+        "media"
+      ],
       "right": [
         "volume",
         "network",
@@ -387,7 +393,6 @@
   "theme.bar.menus.menu.notifications.scrollbar.radius": "0.8em",
   "theme.osd.muted_zero": true,
   "bar.customModules.power.leftClick": "power-menu",
-  "menus.dashboard.powermenu.avatar.image": "/home/pbaudry/.face",
   "theme.bar.buttons.enableBorders": false,
   "bar.workspaces.showAllActive": false,
   "bar.windowtitle.custom_title": true,
@@ -414,6 +419,8 @@
   "theme.bar.dropdownGap": "2.3em",
   "theme.bar.buttons.workspaces.enableBorder": false,
   "scalingPriority": "hyprland",
-  "menus.dashboard.directories.enabled": false
+  "menus.dashboard.directories.enabled": false,
+  "bar.network.showWifiInfo": true,
+  "menus.bluetooth.showBattery": true,
+  "menus.dashboard.powermenu.avatar.image": "/home/pbaudry/.face"
 }
-

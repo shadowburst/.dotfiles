@@ -8,7 +8,7 @@
 
     username = "${username}";
     homeDirectory = "/home/${username}";
-    file.".face".source = ./avatar.jpg;
+    file.".face".source = ./face.jpg;
   };
 
   xdg.enable = true;
