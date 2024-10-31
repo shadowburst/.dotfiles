@@ -1,10 +1,9 @@
-import Applications from './applications.js';
 import Backdrop from './backdrop.js';
 import Power from './power.js';
 
 /**
  * @typedef WindowName
- * @type {'applications'|'power'}
+ * @type {'power'}
  */
 
 export function closeAll() {
@@ -20,9 +19,6 @@ export function open(/** @type {WindowName} */ name) {
     App.addWindow(Backdrop());
 
     switch (name) {
-        case 'applications':
-            App.addWindow(Applications());
-            break;
         case 'power':
             App.addWindow(Power());
             break;

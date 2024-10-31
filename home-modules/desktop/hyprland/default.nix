@@ -206,7 +206,7 @@ in
         "$mod SHIFT CTRL, l, movewindow, mon:r"
 
         # Menus
-        "$mod, a, exec, app-menu"
+        "$mod, a, exec, walker -m applications"
         "$mod, x, exec, power-menu"
 
         # Applications
@@ -261,6 +261,7 @@ in
     pavucontrol
     playerctl
     socat
+    walker
     wdisplays
     wl-clipboard
   ];

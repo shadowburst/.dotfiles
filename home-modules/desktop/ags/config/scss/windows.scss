@@ -17,23 +17,6 @@
         @include font(1.6rem, bold);
     }
 
-    .applications {
-        entry {
-            @include m(8, b);
-            @include rounded;
-            @include bg($card);
-            @include p(8, x);
-            @include p(4, y);
-            min-width: 30rem;
-        }
-        button {
-            @include button;
-            @include rounded;
-            @include p(4, x);
-            @include p(12, y);
-        }
-    }
-
     .power {
         @include window;
 
