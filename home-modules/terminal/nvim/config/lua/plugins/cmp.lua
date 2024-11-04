@@ -15,6 +15,8 @@ return {
 			keymap = {
 				preset = "default",
 				["<C-n>"] = { "show", "select_next", "fallback" },
+				["<C-k>"] = { "snippet_forward", "fallback" },
+				["<C-j>"] = { "snippet_backward", "fallback" },
 			},
 			highlight = {
 				use_nvim_cmp_as_default = false,
