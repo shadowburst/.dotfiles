@@ -24,6 +24,9 @@ return {
 				hover = {
 					view = "hover",
 				},
+				signature = {
+					enabled = false,
+				},
 			},
 			views = {
 				hover = {

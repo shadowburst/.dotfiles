@@ -7,7 +7,6 @@ return {
 			"williamboman/mason.nvim",
 			"b0o/SchemaStore.nvim",
 			"telescope.nvim",
-			"iguanacucumber/magazine.nvim",
 		},
 		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
 		config = function()
@@ -145,8 +144,6 @@ return {
 			})
 
 			local capabilities = vim.lsp.protocol.make_client_capabilities()
-			capabilities = vim.tbl_deep_extend("force", capabilities, require("cmp_nvim_lsp").default_capabilities())
-
 			require("mason-lspconfig").setup({
 				handlers = {
 					function(server_name)

@@ -14,7 +14,7 @@ return {
 					LineNrAbove = { link = "LineNr" },
 					LineNrBelow = { link = "LineNr" },
 					CmpBorder = { bg = colors.mantle },
-					Pmenu = { bg = colors.mantle },
+					Pmenu = { bg = colors.mantle, fg = colors.blue },
 					NormalFloat = { bg = colors.mantle },
 					FloatBorder = { bg = colors.mantle },
 					FloatTitle = { bg = colors.mantle },
@@ -24,7 +24,7 @@ return {
 			end,
 			default_integrations = false,
 			integrations = {
-				cmp = true,
+				blink_cmp = true,
 				dashboard = true,
 				diffview = true,
 				flash = true,
