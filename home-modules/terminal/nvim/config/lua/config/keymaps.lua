@@ -2,7 +2,7 @@ local map = require("utils.keys").map
 local notify = require("utils.notify")
 
 -- Keep previous clipboard if pasting in visual
-map("v", "p", '"_dP')
+map("x", "p", '"_dP')
 map("s", "p", "p")
 
 -- Center screen on search
@@ -18,8 +18,8 @@ map("x", "N", "'nN'[v:searchforward]", { expr = true, desc = "Prev Search Result
 map("o", "N", "'nN'[v:searchforward]", { expr = true, desc = "Prev Search Result" })
 
 -- Better indenting
-map("v", "<", "<gv")
-map("v", ">", ">gv")
+map("x", "<", "<gv")
+map("x", ">", ">gv")
 
 -- Clear search with <esc>
 map({ "i", "n" }, "<esc>", "<cmd>noh<cr><esc>", { desc = "Escape and clear hlsearch" })
