@@ -43,9 +43,6 @@ return {
 					auto_show = true,
 					border = "rounded",
 				},
-				ghost_text = {
-					enabled = true,
-				},
 				signature_help = {
 					border = "rounded",
 				},
