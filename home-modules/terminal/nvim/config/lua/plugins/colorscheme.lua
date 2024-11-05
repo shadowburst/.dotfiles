@@ -13,7 +13,6 @@ return {
 					LineNr = { fg = colors.surface2 },
 					LineNrAbove = { link = "LineNr" },
 					LineNrBelow = { link = "LineNr" },
-					CmpBorder = { bg = colors.mantle },
 					Pmenu = { bg = colors.mantle, fg = colors.blue },
 					NormalFloat = { bg = colors.mantle },
 					FloatBorder = { bg = colors.mantle },
