@@ -4,7 +4,6 @@ return {
 		dependencies = {
 			"folke/edgy.nvim",
 			"echasnovski/mini.icons",
-			"rcarriga/nvim-notify",
 			{
 				"nvim-telescope/telescope-fzf-native.nvim",
 				build = "make",
@@ -87,7 +86,6 @@ return {
 
 			telescope.setup(opts)
 			pcall(telescope.load_extension, "fzf")
-			pcall(telescope.load_extension, "notify")
 		end,
 		keys = {
 			{ "<leader><leader>", "<cmd>Telescope find_files<cr>", desc = "Find files" },
@@ -100,8 +98,6 @@ return {
 			-- Git
 			{ "<leader>gc", "<cmd>Telescope git_commits<CR>", desc = "Commits" },
 			{ "<leader>gs", "<cmd>Telescope git_status<CR>", desc = "Status" },
-			-- Notifications
-			{ "<leader>nn", "<cmd>Telescope notify<cr>", desc = "Notifications" },
 			-- Search
 			{ "<leader>sb", "<cmd>Telescope current_buffer_fuzzy_find<cr>", desc = "Current buffer" },
 			{ "<leader>sc", "<cmd>Telescope commands<cr>", desc = "Commands" },

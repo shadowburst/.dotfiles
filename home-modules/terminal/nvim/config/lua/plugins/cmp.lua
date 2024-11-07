@@ -3,14 +3,10 @@ return {
 		"saghen/blink.cmp",
 		dependencies = {
 			"rafamadriz/friendly-snippets",
-			{
-				"folke/lazydev.nvim",
-				opts = {},
-			},
+			"folke/lazydev.nvim",
 		},
 		version = "v0.*",
 		lazy = false,
-		---@module 'blink.cmp'
 		---@type blink.cmp.Config
 		opts = {
 			accept = {

@@ -1,5 +1,4 @@
 local map = require("utils.keys").map
-local notify = require("utils.notify")
 
 -- Keep previous clipboard if pasting in visual
 map("x", "p", '"_dP')
@@ -38,37 +37,3 @@ map("n", "<leader>bb", "<cmd>e #<cr>", { desc = "Switch to other buffer" })
 
 -- Quickfix
 map("n", "<leader>xq", "<cmd>clist<cr>", { desc = "Quickfix list" })
-
--- Toggle options
-map("n", "<leader>td", function()
-	local enabled = vim.diagnostic.is_enabled()
-	if enabled then
-		vim.diagnostic.enable(false)
-		notify.warn("Disabled diagnostics")
-	else
-		vim.diagnostic.enable()
-		notify.info("Enabled diagnostics")
-	end
-end, { desc = "Toggle diagnostics" })
-
-map("n", "<leader>ts", function()
-	local enabled = vim.opt_local.spell
-	if enabled then
-		vim.opt_local.spell = false
-		notify.warn("Disabled spell")
-	else
-		vim.opt_local.spell = true
-		notify.info("Enabled spell")
-	end
-end, { desc = "Toggle spell" })
-
-map("n", "<leader>tw", function()
-	local enabled = vim.opt_local.wrap
-	if enabled then
-		vim.opt_local.wrap = false
-		notify.warn("Disabled word wrap")
-	else
-		vim.opt_local.wrap = true
-		notify.info("Enabled word wrap")
-	end
-end, { desc = "Toggle word wrap" })

@@ -13,7 +13,6 @@ opt.cmdheight = 0
 opt.cursorline = true -- Enable highlighting of the current line
 opt.expandtab = true -- Use spaces instead of tabs
 opt.fileencoding = "utf-8"
-opt.foldcolumn = "0"
 opt.foldenable = true
 opt.foldlevel = 99
 opt.foldlevelstart = 99

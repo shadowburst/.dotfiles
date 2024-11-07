@@ -4,7 +4,7 @@ return {
 		dependencies = {
 			"echasnovski/mini.icons",
 			"MunifTanjim/nui.nvim",
-			"rcarriga/nvim-notify",
+			"folke/snacks.nvim",
 			{
 				"stevearc/dressing.nvim",
 				opts = {},
@@ -42,9 +42,9 @@ return {
 			},
 		},
 		keys = {
-			{ "<leader>nl", "<cmd>Noice last<cr>", desc = "Noice last message" },
-			{ "<leader>nh", "<cmd>Noice history<cr>", desc = "Noice history" },
-			{ "<leader>na", "<cmd>Noice all<cr>", desc = "Noice all" },
+			{ "<leader>nl", "<cmd>Noice last<cr>", desc = "Last message" },
+			{ "<leader>nh", "<cmd>Noice history<cr>", desc = "Message history" },
+			{ "<leader>nn", "<cmd>Noice all<cr>", desc = "All messages" },
 			{ "<leader>nd", "<cmd>Noice dismiss<cr>", desc = "Dismiss all" },
 		},
 	},

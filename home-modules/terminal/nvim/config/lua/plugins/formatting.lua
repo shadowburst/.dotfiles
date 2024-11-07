@@ -1,7 +1,10 @@
 return {
 	{
 		"stevearc/conform.nvim",
-		dependencies = { "mason.nvim" },
+		dependencies = {
+			"williamboman/mason.nvim",
+			"folke/snacks.nvim",
+		},
 		event = { "BufWritePre" },
 		cmd = { "ConformInfo" },
 		opts = {
@@ -46,21 +49,6 @@ return {
 					require("conform").format()
 				end,
 				desc = "Format buffer",
-			},
-			{
-				"<leader>tf",
-				function()
-					local notify = require("utils.notify")
-					local enabled = not vim.b.disable_autoformat
-					if enabled then
-						vim.b.disable_autoformat = true
-						notify.warn("Disabled formatting")
-					else
-						vim.b.disable_autoformat = false
-						notify.info("Enabled formatting")
-					end
-				end,
-				desc = "Toggle auto format",
 			},
 		},
 	},
