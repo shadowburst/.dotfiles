@@ -7,6 +7,7 @@ return {
 		},
 		version = "v0.*",
 		lazy = false,
+		---@module 'blink'
 		---@type blink.cmp.Config
 		opts = {
 			accept = {
