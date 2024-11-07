@@ -45,6 +45,9 @@ return {
 				{ "<auto>", mode = "nixsotc" },
 				{ "s", mode = { "n", "v" } },
 			},
+			disable = {
+				ft = { "NeogitStatus" },
+			},
 		},
 	},
 }
