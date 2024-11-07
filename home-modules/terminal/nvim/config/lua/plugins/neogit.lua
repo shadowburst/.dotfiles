@@ -7,9 +7,11 @@ return {
 			"nvim-telescope/telescope.nvim",
 		},
 		cmd = { "Neogit", "NeogitLogCurrent" },
+		---@module 'neogit'
+		---@type NeogitConfig
 		opts = {
 			disable_hint = true,
-			graph_style = "unicode",
+			graph_style = "kitty",
 			remember_settings = false,
 			auto_refresh = false,
 			commit_editor = {
