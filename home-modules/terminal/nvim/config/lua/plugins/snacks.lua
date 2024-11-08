@@ -67,30 +67,7 @@ return {
 			{
 				"<leader>bo",
 				function()
-					local current_buffer = vim.api.nvim_get_current_buf()
-
-					for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
-						local should_delete = vim.api.nvim_buf_is_loaded(buffer) and buffer ~= current_buffer
-
-						if should_delete and vim.api.nvim_get_option_value("modified", { buf = buffer }) then
-							local choice = vim.fn.confirm(
-								"Save " .. vim.api.nvim_buf_get_name(buffer) .. " ?",
-								"&Yes\n&No\n&Cancel"
-							)
-
-							if choice == 1 then
-								vim.api.nvim_buf_call(buffer, vim.cmd.w)
-							elseif choice == 0 or choice == 3 then
-								should_delete = false
-							end
-						end
-
-						if should_delete then
-							Snacks.bufdelete(buffer)
-						end
-					end
-
-					vim.api.nvim_set_current_buf(current_buffer)
+					Snacks.bufdelete.other()
 				end,
 				desc = "Close other buffers",
 			},
