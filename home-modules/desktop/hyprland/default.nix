@@ -237,7 +237,7 @@ in
         "CTRL SHIFT, print, exec, hyprshot --freeze -m region"
 
         # Other
-        "$mod, p, exec, hyprpicker -a"
+        "$mod SHIFT, p, exec, hyprpicker -a"
       ];
       plugin = {
         dynamic-cursors = {
