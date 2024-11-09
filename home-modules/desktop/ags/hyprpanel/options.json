@@ -4,7 +4,8 @@
   "bar.customModules.netstat.networkInterface": "wlp0s20f3",
   "bar.customModules.power.leftClick": "power-menu",
   "bar.customModules.updates.pollingInterval": 1440000,
-  "bar.launcher.icon": "",
+  "bar.launcher.autoDetectIcon": true,
+  "bar.launcher.icon": "󰣇",
   "bar.layouts": {
     "*": {
       "left": ["dashboard", "workspaces", "windowtitle"],
@@ -42,7 +43,9 @@
     "7": ""
   },
   "bar.workspaces.workspaces": 7,
+  "hyprpanel.restartAgs": false,
   "menus.bluetooth.showBattery": true,
+  "menus.clock.time.hideSeconds": true,
   "menus.clock.time.military": true,
   "menus.clock.weather.enabled": false,
   "menus.clock.weather.location": "Paris",
