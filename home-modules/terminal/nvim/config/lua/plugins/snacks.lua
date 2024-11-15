@@ -5,13 +5,29 @@ return {
 		lazy = false,
 		---@type snacks.Config
 		opts = {
+			bigfile = {
+				enabled = true,
+			},
+			bufdelete = {
+				enabled = true,
+			},
+			debug = {
+				enabled = true,
+			},
 			notifier = {
+				enabled = true,
 				top_down = false,
 				width = {
 					max = 0.3,
 					min = 0.3,
 				},
 				style = "fancy",
+			},
+			statuscolumn = {
+				enabled = true,
+			},
+			words = {
+				enabled = true,
 			},
 		},
 		init = function()
