@@ -12,6 +12,7 @@
     ./hardware-configuration.nix
     ../../nixos-modules/common
     ../../nixos-modules/laptop
+    ../../nixos-modules/work
   ];
 
   boot = {
