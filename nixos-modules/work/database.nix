@@ -22,7 +22,10 @@ in
       };
       phpmyadmin = {
         image = "phpmyadmin:latest";
-        ports = [ "8080:80" ];
+        ports = [ "8000:80" ];
+        labels = {
+          "traefik.http.routers.phpmyadmin.rule" = "Host(`phpmyadmin.localhost`)";
+        };
         extraOptions = [
           "--network=${network}"
         ];
