@@ -152,8 +152,6 @@ in
         "$mod, c, togglefloating,"
         "$mod, p, pin,"
         "$mod, f, fullscreenstate, 2 -1"
-        "ALT, tab, cyclenext,"
-        "ALT SHIFT, tab, cyclenext, prev"
         "$mod, h, movefocus, l"
         "$mod, j, movefocus, d"
         "$mod, k, movefocus, u"

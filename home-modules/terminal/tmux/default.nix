@@ -50,6 +50,7 @@ in
       # +--- Windows ---+
       bind-key -n M-w choose-window
       bind-key -n M-Space next-window
+      bind-key -n M-Tab switch-client -n
       bind-key -n M-n new-window
       bind-key -n M-s split-window -v
       bind-key -n M-v split-window -h
