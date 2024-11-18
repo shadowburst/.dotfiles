@@ -18,6 +18,7 @@ return {
 					"lazy",
 					"mason",
 					"notify",
+					"snacks_dashboard",
 					"tfm",
 				},
 				callback = function()
