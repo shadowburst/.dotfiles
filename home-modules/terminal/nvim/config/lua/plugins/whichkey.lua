@@ -19,7 +19,6 @@ return {
 					mode = { "n", "v" },
 					{ "[", group = "prev" },
 					{ "]", group = "next" },
-					{ "g", group = "goto" },
 					{ "z", group = "fold" },
 					{ "<leader>b", group = "buffer" },
 					{ "<leader>c", group = "code" },
@@ -37,9 +36,6 @@ return {
 			triggers = {
 				{ "<auto>", mode = "nixsotc" },
 				{ "s", mode = { "n", "v" } },
-			},
-			disable = {
-				ft = { "NeogitStatus" },
 			},
 		},
 	},
