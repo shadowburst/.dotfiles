@@ -13,7 +13,6 @@ return {
 			},
 			dashboard = {
 				enabled = true,
-				width = 71,
 				preset = {
 					header = [[
                                                                    
