@@ -1,8 +1,8 @@
-{ config, pkgs, ... }:
+{ ... }:
 
 {
   programs.cava = {
-    enable = true;
+    enable = false;
     settings = {
       color = {
         gradient = 1;
