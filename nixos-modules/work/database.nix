@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 
 let
-  network = "docker_local";
+  network = "database-bridge";
 in
 {
   virtualisation.oci-containers = {
