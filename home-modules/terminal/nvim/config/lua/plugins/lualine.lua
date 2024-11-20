@@ -34,7 +34,7 @@ return {
 					component_separators = "",
 					section_separators = "",
 					disabled_filetypes = {
-						statusline = { "dashboard", "lazy" },
+						statusline = { "snacks_dashboard", "lazy" },
 					},
 				},
 				sections = {
