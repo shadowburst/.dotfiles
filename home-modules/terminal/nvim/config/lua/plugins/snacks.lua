@@ -14,6 +14,9 @@ return {
 			dashboard = {
 				enabled = true,
 				preset = {
+					keys = {
+						{ icon = " ", key = "q", desc = "Quit", action = ":qa" },
+					},
 					header = [[
                                                                    
       ████ ██████           █████      ██                    
@@ -27,6 +30,7 @@ return {
 				sections = {
 					{ section = "header" },
 					{ section = "recent_files", cwd = true, limit = 9, gap = 1, padding = 1 },
+					{ section = "keys" },
 					{ section = "startup" },
 				},
 			},
