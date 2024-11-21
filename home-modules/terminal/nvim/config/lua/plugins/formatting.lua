@@ -14,6 +14,11 @@ return {
 				end
 				return { timeout_ms = 500, lsp_fallback = true }
 			end,
+			formatters = {
+				pint = {
+					command = "./vendor/bin/pint",
+				},
+			},
 			formatters_by_ft = {
 				["css"] = { "prettierd" },
 				["graphql"] = { "prettierd" },
@@ -26,6 +31,7 @@ return {
 				["lua"] = { "stylua" },
 				["markdown"] = { "prettierd" },
 				["markdown.mdx"] = { "prettierd" },
+				["php"] = { "pint" },
 				["nix"] = { "nixfmt" },
 				["scss"] = { "prettierd" },
 				["sh"] = { "shfmt" },

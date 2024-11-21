@@ -11,6 +11,7 @@
       luajitPackages.luarocks
       nodejs
       nodePackages.npm
+      php
       python3
       nixfmt-rfc-style
     ];
