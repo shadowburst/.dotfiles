@@ -17,6 +17,8 @@
     ];
   };
 
+  programs.fish.shellAliases."neogit" = "nvim +Neogit";
+
   xdg.configFile."nvim/init.lua".enable = false;
   xdg.configFile."nvim".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/terminal/nvim/config";
 
