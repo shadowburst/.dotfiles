@@ -3,6 +3,9 @@ return {
 		"echasnovski/mini.indentscope",
 		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
 		opts = {
+			draw = {
+				animation = require("mini.indentscope").gen_animation.none(),
+			},
 			symbol = "│",
 			options = {
 				indent_at_cursor = false,
