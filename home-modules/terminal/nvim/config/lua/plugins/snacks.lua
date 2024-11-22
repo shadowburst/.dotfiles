@@ -30,7 +30,7 @@ return {
 				sections = {
 					{ section = "header" },
 					{ section = "recent_files", cwd = true, limit = 9, gap = 1, padding = 1 },
-					{ section = "keys" },
+					{ section = "keys", padding = 1 },
 					{ section = "startup" },
 				},
 			},
