@@ -63,6 +63,7 @@ return {
 				noice = true,
 				notify = true,
 				render_markdown = true,
+				snacks = true,
 				telescope = {
 					enabled = true,
 				},
