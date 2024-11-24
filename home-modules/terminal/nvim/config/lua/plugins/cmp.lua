@@ -7,9 +7,10 @@ return {
 		},
 		version = "v0.*",
 		lazy = false,
-		---@module 'blink'
+		---@module 'blink.cmp'
 		---@type blink.cmp.Config
 		opts = {
+			nerd_font_variant = "normal",
 			accept = {
 				auto_brackets = {
 					enabled = false,
@@ -40,7 +41,12 @@ return {
 			},
 			windows = {
 				autocomplete = {
-					draw = "reversed",
+					draw = {
+						columns = {
+							{ "label", "label_description", gap = 1 },
+							{ "kind_icon", "kind" },
+						},
+					},
 					border = "rounded",
 				},
 				documentation = {
