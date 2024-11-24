@@ -4,11 +4,6 @@ return {
 		dependencies = {
 			"echasnovski/mini.icons",
 			"MunifTanjim/nui.nvim",
-			"folke/snacks.nvim",
-			{
-				"stevearc/dressing.nvim",
-				opts = {},
-			},
 		},
 		event = "VeryLazy",
 		cmd = { "Noice" },
