@@ -2,19 +2,19 @@
 
 {
   imports = [
-    ./bash
-    ./bat
-    ./cava
-    ./eza
-    ./fish
-    ./fzf
-    ./git
+    ./bash.nix
+    ./bat.nix
+    ./cava.nix
+    ./eza.nix
+    ./fish.nix
+    ./fzf.nix
+    ./git.nix
     ./lazydocker
     ./nvim
-    ./starship
+    ./starship.nix
     ./tmux
     ./yazi
-    ./zoxide
+    ./zoxide.nix
   ];
 
   home.packages = with pkgs; [

@@ -3,11 +3,11 @@
 {
   imports = [
     ./ags
-    ./discord
+    ./discord.nix
     ./hyprland
-    ./kitty
-    ./mpv
-    ./transmission
+    ./kitty.nix
+    ./mpv.nix
+    ./transmission.nix
   ];
 
   home.sessionVariables = {

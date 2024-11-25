@@ -1,12 +1,10 @@
-{ pkgs, username, ... }:
+{ username, ... }:
 
 {
-  users.users.${username} = {
-    extraGroups = [
-      "audio"
-      "sound"
-    ];
-  };
+  users.users.${username}.extraGroups = [
+    "audio"
+    "sound"
+  ];
 
   services.pipewire = {
     enable = true;

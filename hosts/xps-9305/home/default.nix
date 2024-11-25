@@ -6,7 +6,7 @@
     ../../../home-modules/desktop
     ../../../home-modules/terminal
     ../../../home-modules/work
-    ./kanshi
-    ./git
+    ./kanshi.nix
+    ./git.nix
   ];
 }

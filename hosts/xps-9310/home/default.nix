@@ -5,6 +5,6 @@
     ../../../home-modules/common
     ../../../home-modules/desktop
     ../../../home-modules/terminal
-    ./kanshi
+    ./kanshi.nix
   ];
 }

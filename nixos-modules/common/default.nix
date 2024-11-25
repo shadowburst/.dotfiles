@@ -6,6 +6,13 @@
 }:
 
 {
+  imports = [
+    ./disks.nix
+    ./networking.nix
+    ./ssh.nix
+    ./virtualisation.nix
+  ];
+
   users.users.${username} = {
     isNormalUser = true;
     description = "Peter Baudry";
@@ -17,7 +24,18 @@
     shell = pkgs.fish;
     createHome = true;
   };
-  programs.fish.enable = true;
+
+  programs = {
+    fish.enable = true;
+
+    # Needed for mason in nvim
+    nix-ld = {
+      enable = true;
+      libraries = with pkgs; [
+        stdenv.cc.cc
+      ];
+    };
+  };
 
   time.timeZone = "Europe/Paris";
   i18n = {
@@ -36,14 +54,6 @@
   };
 
   security.rtkit.enable = true;
-
-  # Needed for mason in nvim
-  programs.nix-ld = {
-    enable = true;
-    libraries = with pkgs; [
-      stdenv.cc.cc
-    ];
-  };
 
   nixpkgs.config.allowUnfree = true;
   nix = {
@@ -64,11 +74,4 @@
   system = {
     inherit stateVersion;
   };
-
-  imports = [
-    ./disks.nix
-    ./networking.nix
-    ./ssh.nix
-    ./virtualisation.nix
-  ];
 }

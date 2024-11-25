@@ -16,15 +16,13 @@
     networkmanager.enable = true;
   };
 
-  services = {
-    avahi = {
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    publish = {
       enable = true;
-      nssmdns4 = true;
-      publish = {
-        enable = true;
-        addresses = true;
-        userServices = true;
-      };
+      addresses = true;
+      userServices = true;
     };
   };
 }

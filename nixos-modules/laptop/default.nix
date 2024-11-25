@@ -1,8 +1,6 @@
 { ... }:
 
 {
-  programs.gnome-disks.enable = true;
-
   imports = [
     ./audio.nix
     ./bluetooth.nix
@@ -13,4 +11,6 @@
     ./printing.nix
     ./stylix
   ];
+
+  programs.gnome-disks.enable = true;
 }

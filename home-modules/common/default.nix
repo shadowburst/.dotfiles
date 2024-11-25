@@ -1,6 +1,10 @@
 { stateVersion, username, ... }:
 
 {
+  imports = [
+    ./stylix.nix
+  ];
+
   programs.home-manager.enable = true;
 
   home = {
@@ -12,8 +16,4 @@
   };
 
   xdg.enable = true;
-
-  imports = [
-    ./stylix.nix
-  ];
 }

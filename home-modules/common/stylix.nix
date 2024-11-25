@@ -34,14 +34,16 @@ in
     style.name = "kvantum";
   };
 
-  xdg.configFile."Kvantum/kvantum.kvconfig".text = lib.generators.toINI { } {
-    General.theme = "Catppuccin-Macchiato-Blue";
-  };
-  xdg.configFile."Kvantum/Catppuccin-Macchiato-Blue".source = "${catppuccinKvantum}/share/Kvantum/Catppuccin-Macchiato-Blue";
-  xdg.configFile."qt5ct/qt5ct.conf".text = lib.generators.toINI { } {
-    Appearance.icon_theme = "Kora";
-  };
-  xdg.configFile."qt6ct/qt6ct.conf".text = lib.generators.toINI { } {
-    Appearance.icon_theme = "Kora";
+  xdg.configFile = {
+    "Kvantum/kvantum.kvconfig".text = lib.generators.toINI { } {
+      General.theme = "Catppuccin-Macchiato-Blue";
+    };
+    "Kvantum/Catppuccin-Macchiato-Blue".source = "${catppuccinKvantum}/share/Kvantum/Catppuccin-Macchiato-Blue";
+    "qt5ct/qt5ct.conf".text = lib.generators.toINI { } {
+      Appearance.icon_theme = "Kora";
+    };
+    "qt6ct/qt6ct.conf".text = lib.generators.toINI { } {
+      Appearance.icon_theme = "Kora";
+    };
   };
 }
