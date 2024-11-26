@@ -15,7 +15,7 @@ return {
 				enabled = true,
 				preset = {
 					keys = {
-						{ icon = " ", key = "q", desc = "Quit", action = ":qa" },
+						{ icon = " ", key = "q", desc = "Quit", action = ":q" },
 					},
 					header = [[
                                                                    
