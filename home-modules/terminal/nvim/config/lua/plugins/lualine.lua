@@ -8,11 +8,12 @@ return {
 		},
 		event = "VeryLazy",
 		opts = function()
+			---@type CtpColors<string>
 			local colors = require("catppuccin.palettes").get_palette("macchiato")
 
 			local theme = require("lualine.themes.catppuccin-macchiato")
 
-			theme.normal.c.bg = colors.bg
+			theme.normal.c.bg = nil
 
 			local conditions = {
 				buffer_not_empty = function()
@@ -57,24 +58,25 @@ return {
 							padding = 1,
 							color = function()
 								local mode_color = {
-									n = colors.green,
-									i = colors.blue,
-									v = colors.yellow,
-									[""] = colors.yellow,
-									V = colors.yellow,
-									c = colors.mauve,
-									no = colors.red,
-									s = colors.peach,
-									S = colors.peach,
-									[""] = colors.peach,
-									ic = colors.yellow,
-									R = colors.mauve,
-									Rv = colors.mauve,
-									cv = colors.red,
-									ce = colors.red,
-									r = colors.cyan,
-									rm = colors.cyan,
-									["r?"] = colors.cyan,
+									n = colors.blue,
+									no = colors.yellow,
+									nov = colors.yellow,
+									i = colors.teal,
+									ic = colors.teal,
+									v = colors.mauve,
+									[""] = colors.mauve,
+									V = colors.mauve,
+									c = colors.lavender,
+									cv = colors.lavender,
+									ce = colors.lavender,
+									s = colors.pink,
+									S = colors.pink,
+									[""] = colors.pink,
+									R = colors.sapphire,
+									Rv = colors.sapphire,
+									r = colors.sky,
+									rm = colors.sky,
+									["r?"] = colors.sky,
 									["!"] = colors.red,
 									t = colors.red,
 								}
@@ -112,7 +114,7 @@ return {
 							diagnostics_color = {
 								color_error = { fg = colors.red },
 								color_warn = { fg = colors.yellow },
-								color_info = { fg = colors.cyan },
+								color_info = { fg = colors.sky },
 							},
 						},
 					},
@@ -134,7 +136,7 @@ return {
 							symbols = { added = " ", modified = " ", removed = " " },
 							diff_color = {
 								added = { fg = colors.green },
-								modified = { fg = colors.orange },
+								modified = { fg = colors.peach },
 								removed = { fg = colors.red },
 							},
 						},
