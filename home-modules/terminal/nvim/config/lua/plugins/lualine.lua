@@ -134,11 +134,6 @@ return {
 							"diff",
 							cond = conditions.hide_in_width,
 							symbols = { added = " ", modified = " ", removed = " " },
-							diff_color = {
-								added = { fg = palette.green },
-								modified = { fg = palette.peach },
-								removed = { fg = palette.red },
-							},
 						},
 						{
 							"branch",
