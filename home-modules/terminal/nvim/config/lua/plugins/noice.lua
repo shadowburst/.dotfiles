@@ -37,9 +37,7 @@ return {
 			},
 		},
 		keys = {
-			{ "<leader>nl", "<cmd>Noice last<cr>", desc = "Last message" },
-			{ "<leader>nh", "<cmd>Noice history<cr>", desc = "Message history" },
-			{ "<leader>nn", "<cmd>Noice all<cr>", desc = "All messages" },
+			{ "<leader>nn", "<cmd>Noice telescope<cr>", desc = "All messages" },
 			{ "<leader>nd", "<cmd>Noice dismiss<cr>", desc = "Dismiss all" },
 		},
 	},
