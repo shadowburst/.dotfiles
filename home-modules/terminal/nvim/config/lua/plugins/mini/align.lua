@@ -1,4 +1,4 @@
-local mapping = "gA"
+local mapping = "ga"
 
 return {
 	{
