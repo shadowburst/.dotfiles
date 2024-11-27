@@ -9,7 +9,6 @@ return {
 			kitty = false,
 			custom_highlights = function(colors)
 				return {
-					CursorLineNr = { fg = colors.blue },
 					LineNr = { fg = colors.surface2 },
 					LineNrAbove = { link = "LineNr" },
 					LineNrBelow = { link = "LineNr" },

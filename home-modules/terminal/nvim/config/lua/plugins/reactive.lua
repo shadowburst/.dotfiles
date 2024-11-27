@@ -7,7 +7,7 @@ return {
 		lazy = false,
 		opts = function()
 			---@type CtpColors<string>
-			local colors = require("catppuccin.palettes").get_palette("macchiato")
+			local palette = require("catppuccin.palettes").get_palette(require("catppuccin").options.flavour)
 
 			local darken = require("catppuccin.utils.colors").darken
 
@@ -22,7 +22,7 @@ return {
 								operators = {
 									["g@"] = {
 										hl = {
-											ReactiveCursor = { bg = colors.yellow },
+											ReactiveCursor = { bg = palette.sapphire },
 										},
 									},
 								},
@@ -35,8 +35,8 @@ return {
 								operators = {
 									["g@"] = {
 										winhl = {
-											CursorLine = { bg = darken(colors.yellow, 0.3) },
-											CursorLineNr = { bg = darken(colors.yellow, 0.3) },
+											CursorLine = { bg = darken(palette.sapphire, 0.4) },
+											CursorLineNr = { bg = darken(palette.sapphire, 0.4) },
 										},
 									},
 								},

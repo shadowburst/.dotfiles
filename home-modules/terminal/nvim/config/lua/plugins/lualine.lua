@@ -9,7 +9,7 @@ return {
 		event = "VeryLazy",
 		opts = function()
 			---@type CtpColors<string>
-			local colors = require("catppuccin.palettes").get_palette("macchiato")
+			local palette = require("catppuccin.palettes").get_palette(require("catppuccin").options.flavour)
 
 			local theme = require("lualine.themes.catppuccin-macchiato")
 
@@ -46,7 +46,7 @@ return {
 							function()
 								return "▊"
 							end,
-							color = { fg = colors.blue },
+							color = { fg = palette.blue },
 							padding = { left = 0, right = 1 },
 						},
 						{
@@ -58,29 +58,29 @@ return {
 							padding = 1,
 							color = function()
 								local mode_color = {
-									n = colors.blue,
-									no = colors.yellow,
-									nov = colors.yellow,
-									i = colors.teal,
-									ic = colors.teal,
-									v = colors.mauve,
-									[""] = colors.mauve,
-									V = colors.mauve,
-									c = colors.lavender,
-									cv = colors.lavender,
-									ce = colors.lavender,
-									s = colors.pink,
-									S = colors.pink,
-									[""] = colors.pink,
-									R = colors.sapphire,
-									Rv = colors.sapphire,
-									r = colors.sky,
-									rm = colors.sky,
-									["r?"] = colors.sky,
-									["!"] = colors.red,
-									t = colors.red,
+									n = palette.blue,
+									no = palette.yellow,
+									nov = palette.yellow,
+									i = palette.teal,
+									ic = palette.teal,
+									v = palette.mauve,
+									[""] = palette.mauve,
+									V = palette.mauve,
+									c = palette.lavender,
+									cv = palette.lavender,
+									ce = palette.lavender,
+									s = palette.pink,
+									S = palette.pink,
+									[""] = palette.pink,
+									R = palette.sapphire,
+									Rv = palette.sapphire,
+									r = palette.sky,
+									rm = palette.sky,
+									["r?"] = palette.sky,
+									["!"] = palette.red,
+									t = palette.red,
 								}
-								return { fg = colors.base, bg = mode_color[vim.fn.mode()], gui = "bold" }
+								return { fg = palette.base, bg = mode_color[vim.fn.mode()], gui = "bold" }
 							end,
 						},
 						{
@@ -92,7 +92,7 @@ return {
 								return package.loaded["grapple"] and require("grapple").exists()
 							end,
 							padding = { left = 1, right = 0 },
-							color = { fg = colors.blue },
+							color = { fg = palette.blue },
 						},
 						{
 							"filename",
@@ -103,8 +103,8 @@ return {
 								readonly = "",
 							},
 							color = function()
-								return vim.bo.modified and { fg = colors.red, gui = "bold" }
-									or { fg = colors.text, gui = "bold" }
+								return vim.bo.modified and { fg = palette.red, gui = "bold" }
+									or { fg = palette.text, gui = "bold" }
 							end,
 						},
 						{
@@ -112,9 +112,9 @@ return {
 							sources = { "nvim_diagnostic" },
 							symbols = { error = " ", warn = " ", info = " " },
 							diagnostics_color = {
-								color_error = { fg = colors.red },
-								color_warn = { fg = colors.yellow },
-								color_info = { fg = colors.sky },
+								color_error = { fg = palette.red },
+								color_warn = { fg = palette.yellow },
+								color_info = { fg = palette.sky },
 							},
 						},
 					},
@@ -135,9 +135,9 @@ return {
 							cond = conditions.hide_in_width,
 							symbols = { added = " ", modified = " ", removed = " " },
 							diff_color = {
-								added = { fg = colors.green },
-								modified = { fg = colors.peach },
-								removed = { fg = colors.red },
+								added = { fg = palette.green },
+								modified = { fg = palette.peach },
+								removed = { fg = palette.red },
 							},
 						},
 						{
@@ -149,13 +149,13 @@ return {
 							},
 							padding = 1,
 							icon = "",
-							color = { fg = colors.base, bg = colors.mauve, gui = "bold" },
+							color = { fg = palette.base, bg = palette.mauve, gui = "bold" },
 						},
 						{
 							function()
 								return "▊"
 							end,
-							color = { fg = colors.blue },
+							color = { fg = palette.blue },
 							padding = { left = 1, right = 0 },
 						},
 					},
