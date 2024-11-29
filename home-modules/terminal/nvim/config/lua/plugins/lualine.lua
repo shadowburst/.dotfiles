@@ -27,6 +27,9 @@ return {
 					local gitdir = vim.fn.finddir(".git", filepath .. ";")
 					return gitdir and #gitdir > 0 and #gitdir < #filepath
 				end,
+				recording_macro = function()
+					return vim.fn.reg_recording() ~= ""
+				end,
 			}
 
 			return {
@@ -83,6 +86,17 @@ return {
 								return { fg = palette.base, bg = mode_color[vim.fn.mode()], gui = "bold" }
 							end,
 						},
+						{ "location" },
+						{
+							"diagnostics",
+							sources = { "nvim_diagnostic" },
+							symbols = { error = " ", warn = " ", info = " " },
+							diagnostics_color = {
+								color_error = { fg = palette.red },
+								color_warn = { fg = palette.yellow },
+								color_info = { fg = palette.sky },
+							},
+						},
 						{
 							function()
 								local grapple = require("grapple")
@@ -108,28 +122,25 @@ return {
 							end,
 						},
 						{
-							"diagnostics",
-							sources = { "nvim_diagnostic" },
-							symbols = { error = " ", warn = " ", info = " " },
-							diagnostics_color = {
-								color_error = { fg = palette.red },
-								color_warn = { fg = palette.yellow },
-								color_info = { fg = palette.sky },
-							},
+							function()
+								return "%="
+							end,
 						},
-					},
-					lualine_x = {
 						{
 							"macro-recording",
 							fmt = function()
-								local recording_register = vim.fn.reg_recording()
-								if recording_register == "" then
-									return ""
-								else
-									return "Recording @" .. recording_register
-								end
+								return "Recording @" .. vim.fn.reg_recording()
 							end,
+							cond = conditions.recording_macro,
+							separator = {
+								left = "",
+								right = "",
+							},
+							padding = 1,
+							color = { fg = palette.base, bg = palette.maroon, gui = "bold" },
 						},
+					},
+					lualine_x = {
 						{
 							"diff",
 							cond = conditions.hide_in_width,
