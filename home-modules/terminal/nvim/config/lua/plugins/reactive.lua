@@ -4,7 +4,7 @@ return {
 		dependencies = {
 			"catppuccin/nvim",
 		},
-		lazy = false,
+		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
 		opts = function()
 			---@type CtpColors<string>
 			local palette = require("catppuccin.palettes").get_palette(require("catppuccin").options.flavour)
