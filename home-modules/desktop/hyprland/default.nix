@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -18,9 +19,10 @@ in
 
   wayland.windowManager.hyprland = {
     enable = true;
+    package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
     systemd.variables = [ "--all" ];
-    plugins = with pkgs.hyprlandPlugins; [
-      hypr-dynamic-cursors
+    plugins = [
+      inputs.hypr-dynamic-cursors.packages.${pkgs.system}.hypr-dynamic-cursors
     ];
     settings = {
       "$mod" = "SUPER";
@@ -50,12 +52,13 @@ in
       };
       decoration = {
         rounding = 0;
-        drop_shadow = false;
-        shadow_range = 4;
         blur = {
           enabled = true;
           size = 6;
           xray = true;
+        };
+        shadow = {
+          enabled = false;
         };
       };
       animations = {
@@ -92,7 +95,6 @@ in
       };
       master = {
         new_on_top = false;
-        no_gaps_when_only = true;
         mfact = 0.55;
         orientation = "left";
       };
@@ -119,10 +121,6 @@ in
         no_hardware_cursors = true;
         default_monitor = "DP-1";
       };
-      windowrule = [
-        "float, org.gnome.Calculator"
-        "minsize 300 500, org.gnome.Calculator"
-      ];
       layerrule = [
         "animation slide top, bar-*"
         "animation slide top, backdrop"
@@ -130,6 +128,10 @@ in
         "xray 0, backdrop"
         "animation slide top, applications"
         "animation slide top, power"
+      ];
+      windowrule = [
+        "float, org.gnome.Calculator"
+        "minsize 300 500, org.gnome.Calculator"
       ];
       windowrulev2 = [
         "opacity 0.0 override, class:^(xwaylandvideobridge)$"
