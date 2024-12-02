@@ -22,7 +22,7 @@ return {
 				["<C-k>"] = { "snippet_forward", "fallback" },
 				["<C-j>"] = { "snippet_backward", "fallback" },
 			},
-			highlight = {
+			appearance = {
 				use_nvim_cmp_as_default = false,
 			},
 			sources = {
@@ -39,8 +39,8 @@ return {
 					enabled = true,
 				},
 			},
-			windows = {
-				autocomplete = {
+			completion = {
+				menu = {
 					draw = {
 						columns = {
 							{ "label", "label_description", gap = 1 },
@@ -51,9 +51,14 @@ return {
 				},
 				documentation = {
 					auto_show = true,
-					border = "rounded",
+					window = {
+						border = "rounded",
+					},
 				},
-				signature_help = {
+			},
+			signature = {
+				enabled = true,
+				window = {
 					border = "rounded",
 				},
 			},

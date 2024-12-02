@@ -18,6 +18,9 @@ return {
 					FloatTitle = { bg = colors.mantle },
 					TelescopeNormal = { link = "NormalFloat" },
 					TelescopeSelectionCaret = { fg = colors.red, bg = colors.surface0 },
+					BlinkCmpMenuBorder = { link = "Pmenu" },
+					BlinkCmpSignatureHelpBorder = { link = "Pmenu" },
+					BlinkCmpDocBorder = { link = "Pmenu" },
 				}
 			end,
 			default_integrations = false,
