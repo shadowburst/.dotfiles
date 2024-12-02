@@ -9,9 +9,7 @@
   imports = [ inputs.stylix.nixosModules.stylix ];
 
   fonts.packages = with pkgs; [
-    (nerdfonts.override {
-      fonts = [ "JetBrainsMono" ];
-    })
+    nerd-fonts.jetbrains-mono
   ];
 
   stylix = {
@@ -27,11 +25,7 @@
       serif = config.stylix.fonts.sansSerif;
       monospace = {
         name = "CaskaydiaCove Nerd Font";
-        package =
-          with pkgs;
-          (nerdfonts.override {
-            fonts = [ "CascadiaCode" ];
-          });
+        package = pkgs.nerd-fonts.caskaydia-cove;
       };
       emoji = {
         name = "Noto Color Emoji";
