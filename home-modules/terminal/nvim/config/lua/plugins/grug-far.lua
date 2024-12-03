@@ -3,7 +3,7 @@ return {
 		"MagicDuck/grug-far.nvim",
 		cmd = { "GrugFar" },
 		opts = {
-			startCursorRow = 4,
+			startCursorRow = 3,
 			headerMaxWidth = 80,
 			transient = true,
 		},
@@ -14,7 +14,7 @@ return {
 					require("grug-far").open({
 						prefills = {
 							search = vim.fn.expand("<cword>"),
-							flags = "--hidden " .. vim.fn.expand("%"),
+							paths = vim.fn.expand("%"),
 						},
 					})
 				end,
@@ -25,7 +25,7 @@ return {
 				function()
 					require("grug-far").open({
 						prefills = {
-							flags = "--hidden " .. vim.fn.expand("%"),
+							paths = vim.fn.expand("%"),
 						},
 					})
 				end,
