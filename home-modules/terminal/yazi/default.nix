@@ -33,7 +33,7 @@
       opener = {
         extract = [
           {
-            run = "ya pub extract --list '$@'";
+            run = ''ya pub extract --list "$@"'';
             desc = "Extract here";
             for = "unix";
           }
