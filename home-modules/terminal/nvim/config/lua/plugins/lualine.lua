@@ -121,24 +121,6 @@ return {
 									or { fg = palette.text, gui = "bold" }
 							end,
 						},
-						{
-							function()
-								return "%="
-							end,
-						},
-						{
-							"macro-recording",
-							fmt = function()
-								return "Recording @" .. vim.fn.reg_recording()
-							end,
-							cond = conditions.recording_macro,
-							separator = {
-								left = "",
-								right = "",
-							},
-							padding = 1,
-							color = { fg = palette.base, bg = palette.maroon, gui = "bold" },
-						},
 					},
 					lualine_x = {
 						{

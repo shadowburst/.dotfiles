@@ -9,7 +9,6 @@ return {
 			kitty = false,
 			custom_highlights = function(colors)
 				return {
-					LineNr = { fg = colors.surface2 },
 					LineNrAbove = { link = "LineNr" },
 					LineNrBelow = { link = "LineNr" },
 					Pmenu = { bg = colors.mantle, fg = colors.blue },
