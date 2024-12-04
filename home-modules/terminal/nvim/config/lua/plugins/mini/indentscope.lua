@@ -22,7 +22,7 @@ return {
 					"mason",
 					"notify",
 					"snacks_dashboard",
-					"tfm",
+					"yazi",
 				},
 				callback = function()
 					vim.b.miniindentscope_disable = true
