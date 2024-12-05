@@ -19,7 +19,7 @@
       }
       {
         profile = {
-          name = "docked";
+          name = "desk";
           outputs = [
             {
               criteria = "eDP-1";
@@ -33,6 +33,23 @@
               position = "1920,0";
               scale = 1.0;
               adaptiveSync = true;
+            }
+          ];
+        };
+      }
+      {
+        profile = {
+          name = "tv";
+          outputs = [
+            {
+              criteria = "eDP-1";
+              status = "disable";
+            }
+            {
+              criteria = "DP-3";
+              mode = "1920x1080@60Hz";
+              position = "0,0";
+              scale = 1.0;
             }
           ];
         };
