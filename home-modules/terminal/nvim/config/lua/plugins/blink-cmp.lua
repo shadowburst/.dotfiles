@@ -6,7 +6,7 @@ return {
 			"folke/lazydev.nvim",
 		},
 		version = "v0.*",
-		lazy = false,
+		event = { "InsertEnter" },
 		---@module 'blink.cmp'
 		---@type blink.cmp.Config
 		opts = {
