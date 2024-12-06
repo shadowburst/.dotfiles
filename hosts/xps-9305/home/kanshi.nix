@@ -56,6 +56,25 @@
           ];
         };
       }
+      {
+        profile = {
+          name = "work_tv";
+          outputs = [
+            {
+              criteria = "eDP-1";
+              mode = "3840x2160@59.997Hz";
+              scale = 2.0;
+              position = "0,1080";
+            }
+            {
+              criteria = "DP-1";
+              mode = "1920x1080@60Hz";
+              position = "0,0";
+              scale = 1.0;
+            }
+          ];
+        };
+      }
     ];
   };
 }
