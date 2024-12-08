@@ -6,7 +6,7 @@ return {
 			"echasnovski/mini.icons",
 			"catppuccin/nvim",
 		},
-		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
+		event = { "VeryLazy" },
 		opts = function()
 			---@type CtpColors<string>
 			local palette = require("catppuccin.palettes").get_palette(require("catppuccin").options.flavour)
