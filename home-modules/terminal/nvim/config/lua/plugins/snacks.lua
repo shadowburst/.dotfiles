@@ -37,6 +37,9 @@ return {
 			debug = {
 				enabled = true,
 			},
+			gitbrowse = {
+				enabled = true,
+			},
 			notifier = {
 				enabled = true,
 				top_down = false,
@@ -44,7 +47,6 @@ return {
 					max = 0.3,
 					min = 0.3,
 				},
-				style = "fancy",
 			},
 			statuscolumn = {
 				enabled = true,
@@ -109,6 +111,24 @@ return {
 					Snacks.bufdelete.other()
 				end,
 				desc = "Close other buffers",
+			},
+			{
+				"<leader>gb",
+				function()
+					Snacks.git.blame_line({
+						win = {
+							backdrop = false,
+						},
+					})
+				end,
+				desc = "Blame line",
+			},
+			{
+				"<leader>go",
+				function()
+					Snacks.gitbrowse()
+				end,
+				desc = "Open repo",
 			},
 		},
 	},

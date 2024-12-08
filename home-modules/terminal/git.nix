@@ -12,12 +12,6 @@
       pull = {
         rebase = "true";
       };
-      core = {
-        pager = "nvim -R";
-      };
-      color = {
-        pager = "yes";
-      };
     };
   };
 }

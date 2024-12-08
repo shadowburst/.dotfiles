@@ -21,6 +21,7 @@ return {
 					"lazy",
 					"mason",
 					"notify",
+					"snacks_terminal",
 					"yazi",
 				},
 				callback = function()
