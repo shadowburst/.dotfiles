@@ -16,6 +16,8 @@ return {
 				selection_caret = " ",
 				layout_config = {
 					prompt_position = "top",
+					height = 0.9,
+					width = 0.9,
 				},
 				sorting_strategy = "ascending",
 				get_selection_window = function()
