@@ -48,7 +48,7 @@ in
         border_size = 2;
         gaps_in = 0;
         gaps_out = 0;
-        layout = "master";
+        layout = "dwindle";
       };
       decoration = {
         rounding = 0;
