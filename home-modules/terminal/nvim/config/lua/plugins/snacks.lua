@@ -45,7 +45,6 @@ return {
 				top_down = false,
 				width = {
 					max = 0.3,
-					min = 0.3,
 				},
 			},
 			statuscolumn = {
