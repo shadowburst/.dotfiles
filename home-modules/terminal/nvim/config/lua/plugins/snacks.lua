@@ -3,16 +3,12 @@ return {
 		"folke/snacks.nvim",
 		priority = 1000,
 		lazy = false,
-		---@type snacks.Config
+		---@module 'snacks'
+		---@type snacks.config
 		opts = {
-			bigfile = {
-				enabled = true,
-			},
-			bufdelete = {
-				enabled = true,
-			},
+			bigfile = {},
+			bufdelete = {},
 			dashboard = {
-				enabled = true,
 				preset = {
 					keys = {
 						{ icon = " ", key = "q", desc = "Quit", action = ":q" },
@@ -34,25 +30,18 @@ return {
 					{ section = "startup" },
 				},
 			},
-			debug = {
-				enabled = true,
-			},
-			gitbrowse = {
-				enabled = true,
-			},
+			debug = {},
+			gitbrowse = {},
 			notifier = {
-				enabled = true,
 				top_down = false,
 				width = {
-					max = 0.3,
+					max = 0.25,
 				},
 			},
-			statuscolumn = {
-				enabled = true,
-			},
-			words = {
-				enabled = true,
-			},
+			scope = {},
+			statuscolumn = {},
+			words = {},
+			zen = {},
 		},
 		init = function()
 			vim.api.nvim_create_autocmd("User", {
@@ -128,6 +117,13 @@ return {
 					Snacks.gitbrowse()
 				end,
 				desc = "Open repo",
+			},
+			{
+				"<leader>z",
+				function()
+					Snacks.zen.zoom()
+				end,
+				desc = "Zen mode",
 			},
 		},
 	},
