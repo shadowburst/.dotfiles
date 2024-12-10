@@ -14,10 +14,9 @@ return {
 			defaults = {
 				prompt_prefix = " ",
 				selection_caret = " ",
+				layout_strategy = "bottom_pane",
 				layout_config = {
-					prompt_position = "top",
-					height = 0.9,
-					width = 0.9,
+					height = 0.5,
 				},
 				sorting_strategy = "ascending",
 				get_selection_window = function()
