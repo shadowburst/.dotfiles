@@ -3,7 +3,7 @@ return {
 		"cbochs/grapple.nvim",
 		cmd = { "Grapple" },
 		opts = {
-			scope = "git_branch",
+			scope = "git",
 			win_opts = {
 				border = "rounded",
 			},
