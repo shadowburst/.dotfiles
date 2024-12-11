@@ -16,7 +16,7 @@ return {
 				selection_caret = " ",
 				layout_strategy = "bottom_pane",
 				layout_config = {
-					height = 0.5,
+					height = 0.7,
 				},
 				sorting_strategy = "ascending",
 				get_selection_window = function()
