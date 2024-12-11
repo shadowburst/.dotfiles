@@ -37,6 +37,7 @@ return {
 					theme = theme,
 					component_separators = "",
 					section_separators = "",
+					globalstatus = true,
 					disabled_filetypes = {
 						statusline = { "snacks_dashboard", "lazy" },
 					},

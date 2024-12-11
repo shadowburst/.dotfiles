@@ -1,19 +1,23 @@
 return {
 	{
 		"folke/snacks.nvim",
+		dependencies = {
+			"catppuccin/nvim",
+		},
 		priority = 1000,
 		lazy = false,
-		---@module 'snacks'
-		---@type snacks.config
-		opts = {
-			bigfile = {},
-			bufdelete = {},
-			dashboard = {
-				preset = {
-					keys = {
-						{ icon = " ", key = "q", desc = "Quit", action = ":q" },
-					},
-					header = [[
+		opts = function()
+			---@module 'snacks'
+			---@type snacks.config
+			return {
+				bigfile = {},
+				bufdelete = {},
+				dashboard = {
+					preset = {
+						keys = {
+							{ icon = " ", key = "q", desc = "Quit", action = ":q" },
+						},
+						header = [[
                                                                    
       ████ ██████           █████      ██                    
      ███████████             █████                            
@@ -22,27 +26,42 @@ return {
    █████████ ██████████ █████████ █████ █████ ████ █████  
  ███████████ ███    ███ █████████ █████ █████ ████ █████ 
 ██████  █████████████████████ ████ █████ █████ ████ ██████]],
+					},
+					sections = {
+						{ section = "header" },
+						{ section = "recent_files", cwd = true, limit = 9, gap = 1, padding = 1 },
+						{ section = "keys", padding = 1 },
+						{ section = "startup" },
+					},
 				},
-				sections = {
-					{ section = "header" },
-					{ section = "recent_files", cwd = true, limit = 9, gap = 1, padding = 1 },
-					{ section = "keys", padding = 1 },
-					{ section = "startup" },
+				debug = {},
+				gitbrowse = {},
+				notifier = {
+					top_down = false,
+					width = {
+						max = 0.25,
+					},
 				},
-			},
-			debug = {},
-			gitbrowse = {},
-			notifier = {
-				top_down = false,
-				width = {
-					max = 0.25,
+				scope = {},
+				statuscolumn = {},
+				words = {},
+				zen = {
+					toggles = {
+						dim = false,
+					},
+					show = {
+						statusline = true,
+					},
+					win = {
+						width = 0.8,
+						backdrop = {
+							transparent = false,
+							bg = require("catppuccin.palettes").get_palette(require("catppuccin").options.flavour).base,
+						},
+					},
 				},
-			},
-			scope = {},
-			statuscolumn = {},
-			words = {},
-			zen = {},
-		},
+			}
+		end,
 		init = function()
 			vim.api.nvim_create_autocmd("User", {
 				pattern = "VeryLazy",
@@ -121,7 +140,7 @@ return {
 			{
 				"<leader>z",
 				function()
-					Snacks.zen.zoom()
+					Snacks.zen()
 				end,
 				desc = "Zen mode",
 			},
