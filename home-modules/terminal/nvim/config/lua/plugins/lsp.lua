@@ -20,7 +20,7 @@ return {
 				group = vim.api.nvim_create_augroup("custom_lsp_attach", { clear = true }),
 				callback = function(event)
 					local map = function(keys, func, desc)
-						require("utils.keys").map("n", keys, func, { buffer = event.buf, desc = desc })
+						vim.keymap.set("n", keys, func, { buffer = event.buf, desc = desc })
 					end
 
 					map("gd", "<cmd>Telescope lsp_definitions<cr>", "Goto definition")
