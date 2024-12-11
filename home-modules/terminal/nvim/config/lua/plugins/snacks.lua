@@ -76,6 +76,7 @@ return {
 					Snacks.toggle.option("relativenumber", { name = "relative number" }):map("<leader>tl")
 					Snacks.toggle.option("wrap", { name = "wrap" }):map("<leader>tw")
 					Snacks.toggle.diagnostics({ name = "diagnostics" }):map("<leader>td")
+					Snacks.toggle.zen():map("<leader>z")
 					Snacks.toggle
 						.new({
 							name = "formatting",
@@ -136,13 +137,6 @@ return {
 					Snacks.gitbrowse()
 				end,
 				desc = "Open repo",
-			},
-			{
-				"<leader>z",
-				function()
-					Snacks.zen()
-				end,
-				desc = "Zen mode",
 			},
 		},
 	},
