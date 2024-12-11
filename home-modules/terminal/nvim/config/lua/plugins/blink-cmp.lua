@@ -1,3 +1,4 @@
+---@diagnostic disable:missing-fields
 return {
 	{
 		"saghen/blink.cmp",
@@ -26,9 +27,7 @@ return {
 				use_nvim_cmp_as_default = false,
 			},
 			sources = {
-				completion = {
-					enabled_providers = { "lsp", "path", "snippets", "buffer", "lazydev" },
-				},
+				default = { "lsp", "path", "snippets", "buffer", "lazydev" },
 				providers = {
 					lsp = { fallback_for = { "lazydev" } },
 					lazydev = { name = "LazyDev", module = "lazydev.integrations.blink" },
