@@ -1,7 +1,7 @@
 return {
 	{
 		"nvchad/nvim-colorizer.lua",
-		event = "BufReadPre",
+		event = { "BufReadPre" },
 		cmd = { "ColorizerToggle" },
 		opts = {
 			filetypes = {

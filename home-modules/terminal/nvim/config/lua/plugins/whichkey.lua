@@ -1,7 +1,7 @@
 return {
 	{
 		"folke/which-key.nvim",
-		event = "VeryLazy",
+		event = { "VeryLazy" },
 		---@module 'which-key'
 		---@type wk.Config
 		opts = {

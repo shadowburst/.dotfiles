@@ -5,7 +5,7 @@ return {
 			"echasnovski/mini.icons",
 			"MunifTanjim/nui.nvim",
 		},
-		event = "VeryLazy",
+		event = { "VeryLazy" },
 		cmd = { "Noice" },
 		opts = {
 			presets = {

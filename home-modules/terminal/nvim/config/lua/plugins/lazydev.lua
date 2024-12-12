@@ -1,7 +1,7 @@
 return {
 	{
 		"folke/lazydev.nvim",
-		ft = "lua",
+		ft = { "lua" },
 		opts = {
 			library = {
 				{ path = "snacks.nvim", words = { "Snacks" } },

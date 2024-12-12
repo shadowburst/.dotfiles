@@ -1,7 +1,7 @@
 return {
 	{
 		"echasnovski/mini.pairs",
-		event = "InsertEnter",
+		event = { "InsertEnter" },
 		opts = {
 			modes = {
 				insert = true,
