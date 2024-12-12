@@ -8,8 +8,14 @@
   "bar.launcher.icon": "󰣇",
   "bar.layouts": {
     "*": {
-      "left": ["dashboard", "workspaces", "windowtitle"],
-      "middle": ["media"],
+      "left": [
+        "dashboard",
+        "workspaces",
+        "windowtitle"
+      ],
+      "middle": [
+        "media"
+      ],
       "right": [
         "volume",
         "network",
@@ -423,6 +429,6 @@
   "theme.osd.muted_zero": true,
   "theme.osd.orientation": "horizontal",
   "theme.osd.radius": "0.4em",
-  "wallpaper.enable": false
+  "wallpaper.enable": false,
+  "menus.dashboard.shortcuts.enabled": false
 }
-
