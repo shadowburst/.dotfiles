@@ -8,6 +8,10 @@ return {
 		},
 		event = { "VeryLazy" },
 		opts = function()
+			local lualine_require = require("lualine_require")
+			lualine_require.require = require
+			local lualine_mode = require("lualine.utils.mode")
+
 			---@type CtpColors<string>
 			local palette = require("catppuccin.palettes").get_palette(require("catppuccin").options.flavour)
 
@@ -32,6 +36,26 @@ return {
 				end,
 			}
 
+			local mode_color = {
+				["NORMAL"] = palette.blue,
+				["O-PENDING"] = palette.yellow,
+				["INSERT"] = palette.teal,
+				["VISUAL"] = palette.mauve,
+				["V-LINE"] = palette.mauve,
+				["V-BLOCK"] = palette.mauve,
+				["SELECT"] = palette.pink,
+				["S-LINE"] = palette.pink,
+				["S-BLOCK"] = palette.pink,
+				["REPLACE"] = palette.sapphire,
+				["V-REPLACE"] = palette.sapphire,
+				["EX"] = palette.red,
+				["MORE"] = palette.red,
+				["COMMAND"] = palette.lavender,
+				["SHELL"] = palette.lavender,
+				["CONFIRM"] = palette.lavender,
+				["TERMINAL"] = palette.red,
+			}
+
 			return {
 				options = {
 					theme = theme,
@@ -46,57 +70,21 @@ return {
 					lualine_a = {},
 					lualine_b = {},
 					lualine_c = {
-						{
-							function()
-								return "▊"
-							end,
-							color = { fg = palette.blue },
-							padding = { left = 0, right = 1 },
-						},
-						{
-							"mode",
-							separator = {
-								left = "",
-								right = "",
-							},
-							padding = 1,
-							color = function()
-								local mode_color = {
-									n = palette.blue,
-									no = palette.yellow,
-									nov = palette.yellow,
-									i = palette.teal,
-									ic = palette.teal,
-									v = palette.mauve,
-									[""] = palette.mauve,
-									V = palette.mauve,
-									c = palette.lavender,
-									cv = palette.lavender,
-									ce = palette.lavender,
-									s = palette.pink,
-									S = palette.pink,
-									[""] = palette.pink,
-									R = palette.sapphire,
-									Rv = palette.sapphire,
-									r = palette.sky,
-									rm = palette.sky,
-									["r?"] = palette.sky,
-									["!"] = palette.red,
-									t = palette.red,
-								}
-								return { fg = palette.base, bg = mode_color[vim.fn.mode()], gui = "bold" }
-							end,
-						},
 						{ "location" },
 						{
-							"diagnostics",
-							sources = { "nvim_diagnostic" },
-							symbols = { error = " ", warn = " ", info = " " },
-							diagnostics_color = {
-								color_error = { fg = palette.red },
-								color_warn = { fg = palette.yellow },
-								color_info = { fg = palette.sky },
-							},
+							"mode",
+							fmt = function(mode)
+								local icon = ""
+								if mode == "NORMAL" then
+									return icon .. " "
+								else
+									return icon .. " " .. mode
+								end
+							end,
+							padding = 1,
+							color = function()
+								return { fg = mode_color[lualine_mode.get_mode()], gui = "bold" }
+							end,
 						},
 						{
 							function()
@@ -123,6 +111,17 @@ return {
 							end,
 						},
 						{
+							"diagnostics",
+							padding = 1,
+							sources = { "nvim_diagnostic" },
+							symbols = { error = " ", warn = " ", info = " " },
+							diagnostics_color = {
+								color_error = { fg = palette.red },
+								color_warn = { fg = palette.yellow },
+								color_info = { fg = palette.sky },
+							},
+						},
+						{
 							function()
 								return "%="
 							end,
@@ -133,37 +132,23 @@ return {
 								return "Recording @" .. vim.fn.reg_recording()
 							end,
 							cond = conditions.recording_macro,
-							separator = {
-								left = "",
-								right = "",
-							},
 							padding = 1,
-							color = { fg = palette.base, bg = palette.maroon, gui = "bold" },
+							color = { fg = palette.maroon, gui = "bold" },
 						},
 					},
 					lualine_x = {
 						{
 							"diff",
 							cond = conditions.hide_in_width,
+							padding = 1,
 							symbols = { added = " ", modified = " ", removed = " " },
 						},
 						{
 							"branch",
 							cond = conditions.check_git_workspace,
-							separator = {
-								left = "",
-								right = "",
-							},
 							padding = 1,
 							icon = "",
-							color = { fg = palette.base, bg = palette.mauve, gui = "bold" },
-						},
-						{
-							function()
-								return "▊"
-							end,
-							color = { fg = palette.blue },
-							padding = { left = 1, right = 0 },
+							color = { fg = palette.mauve, gui = "bold" },
 						},
 					},
 					lualine_y = {},
