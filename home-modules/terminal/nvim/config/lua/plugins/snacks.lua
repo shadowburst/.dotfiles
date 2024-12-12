@@ -67,17 +67,6 @@ return {
 					Snacks.toggle.option("wrap", { name = "wrap" }):map("<leader>tw")
 					Snacks.toggle.diagnostics({ name = "diagnostics" }):map("<leader>td")
 					Snacks.toggle.zen():map("<leader>z")
-					Snacks.toggle
-						.new({
-							name = "formatting",
-							get = function()
-								return not vim.b.disable_autoformat
-							end,
-							set = function(state)
-								vim.b.disable_autoformat = not state
-							end,
-						})
-						:map("<leader>tf")
 				end,
 			})
 		end,
