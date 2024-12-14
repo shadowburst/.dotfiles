@@ -46,7 +46,10 @@ return {
 				top_down = false,
 				width = { max = 0.25 },
 			},
-			scope = { linewise = true },
+			scope = {
+				treesitter = { enabled = false },
+				linewise = true,
+			},
 			statuscolumn = {},
 			words = {},
 			zen = {
