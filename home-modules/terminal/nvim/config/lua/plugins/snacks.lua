@@ -32,24 +32,28 @@ return {
 			},
 			debug = {},
 			gitbrowse = {},
-			notifier = {
-				top_down = false,
-				width = {
-					max = 0.25,
+			indent = {
+				indent = { only_scope = true },
+				chunk = {
+					enabled = true,
+					char = {
+						corner_top = "╭",
+						corner_bottom = "╰",
+						arrow = "─",
+					},
 				},
 			},
+			notifier = {
+				top_down = false,
+				width = { max = 0.25 },
+			},
+			scope = { linewise = true },
 			statuscolumn = {},
 			words = {},
 			zen = {
-				toggles = {
-					dim = false,
-				},
-				show = {
-					statusline = true,
-				},
-				win = {
-					width = 0.8,
-				},
+				toggles = { dim = false },
+				show = { statusline = true },
+				win = { width = 0.8 },
 			},
 		},
 		init = function()

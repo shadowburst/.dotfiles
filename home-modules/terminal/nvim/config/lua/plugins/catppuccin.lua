@@ -22,6 +22,7 @@ return {
 					BlinkCmpMenuBorder = { link = "Pmenu" },
 					BlinkCmpSignatureHelpBorder = { link = "Pmenu" },
 					BlinkCmpDocBorder = { link = "Pmenu" },
+					SnacksIndentScope = { fg = colors.lavender },
 				}
 			end,
 			default_integrations = false,
@@ -38,10 +39,7 @@ return {
 				},
 				lsp_trouble = true,
 				mason = true,
-				mini = {
-					enabled = true,
-					indentscope_color = "lavender",
-				},
+				mini = { enabled = true },
 				native_lsp = {
 					enabled = true,
 					virtual_text = {
