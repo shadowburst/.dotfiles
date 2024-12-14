@@ -52,12 +52,8 @@ return {
 				lua_ls = {
 					settings = {
 						Lua = {
-							workspace = {
-								checkThirdParty = false,
-							},
-							completion = {
-								callSnippet = "Replace",
-							},
+							workspace = { checkThirdParty = false },
+							completion = { callSnippet = "Replace" },
 						},
 					},
 				},
@@ -102,14 +98,10 @@ return {
 							},
 						},
 						javascript = {
-							suggest = {
-								completeFunctionCalls = true,
-							},
+							suggest = { completeFunctionCalls = true },
 						},
 						typescript = {
-							suggest = {
-								completeFunctionCalls = true,
-							},
+							suggest = { completeFunctionCalls = true },
 						},
 					},
 				},

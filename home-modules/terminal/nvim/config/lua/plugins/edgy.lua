@@ -28,9 +28,7 @@ return {
 				{ ft = "help" },
 				{ ft = "grug-far" },
 			},
-			animate = {
-				enabled = false,
-			},
+			animate = { enabled = false },
 			options = {
 				bottom = { size = 0.3 },
 				right = { size = 0.5 },

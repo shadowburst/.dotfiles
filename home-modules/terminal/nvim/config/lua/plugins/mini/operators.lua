@@ -10,18 +10,10 @@ return {
 		"echasnovski/mini.operators",
 		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
 		opts = {
-			evaluate = {
-				prefix = mappings.evaluate,
-			},
-			multiply = {
-				prefix = mappings.multiply,
-			},
-			replace = {
-				prefix = mappings.replace,
-			},
-			sort = {
-				prefix = mappings.sort,
-			},
+			evaluate = { prefix = mappings.evaluate },
+			multiply = { prefix = mappings.multiply },
+			replace = { prefix = mappings.replace },
+			sort = { prefix = mappings.sort },
 		},
 		keys = {
 			{

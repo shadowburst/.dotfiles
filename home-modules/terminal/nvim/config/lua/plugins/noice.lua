@@ -16,12 +16,8 @@ return {
 				lsp_doc_border = true, -- add a border to hover docs and signature help
 			},
 			lsp = {
-				hover = {
-					view = "hover",
-				},
-				signature = {
-					enabled = false,
-				},
+				hover = { view = "hover" },
+				signature = { enabled = false },
 			},
 			views = {
 				hover = {

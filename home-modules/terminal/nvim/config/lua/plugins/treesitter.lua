@@ -40,12 +40,8 @@ return {
 				"vue",
 				"yaml",
 			},
-			highlight = {
-				enable = true,
-			},
-			indent = {
-				enable = true,
-			},
+			highlight = { enable = true },
+			indent = { enable = true },
 		},
 		config = function(_, opts)
 			require("nvim-treesitter.configs").setup(opts)
@@ -61,12 +57,8 @@ return {
 	},
 	{
 		"windwp/nvim-ts-autotag",
-		dependencies = {
-			"nvim-treesitter/nvim-treesitter",
-		},
+		dependencies = { "nvim-treesitter/nvim-treesitter" },
 		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
-		opts = {
-			enable = true,
-		},
+		opts = { enable = true },
 	},
 }

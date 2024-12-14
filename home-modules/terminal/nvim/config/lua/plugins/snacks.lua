@@ -33,7 +33,6 @@ return {
 			debug = {},
 			gitbrowse = {},
 			indent = {
-				indent = { only_scope = true },
 				chunk = {
 					enabled = true,
 					char = {

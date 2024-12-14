@@ -13,9 +13,7 @@ return {
 		opts = {
 			nerd_font_variant = "normal",
 			accept = {
-				auto_brackets = {
-					enabled = false,
-				},
+				auto_brackets = { enabled = false },
 			},
 			keymap = {
 				preset = "default",
@@ -23,9 +21,7 @@ return {
 				["<C-k>"] = { "snippet_forward", "fallback" },
 				["<C-j>"] = { "snippet_backward", "fallback" },
 			},
-			appearance = {
-				use_nvim_cmp_as_default = false,
-			},
+			appearance = { use_nvim_cmp_as_default = false },
 			sources = {
 				default = { "lsp", "path", "snippets", "buffer", "lazydev" },
 				providers = {
@@ -34,9 +30,7 @@ return {
 				},
 			},
 			trigger = {
-				signature_help = {
-					enabled = true,
-				},
+				signature_help = { enabled = true },
 			},
 			completion = {
 				menu = {
@@ -50,16 +44,12 @@ return {
 				},
 				documentation = {
 					auto_show = true,
-					window = {
-						border = "rounded",
-					},
+					window = { border = "rounded" },
 				},
 			},
 			signature = {
 				enabled = true,
-				window = {
-					border = "rounded",
-				},
+				window = { border = "rounded" },
 			},
 		},
 	},

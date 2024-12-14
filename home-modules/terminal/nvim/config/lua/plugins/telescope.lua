@@ -15,9 +15,7 @@ return {
 				prompt_prefix = " ",
 				selection_caret = " ",
 				layout_strategy = "bottom_pane",
-				layout_config = {
-					height = 0.7,
-				},
+				layout_config = { height = 0.7 },
 				sorting_strategy = "ascending",
 				get_selection_window = function()
 					require("edgy").goto_main()
@@ -67,19 +65,13 @@ return {
 					no_ignore = true,
 				},
 				live_grep = {
-					additional_args = {
-						"--hidden",
-					},
+					additional_args = { "--hidden" },
 					max_results = 1000,
 				},
 				grep_string = {
-					additional_args = {
-						"--hidden",
-					},
+					additional_args = { "--hidden" },
 				},
-				current_buffer_fuzzy_find = {
-					preview = false,
-				},
+				current_buffer_fuzzy_find = { preview = false },
 			},
 		},
 		config = function(_, opts)

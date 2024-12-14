@@ -4,9 +4,7 @@ return {
 		cmd = { "Grapple" },
 		opts = {
 			scope = "git",
-			win_opts = {
-				border = "rounded",
-			},
+			win_opts = { border = "rounded" },
 		},
 		keys = {
 			{ "<C-m>", "<cmd>Grapple toggle<cr>", desc = "Grapple toggle tag" },

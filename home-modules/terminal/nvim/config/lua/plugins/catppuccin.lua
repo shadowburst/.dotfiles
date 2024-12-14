@@ -23,6 +23,7 @@ return {
 					BlinkCmpSignatureHelpBorder = { link = "Pmenu" },
 					BlinkCmpDocBorder = { link = "Pmenu" },
 					SnacksIndentScope = { fg = colors.lavender },
+					SnacksIndent = { fg = colors.surface0 },
 				}
 			end,
 			default_integrations = false,
@@ -56,18 +57,14 @@ return {
 						information = { "underline" },
 						ok = { "underline" },
 					},
-					inlay_hints = {
-						background = true,
-					},
+					inlay_hints = { background = true },
 				},
 				neogit = true,
 				noice = true,
 				notify = true,
 				render_markdown = true,
 				snacks = true,
-				telescope = {
-					enabled = true,
-				},
+				telescope = { enabled = true },
 				treesitter = true,
 				treesitter_context = true,
 				which_key = true,

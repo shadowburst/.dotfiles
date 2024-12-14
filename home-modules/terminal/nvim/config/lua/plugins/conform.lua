@@ -15,9 +15,7 @@ return {
 				return { timeout_ms = 500, lsp_fallback = true }
 			end,
 			formatters = {
-				pint = {
-					command = "./vendor/bin/pint",
-				},
+				pint = { command = "./vendor/bin/pint" },
 			},
 			formatters_by_ft = {
 				["css"] = { "prettierd" },

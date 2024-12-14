@@ -6,9 +6,7 @@ return {
 			modes = {
 				search = {
 					enabled = true,
-					highlight = {
-						backdrop = true,
-					},
+					highlight = { backdrop = true },
 					search = {
 						wrap = false,
 						multi_window = false,
