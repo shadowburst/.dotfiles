@@ -23,7 +23,6 @@ return {
 					BlinkCmpSignatureHelpBorder = { link = "Pmenu" },
 					BlinkCmpDocBorder = { link = "Pmenu" },
 					SnacksIndentScope = { fg = colors.lavender },
-					SnacksIndent = { fg = colors.surface0 },
 				}
 			end,
 			default_integrations = false,

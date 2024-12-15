@@ -33,6 +33,7 @@ return {
 			debug = {},
 			gitbrowse = {},
 			indent = {
+				indent = { char = " " },
 				chunk = {
 					enabled = true,
 					char = {
@@ -47,6 +48,7 @@ return {
 				width = { max = 0.25 },
 			},
 			scope = {
+				cursor = false,
 				treesitter = { enabled = false },
 				linewise = true,
 			},
