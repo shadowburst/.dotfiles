@@ -26,7 +26,11 @@ return {
 				default = { "lsp", "path", "snippets", "buffer", "lazydev" },
 				providers = {
 					lsp = { fallback_for = { "lazydev" } },
-					lazydev = { name = "LazyDev", module = "lazydev.integrations.blink" },
+					lazydev = {
+						name = "LazyDev",
+						module = "lazydev.integrations.blink",
+						score_offset = 100, -- show at a higher priority than lsp
+					},
 				},
 			},
 			trigger = {
