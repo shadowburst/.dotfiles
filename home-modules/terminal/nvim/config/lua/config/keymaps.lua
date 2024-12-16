@@ -20,8 +20,12 @@ set("o", "N", "'nN'[v:searchforward]", { expr = true, desc = "Prev Search Result
 set("x", "<", "<gv")
 set("x", ">", ">gv")
 
--- Clear search with <esc>
-set({ "i", "n" }, "<esc>", "<cmd>noh<cr><esc>", { desc = "Escape and clear hlsearch" })
+Snacks.util.on_key("<esc>", function()
+	vim.cmd("noh")
+	if vim.snippet then
+		vim.snippet.stop()
+	end
+end)
 
 -- save file
 set({ "i", "x", "n", "s" }, "<C-s>", "<cmd>w<cr><esc>", { desc = "Save file" })
