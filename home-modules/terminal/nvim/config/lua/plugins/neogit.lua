@@ -3,8 +3,8 @@ return {
 		"NeogitOrg/neogit",
 		dependencies = {
 			"sindrets/diffview.nvim",
+			"ibhagwan/fzf-lua",
 			"nvim-lua/plenary.nvim",
-			"nvim-telescope/telescope.nvim",
 		},
 		cmd = { "Neogit", "NeogitLogCurrent" },
 		---@module 'neogit'
@@ -19,7 +19,7 @@ return {
 				show_staged_diff = false,
 			},
 			integrations = {
-				telescope = true,
+				fzf_lua = true,
 				diffview = true,
 			},
 			signs = {

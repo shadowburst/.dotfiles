@@ -6,7 +6,7 @@ return {
 			"williamboman/mason-lspconfig.nvim",
 			"williamboman/mason.nvim",
 			"b0o/SchemaStore.nvim",
-			"telescope.nvim",
+			"ibhagwan/fzf-lua",
 		},
 		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
 		config = function()
@@ -23,10 +23,16 @@ return {
 						vim.keymap.set("n", keys, func, { buffer = event.buf, desc = desc })
 					end
 
-					map("gd", "<cmd>Telescope lsp_definitions<cr>", "Goto definition")
-					map("gD", "<cmd>Telescope lsp_type_definitions<cr>", "Goto type definition")
-					map("gi", "<cmd>Telescope lsp_implementations<cr>", "Goto implementation")
-					map("gr", "<cmd>Telescope lsp_references<cr>", "Goto references")
+					map(
+						"gd",
+						"<cmd>FzfLua lsp_definitions jump_to_single_result=true ignore_current_line=true<cr>",
+						"Goto definition"
+					)
+					map(
+						"gr",
+						"<cmd>FzfLua lsp_references jump_to_single_result=true ignore_current_line=true<cr>",
+						"Goto references"
+					)
 					map("<leader>ca", vim.lsp.buf.code_action, "Code action")
 					map("<leader>cr", vim.lsp.buf.rename, "Rename variable")
 				end,
