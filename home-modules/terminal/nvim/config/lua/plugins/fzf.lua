@@ -3,30 +3,46 @@ return {
 		"ibhagwan/fzf-lua",
 		dependencies = { "echasnovski/mini.icons" },
 		cmd = { "FzfLua" },
-		opts = {
-			fzf_opts = { ["--no-scrollbar"] = true },
-			winopts = { fullscreen = true },
-			keymap = {
-				builtin = {
-					false,
-					["<C-y>"] = "accept",
-					["<C-d>"] = "preview-page-down",
-					["<C-u>"] = "preview-page-up",
+		opts = function()
+			local actions = require("fzf-lua.actions")
+			return {
+				"default-title",
+				fzf_opts = { ["--no-scrollbar"] = true },
+				winopts = { fullscreen = true },
+				keymap = {
+					builtin = {
+						false,
+						["<C-y>"] = "accept",
+						["<C-d>"] = "preview-page-down",
+						["<C-u>"] = "preview-page-up",
+					},
+					fzf = {
+						false,
+						["ctrl-y"] = "accept",
+						["ctrl-d"] = "preview-page-down",
+						["ctrl-u"] = "preview-page-up",
+					},
 				},
-				fzf = {
-					false,
-					["ctrl-y"] = "accept",
-					["ctrl-d"] = "preview-page-down",
-					["ctrl-u"] = "preview-page-up",
+				defaults = {
+					prompt = false,
+					file_icons = "mini",
 				},
-			},
-			files = {
-				fd_opts = [[--color=never --type f --hidden --follow --no-ignore --exclude .git --exclude node_modules --exclude vendor]],
-			},
-			grep = {
-				rg_opts = [[--column --line-number --no-heading --color=always --smart-case --max-columns=4096 --hidden --no-ignore -g '!{.git,node_modules,vendor}' -e ]],
-			},
-		},
+				files = {
+					cwd_prompt = false,
+					fd_opts = [[--color=never --type f --hidden --follow --no-ignore --exclude .git --exclude node_modules --exclude vendor]],
+				},
+				grep = {
+					prompt = "❯ ",
+					rg_opts = [[--column --line-number --no-heading --color=always --smart-case --max-columns=4096 --hidden --no-ignore -g '!{.git,node_modules,vendor}' -e ]],
+					actions = {
+						["ctrl-q"] = {
+							fn = actions.file_edit_or_qf,
+							prefix = "select-all+",
+						},
+					},
+				},
+			}
+		end,
 		keys = {
 			{ "<leader><leader>", "<cmd>FzfLua files<cr>", desc = "Find files" },
 			{ "<leader>,", "<cmd>FzfLua buffers ignore_current_buffer=true<cr>", desc = "Switch buffer" },
