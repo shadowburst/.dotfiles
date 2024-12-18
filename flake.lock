@@ -140,6 +140,21 @@
         "type": "github"
       }
     },
+    "catppuccin": {
+      "locked": {
+        "lastModified": 1734546365,
+        "narHash": "sha256-g8GoZj1+r78/+gl2uWqausP+5oUap+GQsUKHnj+yB38=",
+        "owner": "catppuccin",
+        "repo": "nix",
+        "rev": "5cdefd69fc9238a6fe512e76ed9d22169c661616",
+        "type": "github"
+      },
+      "original": {
+        "owner": "catppuccin",
+        "repo": "nix",
+        "type": "github"
+      }
+    },
     "flake-compat": {
       "flake": false,
       "locked": {
@@ -614,6 +629,7 @@
     "root": {
       "inputs": {
         "ags": "ags",
+        "catppuccin": "catppuccin",
         "home-manager": "home-manager",
         "hypr-dynamic-cursors": "hypr-dynamic-cursors",
         "hyprland": "hyprland",

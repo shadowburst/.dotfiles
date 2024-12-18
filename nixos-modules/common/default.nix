@@ -7,6 +7,7 @@
 
 {
   imports = [
+    ./catppuccin.nix
     ./disks.nix
     ./networking.nix
     ./ssh.nix

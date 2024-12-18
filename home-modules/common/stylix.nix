@@ -10,6 +10,7 @@ in
   stylix = {
     polarity = "dark";
     targets = {
+      bat.enable = false;
       fzf.enable = false;
       gtk.extraCss = ''
         .window-frame { box-shadow: none; margin: 0; }
