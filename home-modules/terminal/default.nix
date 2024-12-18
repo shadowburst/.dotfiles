@@ -19,6 +19,7 @@
 
   home.packages = with pkgs; [
     curl
+    delta
     fd
     gcc
     gnumake
