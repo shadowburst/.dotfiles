@@ -2,6 +2,7 @@ return {
 	{
 		"neovim/nvim-lspconfig",
 		dependencies = {
+			"saghen/blink.cmp",
 			"WhoIsSethDaniel/mason-tool-installer.nvim",
 			"williamboman/mason-lspconfig.nvim",
 			"williamboman/mason.nvim",
@@ -141,7 +142,7 @@ return {
 				"yamllint",
 			})
 
-			local capabilities = vim.lsp.protocol.make_client_capabilities()
+			local capabilities = require("blink.cmp").get_lsp_capabilities()
 			require("mason-lspconfig").setup({
 				handlers = {
 					function(server_name)
