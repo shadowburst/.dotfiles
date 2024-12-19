@@ -1,6 +1,7 @@
 return {
 	{
 		"cbochs/grapple.nvim",
+		dependencies = { "echasnovski/mini.icons" },
 		cmd = { "Grapple" },
 		opts = {
 			scope = "git",
