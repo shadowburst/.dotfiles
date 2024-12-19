@@ -31,6 +31,7 @@ return {
 					cwd_prompt = false,
 					fd_opts = [[--color=never --type f --hidden --follow --no-ignore --exclude .git --exclude node_modules --exclude vendor]],
 				},
+				oldfiles = { include_current_session = true },
 				grep = {
 					prompt = "❯ ",
 					rg_opts = [[--column --line-number --no-heading --color=always --smart-case --max-columns=4096 --hidden --no-ignore -g '!{.git,node_modules,vendor}' -e ]],
