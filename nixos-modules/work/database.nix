@@ -8,7 +8,7 @@ in
     backend = "docker";
     containers = {
       mysql = {
-        image = "mariadb:latest";
+        image = "mariadb:lts";
         ports = [ "3306:3306" ];
         extraOptions = [
           "--network=${network}"
