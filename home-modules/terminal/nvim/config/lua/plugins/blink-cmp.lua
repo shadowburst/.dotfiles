@@ -1,4 +1,3 @@
----@diagnostic disable:missing-fields
 return {
 	{
 		"saghen/blink.cmp",
@@ -11,30 +10,22 @@ return {
 		---@module 'blink.cmp'
 		---@type blink.cmp.Config
 		opts = {
-			nerd_font_variant = "normal",
-			accept = {
-				auto_brackets = { enabled = false },
-			},
 			keymap = {
 				preset = "default",
 				["<C-n>"] = { "show", "select_next", "fallback" },
 				["<C-k>"] = { "snippet_forward", "fallback" },
 				["<C-j>"] = { "snippet_backward", "fallback" },
 			},
-			appearance = { use_nvim_cmp_as_default = false },
+			appearance = { nerd_font_variant = "normal" },
 			sources = {
-				default = { "lsp", "path", "snippets", "buffer", "lazydev" },
+				default = { "lazydev", "lsp", "path", "snippets", "buffer" },
 				providers = {
-					lsp = { fallback_for = { "lazydev" } },
 					lazydev = {
 						name = "LazyDev",
 						module = "lazydev.integrations.blink",
 						score_offset = 100, -- show at a higher priority than lsp
 					},
 				},
-			},
-			trigger = {
-				signature_help = { enabled = true },
 			},
 			completion = {
 				menu = {
