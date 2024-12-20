@@ -56,12 +56,12 @@
         }
         # Navigation
         {
-          run = "plugin smart-enter --sync";
+          run = "plugin smart-enter";
           on = [ "l" ];
           desc = "Enter the child directory, or open the file";
         }
         {
-          run = "plugin smart-enter --sync";
+          run = "plugin smart-enter";
           on = [ "<Enter>" ];
           desc = "Enter the child directory, or open the file";
         }
