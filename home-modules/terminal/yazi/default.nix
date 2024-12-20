@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ ... }:
 
 {
   programs.yazi = {
@@ -140,7 +140,5 @@
         }
       ];
     };
-
-    theme = builtins.fromTOML (lib.fileContents ./themes/catppuccin.toml);
   };
 }

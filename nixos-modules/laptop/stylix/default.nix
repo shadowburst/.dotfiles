@@ -8,12 +8,11 @@
 {
   imports = [ inputs.stylix.nixosModules.stylix ];
 
-  fonts.packages = with pkgs; [
-    nerd-fonts.jetbrains-mono
-  ];
+  fonts.packages = with pkgs; [ nerd-fonts.jetbrains-mono ];
 
   stylix = {
     enable = true;
+    autoEnable = false;
 
     image = ./wallpapers/current.jpg;
 
@@ -41,20 +40,8 @@
 
     base16Scheme = "${pkgs.base16-schemes}/share/themes/catppuccin-macchiato.yaml";
     targets = {
-      fish.enable = false;
-      plymouth.enable = false;
+      chromium.enable = true;
+      console.enable = true;
     };
-  };
-
-  boot.plymouth = {
-    enable = true;
-    theme = "catppuccin-macchiato";
-    themePackages = with pkgs; [ catppuccin-plymouth ];
-  };
-
-  qt = {
-    enable = true;
-    platformTheme = "qt5ct";
-    style = "kvantum";
   };
 }
