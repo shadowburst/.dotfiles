@@ -32,10 +32,6 @@ return {
 				fzf = true,
 				gitsigns = true,
 				grug_far = true,
-				illuminate = {
-					enabled = true,
-					lsp = true,
-				},
 				lsp_trouble = true,
 				mason = true,
 				mini = { enabled = true },
