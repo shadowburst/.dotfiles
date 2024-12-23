@@ -22,7 +22,7 @@ in
     package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
     systemd.variables = [ "--all" ];
     plugins = [
-      inputs.hypr-dynamic-cursors.packages.${pkgs.system}.hypr-dynamic-cursors
+      # inputs.hypr-dynamic-cursors.packages.${pkgs.system}.hypr-dynamic-cursors
     ];
     settings = {
       "$mod" = "SUPER";
@@ -41,7 +41,7 @@ in
         "transmission-daemon"
       ];
       exec = [
-        "pkill ags; hyprpanel"
+        "hyprpanel -q; hyprpanel"
         "${pkgs.systemd}/bin/systemctl --user is-active kanshi && ${pkgs.systemd}/bin/systemctl --user reload-or-restart kanshi"
       ];
       general = {

@@ -38,7 +38,7 @@
   "bar.workspaces.reverse_scroll": true,
   "bar.workspaces.showAllActive": false,
   "bar.workspaces.showWsIcons": false,
-  "bar.workspaces.show_icons": false,
+  "bar.workspaces.show_icons": true,
   "bar.workspaces.workspaceIconMap": {
     "1": "",
     "2": "",

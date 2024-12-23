@@ -15,8 +15,12 @@ in
 
   programs.ags.enable = true;
 
-  xdg.configFile."ags".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/ags/config";
-  home.file.".cache/ags/hyprpanel".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/ags/hyprpanel";
+  xdg.configFile = {
+    "ags".source =
+      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/ags/config";
+    "hyprpanel".source =
+      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/ags/hyprpanel";
+  };
 
   home.packages = with pkgs; [
     power-menu
