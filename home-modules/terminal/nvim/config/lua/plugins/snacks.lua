@@ -47,6 +47,7 @@ return {
 				top_down = false,
 				width = { max = 0.25 },
 			},
+			quickfile = {},
 			scope = {
 				cursor = false,
 				treesitter = { enabled = false },
