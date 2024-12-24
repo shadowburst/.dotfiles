@@ -2,9 +2,9 @@ return {
 	{
 		"nvim-lualine/lualine.nvim",
 		dependencies = {
+			"catppuccin/nvim",
 			"cbochs/grapple.nvim",
 			"echasnovski/mini.icons",
-			"catppuccin/nvim",
 		},
 		event = { "VeryLazy" },
 		opts = function()

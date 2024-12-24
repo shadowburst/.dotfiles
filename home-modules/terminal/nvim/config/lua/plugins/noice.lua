@@ -2,8 +2,8 @@ return {
 	{
 		"folke/noice.nvim",
 		dependencies = {
-			"echasnovski/mini.icons",
 			"MunifTanjim/nui.nvim",
+			"echasnovski/mini.icons",
 		},
 		event = { "VeryLazy" },
 		cmd = { "Noice" },

@@ -2,8 +2,8 @@ return {
 	{
 		"stevearc/conform.nvim",
 		dependencies = {
-			"williamboman/mason.nvim",
 			"folke/snacks.nvim",
+			"williamboman/mason.nvim",
 		},
 		event = { "BufWritePre" },
 		cmd = { "ConformInfo" },

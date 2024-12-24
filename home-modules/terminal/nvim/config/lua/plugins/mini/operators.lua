@@ -8,7 +8,7 @@ local mappings = {
 return {
 	{
 		"echasnovski/mini.operators",
-		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
+		event = { "BufNewFile", "BufReadPost", "BufWritePre" },
 		opts = {
 			evaluate = { prefix = mappings.evaluate },
 			multiply = { prefix = mappings.multiply },

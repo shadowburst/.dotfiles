@@ -1,7 +1,7 @@
 return {
 	{
 		"folke/ts-comments.nvim",
-		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
+		event = { "BufNewFile", "BufReadPost", "BufWritePre" },
 		opts = {},
 	},
 }

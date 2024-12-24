@@ -2,9 +2,9 @@ return {
 	{
 		"NeogitOrg/neogit",
 		dependencies = {
-			"sindrets/diffview.nvim",
 			"ibhagwan/fzf-lua",
 			"nvim-lua/plenary.nvim",
+			"sindrets/diffview.nvim",
 		},
 		cmd = { "Neogit", "NeogitLogCurrent" },
 		---@module 'neogit'

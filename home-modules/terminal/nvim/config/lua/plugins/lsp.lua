@@ -2,12 +2,12 @@ return {
 	{
 		"neovim/nvim-lspconfig",
 		dependencies = {
-			"saghen/blink.cmp",
 			"WhoIsSethDaniel/mason-tool-installer.nvim",
-			"williamboman/mason-lspconfig.nvim",
-			"williamboman/mason.nvim",
 			"b0o/SchemaStore.nvim",
 			"ibhagwan/fzf-lua",
+			"saghen/blink.cmp",
+			"williamboman/mason-lspconfig.nvim",
+			"williamboman/mason.nvim",
 		},
 		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
 		config = function()

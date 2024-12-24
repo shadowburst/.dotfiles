@@ -2,7 +2,7 @@ return {
 	{
 		"folke/todo-comments.nvim",
 		dependencies = { "ibhagwan/fzf-lua" },
-		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
+		event = { "BufNewFile", "BufReadPost", "BufWritePre" },
 		opts = {},
 		keys = {
 			{

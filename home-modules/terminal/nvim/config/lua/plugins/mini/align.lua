@@ -3,7 +3,7 @@ local mapping = "ga"
 return {
 	{
 		"echasnovski/mini.align",
-		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
+		event = { "BufNewFile", "BufReadPost", "BufWritePre" },
 		opts = {
 			mappings = {
 				start = mapping,

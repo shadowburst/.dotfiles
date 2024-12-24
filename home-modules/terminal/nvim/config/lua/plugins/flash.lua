@@ -1,7 +1,7 @@
 return {
 	{
 		"folke/flash.nvim",
-		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
+		event = { "BufNewFile", "BufReadPost", "BufWritePre" },
 		opts = {
 			modes = {
 				search = {

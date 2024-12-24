@@ -2,8 +2,8 @@ return {
 	{
 		"saghen/blink.cmp",
 		dependencies = {
-			"rafamadriz/friendly-snippets",
 			"folke/lazydev.nvim",
+			"rafamadriz/friendly-snippets",
 		},
 		version = "v0.*",
 		event = { "InsertEnter" },

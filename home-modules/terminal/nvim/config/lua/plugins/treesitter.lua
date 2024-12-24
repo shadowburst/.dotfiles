@@ -2,12 +2,12 @@ return {
 	{
 		"nvim-treesitter/nvim-treesitter",
 		dependencies = {
+			"folke/ts-comments.nvim",
 			"nvim-treesitter/nvim-treesitter-context",
 			"nvim-treesitter/nvim-treesitter-textobjects",
-			"folke/ts-comments.nvim",
 		},
 		build = ":TSUpdate",
-		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
+		event = { "BufNewFile", "BufReadPost", "BufWritePre" },
 		opts = {
 			auto_install = true,
 			ensure_installed = {
@@ -48,8 +48,6 @@ return {
 
 			vim.filetype.add({
 				pattern = {
-					[".*/kitty/.+%.conf"] = "bash",
-					[".*/hypr/.+%.conf"] = "hyprlang",
 					["%.env%.[%w_.-]+"] = "sh",
 				},
 			})
@@ -58,7 +56,7 @@ return {
 	{
 		"windwp/nvim-ts-autotag",
 		dependencies = { "nvim-treesitter/nvim-treesitter" },
-		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
+		event = { "BufNewFile", "BufReadPost", "BufWritePre" },
 		opts = { enable = true },
 	},
 }
