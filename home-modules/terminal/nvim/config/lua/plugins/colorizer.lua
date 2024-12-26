@@ -18,11 +18,14 @@ return {
 				"vue",
 			},
 			user_default_options = {
-				css = true,
-				sass = { enable = true },
-				tailwind = true,
 				mode = "background",
 				virtualtext_inline = true,
+				css = true,
+				sass = {
+					enable = true,
+					parsers = { "css" },
+				},
+				tailwind = true,
 			},
 		},
 		config = function(_, opts)
