@@ -20,6 +20,7 @@ return {
 			user_default_options = {
 				mode = "background",
 				virtualtext_inline = true,
+				RRGGBBAA = true,
 				css = true,
 				sass = {
 					enable = true,
