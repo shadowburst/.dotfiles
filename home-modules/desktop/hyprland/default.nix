@@ -133,7 +133,7 @@ in
         "float, org.gnome.Calculator"
         "minsize 300 500, org.gnome.Calculator"
         "float, xdg-desktop-portal-gtk"
-        "minsize 700 500, xdg-desktop-portal-gtk"
+        "minsize 1000 800, xdg-desktop-portal-gtk"
       ];
       windowrulev2 = [
         "opacity 0.0 override, class:^(xwaylandvideobridge)$"
