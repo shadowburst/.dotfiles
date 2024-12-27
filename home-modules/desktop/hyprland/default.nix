@@ -209,7 +209,7 @@ in
 
         # Menus
         "$mod, a, exec, walker -m applications"
-        "$mod, x, exec, power-menu"
+        "$mod, x, exec, nwg-bar -p top -i 96"
 
         # Applications
         "$mod, return, exec, $terminal"

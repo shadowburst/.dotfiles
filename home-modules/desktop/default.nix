@@ -7,6 +7,7 @@
     ./hyprland
     ./kitty.nix
     ./mpv.nix
+    ./nwg-bar
     ./transmission.nix
   ];
 
