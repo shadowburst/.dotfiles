@@ -7,4 +7,8 @@
     postman
     stripe-cli
   ];
+
+  programs.fish.shellAbbrs = {
+    sail = "./vendor/bin/sail";
+  };
 }
