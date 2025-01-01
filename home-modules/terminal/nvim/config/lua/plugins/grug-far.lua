@@ -2,6 +2,8 @@ return {
 	{
 		"MagicDuck/grug-far.nvim",
 		cmd = { "GrugFar" },
+		---@module 'grug-far'
+		---@type GrugFarOptionsOverride
 		opts = {
 			startCursorRow = 3,
 			headerMaxWidth = 80,

@@ -3,6 +3,8 @@ return {
 		"cbochs/grapple.nvim",
 		dependencies = { "echasnovski/mini.icons" },
 		cmd = { "Grapple" },
+		---@module 'grapple'
+		---@type grapple.options
 		opts = {
 			scope = "git",
 			win_opts = { border = "rounded" },

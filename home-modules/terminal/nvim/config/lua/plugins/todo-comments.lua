@@ -3,6 +3,8 @@ return {
 		"folke/todo-comments.nvim",
 		dependencies = { "ibhagwan/fzf-lua" },
 		event = { "BufNewFile", "BufReadPost", "BufWritePre" },
+		---@module 'todo-comments'
+		---@type TodoConfig
 		opts = {},
 		keys = {
 			{

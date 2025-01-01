@@ -2,6 +2,8 @@ return {
 	{
 		"folke/edgy.nvim",
 		event = { "VeryLazy" },
+		---@module 'edgy'
+		---@type Edgy.Config
 		opts = {
 			bottom = {
 				{

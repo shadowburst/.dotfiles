@@ -1,6 +1,8 @@
 return {
 	{
 		"sindrets/diffview.nvim",
+		---@module 'diffview'
+		---@type DiffviewConfig
 		opts = {
 			keymaps = {
 				file_panel = {

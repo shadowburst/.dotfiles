@@ -3,6 +3,8 @@ return {
 		"folke/trouble.nvim",
 		dependencies = { "echasnovski/mini.icons" },
 		cmd = { "Trouble" },
+		---@module 'trouble'
+		---@type trouble.Config
 		opts = {
 			auto_close = true,
 			auto_preview = true,
