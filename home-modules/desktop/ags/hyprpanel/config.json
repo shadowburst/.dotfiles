@@ -5,17 +5,10 @@
   "bar.customModules.power.leftClick": "power-menu",
   "bar.customModules.updates.pollingInterval": 1440000,
   "bar.launcher.autoDetectIcon": true,
-  "bar.launcher.icon": "󰣇",
   "bar.layouts": {
     "*": {
-      "left": [
-        "dashboard",
-        "workspaces",
-        "windowtitle"
-      ],
-      "middle": [
-        "media"
-      ],
+      "left": ["dashboard", "workspaces", "windowtitle"],
+      "middle": ["media"],
       "right": [
         "volume",
         "network",
@@ -32,8 +25,7 @@
   "bar.media.show_label": true,
   "bar.network.showWifiInfo": true,
   "bar.windowtitle.custom_title": true,
-  "bar.workspaces.hideUnoccupied": false,
-  "bar.workspaces.monitorSpecific": true,
+  "bar.workspaces.monitorSpecific": false,
   "bar.workspaces.numbered_active_indicator": "highlight",
   "bar.workspaces.reverse_scroll": true,
   "bar.workspaces.showAllActive": false,
@@ -51,7 +43,6 @@
   "bar.workspaces.workspaces": 7,
   "hyprpanel.restartAgs": false,
   "menus.bluetooth.showBattery": true,
-  "menus.clock.time.hideSeconds": true,
   "menus.clock.time.military": true,
   "menus.clock.weather.enabled": false,
   "menus.clock.weather.location": "Paris",
@@ -432,3 +423,4 @@
   "wallpaper.enable": false,
   "menus.dashboard.shortcuts.enabled": false
 }
+
