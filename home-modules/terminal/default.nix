@@ -21,6 +21,7 @@
     curl
     delta
     fd
+    ffmpeg
     gcc
     gnumake
     htop
