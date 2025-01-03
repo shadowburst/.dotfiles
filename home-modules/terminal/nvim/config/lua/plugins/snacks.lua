@@ -71,6 +71,13 @@ return {
 					end
 					vim.print = _G.dd -- Override print to use snacks for `:=` command
 
+					Snacks.util.on_key("<esc>", function()
+						vim.cmd("noh")
+						if vim.snippet then
+							vim.snippet.stop()
+						end
+					end)
+
 					Snacks.toggle.option("spell", { name = "spelling" }):map("<leader>ts")
 					Snacks.toggle.option("relativenumber", { name = "relative number" }):map("<leader>tl")
 					Snacks.toggle.option("wrap", { name = "wrap" }):map("<leader>tw")
