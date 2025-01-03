@@ -43,6 +43,7 @@ return {
 					},
 				},
 			},
+			input = {},
 			notifier = {
 				top_down = false,
 				width = { max = 0.25 },

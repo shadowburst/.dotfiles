@@ -26,6 +26,12 @@ return {
 				defaults = {
 					prompt = false,
 					file_icons = "mini",
+					actions = {
+						["ctrl-q"] = {
+							fn = actions.file_edit_or_qf,
+							prefix = "select-all+",
+						},
+					},
 				},
 				files = {
 					cwd_prompt = false,
@@ -35,14 +41,16 @@ return {
 				grep = {
 					prompt = "❯ ",
 					rg_opts = [[--column --line-number --no-heading --color=always --smart-case --max-columns=4096 --hidden --no-ignore -g '!{.git,node_modules,vendor}' -e ]],
-					actions = {
-						["ctrl-q"] = {
-							fn = actions.file_edit_or_qf,
-							prefix = "select-all+",
-						},
-					},
 				},
 			}
+		end,
+		init = function()
+			---@diagnostic disable-next-line: duplicate-set-field
+			vim.ui.select = function(...)
+				require("lazy").load({ plugins = { "fzf-lua" } })
+				require("fzf-lua").register_ui_select()
+				return vim.ui.select(...)
+			end
 		end,
 		keys = {
 			{ "<leader><leader>", "<cmd>FzfLua files<cr>", desc = "Find files" },
