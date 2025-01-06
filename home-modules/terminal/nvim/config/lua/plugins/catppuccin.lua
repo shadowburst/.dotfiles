@@ -20,6 +20,7 @@ return {
 					BlinkCmpMenuBorder = { link = "Pmenu" },
 					BlinkCmpSignatureHelpBorder = { link = "Pmenu" },
 					BlinkCmpDocBorder = { link = "Pmenu" },
+					FzfLuaNormal = { link = "NormalFloat" },
 					SnacksIndentScope = { fg = colors.lavender },
 				}
 			end,
