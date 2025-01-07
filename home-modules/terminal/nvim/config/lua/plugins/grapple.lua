@@ -6,7 +6,7 @@ return {
 		---@module 'grapple'
 		---@type grapple.options
 		opts = {
-			scope = "git",
+			scope = "git_branch",
 			win_opts = { border = "rounded" },
 		},
 		keys = {
