@@ -14,9 +14,9 @@
       "--highlight-line"
     ];
     colors = with config.lib.stylix.colors.withHashtag; {
-      bg = base01;
+      bg = base00;
       "bg+" = base03;
-      gutter = base01;
+      gutter = base00;
       border = base0D;
       header = base09;
       info = base04;
