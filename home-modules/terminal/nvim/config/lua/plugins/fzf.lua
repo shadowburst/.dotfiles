@@ -8,7 +8,13 @@ return {
 			return {
 				"default-title",
 				fzf_opts = { ["--no-scrollbar"] = true },
-				winopts = { fullscreen = true },
+				winopts = {
+					fullscreen = true,
+					preview = {
+						vertical = "up",
+						layout = "vertical",
+					},
+				},
 				keymap = {
 					builtin = {
 						false,
