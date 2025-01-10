@@ -40,6 +40,7 @@ return {
 					require("grug-far").open({
 						prefills = {
 							search = vim.fn.expand("<cword>"),
+							filesFilter = "!.git/",
 							flags = "--hidden",
 						},
 					})
@@ -51,6 +52,7 @@ return {
 				function()
 					require("grug-far").open({
 						prefills = {
+							filesFilter = "!.git/",
 							flags = "--hidden",
 						},
 					})
