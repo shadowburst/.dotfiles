@@ -10,6 +10,7 @@ return {
 		---@module 'neogit'
 		---@type NeogitConfig
 		opts = {
+			process_spinner = true,
 			disable_hint = true,
 			graph_style = "kitty",
 			remember_settings = false,
