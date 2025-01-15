@@ -6,7 +6,7 @@ return {
 		opts = function()
 			local actions = require("fzf-lua.actions")
 			return {
-				"default-title",
+				"border-fused",
 				fzf_opts = { ["--no-scrollbar"] = true },
 				winopts = {
 					fullscreen = true,
