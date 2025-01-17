@@ -13,6 +13,7 @@ return {
 		opts = {
 			keymap = {
 				preset = "default",
+				["<C-Space>"] = {},
 				["<C-n>"] = { "show", "select_next", "fallback" },
 				["<C-k>"] = { "snippet_forward", "fallback" },
 				["<C-j>"] = { "snippet_backward", "fallback" },
