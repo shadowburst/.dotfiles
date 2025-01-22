@@ -11,5 +11,6 @@
   programs.fish.shellAbbrs = {
     sail = "./vendor/bin/sail";
     pint = "./vendor/bin/sail php ./vendor/bin/pint";
+    pest = "./vendor/bin/sail php ./vendor/bin/pest";
   };
 }
