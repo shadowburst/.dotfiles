@@ -35,7 +35,7 @@ return {
 			{
 				"<leader>gl",
 				function()
-					require("neogit").action("log", "log_all_branches", { "--graph" })()
+					require("neogit").action("log", "log_all_branches", { "--graph", "--decorate" })()
 				end,
 				desc = "Git logs",
 			},
