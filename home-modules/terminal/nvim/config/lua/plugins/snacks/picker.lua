@@ -45,9 +45,23 @@ return {
 						},
 					},
 				},
-			},
-			previewers = {
-				git = { native = true },
+				previewers = {
+					git = { native = true },
+				},
+				win = {
+					input = {
+						keys = {
+							["<C-u>"] = { "preview_scroll_up", mode = { "i", "n" } },
+							["<C-d>"] = { "preview_scroll_down", mode = { "i", "n" } },
+						},
+					},
+					list = {
+						keys = {
+							["<C-u>"] = { "preview_scroll_up", mode = { "i", "n" } },
+							["<C-d>"] = { "preview_scroll_down", mode = { "i", "n" } },
+						},
+					},
+				},
 			},
 		},
 		keys = {
@@ -105,7 +119,7 @@ return {
 			{
 				"<leader>gc",
 				function()
-					Snacks.picker.git_log({ current_file = true })
+					Snacks.picker.git_log_file()
 				end,
 				desc = "Hunks",
 			},
