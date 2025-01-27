@@ -4,7 +4,6 @@ return {
 		dependencies = {
 			"WhoIsSethDaniel/mason-tool-installer.nvim",
 			"b0o/SchemaStore.nvim",
-			"ibhagwan/fzf-lua",
 			"saghen/blink.cmp",
 			"williamboman/mason-lspconfig.nvim",
 			"williamboman/mason.nvim",
@@ -23,17 +22,6 @@ return {
 					local map = function(keys, func, desc)
 						vim.keymap.set("n", keys, func, { buffer = event.buf, desc = desc })
 					end
-
-					map(
-						"gd",
-						"<cmd>FzfLua lsp_definitions jump_to_single_result=true ignore_current_line=true<cr>",
-						"Goto definition"
-					)
-					map(
-						"gr",
-						"<cmd>FzfLua lsp_references jump_to_single_result=true ignore_current_line=true<cr>",
-						"Goto references"
-					)
 					map("<leader>ca", vim.lsp.buf.code_action, "Code action")
 					map("<leader>cr", vim.lsp.buf.rename, "Rename variable")
 				end,
