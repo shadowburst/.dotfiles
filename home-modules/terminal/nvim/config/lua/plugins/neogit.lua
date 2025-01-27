@@ -32,7 +32,13 @@ return {
 		},
 		keys = {
 			{ "<leader>gg", "<cmd>Neogit<cr>", desc = "Open neogit" },
-			{ "<leader>gl", "<cmd>Neogit log<cr>", desc = "Git logs" },
+			{
+				"<leader>gl",
+				function()
+					require("neogit").action("log", "log_all_branches", { "--graph" })()
+				end,
+				desc = "Git logs",
+			},
 		},
 	},
 }
