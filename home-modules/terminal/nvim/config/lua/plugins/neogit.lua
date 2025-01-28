@@ -2,7 +2,6 @@ return {
 	{
 		"NeogitOrg/neogit",
 		dependencies = {
-			"ibhagwan/fzf-lua",
 			"nvim-lua/plenary.nvim",
 			"sindrets/diffview.nvim",
 		},
@@ -19,10 +18,7 @@ return {
 				kind = "split",
 				show_staged_diff = false,
 			},
-			integrations = {
-				fzf_lua = true,
-				diffview = true,
-			},
+			integrations = { diffview = true },
 			signs = {
 				-- { CLOSED, OPENED }
 				section = { "", "" },
