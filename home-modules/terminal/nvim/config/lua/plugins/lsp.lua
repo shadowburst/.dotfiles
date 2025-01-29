@@ -57,7 +57,13 @@ return {
 				tailwindcss = {
 					filetypes_exclude = { "markdown", "php" },
 				},
-				volar = {},
+				volar = {
+					init_options = {
+						vue = {
+							hybridMode = true,
+						},
+					},
+				},
 				vtsls = {
 					filetypes = {
 						"javascript",
@@ -72,7 +78,7 @@ return {
 						complete_function_calls = true,
 						vtsls = {
 							enableMoveToFileCodeAction = true,
-							-- autoUseWorkspaceTsdk = true,
+							autoUseWorkspaceTsdk = true,
 							experimental = {
 								completion = {
 									enableServerSideFuzzyMatch = true,
