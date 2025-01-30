@@ -49,6 +49,13 @@
       flake-boot = "sudo nixos-rebuild boot --flake ~/.dotfiles#${host}";
       flake-update = "nix flake update --flake ~/.dotfiles && flake-switch";
     };
+
+    shellAbbrs = {
+      sail = "./vendor/bin/sail";
+      pint = "./vendor/bin/sail php ./vendor/bin/pint";
+      pest = "./vendor/bin/sail php ./vendor/bin/pest";
+    };
+
     shellInit = ''
       set TERM xterm-256color
       set fish_greeting
