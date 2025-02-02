@@ -3,13 +3,17 @@
     enable = true;
     enableFishIntegration = true;
 
-    initLua = ''
-      require("starship"):setup()
+    initLua =
+      /*
+      lua
+      */
+      ''
+        require("starship"):setup()
 
-      require("session"):setup({
-        sync_yanked = true,
-      })
-    '';
+        require("session"):setup({
+          sync_yanked = true,
+        })
+      '';
 
     plugins = {
       smart-enter = ./plugins/smart-enter.yazi;
