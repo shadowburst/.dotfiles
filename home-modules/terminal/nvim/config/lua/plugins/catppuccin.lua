@@ -20,7 +20,6 @@ return {
 					BlinkCmpMenuBorder = { link = "Pmenu" },
 					BlinkCmpSignatureHelpBorder = { link = "Pmenu" },
 					BlinkCmpDocBorder = { link = "Pmenu" },
-					FzfLuaBorder = { fg = colors.blue },
 					SnacksIndentScope = { fg = colors.lavender },
 				}
 			end,
@@ -30,7 +29,6 @@ return {
 				dashboard = true,
 				diffview = true,
 				flash = true,
-				fzf = true,
 				gitsigns = true,
 				grug_far = true,
 				lsp_trouble = true,
