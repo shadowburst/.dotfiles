@@ -44,6 +44,26 @@ return {
 							},
 						},
 					},
+					vscode = {
+						preview = false,
+						layout = {
+							backdrop = false,
+							row = 1,
+							width = 0.4,
+							min_width = 80,
+							height = 0.4,
+							title = "{title} {live} {flags}",
+							title_pos = "center",
+							border = "rounded",
+							box = "vertical",
+							{
+								win = "input",
+								height = 1,
+								border = "bottom",
+							},
+							{ win = "list" },
+						},
+					},
 				},
 				previewers = {
 					git = { native = true },
