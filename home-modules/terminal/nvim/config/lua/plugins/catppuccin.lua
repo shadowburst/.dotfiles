@@ -34,7 +34,6 @@ return {
 				gitsigns = true,
 				grug_far = true,
 				lsp_trouble = true,
-				mason = true,
 				mini = { enabled = true },
 				native_lsp = {
 					enabled = true,

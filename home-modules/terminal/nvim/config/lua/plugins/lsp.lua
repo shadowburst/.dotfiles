@@ -2,11 +2,8 @@ return {
 	{
 		"neovim/nvim-lspconfig",
 		dependencies = {
-			"WhoIsSethDaniel/mason-tool-installer.nvim",
 			"b0o/SchemaStore.nvim",
 			"saghen/blink.cmp",
-			"williamboman/mason-lspconfig.nvim",
-			"williamboman/mason.nvim",
 		},
 		event = { "BufReadPost", "BufNewFile", "BufWritePre" },
 		config = function()
@@ -15,19 +12,6 @@ return {
 				local hl = "DiagnosticSign" .. type
 				vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
 			end
-
-			vim.api.nvim_create_autocmd("LspAttach", {
-				group = vim.api.nvim_create_augroup("custom_lsp_attach", { clear = true }),
-				callback = function(event)
-					local map = function(keys, func, desc)
-						vim.keymap.set("n", keys, func, { buffer = event.buf, desc = desc })
-					end
-					map("<leader>ca", vim.lsp.buf.code_action, "Code action")
-					map("<leader>cr", vim.lsp.buf.rename, "Rename variable")
-				end,
-			})
-
-			require("mason").setup()
 
 			local servers = {
 				bashls = {},
@@ -59,9 +43,7 @@ return {
 				},
 				volar = {
 					init_options = {
-						vue = {
-							hybridMode = true,
-						},
+						vue = { hybridMode = true },
 					},
 				},
 				vtsls = {
@@ -88,9 +70,11 @@ return {
 								globalPlugins = {
 									{
 										name = "@vue/typescript-plugin",
-										location = require("mason-registry")
-											.get_package("vue-language-server")
-											:get_install_path() .. "/node_modules/@vue/language-server",
+										location = vim.fn.readfile(
+											vim.fn.expand("$XDG_CACHE_HOME/nvim/nix/vue_typescript_plugin"),
+											"",
+											1
+										)[1],
 										languages = { "vue" },
 										configNamespace = "typescript",
 										enableForWorkspaceTypeScriptVersions = true,
@@ -119,35 +103,21 @@ return {
 				},
 			}
 
-			local ensure_installed = vim.tbl_keys(servers or {})
-			vim.list_extend(ensure_installed, {
-				"blade-formatter",
-				"hadolint",
-				"jq",
-				"luacheck",
-				"markdownlint-cli2",
-				"markdown-toc",
-				"prettierd",
-				"shellcheck",
-				"shfmt",
-				"stylua",
-				"xmlformatter",
-				"yamlfmt",
-				"yamllint",
-			})
+			local on_attach = function(_, buf)
+				local map = function(keys, func, desc)
+					vim.keymap.set("n", keys, func, { buffer = buf, desc = desc })
+				end
+				map("<leader>ca", vim.lsp.buf.code_action, "Code action")
+				map("<leader>cr", vim.lsp.buf.rename, "Rename variable")
+			end
 
-			local capabilities = require("blink.cmp").get_lsp_capabilities()
-			require("mason-lspconfig").setup({
-				handlers = {
-					function(server_name)
-						local server = servers[server_name] or {}
-						server.capabilities = vim.tbl_deep_extend("force", {}, capabilities, server.capabilities or {})
-						require("lspconfig")[server_name].setup(server)
-					end,
-				},
-			})
-
-			require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
+			local capabilities = vim.lsp.protocol.make_client_capabilities()
+			for lsp, config in pairs(servers) do
+				local settings = config or {}
+				settings.on_attach = on_attach
+				settings.capabilities = vim.tbl_deep_extend("force", capabilities, settings.capabilities or {})
+				require("lspconfig")[lsp].setup(settings)
+			end
 		end,
 	},
 }

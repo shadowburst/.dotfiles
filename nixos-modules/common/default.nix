@@ -3,9 +3,7 @@
   stateVersion,
   username,
   ...
-}:
-
-{
+}: {
   imports = [
     ./catppuccin.nix
     ./disks.nix
@@ -28,14 +26,6 @@
 
   programs = {
     fish.enable = true;
-
-    # Needed for mason in nvim
-    nix-ld = {
-      enable = true;
-      libraries = with pkgs; [
-        stdenv.cc.cc
-      ];
-    };
   };
 
   time.timeZone = "Europe/Paris";

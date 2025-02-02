@@ -1,10 +1,7 @@
 return {
 	{
 		"stevearc/conform.nvim",
-		dependencies = {
-			"folke/snacks.nvim",
-			"williamboman/mason.nvim",
-		},
+		dependencies = { "folke/snacks.nvim" },
 		event = { "BufWritePre" },
 		cmd = { "ConformInfo" },
 		---@module 'conform'
@@ -32,7 +29,7 @@ return {
 				["markdown"] = { "prettierd" },
 				["markdown.mdx"] = { "prettierd" },
 				["php"] = { "pint" },
-				["nix"] = { "nixfmt" },
+				["nix"] = { "alejandra" },
 				["scss"] = { "prettierd" },
 				["sh"] = { "shfmt" },
 				["svg"] = { "xmlformat" },
