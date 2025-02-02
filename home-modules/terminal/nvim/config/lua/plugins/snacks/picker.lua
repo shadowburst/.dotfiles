@@ -137,6 +137,14 @@ return {
 				end,
 				desc = "Git status",
 			},
+			-- notifications
+			{
+				"<leader>nn",
+				function()
+					Snacks.picker.notifications()
+				end,
+				desc = "All notifications",
+			},
 			-- Search
 			{
 				"<leader>sb",

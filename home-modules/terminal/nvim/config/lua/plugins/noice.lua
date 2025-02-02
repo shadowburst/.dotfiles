@@ -35,7 +35,6 @@ return {
 			},
 		},
 		keys = {
-			{ "<leader>nn", "<cmd>Noice fzf<cr>", desc = "All messages" },
 			{ "<leader>nd", "<cmd>Noice dismiss<cr>", desc = "Dismiss all" },
 		},
 	},
