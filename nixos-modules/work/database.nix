@@ -1,15 +1,16 @@
-{ config, pkgs, ... }:
-
-let
-  network = "database-bridge";
-in
 {
+  config,
+  pkgs,
+  ...
+}: let
+  network = "database-bridge";
+in {
   virtualisation.oci-containers = {
     backend = "docker";
     containers = {
       mysql = {
         image = "mariadb:lts";
-        ports = [ "3306:3306" ];
+        ports = ["3306:3306"];
         extraOptions = [
           "--network=${network}"
         ];
@@ -22,7 +23,7 @@ in
       };
       phpmyadmin = {
         image = "phpmyadmin:latest";
-        ports = [ "8001:80" ];
+        ports = ["8001:80"];
         labels = {
           "traefik.http.routers.phpmyadmin.rule" = "Host(`phpmyadmin.localhost`)";
         };
@@ -43,7 +44,7 @@ in
 
   systemd.services.create-docker-network = with config.virtualisation.oci-containers; {
     serviceConfig.Type = "oneshot";
-    wantedBy = [ "${backend}-phpmyadmin.service" ];
+    wantedBy = ["${backend}-phpmyadmin.service"];
     script = "${pkgs.docker}/bin/docker network inspect ${network} >/dev/null 2>&1 || ${pkgs.docker}/bin/docker network create --driver bridge ${network}";
   };
 }

@@ -1,6 +1,4 @@
-{ ... }:
-
-{
+{...}: {
   services = {
     devmon.enable = true;
     fstrim.enable = true;

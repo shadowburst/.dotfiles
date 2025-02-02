@@ -3,14 +3,11 @@
   lib,
   pkgs,
   ...
-}:
-
-let
+}: let
   tmux-sessionizer = pkgs.writeShellScriptBin "tmux-sessionizer" (
     lib.fileContents ./bin/tmux-sessionizer
   );
-in
-{
+in {
   programs.tmux = {
     enable = true;
     baseIndex = 1;

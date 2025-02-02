@@ -1,7 +1,9 @@
-{ config, pkgs, ... }:
-
 {
-  home.packages = with pkgs; [ nwg-bar ];
+  config,
+  pkgs,
+  ...
+}: {
+  home.packages = with pkgs; [nwg-bar];
 
   xdg.configFile."nwg-bar/bar.json".text = builtins.toJSON [
     {
@@ -25,8 +27,8 @@
       icon = "system-log-out-symbolic";
     }
   ];
-  xdg.configFile."nwg-bar/style.css".text =
-    with config.lib.stylix.colors.withHashtag; # css
+  xdg.configFile."nwg-bar/style.css".text = with config.lib.stylix.colors.withHashtag; # css
+  
     ''
       window {
         background-color: transparent;

@@ -1,6 +1,4 @@
-{ ... }:
-
-{
+{...}: {
   programs.yazi = {
     enable = true;
     enableFishIntegration = true;
@@ -51,18 +49,18 @@
         # General
         {
           run = "close";
-          on = [ "q" ];
+          on = ["q"];
           desc = "Close the current tab, or quit if it is last tab";
         }
         # Navigation
         {
           run = "plugin smart-enter";
-          on = [ "l" ];
+          on = ["l"];
           desc = "Enter the child directory, or open the file";
         }
         {
           run = "plugin smart-enter";
-          on = [ "<Enter>" ];
+          on = ["<Enter>"];
           desc = "Enter the child directory, or open the file";
         }
         # Operations
@@ -135,7 +133,7 @@
       completion.prepend_keymap = [
         {
           run = "close --submit";
-          on = [ "<C-y>" ];
+          on = ["<C-y>"];
           desc = "Submit the completion";
         }
       ];

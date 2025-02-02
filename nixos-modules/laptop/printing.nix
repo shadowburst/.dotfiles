@@ -1,6 +1,4 @@
-{ ... }:
-
-{
+{...}: {
   services = {
     printing.enable = true;
     avahi = {

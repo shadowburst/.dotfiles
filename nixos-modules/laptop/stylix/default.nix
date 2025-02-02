@@ -3,12 +3,10 @@
   inputs,
   pkgs,
   ...
-}:
+}: {
+  imports = [inputs.stylix.nixosModules.stylix];
 
-{
-  imports = [ inputs.stylix.nixosModules.stylix ];
-
-  fonts.packages = with pkgs; [ nerd-fonts.jetbrains-mono ];
+  fonts.packages = with pkgs; [nerd-fonts.jetbrains-mono];
 
   stylix = {
     enable = true;

@@ -4,13 +4,10 @@
   lib,
   pkgs,
   ...
-}:
-
-let
+}: let
   launch-default = pkgs.writeShellScriptBin "launch-default" (lib.fileContents ./bin/launch-default);
   watch-monitors = pkgs.writeShellScriptBin "watch-monitors" (lib.fileContents ./bin/watch-monitors);
-in
-{
+in {
   imports = [
     ./hypridle.nix
     ./hyprlock.nix
@@ -20,7 +17,7 @@ in
   wayland.windowManager.hyprland = {
     enable = true;
     package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-    systemd.variables = [ "--all" ];
+    systemd.variables = ["--all"];
     plugins = [
       inputs.hypr-dynamic-cursors.packages.${pkgs.system}.hypr-dynamic-cursors
     ];
