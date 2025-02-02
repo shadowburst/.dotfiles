@@ -18,7 +18,10 @@ return {
 		opts = {
 			picker = {
 				sources = {
-					buffers = source_config,
+					buffers = vim.tbl_extend("force", source_config, {
+						current = false,
+						unloaded = false,
+					}),
 					files = source_config,
 					grep = source_config,
 				},
