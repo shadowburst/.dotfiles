@@ -53,7 +53,6 @@ return {
 				},
 				neogit = true,
 				noice = true,
-				notify = true,
 				render_markdown = true,
 				snacks = true,
 				treesitter = true,
