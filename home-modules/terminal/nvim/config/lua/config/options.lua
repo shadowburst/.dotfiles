@@ -60,16 +60,14 @@ opt.winminwidth = 5 -- Minimum window width
 opt.wrap = false -- Disable line wrap
 opt.whichwrap = "<,>,[,],h,l"
 opt.fillchars = {
-	foldopen = "",
-	foldclose = "",
-	fold = " ",
-	foldsep = " ",
-	diff = " ",
-	eob = " ",
+  foldopen = "",
+  foldclose = "",
+  fold = " ",
+  foldsep = " ",
+  diff = " ",
+  eob = " ",
 }
 
 vim.diagnostic.config({
-	float = {
-		border = "rounded",
-	},
+  float = { border = "rounded" },
 })
