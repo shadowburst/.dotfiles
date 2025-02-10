@@ -55,7 +55,6 @@
     };
 
     shellInit = ''
-      set TERM xterm-256color
       set fish_greeting
       set fish_color_param foreground
       set fish_color_command blue

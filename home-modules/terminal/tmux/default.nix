@@ -15,7 +15,7 @@ in {
     mouse = true;
     terminal = "xterm-256color";
     extraConfig = with config.lib.stylix.colors.withHashtag; ''
-      set -ga terminal-overrides ",xterm-256color*:Tc"
+      set -as terminal-features ",xterm-256color:RGB"
 
       # +--- Status bar ---+
       set -g status-position top
