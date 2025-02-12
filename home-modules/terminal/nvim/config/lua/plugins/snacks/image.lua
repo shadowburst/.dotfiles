@@ -4,7 +4,7 @@ return {
     ---@module 'snacks'
     ---@type snacks.Config
     opts = {
-      image = { force = true },
+      image = {},
     },
   },
 }

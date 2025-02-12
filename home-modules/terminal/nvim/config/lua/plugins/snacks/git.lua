@@ -6,9 +6,7 @@ return {
         "<leader>gb",
         function()
           Snacks.git.blame_line({
-            win = {
-              backdrop = false,
-            },
+            win = { backdrop = false },
           })
         end,
         desc = "Blame line",
