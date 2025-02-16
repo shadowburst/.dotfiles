@@ -29,7 +29,7 @@ require("lazy").setup({
   },
   ui = {
     backdrop = 100,
-    border = "rounded",
+    border = require("util.ui").border,
   },
   pkg = {
     sources = {

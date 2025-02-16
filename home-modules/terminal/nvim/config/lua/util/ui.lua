@@ -1,5 +1,7 @@
 local M = {}
 
+M.border = "rounded"
+
 -- Thank you LazyVim
 function M.foldexpr()
   local buf = vim.api.nvim_get_current_buf()

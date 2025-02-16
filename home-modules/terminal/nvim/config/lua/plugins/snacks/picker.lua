@@ -30,7 +30,7 @@ return {
           default = {
             layout = {
               fullscreen = true,
-              border = "rounded",
+              border = require("util.ui").border,
               box = "vertical",
               { win = "preview" },
               {
@@ -57,7 +57,7 @@ return {
               height = 0.4,
               title = "{title} {live} {flags}",
               title_pos = "center",
-              border = "rounded",
+              border = require("util.ui").border,
               box = "vertical",
               {
                 win = "input",

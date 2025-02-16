@@ -7,7 +7,7 @@ return {
     ---@type grapple.options
     opts = {
       scope = "git_branch",
-      win_opts = { border = "rounded" },
+      win_opts = { border = require("util.ui").border },
     },
     keys = {
       { "<leader>;", "<cmd>Grapple toggle<cr>", desc = "Grapple toggle tag" },

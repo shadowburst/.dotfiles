@@ -27,7 +27,7 @@ return {
       views = {
         hover = {
           border = {
-            style = "rounded",
+            style = require("util.ui").border,
             padding = { 0, 1 },
           },
           position = {

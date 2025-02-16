@@ -14,7 +14,7 @@ opt.cursorline = true -- Enable highlighting of the current line
 opt.expandtab = true -- Use spaces instead of tabs
 opt.fileencoding = "utf-8"
 opt.foldenable = true
-opt.foldexpr = "v:lua.require('utils.ui').foldexpr()"
+opt.foldexpr = "v:lua.require('util.ui').foldexpr()"
 opt.foldlevel = 99
 opt.foldlevelstart = 99
 opt.foldmethod = "expr"
@@ -69,5 +69,5 @@ opt.fillchars = {
 }
 
 vim.diagnostic.config({
-  float = { border = "rounded" },
+  float = { border = require("util.ui").border },
 })
