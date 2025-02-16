@@ -33,7 +33,7 @@ set("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit all" })
 set("n", "<leader>bb", "<cmd>e #<cr>", { desc = "Switch to other buffer" })
 
 -- Quickfix
-set("n", "<leader>xq", "<cmd>clist<cr>", { desc = "Quickfix list" })
+set("n", "<leader>xq", "<cmd>copen<cr>", { desc = "Quickfix list" })
 
 -- Execute lua code under cursor
 set("n", "<leader>vx", ":.lua<cr>", { desc = "Execute lua code" })
