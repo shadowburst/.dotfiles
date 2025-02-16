@@ -11,13 +11,15 @@ return {
     ---@module 'blink.cmp'
     ---@type blink.cmp.Config
     opts = {
+      cmdline = {
+        keymap = { preset = "enter" },
+      },
       keymap = {
         preset = "default",
         ["<C-Space>"] = {},
         ["<C-n>"] = { "show", "select_next", "fallback" },
         ["<C-k>"] = { "snippet_forward", "fallback" },
         ["<C-j>"] = { "snippet_backward", "fallback" },
-        cmdline = { preset = "enter" },
       },
       appearance = { nerd_font_variant = "normal" },
       sources = {
