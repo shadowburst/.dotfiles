@@ -2,6 +2,10 @@
   stylix = {
     autoEnable = false;
     polarity = "dark";
+    iconTheme = {
+      name = "kora";
+      package = pkgs.kora-icon-theme;
+    };
     targets = {
       gtk = {
         enable = true;
@@ -13,13 +17,6 @@
         enable = true;
         hyprpaper.enable = true;
       };
-    };
-  };
-
-  gtk = {
-    iconTheme = {
-      name = "kora";
-      package = pkgs.kora-icon-theme;
     };
   };
 }
