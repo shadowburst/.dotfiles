@@ -3,8 +3,9 @@
     autoEnable = false;
     polarity = "dark";
     iconTheme = {
-      name = "kora";
+      enable = true;
       package = pkgs.kora-icon-theme;
+      dark = "kora";
     };
     targets = {
       gtk = {
