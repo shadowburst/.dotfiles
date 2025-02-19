@@ -24,6 +24,7 @@ return {
           }),
           files = source_config,
           grep = source_config,
+          recent = source_config,
         },
         layout = { preset = "default" },
         layouts = {
