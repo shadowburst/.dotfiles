@@ -9,6 +9,19 @@ in {
     backend = "docker";
     containers = {
       mysql = {
+        image = "mysql:lts";
+        ports = ["3305:3306"];
+        extraOptions = [
+          "--network=${network}"
+        ];
+        environment = {
+          MYSQL_ALLOW_EMPTY_PASSWORD = "1";
+        };
+        volumes = [
+          "mysqldb:/var/lib/mysql"
+        ];
+      };
+      mariadb = {
         image = "mariadb:lts";
         ports = ["3306:3306"];
         extraOptions = [
@@ -18,7 +31,7 @@ in {
           MARIADB_ALLOW_EMPTY_ROOT_PASSWORD = "1";
         };
         volumes = [
-          "db:/var/lib/mysql"
+          "mariadbdb:/var/lib/mysql"
         ];
       };
       phpmyadmin = {
@@ -34,7 +47,7 @@ in {
           "mysql"
         ];
         environment = {
-          PMA_HOST = "mysql";
+          PMA_HOSTS = "mariadb,mysql";
           PMA_USER = "root";
           UPLOAD_LIMIT = "1G";
         };
