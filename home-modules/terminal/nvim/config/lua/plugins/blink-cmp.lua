@@ -7,7 +7,7 @@ return {
       "rafamadriz/friendly-snippets",
     },
     version = "v0.*",
-    event = { "InsertEnter" },
+    event = { "CmdlineEnter", "InsertEnter" },
     ---@module 'blink.cmp'
     ---@type blink.cmp.Config
     opts = {
