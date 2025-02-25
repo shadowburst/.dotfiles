@@ -12,7 +12,12 @@ return {
     ---@type blink.cmp.Config
     opts = {
       cmdline = {
-        keymap = { preset = "enter" },
+        keymap = {
+          preset = "enter",
+          ["<C-Space>"] = {},
+          ["<esc>"] = { "hide", "fallback" },
+          ["<C-n>"] = { "show", "select_next", "fallback" },
+        },
       },
       keymap = {
         preset = "default",
@@ -37,6 +42,7 @@ return {
           selection = { auto_insert = false },
         },
         menu = {
+          auto_show = function(ctx) return ctx.mode ~= "cmdline" end,
           draw = {
             columns = {
               { "label", "label_description", gap = 1 },
