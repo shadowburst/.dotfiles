@@ -1,6 +1,7 @@
 return {
   {
     "mikavilpas/yazi.nvim",
+    dependencies = { "folke/snacks.nvim" },
     ---@module 'yazi'
     ---@type YaziConfig
     opts = {
