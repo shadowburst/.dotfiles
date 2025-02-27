@@ -13,7 +13,7 @@ return {
     opts = {
       cmdline = {
         keymap = {
-          preset = "enter",
+          preset = "cmdline",
           ["<C-Space>"] = {},
           ["<esc>"] = { "hide", "fallback" },
           ["<C-n>"] = { "show", "select_next", "fallback" },
