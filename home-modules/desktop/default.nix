@@ -1,7 +1,6 @@
 {pkgs, ...}: {
   imports = [
     ./ags
-    ./discord.nix
     ./hyprland
     ./kitty.nix
     ./mpv.nix
@@ -15,6 +14,7 @@
 
   home.packages = with pkgs; [
     brave
+    discord
     # ente-auth
     gimp
     nautilus
