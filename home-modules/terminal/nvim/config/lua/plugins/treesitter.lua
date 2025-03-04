@@ -4,7 +4,6 @@ return {
     dependencies = {
       "folke/ts-comments.nvim",
       "nvim-treesitter/nvim-treesitter-context",
-      "nvim-treesitter/nvim-treesitter-textobjects",
     },
     build = ":TSUpdate",
     event = { "BufNewFile", "BufReadPost", "BufWritePre" },
