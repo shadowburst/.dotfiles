@@ -8,19 +8,19 @@ in {
   virtualisation.oci-containers = {
     backend = "docker";
     containers = {
-      mysql = {
-        image = "mysql:lts";
-        ports = ["3305:3306"];
-        extraOptions = [
-          "--network=${network}"
-        ];
-        environment = {
-          MYSQL_ALLOW_EMPTY_PASSWORD = "1";
-        };
-        volumes = [
-          "mysqldb:/var/lib/mysql"
-        ];
-      };
+      # mysql = {
+      #   image = "mysql:lts";
+      #   ports = ["3305:3306"];
+      #   extraOptions = [
+      #     "--network=${network}"
+      #   ];
+      #   environment = {
+      #     MYSQL_ALLOW_EMPTY_PASSWORD = "1";
+      #   };
+      #   volumes = [
+      #     "mysqldb:/var/lib/mysql"
+      #   ];
+      # };
       mariadb = {
         image = "mariadb:lts";
         ports = ["3306:3306"];
@@ -44,10 +44,12 @@ in {
           "--network=${network}"
         ];
         dependsOn = [
-          "mysql"
+          # "mysql"
+          "mariadb"
         ];
         environment = {
-          PMA_HOSTS = "mariadb,mysql";
+          PMA_HOST = "mariadb";
+          # PMA_HOSTS = "mariadb,mysql";
           PMA_USER = "root";
           UPLOAD_LIMIT = "1G";
         };
