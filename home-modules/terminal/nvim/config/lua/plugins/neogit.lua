@@ -1,3 +1,5 @@
+local function logs() require("neogit").action("log", "log_all_branches", { "--graph", "--decorate" })() end
+
 return {
   {
     "NeogitOrg/neogit",
@@ -26,11 +28,40 @@ return {
         hunk = { "", "" },
       },
     },
+    init = function()
+      local group = vim.api.nvim_create_augroup("custom_neogit", { clear = true })
+      vim.api.nvim_create_autocmd("User", {
+        pattern = {
+          "NeogitCherryPick",
+          "NeogitBranchCheckout",
+          "NeogitBranchCreated",
+          "NeogitBranchDelete",
+          "NeogitBranchReset",
+          "NeogitBranchRename",
+          "NeogitRebase",
+          "NeogitReset",
+          "NeogitTagCreate",
+          "NeogitTagDelete",
+          "NeogitCommitComplete",
+          "NeogitPushComplete",
+          "NeogitPullComplete",
+          "NeogitFetchComplete",
+        },
+        group = group,
+        callback = function(event)
+          local buffername = vim.api.nvim_buf_get_name(event.buf)
+          if buffername:match("NeogitLogView$") then
+            vim.fn.feedkeys("q", "x")
+            logs()
+          end
+        end,
+      })
+    end,
     keys = {
       { "<leader>gg", "<cmd>Neogit<cr>", desc = "Open neogit" },
       {
         "<leader>gl",
-        function() require("neogit").action("log", "log_all_branches", { "--graph", "--decorate" })() end,
+        logs,
         desc = "Git logs",
       },
     },
