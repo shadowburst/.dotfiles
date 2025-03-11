@@ -38,7 +38,7 @@ in {
         "transmission-daemon"
       ];
       exec = [
-        "hyprpanel -q; hyprpanel"
+        "pkill hyprpanel; hyprpanel"
         "${pkgs.systemd}/bin/systemctl --user is-active kanshi && ${pkgs.systemd}/bin/systemctl --user reload-or-restart kanshi"
       ];
       general = {
