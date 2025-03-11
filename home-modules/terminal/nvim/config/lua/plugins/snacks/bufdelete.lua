@@ -9,7 +9,9 @@ return {
       },
       {
         "<leader>bo",
-        function() Snacks.bufdelete.other() end,
+        function()
+          Snacks.bufdelete({ filter = function(buf) return #vim.fn.win_findbuf(buf) == 0 end })
+        end,
         desc = "Close other buffers",
       },
     },
