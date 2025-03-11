@@ -81,4 +81,9 @@ in {
   home.packages = [
     tmux-sessionizer
   ];
+
+  home.file.".local/share/tmux/templates" = {
+    source = ./templates;
+    recursive = true;
+  };
 }

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+session=$1
+
+tmux new-window -t "$session" -c "#{pane_current_path}"
+tmux send -t "$session:2.1" -c "#{pane_current_path}" "lazydocker" Enter
+tmux splitw -t "$session:2" -c "#{pane_current_path}" -h
+tmux select-window -t "$session:1"
