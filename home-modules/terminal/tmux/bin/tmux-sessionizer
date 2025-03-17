@@ -25,9 +25,21 @@ if ! tmux has-session -t="$session" 2>/dev/null; then
   tmux new-session -ds "$session" -c "$choice" -n "$editor" "$editor; ${SHELL:-bash}"
 
   template_directory=~/.local/share/tmux/templates
-  template=$(
-    echo -e "No template\n$(find -L $template_directory -type f -executable -printf "%f\n")" | fzf
-  )
+  cache=~/.cache/tmux/templates.json
+  if [[ ! -f "${cache}" ]]; then
+    mkdir -p "$(dirname $cache)"
+    echo "{}" >$cache
+  fi
+  if jq -e ".[\"${session}\"]" "${cache}" >/dev/null; then
+    template=$(jq -r ".[\"${session}\"]" "${cache}")
+  else
+    template=$(
+      echo -e "No template\n$(find -L $template_directory -type f -executable -printf "%f\n")" | fzf
+    )
+    jq ". + { \"${session}\": \"${template}\" }" $cache >"${cache}.tmp"
+    mv "${cache}.tmp" $cache
+  fi
+
   template_script="$template_directory/$template"
   if [[ -f $template_script ]]; then
     $template_script "$session"
