@@ -1,6 +1,5 @@
 {
   config,
-  inputs,
   lib,
   pkgs,
   ...
@@ -16,11 +15,7 @@ in {
 
   wayland.windowManager.hyprland = {
     enable = true;
-    package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
     systemd.variables = ["--all"];
-    plugins = [
-      inputs.hypr-dynamic-cursors.packages.${pkgs.system}.hypr-dynamic-cursors
-    ];
     settings = {
       "$mod" = "SUPER";
       "$terminal" = config.home.sessionVariables.TERMINAL;
@@ -231,14 +226,6 @@ in {
         # Other
         "$mod SHIFT, p, exec, hyprpicker -a"
       ];
-      plugin = {
-        dynamic-cursors = {
-          mode = "stretch";
-          shake = {
-            effects = true;
-          };
-        };
-      };
       ecosystem = {
         no_update_news = true;
         no_donation_nag = true;
