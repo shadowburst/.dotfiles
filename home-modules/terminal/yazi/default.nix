@@ -46,6 +46,14 @@
           }
         ];
       };
+      open = {
+        prepend_rules = [
+          {
+            name = "*.zip";
+            use = "extract";
+          }
+        ];
+      };
     };
 
     keymap = {
