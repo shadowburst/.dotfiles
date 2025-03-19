@@ -14,6 +14,7 @@ return {
           LineNrAbove = { link = "LineNr" },
           LineNrBelow = { link = "LineNr" },
           Pmenu = { bg = colors.mantle, fg = colors.blue },
+          PmenuExtra = { fg = colors.blue },
           NormalFloat = { bg = colors.mantle },
           FloatBorder = { bg = colors.mantle },
           FloatTitle = { bg = colors.mantle },
