@@ -31,6 +31,7 @@ return {
           Snacks.toggle.option("relativenumber", { name = "relative number" }):map("<leader>tl")
           Snacks.toggle.option("wrap", { name = "wrap" }):map("<leader>tw")
           Snacks.toggle.diagnostics({ name = "diagnostics" }):map("<leader>td")
+          Snacks.toggle.profiler():map("<leader>tp")
           Snacks.toggle.zen():map("<leader>z")
         end,
       })
