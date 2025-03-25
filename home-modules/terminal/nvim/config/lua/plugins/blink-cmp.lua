@@ -6,7 +6,7 @@ return {
       "folke/lazydev.nvim",
       "rafamadriz/friendly-snippets",
     },
-    version = "v0.*",
+    version = "v1.*",
     event = { "CmdlineEnter", "InsertEnter" },
     ---@module 'blink.cmp'
     ---@type blink.cmp.Config
