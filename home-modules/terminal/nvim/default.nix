@@ -66,5 +66,5 @@
     MANPAGER = "nvim +Man!";
   };
 
-  home.file.".cache/nvim/nix/vue_typescript_plugin".text = "${pkgs.vue-language-server}/lib/node_modules/@vue/language-server";
+  home.file.".cache/custom/nvim/vue_typescript_plugin".text = "${pkgs.vue-language-server}/lib/node_modules/@vue/language-server";
 }
