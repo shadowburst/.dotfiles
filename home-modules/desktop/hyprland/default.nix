@@ -122,10 +122,10 @@ in {
         "animation slide top, power"
       ];
       windowrule = [
-        "float, org.gnome.Calculator"
-        "minsize 300 500, org.gnome.Calculator"
-        "float, xdg-desktop-portal-gtk"
-        "minsize 1000 800, xdg-desktop-portal-gtk"
+        "float, class:org.gnome.Calculator"
+        "minsize 300 500, class:org.gnome.Calculator"
+        "float, class:xdg-desktop-portal-gtk"
+        "minsize 1000 800, class:xdg-desktop-portal-gtk"
       ];
       bindm = [
         "$mod, mouse:272, movewindow"
