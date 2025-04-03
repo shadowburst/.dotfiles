@@ -13,6 +13,7 @@ in {
     baseIndex = 1;
     escapeTime = 0;
     mouse = true;
+    keyMode = "vi";
     terminal = "xterm-256color";
     extraConfig = with config.lib.stylix.colors.withHashtag; ''
       set -as terminal-features ",xterm-256color:RGB"
