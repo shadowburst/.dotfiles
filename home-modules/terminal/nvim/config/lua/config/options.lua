@@ -67,7 +67,3 @@ opt.fillchars = {
   diff = " ",
   eob = " ",
 }
-
-vim.diagnostic.config({
-  float = { border = require("util.ui").border },
-})
