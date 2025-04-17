@@ -36,7 +36,7 @@ return {
       Snacks.toggle
         .new({
           name = "colorizer",
-          get = function() return c.is_buffer_attached() >= 0 end,
+          get = function() return c.is_buffer_attached() end,
           set = function(state)
             if state then
               c.attach_to_buffer()
@@ -45,7 +45,7 @@ return {
             end
           end,
         })
-        :map("<leader>tc")
+        :map("<leader>tC")
     end,
   },
 }
