@@ -2,7 +2,8 @@ return {
   {
     "zbirenbaum/copilot.lua",
     dependencies = { "folke/snacks.nvim" },
-    lazy = false,
+    cmd = { "Copilot" },
+    event = "InsertEnter",
     opts = {
       suggestion = {
         auto_trigger = true,
@@ -15,8 +16,10 @@ return {
       },
     },
     config = function(_, opts)
-      local enabled = false
+      require("copilot").setup(opts)
+      require("copilot.command").disable()
 
+      local enabled = false
       Snacks.toggle
         .new({
           name = "copilot",
@@ -24,11 +27,7 @@ return {
           set = function(state)
             enabled = state
             if enabled then
-              if require("copilot").setup_done then
-                require("copilot.command").enable()
-              else
-                require("copilot").setup(opts)
-              end
+              require("copilot.command").enable()
             else
               require("copilot.command").disable()
             end
