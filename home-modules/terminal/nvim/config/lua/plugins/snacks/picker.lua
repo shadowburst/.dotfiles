@@ -99,8 +99,9 @@ return {
         function()
           Snacks.picker.smart({
             title = "Buffers",
-            multi = false,
             finder = "buffers",
+            format = "buffer",
+            multi = false,
             current = false,
             win = {
               input = {
