@@ -218,10 +218,9 @@ in {
         ", xf86monbrightnessup, exec, brightnessctl -s set 5%+"
 
         # Screenshots
-        ", print, exec, hyprshot --freeze --clipboard-only -m window"
-        "SHIFT, print, exec, hyprshot --freeze --clipboard-only -m region"
-        "CTRL, print, exec, hyprshot --freeze -m window"
-        "CTRL SHIFT, print, exec, hyprshot --freeze -m region"
+        ", print, exec, hyprshot --freeze --raw -m window | swappy -f -"
+        "SHIFT, print, exec, hyprshot --freeze --raw -m region | swappy -f -"
+        "CTRL, print, exec, hyprshot --freeze --raw -m active | swappy -f -"
 
         # Other
         "$mod SHIFT, p, exec, hyprpicker -a"
@@ -244,6 +243,7 @@ in {
     pavucontrol
     playerctl
     socat
+    swappy
     walker
     wdisplays
     wl-clipboard
