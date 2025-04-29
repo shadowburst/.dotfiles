@@ -8,6 +8,7 @@
   watch-monitors = pkgs.writeShellScriptBin "watch-monitors" (lib.fileContents ./bin/watch-monitors);
 in {
   imports = [
+    ./ashell.nix
     ./hypridle.nix
     ./hyprlock.nix
     ./hyprpaper.nix
@@ -33,7 +34,7 @@ in {
         "transmission-daemon"
       ];
       exec = [
-        "pkill hyprpanel; hyprpanel"
+        "pkill ashell; ashell"
         "${pkgs.systemd}/bin/systemctl --user is-active kanshi && ${pkgs.systemd}/bin/systemctl --user reload-or-restart kanshi"
       ];
       general = {

@@ -14,11 +14,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    hyprpanel = {
-      url = "github:Jas-SinghFSU/HyprPanel";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     catppuccin.url = "github:catppuccin/nix";
   };
 
@@ -43,11 +38,6 @@
               ;
           };
           modules = with inputs; [
-            {
-              nixpkgs.overlays = [
-                inputs.hyprpanel.overlay
-              ];
-            }
             ./hosts/${host}/configuration.nix
 
             home-manager.nixosModules.home-manager
