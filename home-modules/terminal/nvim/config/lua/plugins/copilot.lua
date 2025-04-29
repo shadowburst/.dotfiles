@@ -35,5 +35,18 @@ return {
         })
         :map("<leader>tc")
     end,
+    keys = {
+      {
+        "<Tab>",
+        mode = { "i" },
+        function()
+          local copilot = require("copilot.suggestion")
+          if copilot.is_visible() then
+            copilot.accept()
+          end
+        end,
+        desc = "Copilot completion",
+      },
+    },
   },
 }
