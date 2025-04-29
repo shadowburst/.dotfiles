@@ -12,6 +12,7 @@ in {
     ./hypridle.nix
     ./hyprlock.nix
     ./hyprpaper.nix
+    ./shikane.nix
   ];
 
   wayland.windowManager.hyprland = {
@@ -35,7 +36,6 @@ in {
       ];
       exec = [
         "pkill ashell; ashell"
-        "${pkgs.systemd}/bin/systemctl --user is-active kanshi && ${pkgs.systemd}/bin/systemctl --user reload-or-restart kanshi"
       ];
       general = {
         border_size = 2;
