@@ -8,7 +8,6 @@
   watch-monitors = pkgs.writeShellScriptBin "watch-monitors" (lib.fileContents ./bin/watch-monitors);
 in {
   imports = [
-    ./ashell.nix
     ./hypridle.nix
     ./hyprlock.nix
     ./hyprpaper.nix
@@ -35,7 +34,7 @@ in {
         "transmission-daemon"
       ];
       exec = [
-        "pkill ashell; ashell"
+        "pkill hyprpanel; hyprpanel"
       ];
       general = {
         border_size = 2;

@@ -1,5 +1,6 @@
 {pkgs, ...}: {
   imports = [
+    ./ags
     ./hyprland
     ./kitty.nix
     ./mpv.nix
