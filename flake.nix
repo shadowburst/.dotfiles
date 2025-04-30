@@ -26,6 +26,7 @@
     hosts = [
       "xps-9310"
       "xps-9305"
+      "zephyrus"
     ];
     stateVersion = "24.05";
     username = "pbaudry";
