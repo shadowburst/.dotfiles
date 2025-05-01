@@ -15,12 +15,16 @@
 
     initrd.luks.devices."luks-110fffaf-55a6-4c06-b218-0896a9217436".device = "/dev/disk/by-uuid/110fffaf-55a6-4c06-b218-0896a9217436";
     loader = {
-      systemd-boot.enable = true;
-
+      grub = {
+        enable = true;
+        devices = ["nodev"];
+        efiSupport = true;
+        useOSProber = true;
+        configurationLimit = 5;
+      };
       efi = {
         canTouchEfiVariables = true;
       };
-
       timeout = 1;
     };
   };
