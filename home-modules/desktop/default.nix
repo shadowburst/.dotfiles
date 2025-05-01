@@ -14,7 +14,7 @@
     brave
     discord
     # ente-auth
-    gimp
+    gimp3
     pdfarranger
     simple-scan
   ];
