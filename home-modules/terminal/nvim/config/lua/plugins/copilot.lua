@@ -17,9 +17,9 @@ return {
     },
     config = function(_, opts)
       require("copilot").setup(opts)
-      require("copilot.command").disable()
+      -- require("copilot.command").disable()
 
-      local enabled = false
+      local enabled = true
       Snacks.toggle
         .new({
           name = "copilot",
