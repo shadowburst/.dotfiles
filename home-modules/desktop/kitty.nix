@@ -13,7 +13,7 @@
       window_padding_width = "4 0";
       confirm_os_window_close = 0;
 
-      background_opacity = "0.9";
+      background_opacity = "1";
       cursor_trail = 3;
     };
     themeFile = "Catppuccin-Macchiato";

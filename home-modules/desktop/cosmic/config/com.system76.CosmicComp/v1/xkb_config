@@ -1,0 +1,9 @@
+(
+    rules: "",
+    model: "pc104",
+    layout: "fr",
+    variant: "azerty",
+    options: Some("terminate:ctrl_alt_bksp,caps:swapescape"),
+    repeat_delay: 600,
+    repeat_rate: 25,
+)

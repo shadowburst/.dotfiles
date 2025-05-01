@@ -1,10 +1,8 @@
 {pkgs, ...}: {
   imports = [
-    # ./ags
-    # ./hyprland
+    ./cosmic
     ./kitty.nix
     ./mpv.nix
-    # ./nwg-bar
     ./transmission.nix
   ];
 
@@ -17,7 +15,6 @@
     discord
     # ente-auth
     gimp
-    # nautilus
     pdfarranger
     simple-scan
   ];
