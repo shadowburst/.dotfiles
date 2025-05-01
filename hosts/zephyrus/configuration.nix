@@ -35,4 +35,14 @@
   };
 
   networking.hostName = "zephyrus";
+
+  services.asusd = {
+    asusdConfig.source = ./config/asusd.ron;
+    auraConfigs."19b6".source = ./config/aura_19b6.ron;
+  };
+
+  environment.etc."asusd/slash.ron" = {
+    source = ./config/slash.ron;
+    mode = "0644";
+  };
 }

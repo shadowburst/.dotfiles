@@ -1,0 +1,12 @@
+(
+    enabled: true,
+    brightness: 100,
+    display_interval: 5,
+    display_mode: Flow,
+    show_on_boot: true,
+    show_on_shutdown: true,
+    show_on_sleep: false,
+    show_on_battery: false,
+    show_battery_warning: true,
+    show_on_lid_closed: false,
+)
