@@ -49,4 +49,6 @@
     source = ./config/slash.ron;
     mode = "0644";
   };
+
+  systemd.extraConfig = "DefaultTimeoutStopSec=10s";
 }
