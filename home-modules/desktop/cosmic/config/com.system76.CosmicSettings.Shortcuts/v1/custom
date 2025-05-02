@@ -2,6 +2,13 @@
     (
         modifiers: [
             Super,
+        ],
+        key: "quotedbl",
+    ): Workspace(3),
+    (
+        modifiers: [
+            Super,
+            Alt,
             Shift,
         ],
         key: "Up",
@@ -9,53 +16,10 @@
     (
         modifiers: [
             Super,
-            Ctrl,
         ],
-        key: "Left",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-            Ctrl,
-        ],
-        key: "Up",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-            Alt,
-            Shift,
-        ],
-        key: "j",
-    ): MoveToOutput(Down),
-    (
-        modifiers: [
-            Super,
-            Alt,
-        ],
-        key: "Down",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-            Shift,
-        ],
-        key: "apostrophe",
-    ): MoveToWorkspace(4),
-    (
-        modifiers: [
-            Super,
-            Shift,
-        ],
-        key: "parenleft",
-    ): MoveToWorkspace(5),
-    (
-        modifiers: [
-            Super,
-            Shift,
-        ],
-        key: "1",
-    ): Disable,
+        key: "d",
+        description: Some("Launch PDE"),
+    ): Spawn("$TERMINAL -e tmux-sessionizer"),
     (
         modifiers: [
             Super,
@@ -66,49 +30,61 @@
     (
         modifiers: [
             Super,
-        ],
-        key: "3",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "Left",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
             Shift,
         ],
-        key: "7",
-    ): Disable,
+        key: "ampersand",
+    ): MoveToWorkspace(1),
     (
         modifiers: [
             Super,
-            Shift,
-        ],
-        key: "eacute",
-    ): MoveToWorkspace(2),
-    (
-        modifiers: [
-            Super,
-            Shift,
+            Ctrl,
         ],
         key: "Down",
     ): Disable,
     (
         modifiers: [
             Super,
+            Shift,
         ],
-        key: "e",
-        description: Some("Launch File manager"),
-    ): Spawn("$TERMINAL -e yazi"),
+        key: "8",
+    ): Disable,
     (
         modifiers: [
             Super,
-            Ctrl,
+        ],
+        key: "ampersand",
+    ): Workspace(1),
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "6",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "t",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Shift,
         ],
         key: "Right",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "0",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "7",
     ): Disable,
     (
         modifiers: [
@@ -122,18 +98,19 @@
             Super,
             Shift,
         ],
-        key: "6",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "y",
-    ): Disable,
+        key: "egrave",
+    ): MoveToWorkspace(7),
     (
         modifiers: [
             Super,
             Alt,
+            Shift,
+        ],
+        key: "Down",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
             Shift,
         ],
         key: "Down",
@@ -149,6 +126,38 @@
     (
         modifiers: [
             Super,
+            Alt,
+            Shift,
+        ],
+        key: "j",
+    ): MoveToOutput(Down),
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "y",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Ctrl,
+        ],
+        key: "k",
+    ): Disable,
+    (
+        modifiers: [
+            Alt,
+        ],
+        key: "Tab",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+    ): System(Launcher),
+    (
+        modifiers: [
+            Super,
         ],
         key: "9",
     ): Disable,
@@ -156,9 +165,256 @@
         modifiers: [
             Super,
         ],
-        key: "d",
-        description: Some("Launch PDE"),
-    ): Spawn("$TERMINAL -e tmux-sessionizer"),
+        key: "f",
+    ): Maximize,
+    (
+        modifiers: [
+            Super,
+            Ctrl,
+        ],
+        key: "h",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "apostrophe",
+    ): MoveToWorkspace(4),
+    (
+        modifiers: [
+            Super,
+            Ctrl,
+        ],
+        key: "Left",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "5",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Ctrl,
+        ],
+        key: "j",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Alt,
+            Shift,
+        ],
+        key: "Right",
+    ): Disable,
+    (
+        modifiers: [],
+        key: "XF86KbdBrightnessDown",
+    ): System(KeyboardBrightnessDown),
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "2",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "3",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Ctrl,
+            Shift,
+        ],
+        key: "Left",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Alt,
+        ],
+        key: "Up",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Ctrl,
+        ],
+        key: "Up",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "Up",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "minus",
+    ): MoveToWorkspace(6),
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "parenleft",
+    ): Workspace(5),
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "e",
+        description: Some("Launch File manager"),
+    ): Spawn("$TERMINAL -e yazi"),
+    (
+        modifiers: [
+            Super,
+            Alt,
+        ],
+        key: "j",
+    ): SwitchOutput(Down),
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "2",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "g",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "1",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Alt,
+            Shift,
+        ],
+        key: "Left",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "apostrophe",
+    ): Workspace(4),
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "Left",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "p",
+    ): ToggleSticky,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "Right",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "1",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "space",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Alt,
+        ],
+        key: "Right",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Alt,
+        ],
+        key: "Down",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "m",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Alt,
+            Shift,
+        ],
+        key: "k",
+    ): MoveToOutput(Up),
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "Up",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Ctrl,
+        ],
+        key: "Right",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Shift,
+        ],
+        key: "9",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+            Alt,
+        ],
+        key: "Left",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "Down",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "8",
+    ): Disable,
     (
         modifiers: [
             Super,
@@ -170,35 +426,27 @@
             Super,
             Shift,
         ],
-        key: "Left",
+        key: "4",
     ): Disable,
     (
         modifiers: [
             Super,
             Shift,
+        ],
+        key: "eacute",
+    ): MoveToWorkspace(2),
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "4",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
         ],
         key: "egrave",
-    ): MoveToWorkspace(7),
-    (
-        modifiers: [
-            Super,
-            Ctrl,
-            Shift,
-        ],
-        key: "Left",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-            Alt,
-            Shift,
-        ],
-        key: "Up",
-    ): Disable,
-    (
-        modifiers: [],
-        key: "XF86Launch4",
-    ): System(Screenshot),
+    ): Workspace(7),
     (
         modifiers: [
             Super,
@@ -208,27 +456,47 @@
     (
         modifiers: [
             Super,
-            Shift,
+            Alt,
         ],
-        key: "Right",
+        key: "k",
+    ): SwitchOutput(Up),
+    (
+        modifiers: [],
+        key: "XF86KbdBrightnessUp",
+    ): System(KeyboardBrightnessUp),
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "5",
     ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "Left",
+    ): Disable,
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "eacute",
+    ): Workspace(2),
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "3",
+    ): Disable,
+    (
+        modifiers: [],
+        key: "XF86Launch4",
+    ): System(Screenshot),
     (
         modifiers: [
             Super,
             Ctrl,
-        ],
-        key: "h",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "2",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-            Alt,
+            Shift,
         ],
         key: "Up",
     ): Disable,
@@ -242,6 +510,8 @@
     (
         modifiers: [
             Super,
+            Ctrl,
+            Shift,
         ],
         key: "Right",
     ): Disable,
@@ -250,13 +520,8 @@
             Super,
             Shift,
         ],
-        key: "3",
+        key: "7",
     ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-    ): System(Launcher),
     (
         modifiers: [
             Super,
@@ -264,255 +529,10 @@
         key: "Return",
     ): System(Terminal),
     (
-        modifiers: [],
-        key: "XF86KbdBrightnessDown",
-    ): System(KeyboardBrightnessDown),
-    (
-        modifiers: [
-            Super,
-            Ctrl,
-        ],
-        key: "j",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "g",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-            Ctrl,
-        ],
-        key: "Down",
-    ): Disable,
-    (
         modifiers: [
             Super,
             Shift,
-        ],
-        key: "8",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "p",
-    ): ToggleSticky,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "1",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "5",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-            Alt,
-        ],
-        key: "Right",
-    ): Disable,
-    (
-        modifiers: [],
-        key: "XF86KbdBrightnessUp",
-    ): System(KeyboardBrightnessUp),
-    (
-        modifiers: [
-            Super,
-            Shift,
-        ],
-        key: "4",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "apostrophe",
-    ): Workspace(4),
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "0",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "quotedbl",
-    ): Workspace(3),
-    (
-        modifiers: [
-            Super,
-            Shift,
-        ],
-        key: "minus",
-    ): MoveToWorkspace(6),
-    (
-        modifiers: [
-            Super,
-            Alt,
-            Shift,
-        ],
-        key: "Right",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "space",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "eacute",
-    ): Workspace(2),
-    (
-        modifiers: [
-            Super,
-            Shift,
-        ],
-        key: "2",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-            Shift,
-        ],
-        key: "ampersand",
-    ): MoveToWorkspace(1),
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "egrave",
-    ): Workspace(7),
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "7",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-            Alt,
-        ],
-        key: "Left",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-            Ctrl,
-            Shift,
-        ],
-        key: "Right",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
         ],
         key: "parenleft",
-    ): Workspace(5),
-    (
-        modifiers: [
-            Super,
-            Shift,
-        ],
-        key: "5",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "Up",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "ampersand",
-    ): Workspace(1),
-    (
-        modifiers: [
-            Super,
-            Alt,
-            Shift,
-        ],
-        key: "Left",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "8",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-            Ctrl,
-            Shift,
-        ],
-        key: "Up",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-            Shift,
-        ],
-        key: "9",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "m",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-            Ctrl,
-        ],
-        key: "k",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "4",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "Down",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-            Alt,
-            Shift,
-        ],
-        key: "k",
-    ): MoveToOutput(Up),
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "t",
-    ): Disable,
-    (
-        modifiers: [
-            Super,
-        ],
-        key: "f",
-    ): Maximize,
+    ): MoveToWorkspace(5),
 }
