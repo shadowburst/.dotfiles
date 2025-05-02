@@ -11,7 +11,6 @@
     cava.enable = true;
     delta.enable = true;
     fish.enable = true;
-    hyprlock.enable = true;
     kvantum.enable = true;
     lazygit.enable = true;
     starship.enable = true;

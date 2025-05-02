@@ -21,7 +21,6 @@ return {
         "gitcommit",
         "gitignore",
         "html",
-        "hyprlang",
         "javascript",
         "json",
         "lua",
