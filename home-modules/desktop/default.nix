@@ -13,7 +13,7 @@
   home.packages = with pkgs; [
     brave
     discord
-    # ente-auth
+    ente-auth
     gimp3
     pdfarranger
     simple-scan
