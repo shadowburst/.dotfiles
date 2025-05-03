@@ -19,7 +19,6 @@
 
   outputs = {nixpkgs, ...} @ inputs: let
     hosts = [
-      "xps-9310"
       "xps-9305"
       "zephyrus"
     ];
