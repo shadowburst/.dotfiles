@@ -3,7 +3,7 @@
     model: "pc104",
     layout: "fr",
     variant: "azerty",
-    options: Some("terminate:ctrl_alt_bksp,caps:swapescape"),
+    options: Some("terminate:ctrl_alt_bksp,caps:escape_shifted_capslock"),
     repeat_delay: 600,
     repeat_rate: 25,
 )
