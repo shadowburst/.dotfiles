@@ -20,7 +20,10 @@ return {
         kind = "split",
         show_staged_diff = false,
       },
-      integrations = { diffview = true },
+      integrations = {
+        diffview = true,
+        snacks = true,
+      },
       signs = {
         -- { CLOSED, OPENED }
         section = { "", "" },
