@@ -24,10 +24,10 @@ in {
       set -g status-style 'bg=${base00} fg=${base05}'
 
       set -g status-left-length 100
-      set -g status-left "#[fg=${base0D},bg=${base00}]#[fg=${base00},bg=${base0D},bold] #S #[fg=${base0D},bg=${base00}]"
+      set -g status-left "#[fg=${base00},bg=${base0D},bold] #S #[fg=${base0D},bg=${base00}]"
 
       set -g status-right-length 100
-      set -g status-right "#[fg=${base0D},bg=${base00}]#[fg=${base00},bg=${base0D},bold]  %H:%M #[fg=${base0D},bg=${base00}]"
+      set -g status-right "#[fg=${base0D},bg=${base00}]#[fg=${base00},bg=${base0D},bold]  %H:%M "
 
       set -g window-status-current-format "#[fg=${base0D},bg=${base00}]#[fg=${base00},bg=${base0D},bold]  #I #W #[fg=${base0D},bg=${base00}]"
       set -g window-status-format "#[fg=${base05},bg=${base00}]  #I #W "
