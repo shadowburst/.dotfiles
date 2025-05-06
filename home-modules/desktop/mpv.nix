@@ -40,7 +40,7 @@
       tscale = "oversample";
       interpolation = "";
       video-sync = "display-resample";
-      hwdec = "auto-safe";
+      hwdec = "vaapi";
       vo = "gpu";
       gpu-context = "wayland";
       no-window-dragging = "";
