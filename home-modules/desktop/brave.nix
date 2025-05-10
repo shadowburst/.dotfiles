@@ -4,8 +4,9 @@
   };
 
   home.packages = with pkgs; [
-    (writeShellScriptBin "brave" ''
-      exec ${pkgs.brave}/bin/brave --enable-features=AcceleratedVideoDecodeLinuxGL,AcceleratedVideoEncoder,VaapiVideoDecoder --ozone-platforme=auto --password-store=gnome-libsecret "$@"
-    '')
+    (brave.override {
+      vulkanSupport = true;
+      commandLineArgs = "--enable-features=AcceleratedVideoDecodeLinuxGL,AcceleratedVideoEncoder,VaapiVideoDecoder,VaapiIgnoreDriverChecks,Vulkan,DefaultANGLEVulkan,VulkanFromANGLE,TouchpadOverscrollHistoryNavigation --ozone-platform-hint=auto --password-store=gnome-libsecret";
+    })
   ];
 }
