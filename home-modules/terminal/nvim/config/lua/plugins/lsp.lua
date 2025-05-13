@@ -8,7 +8,7 @@ return {
     event = { "BufReadPost", "BufNewFile", "BufWritePre" },
     config = function()
       vim.diagnostic.config({
-        virtual_lines = true,
+        virtual_text = true,
         float = { border = require("util.ui").border },
         signs = {
           text = {
