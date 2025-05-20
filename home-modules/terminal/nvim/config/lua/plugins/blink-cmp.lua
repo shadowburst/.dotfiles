@@ -1,3 +1,5 @@
+local ui = require("util.ui")
+
 return {
   {
     "saghen/blink.cmp",
@@ -38,6 +40,9 @@ return {
         },
       },
       completion = {
+        accept = {
+          auto_brackets = { enabled = false },
+        },
         list = {
           selection = { auto_insert = false },
         },
@@ -62,12 +67,12 @@ return {
         },
         documentation = {
           auto_show = true,
-          window = { border = require("util.ui").border },
+          window = { border = ui.border },
         },
       },
       signature = {
         enabled = true,
-        window = { border = require("util.ui").border },
+        window = { border = ui.border },
       },
     },
   },
