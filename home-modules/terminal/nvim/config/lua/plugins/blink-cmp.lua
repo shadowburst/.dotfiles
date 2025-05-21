@@ -63,7 +63,7 @@ return {
               },
             },
           },
-          border = require("util.ui").border,
+          border = ui.border,
         },
         documentation = {
           auto_show = true,

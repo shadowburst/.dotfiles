@@ -1,3 +1,5 @@
+local ui = require("util.ui")
+
 return {
   {
     "folke/noice.nvim",
@@ -27,7 +29,7 @@ return {
       views = {
         hover = {
           border = {
-            style = require("util.ui").border,
+            style = ui.border,
             padding = { 0, 1 },
           },
           position = {

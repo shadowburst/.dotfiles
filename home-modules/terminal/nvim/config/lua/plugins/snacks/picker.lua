@@ -10,6 +10,8 @@ local source_config = {
   filter = { cwd = true },
 }
 
+local ui = require("util.ui")
+
 return {
   {
     "folke/snacks.nvim",
@@ -31,7 +33,7 @@ return {
           default = {
             layout = {
               fullscreen = true,
-              border = require("util.ui").border,
+              border = ui.border,
               box = "vertical",
               { win = "preview" },
               {
@@ -58,7 +60,7 @@ return {
               height = 0.4,
               title = "{title} {live} {flags}",
               title_pos = "center",
-              border = require("util.ui").border,
+              border = ui.border,
               box = "vertical",
               {
                 win = "input",

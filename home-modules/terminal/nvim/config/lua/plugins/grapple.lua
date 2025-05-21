@@ -1,3 +1,5 @@
+local ui = require("util.ui")
+
 return {
   {
     "cbochs/grapple.nvim",
@@ -7,7 +9,7 @@ return {
     ---@type grapple.options
     opts = {
       scope = "git_branch",
-      win_opts = { border = require("util.ui").border },
+      win_opts = { border = ui.border },
     },
     keys = {
       { "<leader>;", "<cmd>Grapple toggle<cr>", desc = "Grapple toggle tag" },

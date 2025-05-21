@@ -1,3 +1,5 @@
+local ui = require("util.ui")
+
 return {
   {
     "neovim/nvim-lspconfig",
@@ -9,7 +11,7 @@ return {
     config = function()
       vim.diagnostic.config({
         virtual_text = true,
-        float = { border = require("util.ui").border },
+        float = { border = ui.border },
         signs = {
           text = {
             [vim.diagnostic.severity.ERROR] = " ",
@@ -20,11 +22,20 @@ return {
         },
       })
 
+      vim.lsp.config("*", {
+        on_attach = function(_, buf)
+          local map = function(keys, func, desc) vim.keymap.set("n", keys, func, { buffer = buf, desc = desc }) end
+          map("<leader>ca", vim.lsp.buf.code_action, "Code action")
+          map("<leader>cr", vim.lsp.buf.rename, "Rename variable")
+        end,
+        capabilities = require("blink-cmp").get_lsp_capabilities(),
+      })
+
       local servers = {
         bashls = {},
         cssls = {},
-        dockerls = {},
         docker_compose_language_service = {},
+        dockerls = {},
         html = {},
         intelephense = {},
         jsonls = {
@@ -47,29 +58,6 @@ return {
         nil_ls = {},
         tailwindcss = {
           filetypes_exclude = { "markdown", "php" },
-          root_dir = function(fname)
-            local package_json = vim.fs.dirname(vim.fs.find("package.json", { path = fname, upward = true })[1])
-            if not package_json then
-              return nil
-            end
-            local file = io.open(package_json .. "/package.json", "r")
-            if not file then
-              return nil
-            end
-            local content = file:read("*a")
-            file:close()
-
-            if content:match('"tailwindcss"%s*:') then
-              return package_json
-            else
-              return nil
-            end
-          end,
-        },
-        volar = {
-          init_options = {
-            vue = { hybridMode = true },
-          },
         },
         vtsls = {
           filetypes = {
@@ -115,31 +103,22 @@ return {
             },
           },
         },
+        vue_ls = {},
         yamlls = {
           settings = {
             yaml = {
+              schemas = require("schemastore").yaml.schemas(),
               schemaStore = {
                 enable = false,
                 url = "",
               },
-              schemas = require("schemastore").yaml.schemas(),
             },
           },
         },
       }
-
-      local on_attach = function(_, buf)
-        local map = function(keys, func, desc) vim.keymap.set("n", keys, func, { buffer = buf, desc = desc }) end
-        map("<leader>ca", vim.lsp.buf.code_action, "Code action")
-        map("<leader>cr", vim.lsp.buf.rename, "Rename variable")
-      end
-
-      local capabilities = vim.lsp.protocol.make_client_capabilities()
-      for lsp, config in pairs(servers) do
-        local settings = config or {}
-        settings.on_attach = on_attach
-        settings.capabilities = vim.tbl_deep_extend("force", capabilities, settings.capabilities or {})
-        require("lspconfig")[lsp].setup(settings)
+      for server, settings in pairs(servers) do
+        vim.lsp.config(server, settings)
+        vim.lsp.enable(server)
       end
     end,
   },

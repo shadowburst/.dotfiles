@@ -11,6 +11,8 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
+local ui = require("util.ui")
+
 require("lazy").setup({
   spec = {
     { import = "plugins" },
@@ -29,7 +31,7 @@ require("lazy").setup({
   },
   ui = {
     backdrop = 100,
-    border = require("util.ui").border,
+    border = ui.border,
   },
   pkg = {
     sources = {
