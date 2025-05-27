@@ -17,8 +17,15 @@ return {
         keymap = {
           preset = "cmdline",
           ["<C-Space>"] = {},
-          ["<esc>"] = { "hide", "fallback" },
-          ["<C-n>"] = { "show", "select_next", "fallback" },
+          ["<cr>"] = { "accept", "fallback" },
+          ["<C-n>"] = { "show_and_insert", "select_next", "fallback" },
+          ["<esc>"] = {
+            "hide",
+            function() vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-c>", true, true, true), "n", true) end,
+          },
+        },
+        completion = {
+          ghost_text = { enabled = false },
         },
       },
       keymap = {
@@ -47,8 +54,9 @@ return {
           selection = { auto_insert = false },
         },
         menu = {
-          auto_show = function(ctx) return ctx.mode ~= "cmdline" end,
+          auto_show = true,
           draw = {
+            treesitter = { "lsp" },
             columns = {
               { "label", "label_description", gap = 1 },
               { "kind_icon", "kind" },
