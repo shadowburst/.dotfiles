@@ -7,7 +7,7 @@ return {
       "b0o/SchemaStore.nvim",
       "saghen/blink.cmp",
     },
-    event = { "BufReadPost", "BufNewFile", "BufWritePre" },
+    event = { "VeryLazy" },
     config = function()
       vim.diagnostic.config({
         virtual_text = true,
