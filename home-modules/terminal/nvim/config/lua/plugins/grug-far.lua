@@ -3,9 +3,9 @@ return {
     "MagicDuck/grug-far.nvim",
     cmd = { "GrugFar" },
     ---@module 'grug-far'
-    ---@type GrugFarOptionsOverride
+    ---@type grug.far.OptionsOverride
     opts = {
-      startCursorRow = 3,
+      startCursorRow = 2,
       headerMaxWidth = 80,
       transient = true,
     },
@@ -26,13 +26,12 @@ return {
         "<leader>sr",
         function()
           require("grug-far").open({
-            prefills = {
-              paths = vim.fn.expand("%"),
-            },
+            startCursorRow = 1,
+            visualSelectionUsage = "operate-within-range",
           })
         end,
-        mode = { "v" },
-        desc = "Replace selection in file",
+        mode = { "x" },
+        desc = "Replace in selection",
       },
       {
         "<leader>sR",
@@ -57,7 +56,7 @@ return {
             },
           })
         end,
-        mode = { "v" },
+        mode = { "x" },
         desc = "Replace selection in files",
       },
     },
