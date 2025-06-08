@@ -13,5 +13,6 @@
     gimp3
     pdfarranger
     simple-scan
+    video-downloader
   ];
 }
