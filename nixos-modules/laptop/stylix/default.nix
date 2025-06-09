@@ -6,7 +6,7 @@
 }: {
   imports = [inputs.stylix.nixosModules.stylix];
 
-  fonts.packages = with pkgs; [nerd-fonts.jetbrains-mono];
+  fonts.packages = with pkgs; [nerd-fonts.caskaydia-cove];
 
   stylix = {
     enable = true;
