@@ -3,6 +3,7 @@
     ./bash.nix
     ./bat.nix
     ./cava.nix
+    ./comma.nix
     ./eza.nix
     ./fish.nix
     ./fzf.nix
