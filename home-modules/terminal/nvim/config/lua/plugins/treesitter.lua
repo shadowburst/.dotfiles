@@ -30,6 +30,7 @@ return {
         "nix",
         "php",
         "phpdoc",
+        "qmljs",
         "regex",
         "scss",
         "sql",

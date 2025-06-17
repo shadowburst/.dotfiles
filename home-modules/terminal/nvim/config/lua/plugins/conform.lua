@@ -29,6 +29,7 @@ return {
         ["markdown"] = { "prettierd" },
         ["markdown.mdx"] = { "prettierd" },
         ["php"] = { "pint" },
+        ["qml"] = { "qmlformat" },
         ["nix"] = { "alejandra" },
         ["scss"] = { "prettierd" },
         ["sh"] = { "shfmt" },

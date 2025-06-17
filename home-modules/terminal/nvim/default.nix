@@ -43,6 +43,9 @@
       intelephense
       php
 
+      # QML
+      kdePackages.qtdeclarative
+
       # Vue
       vue-language-server
 
