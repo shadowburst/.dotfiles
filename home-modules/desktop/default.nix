@@ -1,8 +1,9 @@
 {pkgs, ...}: {
   imports = [
     ./brave.nix
-    ./cosmic
+    # ./cosmic
     ./kitty.nix
+    ./hyprland
     ./mpv.nix
     ./transmission.nix
   ];

@@ -1,8 +1,9 @@
 {...}: {
   imports = [
     ./audio.nix
-    ./cosmic.nix
+    # ./cosmic.nix
     ./gaming.nix
+    ./hyprland
     ./printing.nix
     ./stylix
   ];

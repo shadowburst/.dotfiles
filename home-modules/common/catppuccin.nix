@@ -12,6 +12,7 @@
     delta.enable = true;
     fish.enable = true;
     kvantum.enable = true;
+    hyprlock.enable = true;
     lazygit.enable = true;
     starship.enable = true;
     tmux.enable = true;

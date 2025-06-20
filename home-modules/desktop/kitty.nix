@@ -5,7 +5,7 @@
     shellIntegration.enableFishIntegration = true;
     settings = {
       hide_window_decorations = true;
-      background_opacity = "1";
+      background_opacity = "0.9";
       confirm_os_window_close = 0;
       cursor_shape = "block";
       cursor_text_color = "background";

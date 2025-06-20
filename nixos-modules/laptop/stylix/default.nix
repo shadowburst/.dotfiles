@@ -12,8 +12,6 @@
     enable = true;
     autoEnable = false;
 
-    image = ./wallpapers/current.jpg;
-
     fonts = {
       sansSerif = {
         name = "Noto Sans";
