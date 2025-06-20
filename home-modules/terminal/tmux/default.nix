@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  username,
   ...
 }: let
   tmux-sessionizer = pkgs.writeShellScriptBin "tmux-sessionizer" (
@@ -83,7 +84,7 @@ in {
     tmux-sessionizer
   ];
 
-  home.file.".local/share/tmux/templates" = {
+  xdg.stateFile."${username}/tmux/templates" = {
     source = ./templates;
     recursive = true;
   };

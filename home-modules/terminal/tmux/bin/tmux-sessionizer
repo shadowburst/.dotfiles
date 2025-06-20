@@ -24,20 +24,20 @@ editor=${EDITOR:-nvim}
 if ! tmux has-session -t="$session" 2>/dev/null; then
   tmux new-session -ds "$session" -c "$choice" -n "$editor" "$editor; ${SHELL:-bash}"
 
-  template_directory=~/.local/share/tmux/templates
-  cache=~/.cache/custom/tmux/templates.json
-  if [[ ! -f "${cache}" ]]; then
-    mkdir -p "$(dirname $cache)"
-    echo "{}" >$cache
+  template_directory="$XDG_STATE_HOME/$USER/tmux/templates"
+  state="$XDG_STATE_HOME/$USER/tmux/templates.json"
+  if [[ ! -f "${state}" ]]; then
+    mkdir -p "$(dirname $state)"
+    echo "{}" >"${state}"
   fi
-  if jq -e ".[\"${session}\"]" "${cache}" >/dev/null; then
-    template=$(jq -r ".[\"${session}\"]" "${cache}")
+  if jq -e ".[\"${session}\"]" "${state}" >/dev/null; then
+    template=$(jq -r ".[\"${session}\"]" "${state}")
   else
     template=$(
       echo -e "No template\n$(find -L $template_directory -type f -executable -printf "%f\n")" | fzf
     )
-    jq ". + { \"${session}\": \"${template}\" }" $cache >"${cache}.tmp"
-    mv "${cache}.tmp" $cache
+    jq ". + { \"${session}\": \"${template}\" }" "${state}" >"${state}.tmp"
+    mv "${state}.tmp" "${state}"
   fi
 
   template_script="$template_directory/$template"

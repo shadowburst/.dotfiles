@@ -87,7 +87,7 @@ return {
                   {
                     name = "@vue/typescript-plugin",
                     location = vim.fn.readfile(
-                      vim.fn.expand("$XDG_CACHE_HOME/custom/nvim/vue_typescript_plugin"),
+                      vim.fn.expand("$XDG_STATE_HOME/$USER/nvim/vue_typescript_plugin"),
                       "",
                       1
                     )[1],

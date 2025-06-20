@@ -1,6 +1,7 @@
 {
   config,
   pkgs,
+  username,
   ...
 }: {
   programs.neovim = {
@@ -69,5 +70,5 @@
     MANPAGER = "nvim +Man!";
   };
 
-  home.file.".cache/custom/nvim/vue_typescript_plugin".text = "${pkgs.vue-language-server}/lib/node_modules/@vue/language-server";
+  xdg.stateFile."${username}/nvim/vue_typescript_plugin".text = "${pkgs.vue-language-server}/lib/node_modules/@vue/language-server";
 }
