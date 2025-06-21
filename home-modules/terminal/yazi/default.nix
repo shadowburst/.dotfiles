@@ -21,7 +21,7 @@
     };
 
     settings = {
-      manager = {
+      mgr = {
         sort_by = "natural";
         sort_sensitive = false;
         sort_dir_first = true;
@@ -57,7 +57,7 @@
     };
 
     keymap = {
-      manager.prepend_keymap = [
+      mgr.prepend_keymap = [
         # General
         {
           run = "close";
