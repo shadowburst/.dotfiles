@@ -221,9 +221,8 @@ in {
         ", xf86monbrightnessup, exec, brightnessctl -d amdgpu_bl1 -s set 5%+"
 
         # Screenshots
-        ", print, global, hyprshot --freeze --raw -m window | satty --filename -"
-        "SHIFT, print, exec, hyprshot --freeze --raw -m region | satty --filename -"
-        "CTRL, print, exec, hyprshot --freeze --raw -m active | satty --filename -"
+        ", print, global, caelestia:screenshot"
+        "$mod SHIFT, S, global, caelestia:screenshot"
 
         # Other
         "$mod SHIFT, p, exec, hyprpicker -a"
@@ -241,13 +240,13 @@ in {
     brightnessctl
     nautilus
     gnome-calculator
+    grim
     htop
     hyprpicker
-    hyprshot
     pavucontrol
     playerctl
     socat
-    satty
+    swappy
     wdisplays
     wl-clipboard
   ];
