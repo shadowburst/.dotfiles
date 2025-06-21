@@ -240,6 +240,7 @@ in {
     launch-default
 
     brightnessctl
+    nautilus
     gnome-calculator
     htop
     hyprpicker
