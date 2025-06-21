@@ -15,7 +15,7 @@
       };
     };
     border = {
-      thickness = 5;
+      thickness = 1;
       rounding = 12;
     };
     notifs = {

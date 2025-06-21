@@ -40,7 +40,7 @@ in {
       general = {
         border_size = 2;
         gaps_in = 2;
-        gaps_out = 5;
+        gaps_out = 2;
         layout = "dwindle";
       };
       decoration = {
@@ -80,7 +80,6 @@ in {
         kb_options = "caps:escape_shifted_capslock";
         numlock_by_default = true;
         follow_mouse = 1;
-
         touchpad = {
           disable_while_typing = true;
           natural_scroll = true;
