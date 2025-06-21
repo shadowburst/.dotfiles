@@ -16,7 +16,7 @@
         }
         {
           timeout = 120;
-          on-timeout = "brightnessctl -d amdgpu_bl1 -s set 5";
+          on-timeout = "brightnessctl -d amdgpu_bl1 -s set 5%";
           on-resume = "brightnessctl -d amdgpu_bl1 -r";
         }
       ];
