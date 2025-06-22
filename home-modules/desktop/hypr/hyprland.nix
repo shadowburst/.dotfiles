@@ -24,6 +24,7 @@
       ];
       env = [
         "XDG_SESSION_DESKTOP, wayland"
+        "SSH_AUTH_SOCK, $XDG_RUNTIME_DIR/gcr/ssh"
       ];
       general = {
         border_size = 2;
