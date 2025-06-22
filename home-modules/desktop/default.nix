@@ -3,7 +3,7 @@
     ./brave.nix
     # ./cosmic
     ./kitty.nix
-    ./hyprland
+    ./hypr
     ./mpv.nix
     ./transmission.nix
   ];
@@ -16,4 +16,9 @@
     simple-scan
     video-downloader
   ];
+
+  home.file."Pictures/Wallpapers" = {
+    source = ./wallpapers;
+    recursive = true;
+  };
 }

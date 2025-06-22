@@ -3,7 +3,7 @@
     owner = "caelestia-dots";
     repo = "shell";
     rev = "main";
-    sha256 = "04qg9kk9vkrrvw03vfqwxbpbayf6w6lglhq4c12snijllds2iddk";
+    hash = "sha256-PxL0Su767Kuz/S2LQqop8f7PiwHHiQqT5zXKMHqfN9A=";
   };
   xdg.configFile."caelestia/shell.json".text = builtins.toJSON {
     bar = {
@@ -23,16 +23,11 @@
     };
   };
 
-  xdg.stateFile."caelestia/wallpaper/path.txt".text = builtins.toString ./wallpapers/12.jpg;
+  xdg.stateFile."caelestia/wallpaper/path.txt".text = builtins.toString ../wallpapers/12.jpg;
 
   home.packages = with pkgs; [
     app2unit
     libqalculate
     material-symbols
   ];
-
-  home.file."Pictures/Wallpapers" = {
-    source = ./wallpapers;
-    recursive = true;
-  };
 }

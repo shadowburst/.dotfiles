@@ -1,19 +1,8 @@
 {
   config,
   lib,
-  pkgs,
   ...
-}: let
-  launch-default = pkgs.writeShellScriptBin "launch-default" (lib.fileContents ./bin/launch-default);
-  watch-monitors = pkgs.writeShellScriptBin "watch-monitors" (lib.fileContents ./bin/watch-monitors);
-in {
-  imports = [
-    ./hypridle.nix
-    ./hyprlock.nix
-    ./quickshell
-    ./shikane.nix
-  ];
-
+}: {
   wayland.windowManager.hyprland = {
     enable = true;
     systemd.variables = ["--all"];
@@ -28,8 +17,7 @@ in {
         "1, default:true"
       ];
       exec-once = [
-        "${watch-monitors}/bin/watch-monitors"
-        "brightnessctl -d amdgpu_bl1 -s set 30%"
+        "brightnessctl -d amdgpu_bl1 -s set 40%"
       ];
       exec = [
         "qs kill; qs"
@@ -134,7 +122,7 @@ in {
       bind = [
         # Compositor
         "$mod SHIFT, r, exec, hyprctl reload"
-        "$mod, Escape, exec, loginctl lock-session"
+        "$mod, Escape, global, caelestia:lock"
 
         # Windows
         "CTRL ALT, delete, exec, hyprctl kill"
@@ -210,7 +198,7 @@ in {
         ", xf86audiomute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
         ", xf86audiolowervolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ '5%-'"
         ", xf86audioraisevolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ '5%+'"
-        ", xf86audioprev, global, caelestia:mediaPrevious"
+        ", xf86audioprev, global, caelestia:mediaPrev"
         ", xf86audionext, global, caelestia:mediaNext"
         ", xf86audioplay, global, caelestia:mediaToggle"
         ", xf86audiopause, global, caelestia:mediaToggle"
@@ -233,25 +221,4 @@ in {
       };
     };
   };
-
-  home.packages = with pkgs; [
-    launch-default
-
-    brightnessctl
-    nautilus
-    gnome-calculator
-    grim
-    htop
-    hyprpicker
-    pavucontrol
-    playerctl
-    socat
-    swappy
-    wdisplays
-    wl-clipboard
-  ];
-
-  services.blueman-applet.enable = true;
-  services.hyprpolkitagent.enable = true;
-  services.network-manager-applet.enable = true;
 }

@@ -14,9 +14,7 @@
           .window-frame { box-shadow: none; margin: 0; }
         '';
       };
-      hyprland = {
-        enable = true;
-      };
+      hyprland.enable = true;
     };
   };
 }
