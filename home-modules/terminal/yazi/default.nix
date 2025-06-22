@@ -94,18 +94,10 @@
         }
         #Goto
         {
-          run = "cd ~/.dotfiles";
-          on = [
-            "g"
-            "d"
-          ];
-          desc = "Goto dotfiles";
-        }
-        {
           run = "cd ~/Downloads";
           on = [
             "g"
-            "D"
+            "d"
           ];
           desc = "Goto dotfiles";
         }
