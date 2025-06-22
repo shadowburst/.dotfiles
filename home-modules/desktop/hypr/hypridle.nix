@@ -6,9 +6,9 @@
 
       listener = [
         {
-          timeout = 120;
-          on-timeout = "brightnessctl set 10%";
-          on-resume = "brightnessctl -r";
+          timeout = 300; # 5mins
+          on-timeout = "hyprctl dispatch dpms off";
+          on-resume = "hyprctl dispatch dpms on";
         }
       ];
     };
