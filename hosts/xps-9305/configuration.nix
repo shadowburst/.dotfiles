@@ -9,7 +9,7 @@
     inputs.nixos-hardware.nixosModules.common-gpu-intel
     ./hardware-configuration.nix
     ../../nixos-modules/common
-    ../../nixos-modules/laptop
+    ../../nixos-modules/desktop
   ];
 
   boot = {

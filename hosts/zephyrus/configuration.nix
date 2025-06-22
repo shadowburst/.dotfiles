@@ -7,7 +7,7 @@
     inputs.nixos-hardware.nixosModules.asus-zephyrus-ga402x-nvidia
     ./hardware-configuration.nix
     ../../nixos-modules/common
-    ../../nixos-modules/laptop
+    ../../nixos-modules/desktop
   ];
 
   boot = {

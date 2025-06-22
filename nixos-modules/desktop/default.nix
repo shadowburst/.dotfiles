@@ -3,9 +3,9 @@
     ./audio.nix
     # ./cosmic.nix
     ./gaming.nix
-    ./hyprland
+    ./hypr
     ./printing.nix
-    ./stylix
+    ./stylix.nix
   ];
 
   programs.gnome-disks.enable = true;
