@@ -29,7 +29,7 @@
       general = {
         border_size = 2;
         gaps_in = 2;
-        gaps_out = 2;
+        gaps_out = 0;
         layout = "dwindle";
       };
       decoration = {
@@ -57,7 +57,7 @@
           "windowsIn, 1, 3, emphasizedDecel"
           "windowsOut, 1, 1, emphasizedAccel"
           "windowsMove, 1, 4, standard"
-          "workspaces, 1, 3, standard"
+          "workspaces, 1, 3, standard, slidefadevert"
           "fade, 1, 4, standard"
           "fadeDim, 1, 4, standard"
           "border, 1, 4, standard"
@@ -77,7 +77,9 @@
       };
       gestures = {
         workspace_swipe = true;
-        workspace_swipe_fingers = 4;
+        workspace_swipe_fingers = 3;
+        workspace_swipe_distance = 200;
+        workspace_swipe_min_speed_to_force = 10;
       };
       dwindle = {
         force_split = 2;
