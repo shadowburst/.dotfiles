@@ -7,8 +7,8 @@
       listener = [
         {
           timeout = 120;
-          on-timeout = "brightnessctl -d amdgpu_bl1 set 10%";
-          on-resume = "brightnessctl -d amdgpu_bl1 -r";
+          on-timeout = "brightnessctl set 10%";
+          on-resume = "brightnessctl -r";
         }
       ];
     };

@@ -15,7 +15,6 @@ in {
   home.packages = with pkgs; [
     launch-default
 
-    brightnessctl
     nautilus
     gnome-calculator
     grim

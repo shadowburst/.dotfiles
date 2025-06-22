@@ -17,7 +17,7 @@
         "1, default:true"
       ];
       exec-once = [
-        "brightnessctl -d amdgpu_bl1 -s set 40%"
+        "brightnessctl -s set 40%"
       ];
       exec = [
         "qs kill; qs"
@@ -205,8 +205,8 @@
         "$mod CTRL, Space, global, caelestia:mediaToggle"
 
         # Brightness
-        ", xf86monbrightnessdown, exec, brightnessctl -d amdgpu_bl1 -s set 5%- -n 5"
-        ", xf86monbrightnessup, exec, brightnessctl -d amdgpu_bl1 -s set 5%+"
+        ", xf86monbrightnessdown, global, caelestia:brightnessDown"
+        ", xf86monbrightnessup, global, caelestia:brightnessUp"
 
         # Screenshots
         ", print, global, caelestia:screenshot"
