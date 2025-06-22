@@ -2,7 +2,11 @@
   services.hypridle = {
     enable = true;
     settings = {
-      general.after_sleep_cmd = "hyprctl dispatch dpms on";
+      general = {
+        lock_cmd = "qs ipc call lock lock";
+        before_sleep_cmd = "loginctl lock-session";
+        after_sleep_cmd = "hyprctl dispatch dpms on";
+      };
 
       listener = [
         {

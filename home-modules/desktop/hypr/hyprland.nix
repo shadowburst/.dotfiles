@@ -122,7 +122,7 @@
       bind = [
         # Compositor
         "$mod SHIFT, r, exec, hyprctl reload"
-        "$mod, Escape, global, caelestia:lock"
+        "$mod, Escape, exec, loginctl lock-session"
 
         # Windows
         "CTRL ALT, delete, exec, hyprctl kill"
