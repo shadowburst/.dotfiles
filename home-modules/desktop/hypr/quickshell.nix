@@ -18,6 +18,9 @@
       thickness = 1;
       rounding = 12;
     };
+    dashboard = {
+      weatherLocation = "48.306453773398786, -0.6214670156648004";
+    };
     notifs = {
       expire = true;
     };
