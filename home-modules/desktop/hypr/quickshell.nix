@@ -3,7 +3,7 @@
     owner = "caelestia-dots";
     repo = "shell";
     rev = "main";
-    hash = "sha256-xJdQNFdHqJkMTOlgF3AGOykBP7EXFkBfgoziP23RRI0=";
+    hash = "sha256-FQ5tTLnOfOn9ZvcVogMUPWD05nOumsidGaJQCmOvJI8=";
   };
   xdg.configFile."caelestia/shell.json".text = builtins.toJSON {
     bar = {
