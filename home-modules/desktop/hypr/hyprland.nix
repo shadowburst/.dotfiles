@@ -100,8 +100,7 @@
       windowrule = [
         "float, class:org.gnome.Calculator"
         "minsize 300 500, class:org.gnome.Calculator"
-        "float, class:xdg-desktop-portal-gtk"
-        "minsize 1000 800, class:xdg-desktop-portal-gtk"
+        "float, class:brave(.*), initialClass:negative:brave-browser"
       ];
       bindm = [
         "$mod, mouse:272, movewindow"
