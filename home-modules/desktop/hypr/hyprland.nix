@@ -1,8 +1,4 @@
-{
-  config,
-  lib,
-  ...
-}: {
+{config, ...}: {
   wayland.windowManager.hyprland = {
     enable = true;
     systemd.variables = ["--all"];
@@ -84,19 +80,8 @@
       dwindle = {
         force_split = 2;
       };
-      master = {
-        new_on_top = false;
-        mfact = 0.55;
-        orientation = "left";
-      };
-      group = {
-        groupbar = {
-          font_size = 12;
-          height = 18;
-          text_color = lib.mkForce "rgb(${config.lib.stylix.colors.base05})";
-          "col.active" = lib.mkForce "rgb(${config.lib.stylix.colors.base02})";
-          "col.inactive" = lib.mkForce "rgb(${config.lib.stylix.colors.base00})";
-        };
+      xwayland = {
+        force_zero_scaling = true;
       };
       misc = {
         disable_hyprland_logo = true;
