@@ -9,4 +9,5 @@
   ];
 
   programs.gnome-disks.enable = true;
+  programs.seahorse.enable = true;
 }
