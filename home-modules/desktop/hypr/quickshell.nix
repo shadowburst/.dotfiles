@@ -2,8 +2,8 @@
   xdg.configFile."quickshell".source = pkgs.fetchFromGitHub {
     owner = "caelestia-dots";
     repo = "shell";
-    rev = "main";
-    hash = "sha256-FQ5tTLnOfOn9ZvcVogMUPWD05nOumsidGaJQCmOvJI8=";
+    rev = "9c0223da60dac83fc8d0d9dc17b332882c986eb1";
+    hash = "sha256-IcfLB39QeN8hsqrHZzcqxIn+kHWMS5d4mBybEnhpUvY=";
   };
   xdg.configFile."caelestia/shell.json".text = builtins.toJSON {
     bar = {
