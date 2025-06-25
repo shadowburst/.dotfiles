@@ -10,6 +10,15 @@
 
       listener = [
         {
+          timeout = 10;
+          on-timeout =
+            /*
+            bash
+            */
+            ''[[ "$(qs ipc call lock status)" == "locked" ]] && hyprctl dispatch dpms off'';
+          on-resume = "hyprctl dispatch dpms on";
+        }
+        {
           timeout = 300; # 5mins
           on-timeout = "hyprctl dispatch dpms off";
           on-resume = "hyprctl dispatch dpms on";

@@ -1,15 +1,16 @@
 {pkgs, ...}: {
   xdg.configFile."quickshell".source = pkgs.fetchFromGitHub {
-    owner = "caelestia-dots";
+    owner = "shadowburst";
     repo = "shell";
-    rev = "6455f6c719a6e93502433ee4f4f1cda8036c348d";
-    sha256 = "1rm5r4h5mgaq1gsx55x21njbscl1hyrndwfsh7fgkgs1lgjcirgs";
+    rev = "f9e4e79413362ba2cf79a0db1f6a5f72fb9fa220";
+    sha256 = "1gafgqid2rbch3qz8gh1vmryr068zlmrczqpph927iprn8zlzy88";
   };
   xdg.configFile."caelestia/shell.json".text = builtins.toJSON {
     bar = {
       workspaces = {
         shown = 7;
-        showWindows = false;
+        occupiedBg = true;
+        activeTrail = true;
         occupiedLabel = " ";
         activeLabel = " ";
       };
