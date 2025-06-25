@@ -11,7 +11,7 @@
         shown = 7;
         occupiedBg = true;
         activeTrail = true;
-        occupiedLabel = " ";
+        occupiedLabel = " ";
         activeLabel = " ";
       };
     };
