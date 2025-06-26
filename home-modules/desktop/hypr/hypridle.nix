@@ -15,7 +15,7 @@
             /*
             bash
             */
-            ''[[ "$(qs ipc call lock status)" == "locked" ]] && hyprctl dispatch dpms off'';
+            ''[[ "$(qs ipc call lock isLocked)" == "true" ]] && hyprctl dispatch dpms off'';
           on-resume = "hyprctl dispatch dpms on";
         }
         {

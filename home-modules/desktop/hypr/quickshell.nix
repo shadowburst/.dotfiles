@@ -1,9 +1,9 @@
 {pkgs, ...}: {
   xdg.configFile."quickshell".source = pkgs.fetchFromGitHub {
-    owner = "shadowburst";
+    owner = "caelestia-dots";
     repo = "shell";
-    rev = "f9e4e79413362ba2cf79a0db1f6a5f72fb9fa220";
-    sha256 = "1gafgqid2rbch3qz8gh1vmryr068zlmrczqpph927iprn8zlzy88";
+    rev = "ce3467c8e22e2ea1b266e6ad5d12eefc5541aad4";
+    sha256 = "15rxh85gyfgciwkkmp066gw2yd9n1d3n3mskmggmwi67qxdb0w36";
   };
   xdg.configFile."caelestia/shell.json".text = builtins.toJSON {
     bar = {
