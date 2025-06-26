@@ -22,9 +22,6 @@
     dashboard = {
       weatherLocation = "48.306453773398786, -0.6214670156648004";
     };
-    notifs = {
-      expire = true;
-    };
   };
 
   xdg.stateFile."caelestia/wallpaper/path.txt".text = builtins.toString ../wallpapers/12.jpg;
