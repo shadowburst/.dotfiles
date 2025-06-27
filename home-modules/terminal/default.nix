@@ -1,15 +1,14 @@
 {pkgs, ...}: {
   imports = [
-    ./bash.nix
     ./bat.nix
     ./cava.nix
     ./comma.nix
     ./eza.nix
-    ./fish.nix
     ./fzf.nix
     ./git.nix
     ./lazydocker
     ./nvim
+    ./shell.nix
     ./starship.nix
     ./tmux
     ./yazi
