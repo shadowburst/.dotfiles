@@ -5,14 +5,16 @@
 
   catppuccin = {
     flavor = "macchiato";
-    accent = "blue";
+    accent = "lavender";
 
     bat.enable = true;
+    brave.enable = true;
     cava.enable = true;
     delta.enable = true;
     fish.enable = true;
+    hyprland.enable = true;
+    kitty.enable = true;
     kvantum.enable = true;
-    hyprlock.enable = true;
     lazygit.enable = true;
     starship.enable = true;
     tmux.enable = true;

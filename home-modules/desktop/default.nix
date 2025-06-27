@@ -5,6 +5,7 @@
     ./kitty.nix
     ./hypr
     ./mpv.nix
+    ./stylix.nix
     ./transmission.nix
   ];
 

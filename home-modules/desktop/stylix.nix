@@ -8,12 +8,7 @@
       dark = "kora";
     };
     targets = {
-      gtk = {
-        enable = true;
-        extraCss = ''
-          .window-frame { box-shadow: none; margin: 0; }
-        '';
-      };
+      gtk.enable = true;
       hyprland.enable = true;
     };
   };

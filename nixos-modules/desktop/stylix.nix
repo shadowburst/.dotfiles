@@ -11,6 +11,7 @@
   stylix = {
     enable = true;
     autoEnable = false;
+    polarity = "dark";
 
     fonts = {
       sansSerif = {
@@ -36,7 +37,6 @@
 
     base16Scheme = "${pkgs.base16-schemes}/share/themes/catppuccin-macchiato.yaml";
     targets = {
-      chromium.enable = true;
       console.enable = true;
     };
   };

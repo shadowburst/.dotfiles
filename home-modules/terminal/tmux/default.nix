@@ -25,17 +25,17 @@ in {
       set -g status-style 'bg=${base00} fg=${base05}'
 
       set -g status-left-length 100
-      set -g status-left "#[fg=${base00},bg=${base0D},bold] #S #[fg=${base0D},bg=${base00}]"
+      set -g status-left "#[fg=${base00},bg=${base07},bold] #S #[fg=${base07},bg=${base00}]"
 
       set -g status-right-length 100
-      set -g status-right "#[fg=${base0D},bg=${base00}]#[fg=${base00},bg=${base0D},bold]  %H:%M "
+      set -g status-right "#[fg=${base07},bg=${base00}]#[fg=${base00},bg=${base07},bold]  %H:%M "
 
-      set -g window-status-current-format "#[fg=${base0D},bg=${base00}]#[fg=${base00},bg=${base0D},bold]  #I #W #[fg=${base0D},bg=${base00}]"
+      set -g window-status-current-format "#[fg=${base07},bg=${base00}]#[fg=${base00},bg=${base07},bold]  #I #W #[fg=${base07},bg=${base00}]"
       set -g window-status-format "#[fg=${base05},bg=${base00}]  #I #W "
 
       # +--- Borders ---+
       set -g pane-border-style "fg=${base03}"
-      set -g pane-active-border-style "fg=${base0D}"
+      set -g pane-active-border-style "fg=${base07}"
 
       # +--- Panes ---+
       set -g pane-border-status top

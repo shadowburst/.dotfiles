@@ -1,4 +1,8 @@
-{config, ...}: {
+{
+  config,
+  lib,
+  ...
+}: {
   wayland.windowManager.hyprland = {
     enable = true;
     systemd.variables = ["--all"];
@@ -27,6 +31,11 @@
         gaps_in = 2;
         gaps_out = 0;
         layout = "dwindle";
+        "col.active_border" = lib.mkForce "$accent";
+      };
+      group = {
+        "col.border_active" = lib.mkForce "$accent";
+        groupbar."col.active" = lib.mkForce "$accent";
       };
       decoration = {
         rounding = 10;

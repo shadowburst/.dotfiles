@@ -14,7 +14,6 @@
       url_style = "curly";
       window_padding_width = "4 0";
     };
-    themeFile = "Catppuccin-Macchiato";
   };
 
   home.sessionVariables = {

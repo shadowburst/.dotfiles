@@ -5,7 +5,6 @@
 }: {
   imports = [
     ./catppuccin.nix
-    ./stylix.nix
   ];
 
   programs.home-manager.enable = true;
