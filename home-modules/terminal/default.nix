@@ -1,19 +1,23 @@
 {pkgs, ...}: {
   imports = [
-    ./bat.nix
-    ./cava.nix
+    ./carapace.nix
     ./comma.nix
     ./eza.nix
+    ./fish.nix
     ./fzf.nix
     ./git.nix
     ./lazydocker
     ./nvim
-    ./shell.nix
     ./starship.nix
     ./tmux
     ./yazi
     ./zoxide.nix
   ];
+
+  # Manage bash to include session variables in scripts
+  programs.bash.enable = true;
+  programs.bat.enable = true;
+  programs.cava.enable = true;
 
   home.packages = with pkgs; [
     act

@@ -4,9 +4,7 @@
   pkgs,
   ...
 }: {
-  home.packages = with pkgs; [
-    shikane
-  ];
+  home.packages = with pkgs; [shikane];
 
   home.activation = {
     createShikaneConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''

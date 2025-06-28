@@ -24,9 +24,7 @@
     createHome = true;
   };
 
-  programs = {
-    fish.enable = true;
-  };
+  programs.fish.enable = true;
 
   time.timeZone = "Europe/Paris";
   i18n = {

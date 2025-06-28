@@ -3,9 +3,7 @@
   username,
   ...
 }: {
-  imports = [
-    ./catppuccin.nix
-  ];
+  imports = [./catppuccin.nix];
 
   programs.home-manager.enable = true;
 

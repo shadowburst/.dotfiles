@@ -1,12 +1,4 @@
 {host, ...}: {
-  # Manage bash to include session variables in scripts
-  programs.bash.enable = true;
-
-  programs.carapace = {
-    enable = true;
-    enableFishIntegration = true;
-  };
-
   programs.fish = {
     enable = true;
     functions = {
