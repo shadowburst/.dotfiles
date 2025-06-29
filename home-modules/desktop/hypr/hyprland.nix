@@ -73,6 +73,7 @@
         kb_variant = "azerty";
         kb_options = "caps:escape_shifted_capslock";
         numlock_by_default = true;
+        repeat_delay = 200;
         follow_mouse = 1;
         touchpad = {
           disable_while_typing = true;
