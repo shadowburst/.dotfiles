@@ -29,6 +29,7 @@
   home.packages = with pkgs; [
     app2unit
     libqalculate
+    lm_sensors
     material-symbols
   ];
 }
