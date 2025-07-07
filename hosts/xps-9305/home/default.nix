@@ -4,6 +4,7 @@
     ../../../home-modules/desktop
     ../../../home-modules/terminal
     ../../../home-modules/work
+    ./brave.nix
     ./git.nix
   ];
 

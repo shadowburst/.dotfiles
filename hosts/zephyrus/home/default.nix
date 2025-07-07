@@ -3,6 +3,7 @@
     ../../../home-modules/common
     ../../../home-modules/desktop
     ../../../home-modules/terminal
+    ./brave.nix
   ];
 
   home.packages = with pkgs; [
