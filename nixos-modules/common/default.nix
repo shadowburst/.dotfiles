@@ -7,6 +7,7 @@
   imports = [
     ./catppuccin.nix
     ./disks.nix
+    ./keyboard.nix
     ./networking.nix
     ./ssh.nix
     ./virtualisation.nix
