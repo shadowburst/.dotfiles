@@ -2,7 +2,7 @@
   imports = [inputs.catppuccin.homeModules.catppuccin];
 
   catppuccin = {
-    flavor = "macchiato";
+    flavor = "mocha";
     accent = "lavender";
 
     bat.enable = true;

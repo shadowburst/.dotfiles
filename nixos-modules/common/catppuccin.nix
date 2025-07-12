@@ -2,7 +2,7 @@
   imports = [inputs.catppuccin.nixosModules.catppuccin];
 
   catppuccin = {
-    flavor = "macchiato";
+    flavor = "mocha";
     accent = "lavender";
 
     grub.enable = true;

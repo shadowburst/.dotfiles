@@ -7,7 +7,7 @@ return {
     ---@module 'catppuccin'
     ---@type CatppuccinOptions
     opts = {
-      flavour = "macchiato",
+      flavour = "mocha",
       kitty = false,
       custom_highlights = function(colors)
         return {
