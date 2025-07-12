@@ -3,6 +3,7 @@ local ui = require("util.ui")
 return {
   {
     "neovim/nvim-lspconfig",
+    commit = "408f5375fac99a6601fcd6fd08f388ec10108126",
     dependencies = {
       "b0o/SchemaStore.nvim",
       "saghen/blink.cmp",
