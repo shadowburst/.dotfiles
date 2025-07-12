@@ -15,6 +15,10 @@
       ];
       workspace = [
         "1, default:true"
+
+        # Smart gaps
+        "w[tv1], gapsout:0, gapsin:0"
+        "f[1], gapsout:0, gapsin:0"
       ];
       exec-once = [
         "brightnessctl -s set 40%"
@@ -123,6 +127,12 @@
         "float, class:org.gnome.Calculator"
         "minsize 300 500, class:org.gnome.Calculator"
         "float, class:brave(.*), initialClass:negative:brave-browser"
+
+        # Smart gaps
+        "bordersize 0, floating:0, onworkspace:w[tv1]"
+        "rounding 0, floating:0, onworkspace:w[tv1]"
+        "bordersize 0, floating:0, onworkspace:f[1]"
+        "rounding 0, floating:0, onworkspace:f[1]"
       ];
       bindm = [
         "$mod, mouse:272, movewindow"
@@ -192,6 +202,7 @@
 
         # Menus
         "$mod, Space, global, caelestia:launcher"
+        "$mod, m, exec, qs ipc call drawers toggle bar"
         "$mod, x, global, caelestia:session"
         "$mod CTRL, n, global, caelestia:clearNotifs"
 
