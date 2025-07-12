@@ -13,14 +13,16 @@ return {
         return {
           LineNrAbove = { link = "LineNr" },
           LineNrBelow = { link = "LineNr" },
-          Pmenu = { bg = colors.mantle, fg = colors.blue },
-          PmenuExtra = { fg = colors.blue },
+          Pmenu = { bg = colors.mantle, fg = colors.lavender },
+          PmenuExtra = { fg = colors.lavender },
           NormalFloat = { bg = colors.mantle },
           FloatBorder = { bg = colors.mantle },
+          Title = { fg = colors.lavender },
           FloatTitle = { bg = colors.mantle },
           BlinkCmpMenuBorder = { link = "Pmenu" },
           BlinkCmpSignatureHelpBorder = { link = "Pmenu" },
           BlinkCmpDocBorder = { link = "Pmenu" },
+          SnacksDashboardHeader = { fg = colors.lavender },
           SnacksIndentScope = { fg = colors.lavender },
         }
       end,
