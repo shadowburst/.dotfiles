@@ -8,6 +8,7 @@
     ./git.nix
     ./lazydocker
     ./nvim
+    ./opencode
     ./starship.nix
     ./tmux
     ./yazi
