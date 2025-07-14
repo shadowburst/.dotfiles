@@ -16,7 +16,7 @@ return {
           Pmenu = { bg = colors.mantle, fg = colors.lavender },
           PmenuExtra = { fg = colors.lavender },
           NormalFloat = { bg = colors.mantle },
-          FloatBorder = { bg = colors.mantle },
+          FloatBorder = { bg = colors.mantle, fg = colors.lavender },
           Title = { fg = colors.lavender },
           FloatTitle = { bg = colors.mantle },
           BlinkCmpMenuBorder = { link = "Pmenu" },
