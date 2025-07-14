@@ -19,9 +19,9 @@
           on-resume = "hyprctl dispatch dpms on";
         }
         {
-          timeout = 300; # 5mins
-          on-timeout = "hyprctl dispatch dpms off";
-          on-resume = "hyprctl dispatch dpms on";
+          timeout = 180; # 3mins
+          on-timeout = "brightnessctl set 1%";
+          on-resume = "brightnessctl -r";
         }
       ];
     };
