@@ -1,4 +1,8 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  username,
+  ...
+}: {
   xdg.configFile."quickshell".source = pkgs.fetchFromGitHub {
     owner = "shadowburst";
     repo = "shell";
@@ -25,7 +29,7 @@
     };
   };
 
-  xdg.stateFile."caelestia/wallpaper/path.txt".text = builtins.toString ../wallpapers/12.jpg;
+  xdg.stateFile."caelestia/wallpaper/path.txt".text = "/home/${username}/.dotfiles/home-modules/desktop/wallpapers/12.jpg";
 
   home.packages = with pkgs; [
     app2unit
