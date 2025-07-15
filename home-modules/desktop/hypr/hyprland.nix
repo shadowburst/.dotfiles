@@ -25,6 +25,7 @@
       ];
       exec = [
         "pkill quickshell; caelestia shell -d"
+        "sleep 2 && caelestia shell drawers toggle bar"
       ];
       env = [
         "XDG_SESSION_DESKTOP, wayland"
