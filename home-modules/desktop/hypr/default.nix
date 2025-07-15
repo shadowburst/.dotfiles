@@ -6,9 +6,9 @@
   launch-default = pkgs.writeShellScriptBin "launch-default" (lib.fileContents ./bin/launch-default);
 in {
   imports = [
+    ./caelestia
     ./hypridle.nix
     ./hyprland.nix
-    ./quickshell.nix
     ./shikane.nix
   ];
 
@@ -17,13 +17,11 @@ in {
 
     nautilus
     gnome-calculator
-    grim
     htop
     hyprpicker
     pavucontrol
     playerctl
     socat
-    swappy
     wdisplays
     wl-clipboard
   ];

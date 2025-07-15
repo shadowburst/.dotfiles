@@ -3,7 +3,7 @@
     enable = true;
     settings = {
       general = {
-        lock_cmd = "qs ipc call lock lock";
+        lock_cmd = "caelestia shell lock lock";
         before_sleep_cmd = "loginctl lock-session";
         after_sleep_cmd = "hyprctl dispatch dpms on";
       };
@@ -15,7 +15,7 @@
             /*
             bash
             */
-            ''[[ "$(qs ipc call lock isLocked)" == "true" ]] && hyprctl dispatch dpms off'';
+            ''[[ "$(caelestia shell lock isLocked)" == "true" ]] && hyprctl dispatch dpms off'';
           on-resume = "hyprctl dispatch dpms on";
         }
         {

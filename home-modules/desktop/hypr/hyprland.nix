@@ -24,7 +24,7 @@
         "brightnessctl -s set 40%"
       ];
       exec = [
-        "qs kill; qs"
+        "pkill quickshell; caelestia shell -d"
       ];
       env = [
         "XDG_SESSION_DESKTOP, wayland"
@@ -202,7 +202,7 @@
 
         # Menus
         "$mod, Space, global, caelestia:launcher"
-        "$mod, m, exec, qs ipc call drawers toggle bar"
+        "$mod, m, exec, caelestia shell drawers toggle bar"
         "$mod, x, global, caelestia:session"
         "$mod CTRL, n, global, caelestia:clearNotifs"
 
@@ -229,8 +229,10 @@
         ", xf86monbrightnessup, global, caelestia:brightnessUp"
 
         # Screenshots
-        ", print, global, caelestia:screenshot"
-        "$mod SHIFT, S, global, caelestia:screenshot"
+        ", print, exec, caelestia screenshot -r"
+        "$mod SHIFT, S, exec, caelestia screenshot -r"
+        "CTRL, print, exec, caelestia screenshot"
+        "$mod SHIFT CTRL, S, exec, caelestia screenshot"
 
         # Other
         "$mod SHIFT, p, exec, hyprpicker -a"

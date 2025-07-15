@@ -4,6 +4,5 @@
     ./greetd.nix
     ./hyprland.nix
     ./power.nix
-    ./quickshell.nix
   ];
 }
