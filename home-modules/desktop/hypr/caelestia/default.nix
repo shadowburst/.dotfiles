@@ -10,7 +10,6 @@
   ];
   xdg.configFile."caelestia/shell.json".text = builtins.toJSON {
     bar = {
-      persistent = false;
       workspaces = {
         shown = 7;
         occupiedBg = true;
@@ -23,7 +22,7 @@
       thickness = 1;
       rounding = 12;
     };
-    dashboard = {
+    services = {
       weatherLocation = "48.306453773398786, -0.6214670156648004";
     };
   };

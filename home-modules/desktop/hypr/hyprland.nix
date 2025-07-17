@@ -25,7 +25,6 @@
       ];
       exec = [
         "pkill quickshell; caelestia shell -d"
-        "sleep 2 && caelestia shell drawers toggle bar"
       ];
       env = [
         "XDG_SESSION_DESKTOP, wayland"
@@ -203,7 +202,6 @@
 
         # Menus
         "$mod, Space, global, caelestia:launcher"
-        "$mod, m, exec, caelestia shell drawers toggle bar"
         "$mod, x, global, caelestia:session"
         "$mod CTRL, n, global, caelestia:clearNotifs"
 
