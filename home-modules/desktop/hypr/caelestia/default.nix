@@ -6,12 +6,9 @@
 }: {
   home.packages = [
     inputs.caelestia-cli.packages.${pkgs.system}.default
-    inputs.caelestia-shell.packages.${pkgs.system}.default
   ];
   xdg.configFile."caelestia/shell.json".text = builtins.toJSON {
-    general.apps = {
-      terminal = config.home.sessionVariables.TERMINAL;
-    };
+    general.apps.terminal = config.home.sessionVariables.TERMINAL;
     background.desktopClock.enabled = true;
     bar = {
       status.showAudio = true;
@@ -28,10 +25,8 @@
       rounding = 12;
     };
     launcher.vimKeybinds = true;
+    services.weatherLocation = "48.306453773398786, -0.6214670156648004";
     session.vimKeybinds = true;
-    services = {
-      weatherLocation = "48.306453773398786, -0.6214670156648004";
-    };
   };
   xdg.stateFile."caelestia/wallpaper/path.txt".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/caelestia/state/wallpaper.txt";
   xdg.stateFile."caelestia/scheme.json".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/caelestia/state/scheme.json";
