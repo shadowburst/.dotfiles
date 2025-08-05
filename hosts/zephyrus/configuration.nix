@@ -52,7 +52,9 @@
 
   networking.hostName = "zephyrus";
 
-  systemd.extraConfig = "DefaultTimeoutStopSec=10s";
+  systemd.settings.Manager = {
+    DefaultTimeoutStopSec = "10s";
+  };
 
   services.asusd = {
     asusdConfig.source = ./config/asusd.ron;
