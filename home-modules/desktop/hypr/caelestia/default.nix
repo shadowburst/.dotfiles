@@ -9,7 +9,12 @@
     inputs.caelestia-shell.packages.${pkgs.system}.default
   ];
   xdg.configFile."caelestia/shell.json".text = builtins.toJSON {
+    general.apps = {
+      terminal = config.home.sessionVariables.TERMINAL;
+    };
+    background.desktopClock.enabled = true;
     bar = {
+      status.showAudio = true;
       workspaces = {
         shown = 7;
         occupiedBg = true;
@@ -22,6 +27,8 @@
       thickness = 1;
       rounding = 12;
     };
+    launcher.vimKeybinds = true;
+    session.vimKeybinds = true;
     services = {
       weatherLocation = "48.306453773398786, -0.6214670156648004";
     };
