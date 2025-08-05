@@ -110,6 +110,7 @@
         force_zero_scaling = true;
       };
       misc = {
+        session_lock_xray = true;
         disable_hyprland_logo = true;
         vrr = 0;
         allow_session_lock_restore = true;
