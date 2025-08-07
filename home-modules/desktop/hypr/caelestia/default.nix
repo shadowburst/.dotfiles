@@ -9,7 +9,6 @@
   ];
   xdg.configFile."caelestia/shell.json".text = builtins.toJSON {
     general.apps.terminal = config.home.sessionVariables.TERMINAL;
-    background.desktopClock.enabled = true;
     bar = {
       status.showAudio = true;
       workspaces = {
