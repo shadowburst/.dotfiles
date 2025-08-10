@@ -4,8 +4,8 @@
     polarity = "dark";
     iconTheme = {
       enable = true;
-      package = pkgs.kora-icon-theme;
-      dark = "kora";
+      package = pkgs.tela-circle-icon-theme;
+      dark = "Tela-circle-dark";
     };
     targets = {
       gtk.enable = true;
