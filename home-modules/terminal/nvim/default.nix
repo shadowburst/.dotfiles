@@ -70,5 +70,5 @@
     MANPAGER = "nvim +Man!";
   };
 
-  xdg.stateFile."${username}/nvim/vue_typescript_plugin".text = "${pkgs.vue-language-server}/lib/node_modules/@vue/language-server";
+  xdg.stateFile."${username}/nvim/vue_typescript_plugin".text = "${pkgs.vue-language-server}/lib/language-tools/packages/language-server";
 }
