@@ -22,13 +22,13 @@
 
   home.packages = with pkgs; [
     act
+    btop
     curl
     delta
     fd
     ffmpeg
     gcc
     gnumake
-    htop
     jq
     ripgrep
     sshfs

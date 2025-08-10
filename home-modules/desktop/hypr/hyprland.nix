@@ -211,7 +211,7 @@
         "$mod, b, exec, $browser"
         "$mod, d, exec, launch-default"
         "$mod, e, exec, $terminal -e yazi"
-        "CTRL SHIFT, escape, exec, $terminal -e htop"
+        "CTRL SHIFT, escape, exec, $terminal -e btop"
         ", xf86calculator, exec, gnome-calculator"
 
         # Audio

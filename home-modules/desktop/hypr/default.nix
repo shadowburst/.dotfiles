@@ -15,9 +15,9 @@ in {
   home.packages = with pkgs; [
     launch-default
 
+    btop
     nautilus
     gnome-calculator
-    htop
     hyprpicker
     pavucontrol
     playerctl
