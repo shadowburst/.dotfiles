@@ -6,6 +6,7 @@
     accent = "lavender";
 
     bat.enable = true;
+    btop.enable = true;
     brave.enable = true;
     cava.enable = true;
     delta.enable = true;
