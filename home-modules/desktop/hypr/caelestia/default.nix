@@ -9,6 +9,12 @@
   ];
   xdg.configFile."caelestia/shell.json".text = builtins.toJSON {
     general.apps.terminal = config.home.sessionVariables.TERMINAL;
+    appearance = {
+      font = {
+        sans = config.stylix.fonts.sansSerif.name;
+        mono = config.stylix.fonts.monospace.name;
+      };
+    };
     bar = {
       status.showAudio = true;
       workspaces = {
