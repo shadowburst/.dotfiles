@@ -25,6 +25,7 @@
         rounding = 12;
       };
       launcher.vimKeybinds = true;
+      services.smartScheme = false;
       services.weatherLocation = "48.306453773398786, -0.6214670156648004";
       session.vimKeybinds = true;
     };
