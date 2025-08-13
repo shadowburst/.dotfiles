@@ -3,12 +3,13 @@
   pkgs,
   ...
 }: {
-  home.packages = [
-    (inputs.caelestia-shell.packages.${pkgs.system}.default.override
-      {
-        brightnessctl = pkgs.writeShellScriptBin "brightnessctl" ''
-          exec ${pkgs.brightnessctl}/bin/brightnessctl --min-value=10 "$@"
-        '';
-      })
-  ];
+  imports = [inputs.caelestia-shell.homeManagerModules.default];
+
+  programs.caelestia.package =
+    inputs.caelestia-shell.packages.${pkgs.system}.default.override
+    {
+      brightnessctl = pkgs.writeShellScriptBin "brightnessctl" ''
+        exec ${pkgs.brightnessctl}/bin/brightnessctl --min-value=10 "$@"
+      '';
+    };
 }
