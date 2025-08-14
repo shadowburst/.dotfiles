@@ -12,6 +12,7 @@
           prompt = "{file:${./prompts/plan.md}}";
         };
       };
+      keybinds.leader = "ctrl+g";
     };
   };
 }
