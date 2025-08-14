@@ -3,7 +3,6 @@ local function logs() require("neogit").action("log", "log_all_branches", { "--g
 return {
   {
     "NeogitOrg/neogit",
-    commit = "e3c148905c334c886453df1490360ebb1a2ba2ed",
     dependencies = {
       "nvim-lua/plenary.nvim",
       "sindrets/diffview.nvim",
