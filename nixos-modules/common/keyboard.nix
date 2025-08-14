@@ -19,7 +19,7 @@
         )
 
         (defalias
-          a (multi f24 (tap-hold $tap-time $hold-time a lalt))
+          a (multi f24 (tap-hold $tap-time $hold-time a ralt))
           s (multi f24 (tap-hold $tap-time $hold-time s lmet))
           d (multi f24 (tap-hold $tap-time $hold-time d lctl))
           f (multi f24 (tap-hold $tap-time $hold-time f lsft))
