@@ -12,7 +12,8 @@ in {
   programs.tmux = {
     enable = true;
     baseIndex = 1;
-    escapeTime = 0;
+    prefix = "C-f";
+    escapeTime = 250;
     mouse = true;
     keyMode = "vi";
     terminal = "xterm-256color";
@@ -42,25 +43,35 @@ in {
       set -g pane-border-format " #{pane_title} "
 
       # +--- Sessions ---+
-      bind-key -n M-d detach
-      bind-key -n M-f run-shell "tmux neww tmux-sessionizer"
-      bind-key -n M-q confirm-before "kill-session"
+      bind-key d detach
+      bind-key f run-shell "tmux neww tmux-sessionizer"
+      bind-key q confirm-before "kill-session"
 
       # +--- Windows ---+
-      bind-key -n M-w choose-window
-      bind-key -n M-Space next-window
-      bind-key -n M-Tab switch-client -n
-      bind-key -n M-n new-window
-      bind-key -n M-s split-window -v
-      bind-key -n M-v split-window -h
-      bind-key -n M-H swap-pane -d -t "{left-of}"
-      bind-key -n M-J swap-pane -d -t "{down-of}"
-      bind-key -n M-K swap-pane -d -t "{up-of}"
-      bind-key -n M-L swap-pane -d -t "{right-of}"
+      bind-key w choose-window
+      bind-key Space switch-client -n
+      bind-key n new-window
+      bind-key s split-window -v
+      bind-key v split-window -h
+      bind-key a split-window -h opencode
+      bind-key H swap-pane -d -t "{left-of}"
+      bind-key J swap-pane -d -t "{down-of}"
+      bind-key K swap-pane -d -t "{up-of}"
+      bind-key L swap-pane -d -t "{right-of}"
+
+      bind-key '&' select-window -t 1
+      bind-key 'é' select-window -t 2
+      bind-key '"' select-window -t 3
+      bind-key "'" select-window -t 4
+      bind-key '(' select-window -t 5
+      bind-key '-' select-window -t 6
+      bind-key 'è' select-window -t 7
+      bind-key '_' select-window -t 8
+      bind-key 'ç' select-window -t 9
 
       # +--- Panes ---+
-      bind-key -n M-c confirm-before "kill-pane"
-      bind-key -n M-o confirm-before "kill-pane -a"
+      bind-key c confirm-before "kill-pane"
+      bind-key o confirm-before "kill-pane -a"
 
       # +--- Other ---+
       bind-key r source-file ~/.config/tmux/tmux.conf
@@ -73,10 +84,8 @@ in {
       bind-key -n C-k if-shell "$is_vim" "send-keys C-k" "select-pane -U"
       bind-key -n C-l if-shell "$is_vim" "send-keys C-l" "select-pane -R"
 
-      bind-key -n "M-h" if-shell "$is_vim" "send-keys M-h" "resize-pane -L 1"
-      bind-key -n "M-j" if-shell "$is_vim" "send-keys M-j" "resize-pane -D 1"
-      bind-key -n "M-k" if-shell "$is_vim" "send-keys M-k" "resize-pane -U 1"
-      bind-key -n "M-l" if-shell "$is_vim" "send-keys M-l" "resize-pane -R 1"
+      # +--- Toggle vertical pane to the right ---+
+      bind-key | if-shell "tmux list-panes -F '#{pane_title}' | grep -q '^side-pane$'" "kill-pane -t \"=side-pane\"" "split-window -h -c '#{pane_current_path}' -T side-pane"
     '';
   };
 
