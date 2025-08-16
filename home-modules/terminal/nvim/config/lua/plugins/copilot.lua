@@ -5,6 +5,7 @@ return {
     cmd = { "Copilot" },
     event = "InsertEnter",
     opts = {
+      disable_limit_reached_message = true,
       suggestion = {
         auto_trigger = true,
         trigger_on_accept = false,
@@ -17,7 +18,6 @@ return {
     },
     config = function(_, opts)
       require("copilot").setup(opts)
-      -- require("copilot.command").disable()
 
       local enabled = true
       Snacks.toggle
