@@ -28,7 +28,7 @@
       services.smartScheme = false;
       services.weatherLocation = "48.306453773398786, -0.6214670156648004";
       session.vimKeybinds = true;
+      paths.sessionGif = ./assets/eye.png;
     };
   };
-  xdg.stateFile."caelestia/scheme.json".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/caelestia/state/scheme.json";
 }
