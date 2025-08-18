@@ -28,5 +28,7 @@
         prompt = "enabled";
       };
     };
+
+    gh-dash.enable = true;
   };
 }

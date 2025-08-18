@@ -13,6 +13,7 @@
     fish.enable = true;
     hyprland.enable = true;
     kitty.enable = true;
+    gh-dash.enable = true;
     ghostty.enable = true;
     kvantum.enable = true;
     lazygit.enable = true;
