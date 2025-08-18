@@ -73,6 +73,10 @@ in {
       bind-key c confirm-before "kill-pane"
       bind-key o confirm-before "kill-pane -a"
 
+      # +--- Copy mode ---+
+      bind-key -T copy-mode-vi v send-keys -X begin-selection
+      bind-key Escape copy-mode
+
       # +--- Other ---+
       bind-key r source-file ~/.config/tmux/tmux.conf
 
