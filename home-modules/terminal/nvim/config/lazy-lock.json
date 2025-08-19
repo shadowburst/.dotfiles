@@ -19,7 +19,6 @@
   "mini.diff": { "branch": "main", "commit": "f573bd2ae2eb225ea2f125126b8869e04bcaf231" },
   "mini.icons": { "branch": "main", "commit": "b8f6fa6f5a3fd0c56936252edcd691184e5aac0c" },
   "mini.operators": { "branch": "main", "commit": "e72b5afec4c339aebd601a56e9ae3ef13d2f5d1a" },
-  "mini.pairs": { "branch": "main", "commit": "1e1ca3f60f58d4050bf814902b472eec9963a5dd" },
   "mini.splitjoin": { "branch": "main", "commit": "51909e9883ab206f5a92deb9ca685317387586a4" },
   "mini.surround": { "branch": "main", "commit": "7a8606333affe7ce637a0ba91bbafc46fc42bfa0" },
   "neogen": { "branch": "main", "commit": "d7f9461727751fb07f82011051338a9aba07581d" },
