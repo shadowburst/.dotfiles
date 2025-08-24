@@ -9,6 +9,10 @@ return {
     opts = {
       flavour = "mocha",
       kitty = false,
+      float = {
+        transparent = false,
+        solid = false,
+      },
       custom_highlights = function(colors)
         return {
           LineNrAbove = { link = "LineNr" },
@@ -19,9 +23,11 @@ return {
           FloatBorder = { bg = colors.mantle, fg = colors.lavender },
           Title = { fg = colors.lavender },
           FloatTitle = { bg = colors.mantle },
+          -- Blink
           BlinkCmpMenuBorder = { link = "Pmenu" },
           BlinkCmpSignatureHelpBorder = { link = "Pmenu" },
           BlinkCmpDocBorder = { link = "Pmenu" },
+          -- Snacks
           SnacksDashboardHeader = { fg = colors.lavender },
           SnacksIndentScope = { fg = colors.lavender },
         }
