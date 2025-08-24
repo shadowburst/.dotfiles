@@ -9,6 +9,8 @@
     viAlias = true;
     vimAlias = true;
     extraPackages = with pkgs; [
+      lsof
+
       # Bash
       bash-language-server
       shfmt

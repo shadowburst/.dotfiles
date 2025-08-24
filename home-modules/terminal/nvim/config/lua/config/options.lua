@@ -3,6 +3,7 @@ local opt = vim.opt
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
+opt.autoread = true -- Enable auto read
 opt.autowrite = true -- Enable auto write
 opt.breakindent = true
 opt.clipboard = "unnamedplus" -- Sync with system clipboard
