@@ -15,7 +15,7 @@ return {
       ---@type CtpColors<string>
       local palette = require("catppuccin.palettes").get_palette(require("catppuccin").options.flavour)
 
-      local theme = require("lualine.themes.catppuccin-macchiato")
+      local theme = require("lualine.themes.catppuccin-mocha")
 
       theme.normal.c.bg = palette.base
 
