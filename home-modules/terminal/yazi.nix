@@ -16,7 +16,9 @@
       '';
 
     plugins = with pkgs; {
+      mount = yaziPlugins.mount;
       smart-enter = yaziPlugins.smart-enter;
+      smart-filter = yaziPlugins.smart-filter;
       starship = yaziPlugins.starship;
     };
 
@@ -29,31 +31,37 @@
         show_hidden = true;
         show_symlink = true;
       };
-      preview = {
-        image_delay = 100;
-      };
-      opener = {
-        extract = [
-          {
-            run = ''ya pub extract --list "$@"'';
-            desc = "Extract here";
-            for = "unix";
-          }
-          {
-            run = "ya pub extract --list %*";
-            desc = "Extract here";
-            for = "windows";
-          }
-        ];
-      };
-      open = {
-        prepend_rules = [
-          {
-            name = "*.zip";
-            use = "extract";
-          }
-        ];
-      };
+      opener.extract = [
+        {
+          run = ''ya pub extract --list "$@"'';
+          desc = "Extract here";
+          for = "unix";
+        }
+        {
+          run = "ya pub extract --list %*";
+          desc = "Extract here";
+          for = "windows";
+        }
+      ];
+      plugin.preprend_fetchers = [
+        {
+          id = "git";
+          for = "*";
+          name = "git";
+        }
+        {
+          id = "git";
+          for = "*/";
+          name = "git";
+        }
+      ];
+      preview.image_delay = 100;
+      open.prepend_rules = [
+        {
+          name = "*.zip";
+          use = "extract";
+        }
+      ];
     };
 
     keymap = {
@@ -63,17 +71,6 @@
           run = "close";
           on = ["q"];
           desc = "Close the current tab, or quit if it is last tab";
-        }
-        # Navigation
-        {
-          run = "plugin smart-enter";
-          on = ["l"];
-          desc = "Enter the child directory, or open the file";
-        }
-        {
-          run = "plugin smart-enter";
-          on = ["<Enter>"];
-          desc = "Enter the child directory, or open the file";
         }
         # Operations
         {
@@ -132,6 +129,27 @@
             "v"
           ];
           desc = "Goto videos";
+        }
+        # Plugins
+        {
+          run = "plugin mount";
+          on = ["M"];
+          desc = "Handle mounted drives";
+        }
+        {
+          run = "plugin smart-enter";
+          on = ["l"];
+          desc = "Enter the child directory, or open the file";
+        }
+        {
+          run = "plugin smart-enter";
+          on = ["<Enter>"];
+          desc = "Enter the child directory, or open the file";
+        }
+        {
+          run = "plugin smart-filter";
+          on = ["f"];
+          desc = "Smart filter";
         }
       ];
       completion.prepend_keymap = [
