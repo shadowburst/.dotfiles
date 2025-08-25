@@ -1,4 +1,4 @@
-{...}: {
+{pkgs, ...}: {
   programs.yazi = {
     enable = true;
     enableFishIntegration = true;
@@ -15,9 +15,9 @@
         })
       '';
 
-    plugins = {
-      smart-enter = ./plugins/smart-enter.yazi;
-      starship = ./plugins/starship.yazi;
+    plugins = with pkgs; {
+      smart-enter = yaziPlugins.smart-enter;
+      starship = yaziPlugins.starship;
     };
 
     settings = {

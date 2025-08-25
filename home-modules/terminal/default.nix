@@ -11,7 +11,7 @@
     ./opencode
     ./starship.nix
     ./tmux
-    ./yazi
+    ./yazi.nix
     ./zoxide.nix
   ];
 
