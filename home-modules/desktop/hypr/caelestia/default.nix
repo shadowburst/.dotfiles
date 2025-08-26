@@ -54,7 +54,7 @@
       border.rounding = 12;
       general.apps.terminal = config.home.sessionVariables.TERMINAL;
       launcher.vimKeybinds = true;
-      launcher.actionPrefix = " ";
+      launcher.actionPrefix = "$";
       services.smartScheme = false;
       services.weatherLocation = "48.306453773398786, -0.6214670156648004";
       session.vimKeybinds = true;
