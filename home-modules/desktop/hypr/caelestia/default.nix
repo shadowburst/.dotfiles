@@ -5,7 +5,7 @@
     settings = {
       appearance.font.sans = config.stylix.fonts.sansSerif.name;
       appearance.font.mono = config.stylix.fonts.monospace.name;
-      background.visualiser.autoHide = false;
+      # background.visualiser.autoHide = false;
       bar.status.showAudio = true;
       bar.workspaces.shown = 7;
       bar.workspaces.occupiedBg = true;
