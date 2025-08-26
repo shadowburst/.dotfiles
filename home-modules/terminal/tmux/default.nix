@@ -12,7 +12,7 @@ in {
   programs.tmux = {
     enable = true;
     baseIndex = 1;
-    prefix = "C-f";
+    prefix = "C-t";
     escapeTime = 250;
     mouse = true;
     keyMode = "vi";
@@ -46,14 +46,13 @@ in {
       bind-key d detach
       bind-key f run-shell "tmux neww tmux-sessionizer"
       bind-key q confirm-before "kill-session"
+      bind-key Space switch-client -n
 
       # +--- Windows ---+
       bind-key w choose-window
-      bind-key Space switch-client -n
-      bind-key n new-window
+      bind-key t new-window
       bind-key s split-window -v
       bind-key v split-window -h
-      bind-key a split-window -h opencode
       bind-key H swap-pane -d -t "{left-of}"
       bind-key J swap-pane -d -t "{down-of}"
       bind-key K swap-pane -d -t "{up-of}"
