@@ -121,11 +121,6 @@ return {
         desc = "Buffers",
       },
       {
-        "<leader>/",
-        function() Snacks.picker.grep() end,
-        desc = "Grep",
-      },
-      {
         "<leader>:",
         function() Snacks.picker.command_history() end,
         desc = "Command history",
@@ -140,6 +135,11 @@ return {
         "<leader>ff",
         function() Snacks.picker.files() end,
         desc = "Find files",
+      },
+      {
+        "<leader>fg",
+        function() Snacks.picker.grep() end,
+        desc = "Grep",
       },
       {
         "<leader>fr",
