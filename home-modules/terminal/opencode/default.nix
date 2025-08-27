@@ -2,17 +2,10 @@
   programs.opencode = {
     enable = true;
     settings = {
-      theme = "system";
+      theme = "catppuccin";
       model = "github-copilot/gpt-4.1";
-      mode = {
-        build = {
-          prompt = "{file:${./prompts/build.md}}";
-        };
-        plan = {
-          prompt = "{file:${./prompts/plan.md}}";
-        };
-      };
-      keybinds.leader = "ctrl+g";
+      mode.build.prompt = "{file:${./prompts/build.md}}";
+      mode.plan.prompt = "{file:${./prompts/plan.md}}";
     };
   };
 }
