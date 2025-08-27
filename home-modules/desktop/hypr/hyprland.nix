@@ -203,6 +203,7 @@
 
         # Menus
         "$mod, Space, global, caelestia:launcher"
+        "$mod, a, exec, caelestia shell drawers toggle dashboard"
         "$mod, x, global, caelestia:session"
         "$mod CTRL, n, global, caelestia:clearNotifs"
 

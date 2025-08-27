@@ -6,6 +6,7 @@
       appearance.font.sans = config.stylix.fonts.sansSerif.name;
       appearance.font.mono = config.stylix.fonts.monospace.name;
       # background.visualiser.autoHide = false;
+      bar.clock.showIcon = false;
       bar.status.showAudio = true;
       bar.workspaces.shown = 7;
       bar.workspaces.occupiedBg = true;
@@ -52,6 +53,7 @@
       ];
       border.thickness = 1;
       border.rounding = 12;
+      dashboard.showOnHover = false;
       general.apps.terminal = config.home.sessionVariables.TERMINAL;
       launcher.vimKeybinds = true;
       launcher.actionPrefix = "$";
