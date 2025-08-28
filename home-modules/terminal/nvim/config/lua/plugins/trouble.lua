@@ -1,7 +1,7 @@
 return {
   {
     "folke/trouble.nvim",
-    dependencies = { "echasnovski/mini.icons" },
+    dependencies = { "nvim-mini/mini.icons" },
     cmd = { "Trouble" },
     ---@module 'trouble'
     ---@type trouble.Config

@@ -4,7 +4,7 @@ return {
     dependencies = {
       "catppuccin/nvim",
       "cbochs/grapple.nvim",
-      "echasnovski/mini.icons",
+      "nvim-mini/mini.icons",
     },
     event = { "VeryLazy" },
     opts = function()

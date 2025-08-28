@@ -7,7 +7,7 @@ local mappings = {
 
 return {
   {
-    "echasnovski/mini.operators",
+    "nvim-mini/mini.operators",
     event = { "BufNewFile", "BufReadPost", "BufWritePre" },
     opts = {
       evaluate = { prefix = mappings.evaluate },

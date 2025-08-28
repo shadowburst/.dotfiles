@@ -3,7 +3,7 @@ local ui = require("util.ui")
 return {
   {
     "cbochs/grapple.nvim",
-    dependencies = { "echasnovski/mini.icons" },
+    dependencies = { "nvim-mini/mini.icons" },
     cmd = { "Grapple" },
     ---@module 'grapple'
     ---@type grapple.options

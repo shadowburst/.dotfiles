@@ -2,7 +2,7 @@ local mapping = "ga"
 
 return {
   {
-    "echasnovski/mini.align",
+    "nvim-mini/mini.align",
     event = { "BufNewFile", "BufReadPost", "BufWritePre" },
     opts = {
       mappings = {

@@ -1,6 +1,6 @@
 return {
   {
-    "echasnovski/mini.bracketed",
+    "nvim-mini/mini.bracketed",
     event = { "BufNewFile", "BufReadPost", "BufWritePre" },
     opts = {
       undo = { suffix = "" },
