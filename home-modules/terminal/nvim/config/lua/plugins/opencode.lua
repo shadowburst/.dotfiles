@@ -7,6 +7,10 @@ return {
     ---@type opencode.Opts
     opts = {
       auto_reload = true,
+      on_opencode_not_found = function()
+        vim.notify("Opencode instance not found", vim.log.levels.WARN, { title = "opencode" })
+        return false
+      end,
     },
     keys = {
       {
@@ -41,11 +45,6 @@ return {
         "<leader>oo",
         function() require("opencode").ask() end,
         desc = "Ask opencode",
-      },
-      {
-        "<leader>ot",
-        function() require("opencode").toggle() end,
-        desc = "Open opencode",
       },
       {
         "<leader>or",
