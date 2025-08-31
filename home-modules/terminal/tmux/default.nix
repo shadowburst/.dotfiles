@@ -12,7 +12,7 @@ in {
   programs.tmux = {
     enable = true;
     baseIndex = 1;
-    prefix = "C-t";
+    prefix = "C-f";
     escapeTime = 250;
     mouse = true;
     keyMode = "vi";
