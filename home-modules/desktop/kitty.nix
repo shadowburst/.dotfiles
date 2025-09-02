@@ -14,6 +14,7 @@
       url_style = "curly";
       window_padding_width = "4 0";
     };
+    keybindings."shift+enter" = "send_key alt+enter";
   };
 
   home.sessionVariables = {
