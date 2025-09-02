@@ -25,10 +25,18 @@ return {
       {
         "<leader>sr",
         function()
-          require("grug-far").open({
-            startCursorRow = 1,
-            visualSelectionUsage = "operate-within-range",
-          })
+          if vim.fn.mode() ~= "V" then
+            require("grug-far").open({
+              prefills = {
+                paths = vim.fn.expand("%"),
+              },
+            })
+          else
+            require("grug-far").open({
+              startCursorRow = 1,
+              visualSelectionUsage = "operate-within-range",
+            })
+          end
         end,
         mode = { "x" },
         desc = "Replace in selection",
