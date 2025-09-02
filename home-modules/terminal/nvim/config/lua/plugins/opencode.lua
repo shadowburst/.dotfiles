@@ -1,3 +1,17 @@
+---@param focus boolean
+---@return boolean: true if the pane was opened successfully, false otherwise
+local function open_opencode(focus)
+  local success = require("tmux.wrapper.tmux").execute("split-window -h -l 80 opencode")
+  if not success then
+    vim.notify("Failed to open tmux pane", vim.log.levels.ERROR, { title = "opencode" })
+    return false
+  end
+  if focus then
+    require("tmux").move_right()
+  end
+  return true
+end
+
 return {
   {
     "NickvanDyke/opencode.nvim",
@@ -8,15 +22,7 @@ return {
     ---@type opencode.Opts
     opts = {
       auto_reload = true,
-      on_opencode_not_found = function()
-        local tmux = require("tmux.wrapper.tmux")
-        local success = tmux.execute("split-window -h -l 80 opencode")
-        if not success then
-          vim.notify("Failed to open tmux pane", vim.log.levels.ERROR, { title = "opencode" })
-          return false
-        end
-        return true
-      end,
+      on_opencode_not_found = function() return open_opencode(false) end,
     },
     keys = {
       {
@@ -49,7 +55,7 @@ return {
       },
       {
         "<leader>oo",
-        function() require("opencode").ask() end,
+        function() open_opencode(true) end,
         desc = "Ask opencode",
       },
       {
