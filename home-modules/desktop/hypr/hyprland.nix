@@ -48,9 +48,7 @@
           size = 6;
           xray = true;
         };
-        shadow = {
-          enabled = false;
-        };
+        shadow.enabled = false;
       };
       animations = {
         enabled = true;
@@ -91,24 +89,18 @@
         workspace_swipe_distance = 200;
         workspace_swipe_min_speed_to_force = 10;
       };
-      dwindle = {
-        force_split = 2;
+      dwindle.force_split = 2;
+      group.groupbar = {
+        font_size = 15;
+        gradients = true;
+        gradient_round_only_edges = false;
+        gradient_rounding = 5;
+        height = 25;
+        indicator_height = 0;
+        gaps_in = 3;
+        gaps_out = 3;
       };
-      group = {
-        groupbar = {
-          font_size = 15;
-          gradients = true;
-          gradient_round_only_edges = false;
-          gradient_rounding = 5;
-          height = 25;
-          indicator_height = 0;
-          gaps_in = 3;
-          gaps_out = 3;
-        };
-      };
-      xwayland = {
-        force_zero_scaling = true;
-      };
+      xwayland.force_zero_scaling = true;
       misc = {
         session_lock_xray = true;
         disable_hyprland_logo = true;

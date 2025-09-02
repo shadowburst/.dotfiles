@@ -8,6 +8,8 @@
     ./stylix.nix
   ];
 
-  programs.gnome-disks.enable = true;
-  programs.seahorse.enable = true;
+  programs = {
+    gnome-disks.enable = true;
+    seahorse.enable = true;
+  };
 }

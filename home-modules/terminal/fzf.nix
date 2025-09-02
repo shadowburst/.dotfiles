@@ -30,8 +30,6 @@
       scrollbar = base0D;
       spinner = base08;
     };
-    tmux = {
-      enableShellIntegration = true;
-    };
+    tmux.enableShellIntegration = true;
   };
 }

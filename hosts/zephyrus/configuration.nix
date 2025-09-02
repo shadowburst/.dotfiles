@@ -22,9 +22,7 @@
         useOSProber = true;
         configurationLimit = 5;
       };
-      efi = {
-        canTouchEfiVariables = true;
-      };
+      efi.canTouchEfiVariables = true;
       timeout = 1;
     };
   };

@@ -15,11 +15,12 @@
     ./zoxide.nix
   ];
 
-  # Manage bash to include session variables in scripts
-  programs.bash.enable = true;
-  programs.bat.enable = true;
-  programs.btop.enable = true;
-  programs.cava.enable = true;
+  programs = {
+    bash.enable = true;
+    bat.enable = true;
+    btop.enable = true;
+    cava.enable = true;
+  };
 
   home.packages = with pkgs; [
     act

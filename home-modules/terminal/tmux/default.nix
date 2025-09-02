@@ -92,9 +92,7 @@ in {
     '';
   };
 
-  home.packages = [
-    tmux-sessionizer
-  ];
+  home.packages = [tmux-sessionizer];
 
   xdg.stateFile."${username}/tmux/templates" = {
     source = ./templates;
