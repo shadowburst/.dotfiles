@@ -11,6 +11,7 @@
       bar = {
         clock.showIcon = false;
         status.showAudio = true;
+        status.showLockStatus = false;
         workspaces.shown = 7;
         workspaces.occupiedBg = true;
         workspaces.activeTrail = true;
