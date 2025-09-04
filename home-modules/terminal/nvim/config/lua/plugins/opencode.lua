@@ -46,12 +46,12 @@ return {
       {
         "<leader>od",
         function() require("opencode").prompt("Fix this @diagnostic") end,
-        desc = "Fix errors",
+        desc = "Fix line diagnostic",
       },
       {
         "<leader>oD",
         function() require("opencode").prompt("Fix these @diagnostics") end,
-        desc = "Fix errors",
+        desc = "Fix buffer diagnostics",
       },
       {
         "<leader>oo",
