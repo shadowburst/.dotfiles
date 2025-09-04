@@ -1,7 +1,6 @@
 {
   config,
   pkgs,
-  username,
   ...
 }: {
   programs.neovim = {
@@ -67,8 +66,9 @@
   xdg.configFile."nvim".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/terminal/nvim/config";
 
-  xdg.stateFile."${username}/nvim/vue_typescript_plugin".text = "${pkgs.vue-language-server}/lib/language-tools/packages/language-server";
-
-  home.sessionVariables.EDITOR = "nvim";
-  home.sessionVariables.MANPAGER = "nvim +Man!";
+  home.sessionVariables = {
+    EDITOR = "nvim";
+    MANPAGER = "nvim +Man!";
+    VUE_TS_PLUGIN_PATH = "${pkgs.vue-language-server}/lib/language-tools/packages/language-server";
+  };
 }

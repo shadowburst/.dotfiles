@@ -86,11 +86,7 @@ return {
                 globalPlugins = {
                   {
                     name = "@vue/typescript-plugin",
-                    location = vim.fn.readfile(
-                      vim.fn.expand("$XDG_STATE_HOME/$USER/nvim/vue_typescript_plugin"),
-                      "",
-                      1
-                    )[1],
+                    location = vim.fn.expand("$VUE_TS_PLUGIN_PATH"),
                     languages = { "vue" },
                     configNamespace = "typescript",
                     enableForWorkspaceTypeScriptVersions = true,
