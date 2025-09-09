@@ -9,7 +9,10 @@
       font-size = 11;
       background-opacity = 0.9;
       confirm-close-surface = false;
-      window-padding-y = 4;
+      window-padding-y = 2;
+      keybind = [
+        "shift+enter=csi:13;3u"
+      ];
     };
   };
 }
