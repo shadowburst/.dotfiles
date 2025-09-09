@@ -18,6 +18,7 @@ return {
         { ft = "qf", title = "QuickFix" },
       },
       left = {
+        { ft = "gitsigns-blame" },
         { ft = "undotree" },
       },
       right = {
