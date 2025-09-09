@@ -1,4 +1,6 @@
 {host, ...}: {
+  home.shell.enableFishIntegration = true;
+
   programs.fish = {
     enable = true;
     functions = {
@@ -34,7 +36,6 @@
         end
       '';
     };
-
     shellAliases = {
       cp = "cp -i";
       mv = "mv -i";
@@ -47,13 +48,11 @@
       flake-boot = "sudo nixos-rebuild boot --flake ~/.dotfiles#${host}";
       flake-update = "nix flake update --flake ~/.dotfiles && flake-switch";
     };
-
     shellAbbrs = {
       sail = "./vendor/bin/sail";
       pint = "./vendor/bin/sail php ./vendor/bin/pint";
       pest = "./vendor/bin/sail php ./vendor/bin/pest";
     };
-
     shellInit = ''
       set fish_greeting
       set fish_color_param foreground

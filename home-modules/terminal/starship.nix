@@ -1,8 +1,6 @@
 {...}: {
   programs.starship = {
     enable = true;
-    enableFishIntegration = true;
-    enableBashIntegration = true;
     settings = {
       right_format = "$time";
       time = {

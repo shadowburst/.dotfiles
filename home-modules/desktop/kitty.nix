@@ -2,7 +2,6 @@
   programs.kitty = {
     enable = true;
     font.name = config.stylix.fonts.monospace.name;
-    shellIntegration.enableFishIntegration = true;
     settings = {
       hide_window_decorations = true;
       background_opacity = "0.9";

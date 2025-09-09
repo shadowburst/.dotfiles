@@ -1,7 +1,6 @@
 {config, ...}: {
   programs.ghostty = {
     enable = true;
-    enableFishIntegration = true;
     settings = {
       font-family = with config.stylix; [
         fonts.monospace.name
