@@ -1,4 +1,4 @@
-{...}: {
+{pkgs, ...}: {
   programs = {
     git = {
       enable = true;
@@ -27,4 +27,8 @@
 
     gh-dash.enable = true;
   };
+
+  home.packages = with pkgs; [
+    wrkflw
+  ];
 }
