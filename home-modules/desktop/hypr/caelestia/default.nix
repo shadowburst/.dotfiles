@@ -12,6 +12,7 @@
         clock.showIcon = false;
         status.showAudio = true;
         status.showLockStatus = false;
+        status.showMicrophone = true;
         workspaces.shown = 7;
         workspaces.occupiedBg = true;
         workspaces.activeTrail = true;
@@ -40,10 +41,6 @@
           }
           {
             id = "tray";
-            enabled = true;
-          }
-          {
-            id = "idleInhibitor";
             enabled = true;
           }
           {
