@@ -23,6 +23,7 @@
         git_protocol = "ssh";
         prompt = "enabled";
       };
+      extensions = with pkgs; [gh-copilot];
     };
 
     gh-dash.enable = true;
