@@ -44,15 +44,17 @@ in {
 
       # +--- Sessions ---+
       bind-key d detach
-      bind-key f run-shell "tmux neww tmux-sessionizer"
+      bind-key -n M-f run-shell "tmux neww tmux-sessionizer"
       bind-key q confirm-before "kill-session"
-      bind-key Space switch-client -n
+      bind-key -n M-Space switch-client -n
 
       # +--- Windows ---+
       bind-key w choose-window
-      bind-key t new-window
-      bind-key s split-window -v
-      bind-key v split-window -h
+      bind-key -n M-t new-window
+      bind-key -n M-p previous-window
+      bind-key -n M-n next-window
+      bind-key -n M-s split-window -v
+      bind-key -n M-v split-window -h
       bind-key H swap-pane -d -t "{left-of}"
       bind-key J swap-pane -d -t "{down-of}"
       bind-key K swap-pane -d -t "{up-of}"

@@ -7,7 +7,8 @@
         font.sans = config.stylix.fonts.sansSerif.name;
         font.mono = config.stylix.fonts.monospace.name;
       };
-      # background.visualiser.autoHide = false;
+      # background.visualiser.enabled = true;
+      background.visualiser.autoHide = false;
       bar = {
         clock.showIcon = false;
         status.showAudio = true;
