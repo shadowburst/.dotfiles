@@ -20,7 +20,7 @@
 
       # Docker
       docker-compose-language-service
-      dockerfile-language-server-nodejs
+      dockerfile-language-server
 
       # Lua
       lua-language-server
