@@ -43,20 +43,22 @@ in {
       set -g pane-border-format " #{pane_title} "
 
       # +--- Sessions ---+
-      bind-key d detach
-      bind-key f run-shell "tmux neww tmux-sessionizer"
-      bind-key q confirm-before "kill-session"
-      bind-key Space switch-client -n
+      bind-key -n M-d detach
+      bind-key -n M-f run-shell "tmux neww tmux-sessionizer"
+      bind-key -n M-q confirm-before "kill-session"
+      bind-key -n M-Space switch-client -n
 
       # +--- Windows ---+
       bind-key w choose-window
-      bind-key t new-window
-      bind-key s split-window -v
-      bind-key v split-window -h
-      bind-key H swap-pane -d -t "{left-of}"
-      bind-key J swap-pane -d -t "{down-of}"
-      bind-key K swap-pane -d -t "{up-of}"
-      bind-key L swap-pane -d -t "{right-of}"
+      bind-key -n M-t new-window
+      bind-key -n M-p previous-window
+      bind-key -n M-n next-window
+      bind-key -n M-s split-window -v
+      bind-key -n M-v split-window -h
+      bind-key -n M-H swap-pane -d -t "{left-of}"
+      bind-key -n M-J swap-pane -d -t "{down-of}"
+      bind-key -n M-K swap-pane -d -t "{up-of}"
+      bind-key -n M-L swap-pane -d -t "{right-of}"
 
       bind-key '&' select-window -t 1
       bind-key 'é' select-window -t 2
@@ -69,15 +71,15 @@ in {
       bind-key 'ç' select-window -t 9
 
       # +--- Panes ---+
-      bind-key c confirm-before "kill-pane"
-      bind-key o confirm-before "kill-pane -a"
+      bind-key -n M-c confirm-before "kill-pane"
+      bind-key -n M-o confirm-before "kill-pane -a"
 
       # +--- Copy mode ---+
       bind-key -T copy-mode-vi v send-keys -X begin-selection
-      bind-key Escape copy-mode
+      bind-key -n M-Escape copy-mode
 
       # +--- Other ---+
-      bind-key r source-file ~/.config/tmux/tmux.conf
+      bind-key -n M-r source-file ~/.config/tmux/tmux.conf
 
       # +--- Vim integration ---+
       is_vim="ps -o state= -o comm= -t '#{pane_tty}' | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|n?vim?x?)(diff)?$'"
