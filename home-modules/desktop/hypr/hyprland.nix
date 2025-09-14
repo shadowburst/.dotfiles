@@ -84,11 +84,13 @@
         };
       };
       gestures = {
-        workspace_swipe = true;
-        workspace_swipe_fingers = 3;
         workspace_swipe_distance = 200;
         workspace_swipe_min_speed_to_force = 10;
       };
+      gesture = [
+        "3, vertical, workspace"
+        "3, horizontal, close"
+      ];
       dwindle.force_split = 2;
       group.groupbar = {
         font_size = 15;
