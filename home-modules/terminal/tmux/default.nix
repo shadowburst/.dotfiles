@@ -13,7 +13,7 @@ in {
     enable = true;
     baseIndex = 1;
     prefix = "C-f";
-    escapeTime = 250;
+    escapeTime = 0;
     mouse = true;
     keyMode = "vi";
     terminal = "xterm-256color";
