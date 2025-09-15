@@ -76,6 +76,7 @@ in {
 
       # +--- Copy mode ---+
       bind-key -T copy-mode-vi v send-keys -X begin-selection
+      bind-key -T copy-mode-vi Escape send-keys -X cancel
       bind-key -n M-Escape copy-mode
 
       # +--- Other ---+
