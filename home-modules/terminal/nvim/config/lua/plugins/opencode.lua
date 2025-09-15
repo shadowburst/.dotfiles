@@ -24,6 +24,7 @@ return {
       auto_reload = true,
       on_opencode_not_found = function() return open_opencode(false) end,
     },
+    config = function(_, opts) vim.g.opencode_opts = opts end,
     keys = {
       {
         "<leader>oa",
