@@ -15,6 +15,8 @@
     };
     keybindings = {
       "shift+enter" = "send_key alt+enter";
+      "ctrl+backspace" = "send_key alt+backspace";
+      "ctrl+delete" = "send_key alt+delete";
     };
   };
 

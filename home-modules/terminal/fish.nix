@@ -3,8 +3,13 @@
 
   programs.fish = {
     enable = true;
+    binds = {
+      "alt-backspace".command = "backward-kill-word";
+      "alt-backspace".mode = "insert";
+      "alt-delete".command = "kill-word";
+      "alt-delete".mode = "insert";
+    };
     functions = {
-      fish_user_key_bindings = "fish_vi_key_bindings";
       extract = ''
         if test -f $argv
             switch $argv
@@ -53,7 +58,7 @@
       pint = "./vendor/bin/sail php ./vendor/bin/pint";
       pest = "./vendor/bin/sail php ./vendor/bin/pest";
     };
-    shellInit = ''
+    interactiveShellInit = ''
       set fish_greeting
       set fish_color_param foreground
       set fish_color_command blue
@@ -61,6 +66,7 @@
       set fish_color_error red
       set fish_color_valid_path cyan
       set fish_pager_color_progress black --background=blue
+      set -g fish_key_bindings fish_vi_key_bindings
     '';
   };
 }
