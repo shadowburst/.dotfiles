@@ -18,10 +18,17 @@ return {
     },
     keys = {
       {
-        "s",
-        mode = "o",
-        function() require("flash").treesitter() end,
-        desc = "Treesitter",
+        "<c-space>",
+        mode = { "n", "x", "o" },
+        function()
+          require("flash").treesitter({
+            actions = {
+              ["<c-space>"] = "next",
+              ["<BS>"] = "prev",
+            },
+          })
+        end,
+        desc = "Treesitter incremental selection",
       },
       {
         "r",
