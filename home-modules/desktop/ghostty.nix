@@ -11,7 +11,9 @@
       confirm-close-surface = false;
       window-padding-y = 2;
       keybind = [
-        "shift+enter=csi:13;3u"
+        "shift+enter=text:\\x1b\\r" # Send Alt+Enter
+        "control+backspace=text:\\x1b\\x7f" # Send Alt+Backspace
+        "control+delete=text:\\x1b[3;3~" # Send Alt+Delete
       ];
     };
   };
