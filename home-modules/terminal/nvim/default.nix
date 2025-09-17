@@ -9,6 +9,7 @@
     vimAlias = true;
     extraPackages = with pkgs; [
       lsof
+      tree-sitter
 
       # Bash
       bash-language-server
