@@ -19,6 +19,7 @@ in {
     terminal = "xterm-256color";
     extraConfig = with config.lib.stylix.colors.withHashtag; ''
       set -as terminal-features ",xterm-256color:RGB"
+      set-option -g focus-events on
 
       # +--- Status bar ---+
       set -g status-position top
