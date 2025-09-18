@@ -59,7 +59,14 @@
         rounding = 12;
       };
       dashboard.showOnHover = false;
-      general.apps.terminal = config.home.sessionVariables.TERMINAL;
+      general = {
+        apps.terminal = config.home.sessionVariables.TERMINAL;
+        idle = {
+          lockTimeout = 290;
+          dpmsTimeout = 300;
+          sleepTimeout = 999999;
+        };
+      };
       launcher = {
         vimKeybinds = true;
         actionPrefix = "$";
