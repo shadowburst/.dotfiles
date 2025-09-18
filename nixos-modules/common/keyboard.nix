@@ -10,7 +10,7 @@
       '';
       config = ''
         (defsrc
-          a s d f j k l ; bspc del
+          a s d f j k l ; bspc
         )
 
         (defvar
@@ -31,14 +31,10 @@
             (macro bspc)
             (macro C-bspc)
           ))
-          del (tap-dance-eager $tap-time (
-            (macro del)
-            (macro C-del)
-          ))
          )
 
         (deflayer base
-          @a @s @d @f @j @k @l @; @bspc @del
+          @a @s @d @f @j @k @l @; @bspc
         )
       '';
     };
