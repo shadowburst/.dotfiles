@@ -27,10 +27,7 @@
           k (multi f24 (tap-hold $tap-time $hold-time k rctl))
           l (multi f24 (tap-hold $tap-time $hold-time l rmet))
           ; (multi f24 (tap-hold $tap-time $hold-time ; ralt))
-          bspc (tap-dance-eager $tap-time (
-            (macro bspc)
-            (macro C-bspc)
-          ))
+          bspc (tap-dance $tap-time (bspc C-bspc))
          )
 
         (deflayer base
