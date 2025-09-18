@@ -7,6 +7,7 @@
         fonts.emoji.name
       ];
       font-size = 11;
+      cursor-color = config.lib.stylix.colors.withHashtag.base07;
       background-opacity = 0.9;
       confirm-close-surface = false;
       window-padding-y = 2;
