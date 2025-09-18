@@ -15,4 +15,9 @@
       };
     };
   };
+
+  xdg.configFile."opencode/themes" = {
+    source = ./themes;
+    recursive = true;
+  };
 }

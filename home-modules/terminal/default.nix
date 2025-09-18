@@ -1,6 +1,7 @@
 {pkgs, ...}: {
   imports = [
     ./bash.nix
+    ./btop.nix
     ./comma.nix
     ./eza.nix
     ./fish.nix
@@ -17,7 +18,6 @@
 
   programs = {
     bat.enable = true;
-    btop.enable = true;
     carapace.enable = true;
     cava.enable = true;
   };

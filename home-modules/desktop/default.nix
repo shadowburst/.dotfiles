@@ -2,8 +2,7 @@
   imports = [
     ./brave.nix
     # ./cosmic
-    ./ghostty.nix
-    ./kitty.nix
+    ./ghostty
     ./hypr
     ./mpv.nix
     ./stylix.nix

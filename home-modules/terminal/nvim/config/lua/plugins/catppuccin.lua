@@ -8,7 +8,7 @@ return {
     ---@type CatppuccinOptions
     opts = {
       flavour = "mocha",
-      kitty = false,
+      transparent_background = true,
       float = {
         transparent = false,
         solid = false,
