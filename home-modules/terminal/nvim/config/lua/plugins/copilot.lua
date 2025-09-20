@@ -1,7 +1,13 @@
 return {
   {
     "zbirenbaum/copilot.lua",
-    dependencies = { "folke/snacks.nvim" },
+    dependencies = {
+      "folke/snacks.nvim",
+      {
+        "copilotlsp-nvim/copilot-lsp",
+        init = function() vim.g.copilot_nes_debounce = 500 end,
+      },
+    },
     cmd = { "Copilot" },
     event = "InsertEnter",
     opts = {
@@ -11,6 +17,14 @@ return {
         trigger_on_accept = false,
       },
       panel = { enabled = false },
+      nes = {
+        enabled = true,
+        keymap = {
+          accept_and_goto = "<leader>p",
+          accept = false,
+          dismiss = "<Esc>",
+        },
+      },
       filetypes = {
         markdown = true,
         help = true,
