@@ -10,6 +10,7 @@
     extraPackages = with pkgs; [
       lsof
       tree-sitter
+      copilot-language-server
 
       # Bash
       bash-language-server

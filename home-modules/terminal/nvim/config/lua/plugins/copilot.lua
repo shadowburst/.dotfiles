@@ -1,7 +1,13 @@
 return {
   {
     "zbirenbaum/copilot.lua",
-    dependencies = { "folke/snacks.nvim" },
+    dependencies = {
+      "folke/snacks.nvim",
+      {
+        "copilotlsp-nvim/copilot-lsp",
+        init = function() vim.g.copilot_nes_debounce = 500 end,
+      },
+    },
     cmd = { "Copilot" },
     event = "InsertEnter",
     opts = {
@@ -11,6 +17,14 @@ return {
         trigger_on_accept = false,
       },
       panel = { enabled = false },
+      nes = {
+        enabled = true,
+        keymap = {
+          accept_and_goto = "<tab>",
+          accept = false,
+          dismiss = "<esc>",
+        },
+      },
       filetypes = {
         markdown = true,
         help = true,
@@ -37,7 +51,7 @@ return {
     end,
     keys = {
       {
-        "<Tab>",
+        "<tab>",
         mode = { "i" },
         function()
           local copilot = require("copilot.suggestion")
@@ -48,7 +62,7 @@ return {
         desc = "Copilot completion",
       },
       {
-        "<S-Tab>",
+        "<s-tab>",
         mode = { "i" },
         function()
           local copilot = require("copilot.suggestion")
