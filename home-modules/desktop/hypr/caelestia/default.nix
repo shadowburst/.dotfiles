@@ -62,9 +62,9 @@
       general = {
         apps.terminal = config.home.sessionVariables.TERMINAL;
         idle = {
-          lockTimeout = 290;
-          dpmsTimeout = 300;
-          sleepTimeout = 999999;
+          lockTimeout = 99999;
+          dpmsTimeout = 99999;
+          sleepTimeout = 99999;
         };
       };
       launcher = {
