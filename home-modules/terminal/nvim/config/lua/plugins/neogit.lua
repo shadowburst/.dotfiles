@@ -62,11 +62,7 @@ return {
     end,
     keys = {
       { "<leader>gg", "<cmd>Neogit<cr>", desc = "Open neogit" },
-      {
-        "<leader>gl",
-        logs,
-        desc = "Git logs",
-      },
+      { "<leader>gl", logs, desc = "Git logs" },
     },
   },
 }

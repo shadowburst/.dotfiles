@@ -17,14 +17,14 @@ return {
     },
     keys = {
       {
-        "<S-" .. mappings.multiply .. ">",
+        "<s-" .. mappings.multiply .. ">",
         function()
           local keys = MiniOperators.multiply() .. vim.api.nvim_replace_termcodes("$", true, true, true)
           vim.api.nvim_feedkeys(keys, "n", false)
         end,
       },
       {
-        "<S-" .. mappings.replace .. ">",
+        "<s-" .. mappings.replace .. ">",
         function()
           local keys = MiniOperators.replace() .. vim.api.nvim_replace_termcodes("$", true, true, true)
           vim.api.nvim_feedkeys(keys, "n", false)

@@ -16,12 +16,12 @@ return {
       cmdline = {
         keymap = {
           preset = "cmdline",
-          ["<C-Space>"] = {},
+          ["<c-space>"] = {},
           ["<cr>"] = { "accept", "fallback" },
-          ["<C-n>"] = { "show_and_insert", "select_next", "fallback" },
+          ["<c-n>"] = { "show_and_insert", "select_next", "fallback" },
           ["<esc>"] = {
             "hide",
-            function() vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-c>", true, true, true), "n", true) end,
+            function() vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<c-c>", true, true, true), "n", true) end,
           },
         },
         completion = {
@@ -30,10 +30,10 @@ return {
       },
       keymap = {
         preset = "default",
-        ["<C-Space>"] = {},
-        ["<C-n>"] = { "show", "select_next", "fallback" },
-        ["<C-k>"] = { "snippet_forward", "fallback" },
-        ["<C-j>"] = { "snippet_backward", "fallback" },
+        ["<c-space>"] = {},
+        ["<c-n>"] = { "show", "select_next", "fallback" },
+        ["<c-k>"] = { "snippet_forward", "fallback" },
+        ["<c-j>"] = { "snippet_backward", "fallback" },
       },
       appearance = { nerd_font_variant = "normal" },
       sources = {
