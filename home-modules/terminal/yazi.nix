@@ -146,7 +146,7 @@
         }
         {
           run = "plugin smart-filter";
-          on = ["f"];
+          on = ["F"];
           desc = "Smart filter";
         }
       ];
