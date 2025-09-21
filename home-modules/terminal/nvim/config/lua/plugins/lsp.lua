@@ -1,4 +1,4 @@
-local ui = require("util.ui")
+local config = require("config")
 
 return {
   {
@@ -11,7 +11,7 @@ return {
     config = function()
       vim.diagnostic.config({
         virtual_text = true,
-        float = { border = ui.border },
+        float = { border = config.border },
         signs = {
           text = {
             [vim.diagnostic.severity.ERROR] = " ",

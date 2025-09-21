@@ -1,4 +1,4 @@
-local ui = require("util.ui")
+local config = require("config")
 
 return {
   {
@@ -29,7 +29,7 @@ return {
       views = {
         hover = {
           border = {
-            style = ui.border,
+            style = config.border,
             padding = { 0, 1 },
           },
           position = {

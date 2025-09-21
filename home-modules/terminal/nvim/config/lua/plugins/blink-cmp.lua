@@ -1,4 +1,4 @@
-local ui = require("util.ui")
+local config = require("config")
 
 return {
   {
@@ -73,16 +73,16 @@ return {
               },
             },
           },
-          border = ui.border,
+          border = config.border,
         },
         documentation = {
           auto_show = true,
-          window = { border = ui.border },
+          window = { border = config.border },
         },
       },
       signature = {
         enabled = true,
-        window = { border = ui.border },
+        window = { border = config.border },
       },
     },
   },

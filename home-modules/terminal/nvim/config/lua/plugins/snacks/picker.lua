@@ -10,7 +10,7 @@ local source_config = {
   filter = { cwd = true },
 }
 
-local ui = require("util.ui")
+local config = require("config")
 
 return {
   {
@@ -33,7 +33,7 @@ return {
           default = {
             layout = {
               fullscreen = true,
-              border = ui.border,
+              border = config.border,
               box = "vertical",
               { win = "preview" },
               {
@@ -60,7 +60,7 @@ return {
               height = 0.4,
               title = "{title} {live} {flags}",
               title_pos = "center",
-              border = ui.border,
+              border = config.border,
               box = "vertical",
               {
                 win = "input",

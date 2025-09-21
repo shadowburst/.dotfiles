@@ -1,4 +1,4 @@
-local ui = require("util.ui")
+local config = require("config")
 
 return {
   {
@@ -9,7 +9,7 @@ return {
     ---@type grapple.options
     opts = {
       scope = "git_branch",
-      win_opts = { border = ui.border },
+      win_opts = { border = config.border },
     },
     keys = {
       { "<leader>;", "<cmd>Grapple toggle<cr>", desc = "Grapple toggle tag" },

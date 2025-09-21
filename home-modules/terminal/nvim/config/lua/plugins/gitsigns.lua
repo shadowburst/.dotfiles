@@ -1,4 +1,4 @@
-local ui = require("util.ui")
+local config = require("config")
 
 return {
   {
@@ -22,7 +22,7 @@ return {
       },
       current_line_blame = true,
       preview_config = {
-        border = ui.border,
+        border = config.border,
         row = 1,
         col = 0,
       },
