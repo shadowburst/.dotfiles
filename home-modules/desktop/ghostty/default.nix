@@ -16,13 +16,11 @@
         "shift+enter=text:\\x1b\\r" # Send Alt+Enter
         "control+backspace=text:\\x1b\\x7f" # Send Alt+Backspace
       ];
-      config-file = "${config.home.homeDirectory}/.config/ghostty/extra";
+      custom-shader = [
+        "${./shaders/cursor_smear.glsl}"
+      ];
     };
   };
-
-  xdg.configFile."ghostty/extra".text = ''
-    custom-shader = ${./shaders/cursor_smear.glsl}
-  '';
 
   home.sessionVariables.TERMINAL = "ghostty";
 }
