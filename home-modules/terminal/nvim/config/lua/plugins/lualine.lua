@@ -17,7 +17,7 @@ return {
 
       local theme = require("lualine.themes.catppuccin-mocha")
 
-      theme.normal.c.bg = palette.base
+      theme.normal.c.bg = nil
 
       local conditions = {
         buffer_not_empty = function() return vim.fn.empty(vim.fn.expand("%:t")) ~= 1 end,
