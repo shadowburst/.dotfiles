@@ -150,12 +150,12 @@ return {
       {
         "<leader>gc",
         function() Snacks.picker.git_log_file() end,
-        desc = "Hunks",
+        desc = "Commit history",
       },
       {
-        "<leader>gh",
-        function() Snacks.picker.git_diff() end,
-        desc = "Hunks",
+        "<leader>gl",
+        function() Snacks.picker.git_log_line() end,
+        desc = "Line history",
       },
       {
         "<leader>gs",

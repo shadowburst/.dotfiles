@@ -1,5 +1,3 @@
-local function logs() require("neogit").action("log", "log_all_branches", { "--graph", "--decorate" })() end
-
 return {
   {
     "NeogitOrg/neogit",
@@ -56,14 +54,13 @@ return {
           local buffername = vim.api.nvim_buf_get_name(event.buf)
           if buffername:match("NeogitLogView$") then
             vim.fn.feedkeys("q", "x")
-            logs()
+            require("neogit").action("log", "log_all_branches", { "--graph", "--decorate" })()
           end
         end,
       })
     end,
     keys = {
       { "<leader>gg", "<cmd>Neogit<cr>", desc = "Open neogit" },
-      { "<leader>gl", logs, desc = "Git logs" },
     },
   },
 }
