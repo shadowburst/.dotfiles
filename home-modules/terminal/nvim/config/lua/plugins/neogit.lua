@@ -35,20 +35,21 @@ return {
       local group = vim.api.nvim_create_augroup("custom_neogit", { clear = true })
       vim.api.nvim_create_autocmd("User", {
         pattern = {
-          "NeogitCherryPick",
           "NeogitBranchCheckout",
           "NeogitBranchCreated",
           "NeogitBranchDelete",
-          "NeogitBranchReset",
           "NeogitBranchRename",
+          "NeogitBranchReset",
+          "NeogitCherryPick",
+          "NeogitCommitComplete",
+          "NeogitFetchComplete",
+          "NeogitMerge",
+          "NeogitPullComplete",
+          "NeogitPushComplete",
           "NeogitRebase",
           "NeogitReset",
           "NeogitTagCreate",
           "NeogitTagDelete",
-          "NeogitCommitComplete",
-          "NeogitPushComplete",
-          "NeogitPullComplete",
-          "NeogitFetchComplete",
         },
         group = group,
         callback = function(event)
