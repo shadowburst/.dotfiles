@@ -55,7 +55,7 @@
     "darkCrust": "#11111b"
   },
   "theme": {
-    "primary": { "dark": "darkBlue", "light": "lightBlue" },
+    "primary": { "dark": "darkLavender", "light": "lightLavender" },
     "secondary": { "dark": "darkMauve", "light": "lightMauve" },
     "accent": { "dark": "darkPink", "light": "lightPink" },
     "error": { "dark": "darkRed", "light": "lightRed" },
