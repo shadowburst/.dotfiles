@@ -10,6 +10,7 @@
       cursor-color = config.lib.stylix.colors.withHashtag.base07;
       background-opacity = 0.9;
       confirm-close-surface = false;
+      resize-overlay = "never";
       window-padding-y = 2;
       window-padding-color = "extend";
       keybind = [
