@@ -39,4 +39,4 @@ set("n", "<leader>xq", "<cmd>copen<cr>", { desc = "Quickfix list" })
 set("n", "<leader>vx", ":.lua<cr>", { desc = "Execute lua code" })
 set("x", "<leader>vx", ":lua<cr>", { desc = "Execute lua code" })
 
-set("i", "<m-bs>", "<c-o>db<c-o>dl", { desc = "Delete previous word" })
+set("i", "<m-bs>", "<c-w>", { desc = "Delete previous word" })
