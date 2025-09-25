@@ -7,147 +7,175 @@ return {
       "nvim-mini/mini.icons",
     },
     event = { "VeryLazy" },
-    opts = function()
-      local lualine_require = require("lualine_require")
-      lualine_require.require = require
-      local lualine_mode = require("lualine.utils.mode")
+    opts = function(_, opts)
+      local auto = require("lualine.themes.auto")
 
-      ---@type CtpColors<string>
-      local palette = require("catppuccin.palettes").get_palette(require("catppuccin").options.flavour)
+      local colors = require("catppuccin.palettes").get_palette("mocha")
 
-      local theme = require("lualine.themes.catppuccin-mocha")
+      local function separator()
+        return {
+          function() return "│" end,
+          color = { fg = colors.surface0, bg = "NONE", gui = "bold" },
+          padding = { left = 0, right = 0 },
+        }
+      end
 
-      theme.normal.c.bg = nil
+      local function custom_branch()
+        local gitsigns = vim.b.gitsigns_head
+        local fugitive = vim.fn.exists("*FugitiveHead") == 1 and vim.fn.FugitiveHead() or ""
+        local branch = gitsigns or fugitive
+        if branch == nil or branch == "" then
+          return ""
+        else
+          return " " .. branch
+        end
+      end
 
-      local conditions = {
-        buffer_not_empty = function() return vim.fn.empty(vim.fn.expand("%:t")) ~= 1 end,
-        hide_in_width = function() return vim.fn.winwidth(0) > 80 end,
-        check_git_workspace = function()
-          local filepath = vim.fn.expand("%:p:h")
-          local gitdir = vim.fn.finddir(".git", filepath .. ";")
-          return gitdir and #gitdir > 0 and #gitdir < #filepath
-        end,
-        recording_macro = function() return vim.fn.reg_recording() ~= "" end,
-      }
+      local modes = { "normal", "insert", "visual", "replace", "command", "inactive", "terminal" }
+      for _, mode in ipairs(modes) do
+        if auto[mode] and auto[mode].c then
+          auto[mode].c.bg = "NONE"
+        end
+      end
 
-      local mode_color = {
-        ["NORMAL"] = palette.blue,
-        ["O-PENDING"] = palette.yellow,
-        ["INSERT"] = palette.teal,
-        ["VISUAL"] = palette.mauve,
-        ["V-LINE"] = palette.mauve,
-        ["V-BLOCK"] = palette.mauve,
-        ["SELECT"] = palette.pink,
-        ["S-LINE"] = palette.pink,
-        ["S-BLOCK"] = palette.pink,
-        ["REPLACE"] = palette.sapphire,
-        ["V-REPLACE"] = palette.sapphire,
-        ["EX"] = palette.red,
-        ["MORE"] = palette.red,
-        ["COMMAND"] = palette.lavender,
-        ["SHELL"] = palette.lavender,
-        ["CONFIRM"] = palette.lavender,
-        ["TERMINAL"] = palette.red,
-      }
+      opts.options = vim.tbl_deep_extend("force", opts.options or {}, {
+        theme = auto,
+        component_separators = "",
+        section_separators = "",
+        globalstatus = true,
+        disabled_filetypes = { statusline = { "snacks_dashboard" } },
+      })
 
-      return {
-        options = {
-          theme = theme,
-          component_separators = "",
-          section_separators = "",
-          globalstatus = true,
-          disabled_filetypes = {
-            statusline = { "snacks_dashboard", "lazy" },
+      opts.sections = {
+        lualine_a = {
+          {
+            "mode",
+            fmt = function(str) return str:sub(1, 1) end,
+            padding = { left = 1, right = 1 },
           },
         },
-        sections = {
-          lualine_a = {},
-          lualine_b = {},
-          lualine_c = {
-            { "location" },
-            {
-              "mode",
-              fmt = function(mode)
-                local icon = ""
-                if mode == "NORMAL" then
-                  return icon .. " "
-                else
-                  return icon .. " " .. mode
+        lualine_b = {
+          {
+            custom_branch,
+            color = { fg = colors.green, bg = "none" },
+            padding = { left = 1, right = 1 },
+          },
+          {
+            "diff",
+            colored = true,
+            diff_color = {
+              added = { fg = colors.teal, bg = "none", gui = "bold" },
+              modified = { fg = colors.yellow, bg = "none", gui = "bold" },
+              removed = { fg = colors.red, bg = "none", gui = "bold" },
+            },
+            source = nil,
+            padding = { left = 0, right = 1 },
+          },
+          separator(),
+        },
+        lualine_c = {
+          {
+            function()
+              local grapple = require("grapple")
+              return grapple.app().settings.statusline.icon .. grapple.name_or_index()
+            end,
+            cond = function() return package.loaded["grapple"] and require("grapple").exists() end,
+            padding = { left = 1, right = 0 },
+            color = { fg = colors.blue, bg = "none" },
+          },
+          {
+            "filename",
+            file_status = true,
+            path = 4,
+            shorting_target = 20,
+            symbols = {
+              modified = "[]",
+              readonly = "[]",
+              unnamed = "[?]",
+              newfile = "[!]",
+            },
+            color = function()
+              return vim.bo.modified and { fg = colors.mauve, bg = "none", gui = "bold" }
+                or { fg = colors.blue, bg = "none", gui = "bold" }
+            end,
+            padding = { left = 1, right = 1 },
+          },
+          {
+            "diagnostics",
+            sources = { "nvim_diagnostic" },
+            sections = { "error", "warn", "info", "hint" },
+            diagnostics_color = {
+              error = function()
+                local count = #vim.diagnostic.get(0, { severity = vim.diagnostic.severity.ERROR })
+                return { fg = (count == 0) and colors.green or colors.red, bg = "none", gui = "bold" }
+              end,
+              warn = function()
+                local count = #vim.diagnostic.get(0, { severity = vim.diagnostic.severity.WARN })
+                return { fg = (count == 0) and colors.green or colors.yellow, bg = "none", gui = "bold" }
+              end,
+              info = function()
+                local count = #vim.diagnostic.get(0, { severity = vim.diagnostic.severity.INFO })
+                return { fg = (count == 0) and colors.green or colors.blue, bg = "none", gui = "bold" }
+              end,
+              hint = function()
+                local count = #vim.diagnostic.get(0, { severity = vim.diagnostic.severity.HINT })
+                return { fg = (count == 0) and colors.green or colors.teal, bg = "none", gui = "bold" }
+              end,
+            },
+            symbols = {
+              error = "󰅚 ",
+              warn = "󰀪 ",
+              info = "󰋽 ",
+              hint = "󰌶 ",
+            },
+            colored = true,
+            update_in_insert = false,
+            always_visible = false,
+            padding = { left = 0, right = 1 },
+          },
+        },
+        lualine_x = {
+          {
+            function()
+              local bufnr_list = vim.fn.getbufinfo({ buflisted = 1 })
+              local total = #bufnr_list
+              local current_bufnr = vim.api.nvim_get_current_buf()
+              local current_index = 0
+
+              for i, buf in ipairs(bufnr_list) do
+                if buf.bufnr == current_bufnr then
+                  current_index = i
+                  break
                 end
-              end,
-              padding = 1,
-              color = function() return { fg = mode_color[lualine_mode.get_mode()], gui = "bold" } end,
-            },
-            {
-              function()
-                local grapple = require("grapple")
-                return grapple.app().settings.statusline.icon .. grapple.name_or_index()
-              end,
-              cond = function() return package.loaded["grapple"] and require("grapple").exists() end,
-              padding = { left = 1, right = 0 },
-              color = { fg = palette.blue },
-            },
-            {
-              "filename",
-              cond = conditions.buffer_not_empty,
-              padding = 1,
-              symbols = {
-                modified = "",
-                readonly = "",
-              },
-              color = function()
-                return vim.bo.modified and { fg = palette.red, gui = "bold" } or { fg = palette.text, gui = "bold" }
-              end,
-            },
-            {
-              "diagnostics",
-              padding = 1,
-              sources = { "nvim_diagnostic" },
-              symbols = { error = " ", warn = " ", info = " " },
-              diagnostics_color = {
-                color_error = { fg = palette.red },
-                color_warn = { fg = palette.yellow },
-                color_info = { fg = palette.sky },
-              },
-            },
-            {
-              function() return "%=" end,
-            },
-            {
-              "macro-recording",
-              fmt = function() return "Recording @" .. vim.fn.reg_recording() end,
-              cond = conditions.recording_macro,
-              padding = 1,
-              color = { fg = palette.maroon, gui = "bold" },
-            },
+              end
+
+              return string.format(" %d/%d", current_index, total)
+            end,
+            color = { fg = colors.yellow, bg = "none" },
+            padding = { left = 1, right = 1 },
           },
-          lualine_x = {
-            {
-              "diff",
-              cond = conditions.hide_in_width,
-              padding = 1,
-              symbols = { added = " ", modified = " ", removed = " " },
-            },
-            {
-              "branch",
-              cond = conditions.check_git_workspace,
-              padding = 1,
-              icon = "",
-              color = { fg = palette.mauve, gui = "bold" },
-            },
-          },
-          lualine_y = {},
-          lualine_z = {},
         },
-        inactive_sections = {
-          lualine_a = {},
-          lualine_b = {},
-          lualine_c = {},
-          lualine_x = {},
-          lualine_y = {},
-          lualine_z = {},
+        lualine_y = {
+          separator(),
+          {
+            "filetype",
+            icon_only = true,
+            colored = false,
+            color = { fg = colors.blue, bg = "none" },
+            padding = { left = 1, right = 1 },
+          },
+        },
+        lualine_z = {
+          separator(),
+          {
+            "location",
+            color = { fg = colors.red, bg = "none" },
+            padding = { left = 1, right = 1 },
+          },
         },
       }
+
+      return opts
     end,
   },
 }
