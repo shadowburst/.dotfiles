@@ -14,6 +14,7 @@
         status.showAudio = true;
         status.showLockStatus = false;
         status.showMicrophone = true;
+        tray.compact = true;
         workspaces.shown = 7;
         workspaces.occupiedBg = true;
         workspaces.activeTrail = true;
@@ -61,11 +62,7 @@
       dashboard.showOnHover = false;
       general = {
         apps.terminal = config.home.sessionVariables.TERMINAL;
-        idle = {
-          lockTimeout = 99999;
-          dpmsTimeout = 99999;
-          sleepTimeout = 99999;
-        };
+        idle.timeouts = [];
       };
       launcher = {
         vimKeybinds = true;
