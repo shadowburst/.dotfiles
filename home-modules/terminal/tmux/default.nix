@@ -17,31 +17,44 @@ in {
     mouse = true;
     keyMode = "vi";
     terminal = "xterm-256color";
-    extraConfig = with config.lib.stylix.colors.withHashtag; ''
+    focusEvents = true;
+    extraConfig = ''
       set -as terminal-features ",xterm-256color:RGB"
-      set-option -g focus-events on
 
-      # +--- Status bar ---+
-      set -g status-position top
-      set -g status-justify absolute-centre
-      set -g status-style 'bg=${base00} fg=${base05}'
-
+      # status left look and feel
       set -g status-left-length 100
-      set -g status-left "#[fg=${base00},bg=${base07},bold] #S #[fg=${base07},bg=${base00}]"
+      set -g status-left ""
+      set -ga status-left "#{?client_prefix,#{#[bg=#{@thm_red},fg=#{@thm_bg},bold]   #S },#{#[bg=default,fg=#{@thm_red},bold]   #S }}"
+      set -ga status-left "#[bg=default,fg=#{@thm_overlay_0},none,bold]│"
+      set -ga status-left "#[bg=default,fg=#{@thm_green},bold]   #{pane_current_command} "
+      set -ga status-left "#[bg=default,fg=#{@thm_overlay_0},none,bold]#{?window_zoomed_flag,│,}"
+      set -ga status-left "#[bg=default,fg=#{@thm_yellow},bold]#{?window_zoomed_flag,   zoom ,}"
 
+      # status right look and feel
       set -g status-right-length 100
-      set -g status-right "#[fg=${base07},bg=${base00}]#[fg=${base00},bg=${base07},bold]  %H:%M "
+      set -g status-right ""
 
-      set -g window-status-current-format "#[fg=${base07},bg=${base00}]#[fg=${base00},bg=${base07},bold]  #I #W #[fg=${base07},bg=${base00}]"
-      set -g window-status-format "#[fg=${base05},bg=${base00}]  #I #W "
+      # Configure Tmux
+      set -g status-position top
+      set -g status-style "bg=default"
+      set -g status-justify "absolute-centre"
 
-      # +--- Borders ---+
-      set -g pane-border-style "fg=${base03}"
-      set -g pane-active-border-style "fg=${base07}"
+      # pane border look and feel
+      setw -g pane-border-status top
+      setw -g pane-border-format ""
+      setw -g pane-border-style "bg=default,fg=#{@thm_overlay_0}"
+      setw -g pane-active-border-style "bg=default,fg=#{@thm_blue}"
+      setw -g pane-border-lines single
 
-      # +--- Panes ---+
-      set -g pane-border-status top
-      set -g pane-border-format " #{pane_title} "
+      # window style
+      set -g window-status-format " #I "
+      set -g window-status-current-format " #I "
+      set -g window-status-style "bg=default,fg=#{@thm_sky}"
+      set -g window-status-last-style "bg=default,fg=#{@thm_teal}"
+      set -g window-status-current-style "bg=#{@thm_blue},fg=#{@thm_bg},bold"
+      set -g window-status-activity-style "bg=default,fg=#{@thm_sapphire},bold"
+      set -g window-status-bell-style "bg=default,fg=#{@thm_red},bold"
+      set -gF window-status-separator "#[bg=default,fg=#{@thm_overlay_2}]│"
 
       # +--- Sessions ---+
       bind-key -n M-d detach
@@ -56,10 +69,6 @@ in {
       bind-key -n M-n next-window
       bind-key -n M-s split-window -v
       bind-key -n M-v split-window -h
-      bind-key -n M-H swap-pane -d -t "{left-of}"
-      bind-key -n M-J swap-pane -d -t "{down-of}"
-      bind-key -n M-K swap-pane -d -t "{up-of}"
-      bind-key -n M-L swap-pane -d -t "{right-of}"
 
       bind-key '&' select-window -t 1
       bind-key 'é' select-window -t 2
@@ -91,8 +100,16 @@ in {
       bind-key -n C-k if-shell "$is_vim" "send-keys C-k" "select-pane -U"
       bind-key -n C-l if-shell "$is_vim" "send-keys C-l" "select-pane -R"
 
-      # +--- Toggle vertical pane to the right ---+
-      bind-key | if-shell "tmux list-panes -F '#{pane_title}' | grep -q '^side-pane$'" "kill-pane -t \"=side-pane\"" "split-window -h -c '#{pane_current_path}' -T side-pane"
+      bind-key -n M-h if-shell "$is_vim" "send-keys M-h" "resize-pane -L 3"
+      bind-key -n M-j if-shell "$is_vim" "send-keys M-j" "resize-pane -D 3"
+      bind-key -n M-k if-shell "$is_vim" "send-keys M-k" "resize-pane -U 3"
+      bind-key -n M-l if-shell "$is_vim" "send-keys M-l" "resize-pane -R 3"
+
+
+      bind-key -n M-H swap-pane -d -t "{left-of}"
+      bind-key -n M-J swap-pane -d -t "{down-of}"
+      bind-key -n M-K swap-pane -d -t "{up-of}"
+      bind-key -n M-L swap-pane -d -t "{right-of}"
     '';
   };
 
