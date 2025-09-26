@@ -12,9 +12,10 @@ return {
 
       local colors = require("catppuccin.palettes").get_palette("mocha")
 
-      local function separator()
+      local function separator(cond)
         return {
           function() return "│" end,
+          cond = cond or function() return true end,
           color = { fg = colors.surface0, bg = "NONE", gui = "bold" },
           padding = { left = 0, right = 0 },
         }
@@ -132,6 +133,14 @@ return {
             update_in_insert = false,
             always_visible = false,
             padding = { left = 0, right = 1 },
+          },
+          separator(function() return vim.fn.reg_recording() ~= "" end),
+          {
+            "macro-recording",
+            fmt = function() return "Recording @" .. vim.fn.reg_recording() end,
+            cond = function() return vim.fn.reg_recording() ~= "" end,
+            padding = 1,
+            color = { fg = colors.maroon, gui = "bold" },
           },
         },
         lualine_x = {
