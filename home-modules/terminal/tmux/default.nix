@@ -26,7 +26,7 @@ in {
       set -g status-left ""
       set -ga status-left "#{?client_prefix,#{#[bg=#{@thm_red},fg=#{@thm_bg},bold]   #S },#{#[bg=default,fg=#{@thm_red},bold]   #S }}"
       set -ga status-left "#[bg=default,fg=#{@thm_overlay_0},none,bold]│"
-      set -ga status-left "#[bg=default,fg=#{@thm_green},bold]   #{pane_current_command} "
+      set -ga status-left "#[bg=default,fg=#{@thm_green},bold]   #W "
       set -ga status-left "#[bg=default,fg=#{@thm_overlay_0},none,bold]#{?window_zoomed_flag,│,}"
       set -ga status-left "#[bg=default,fg=#{@thm_yellow},bold]#{?window_zoomed_flag,   zoom ,}"
 
@@ -43,24 +43,23 @@ in {
       setw -g pane-border-status top
       setw -g pane-border-format ""
       setw -g pane-border-style "bg=default,fg=#{@thm_overlay_0}"
-      setw -g pane-active-border-style "bg=default,fg=#{@thm_blue}"
+      setw -g pane-active-border-style "bg=default,fg=#{@thm_mauve}"
       setw -g pane-border-lines single
 
       # window style
       set -g window-status-format " #I "
       set -g window-status-current-format " #I "
-      set -g window-status-style "bg=default,fg=#{@thm_sky}"
-      set -g window-status-last-style "bg=default,fg=#{@thm_teal}"
-      set -g window-status-current-style "bg=#{@thm_blue},fg=#{@thm_bg},bold"
+      set -g window-status-style "bg=default,fg=#{@thm_lavender}"
+      set -g window-status-last-style "bg=default,fg=#{@thm_lavender}"
+      set -g window-status-current-style "bg=#{@thm_bg},fg=#{@thm_mauve},bold"
       set -g window-status-activity-style "bg=default,fg=#{@thm_sapphire},bold"
       set -g window-status-bell-style "bg=default,fg=#{@thm_red},bold"
       set -gF window-status-separator "#[bg=default,fg=#{@thm_overlay_2}]│"
 
       # +--- Sessions ---+
       bind-key -n M-d detach
-      bind-key -n M-f run-shell "tmux neww tmux-sessionizer"
-      bind-key -n M-q confirm-before "kill-session"
-      bind-key -n M-Space switch-client -n
+      bind-key -n M-Tab switch-client -n
+      bind-key -n M-Space run-shell "tmux neww tmux-sessionizer"
 
       # +--- Windows ---+
       bind-key w choose-window
@@ -81,8 +80,9 @@ in {
       bind-key 'ç' select-window -t 9
 
       # +--- Panes ---+
-      bind-key -n M-c confirm-before "kill-pane"
+      bind-key -n M-q confirm-before "kill-pane"
       bind-key -n M-o confirm-before "kill-pane -a"
+      bind-key -n M-f resize-pane -Z
 
       # +--- Copy mode ---+
       bind-key -T copy-mode-vi v send-keys -X begin-selection
