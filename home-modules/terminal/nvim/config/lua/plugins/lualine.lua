@@ -12,19 +12,16 @@ return {
 
       local colors = require("catppuccin.palettes").get_palette("mocha")
 
-      local function separator(cond)
-        return {
+      local function separator(opts)
+        return vim.tbl_deep_extend("force", {
           function() return "│" end,
-          cond = cond or function() return true end,
           color = { fg = colors.surface0, bg = "NONE", gui = "bold" },
           padding = { left = 0, right = 0 },
-        }
+        }, opts or {})
       end
 
       local function custom_branch()
-        local gitsigns = vim.b.gitsigns_head
-        local fugitive = vim.fn.exists("*FugitiveHead") == 1 and vim.fn.FugitiveHead() or ""
-        local branch = gitsigns or fugitive
+        local branch = vim.b.gitsigns_head
         if branch == nil or branch == "" then
           return ""
         else
@@ -134,10 +131,12 @@ return {
             always_visible = false,
             padding = { left = 0, right = 1 },
           },
-          separator(function() return vim.fn.reg_recording() ~= "" end),
+          separator({
+            cond = function() return vim.fn.reg_recording() ~= "" end,
+          }),
           {
             "macro-recording",
-            fmt = function() return "Recording @" .. vim.fn.reg_recording() end,
+            fmt = function() return "󰻃 " .. vim.fn.reg_recording() end,
             cond = function() return vim.fn.reg_recording() ~= "" end,
             padding = 1,
             color = { fg = colors.maroon, gui = "bold" },
