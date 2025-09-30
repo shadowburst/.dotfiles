@@ -16,7 +16,7 @@
       keybind = [
         "ctrl+enter=unbind" # Send Control+Enter
         "shift+enter=text:\\x1b\\r" # Send Alt+Enter
-        "ctrl+backspace=text:\\x1b\\x7f" # Send Alt+Backspace
+        "ctrl+backspace=text:\\x17" # Send Ctrl+W
       ];
       custom-shader = [
         "${./shaders/cursor_smear.glsl}"

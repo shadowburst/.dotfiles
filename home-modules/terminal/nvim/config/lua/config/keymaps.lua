@@ -38,5 +38,3 @@ set("n", "<leader>xq", "<cmd>copen<cr>", { desc = "Quickfix list" })
 -- Execute lua code under cursor
 set("n", "<leader>vx", ":.lua<cr>", { desc = "Execute lua code" })
 set("x", "<leader>vx", ":lua<cr>", { desc = "Execute lua code" })
-
-set("i", "<m-bs>", "<c-s-w>", { desc = "Delete word" })
