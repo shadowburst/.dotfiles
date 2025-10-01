@@ -81,6 +81,7 @@ in {
 
       # +--- Panes ---+
       bind-key -n M-q confirm-before "kill-pane"
+      bind-key -n M-x confirm-before "kill-session"
       bind-key -n M-o confirm-before "kill-pane -a"
       bind-key -n M-f resize-pane -Z
 
