@@ -18,11 +18,6 @@
             ''[[ "$(caelestia shell lock isLocked)" == "true" ]] && hyprctl dispatch dpms off'';
           on-resume = "hyprctl dispatch dpms on";
         }
-        {
-          timeout = 180; # 3mins
-          on-timeout = "brightnessctl set 1%";
-          on-resume = "brightnessctl -r";
-        }
       ];
     };
   };
