@@ -31,6 +31,8 @@ return {
       keymap = {
         preset = "default",
         ["<c-space>"] = {},
+        ["<tab>"] = {},
+        ["<s-tab>"] = {},
         ["<c-n>"] = { "show", "select_next", "fallback" },
         ["<c-k>"] = { "snippet_forward", "fallback" },
         ["<c-j>"] = { "snippet_backward", "fallback" },
