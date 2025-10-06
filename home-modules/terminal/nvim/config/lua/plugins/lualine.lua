@@ -94,7 +94,7 @@ return {
             },
             color = function()
               return vim.bo.modified and { fg = colors.mauve, bg = "none", gui = "bold" }
-                or { fg = colors.blue, bg = "none", gui = "bold" }
+                or { fg = colors.lavender, bg = "none" }
             end,
             padding = { left = 1, right = 1 },
           },
