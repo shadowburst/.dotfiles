@@ -1,5 +1,4 @@
 {
-  config,
   lib,
   pkgs,
   username,
@@ -21,40 +20,32 @@ in {
     extraConfig = ''
       set -as terminal-features ",xterm-256color:RGB"
 
+      # Configure Tmux
+      set -g status-position top
+      set -g status-style "fg=#{@thm_mauve},bg=default"
+
       # status left look and feel
       set -g status-left-length 100
       set -g status-left ""
-      set -ga status-left "#{?client_prefix,#{#[bg=#{@thm_red},fg=#{@thm_bg},bold]   #S },#{#[bg=default,fg=#{@thm_red},bold]   #S }}"
-      set -ga status-left "#[bg=default,fg=#{@thm_overlay_0},none,bold]│"
-      set -ga status-left "#[bg=default,fg=#{@thm_green},bold]   #W "
-      set -ga status-left "#[bg=default,fg=#{@thm_overlay_0},none,bold]#{?window_zoomed_flag,│,}"
-      set -ga status-left "#[bg=default,fg=#{@thm_yellow},bold]#{?window_zoomed_flag,   zoom ,}"
+      set -ga status-left "#{?client_prefix,#{#[bg=#{@thm_red},fg=#{@thm_bg},bold]   },#{#[bg=default,fg=#{@thm_red},bold]   }}"
+      set -ga status-left "#{#[bg=default,fg=#{@thm_red},bold]#S }"
+      set -ga status-left "#[bg=default,fg=#{@thm_surface_0},none]│ "
+
+      # window style
+      set -g window-status-format "#[fg=#{@thm_lavender},bg=default]#I:#W"
+      set -g window-status-current-format "#[bg=#{@thm_bg},fg=#{@thm_mauve},bold,underscore]#I:#W"
 
       # status right look and feel
       set -g status-right-length 100
       set -g status-right ""
-
-      # Configure Tmux
-      set -g status-position top
-      set -g status-style "bg=default"
-      set -g status-justify "absolute-centre"
+      set -ga status-right "#[bg=default,fg=#{@thm_yellow},bold]#{?window_zoomed_flag,   zoom ,}"
 
       # pane border look and feel
       setw -g pane-border-status top
       setw -g pane-border-format ""
-      setw -g pane-border-style "bg=default,fg=#{@thm_overlay_0}"
+      setw -g pane-border-style "bg=default,fg=#{@thm_surface_0}"
       setw -g pane-active-border-style "bg=default,fg=#{@thm_mauve}"
       setw -g pane-border-lines single
-
-      # window style
-      set -g window-status-format " #I "
-      set -g window-status-current-format " #I "
-      set -g window-status-style "bg=default,fg=#{@thm_lavender}"
-      set -g window-status-last-style "bg=default,fg=#{@thm_lavender}"
-      set -g window-status-current-style "bg=#{@thm_bg},fg=#{@thm_mauve},bold"
-      set -g window-status-activity-style "bg=default,fg=#{@thm_sapphire},bold"
-      set -g window-status-bell-style "bg=default,fg=#{@thm_red},bold"
-      set -gF window-status-separator "#[bg=default,fg=#{@thm_overlay_2}]│"
 
       # +--- Sessions ---+
       bind-key -n M-d detach
