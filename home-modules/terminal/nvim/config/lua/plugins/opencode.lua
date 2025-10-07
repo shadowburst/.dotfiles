@@ -40,18 +40,18 @@ return {
       },
       {
         "<leader>oc",
-        function() require("opencode").prompt("Add documentation comments for @selection") end,
+        function() require("opencode").prompt("Add documentation comments for @selection", { submit = true }) end,
         desc = "Document selection",
         mode = "v",
       },
       {
         "<leader>od",
-        function() require("opencode").prompt("Fix this @diagnostic") end,
+        function() require("opencode").prompt("Fix this @diagnostic", { submit = true }) end,
         desc = "Fix line diagnostic",
       },
       {
         "<leader>oD",
-        function() require("opencode").prompt("Fix these @diagnostics") end,
+        function() require("opencode").prompt("Fix these @diagnostics", { submit = true }) end,
         desc = "Fix buffer diagnostics",
       },
       {
@@ -61,7 +61,7 @@ return {
       },
       {
         "<leader>or",
-        function() require("opencode").prompt("Review @buffer for correctness and readability") end,
+        function() require("opencode").prompt("Review @buffer for correctness and readability", { submit = true }) end,
         desc = "Review file",
       },
     },
