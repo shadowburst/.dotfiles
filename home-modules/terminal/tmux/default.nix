@@ -28,12 +28,13 @@ in {
       set -g status-left-length 100
       set -g status-left ""
       set -ga status-left "#{?client_prefix,#{#[bg=#{@thm_red},fg=#{@thm_bg},bold]   },#{#[bg=default,fg=#{@thm_red},bold]   }}"
-      set -ga status-left "#{#[bg=default,fg=#{@thm_red},bold]#S }"
+      set -ga status-left "#[bg=default,fg=#{@thm_surface_0},none]│ "
+      set -ga status-left "#{#[bg=default,fg=#{@thm_green},bold]#S }"
       set -ga status-left "#[bg=default,fg=#{@thm_surface_0},none]│ "
 
       # window style
-      set -g window-status-format "#[fg=#{@thm_lavender},bg=default]#I:#W"
-      set -g window-status-current-format "#[bg=#{@thm_bg},fg=#{@thm_mauve},bold,underscore]#I:#W"
+      set -g window-status-format "#[fg=#{@thm_lavender},bg=default] #I:#W "
+      set -g window-status-current-format "#[bg=#{@thm_surface_0},fg=#{@thm_mauve}]  #I:#W  "
 
       # status right look and feel
       set -g status-right-length 100
@@ -43,7 +44,7 @@ in {
       # pane border look and feel
       setw -g pane-border-status top
       setw -g pane-border-format ""
-      setw -g pane-border-style "bg=default,fg=#{@thm_surface_0}"
+      setw -g pane-border-style "bg=default,fg=#{@thm_surface_1}"
       setw -g pane-active-border-style "bg=default,fg=#{@thm_mauve}"
       setw -g pane-border-lines single
 
