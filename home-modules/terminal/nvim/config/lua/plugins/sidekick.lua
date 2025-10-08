@@ -1,10 +1,25 @@
 return {
   {
     "folke/sidekick.nvim",
+    dependencies = { "folke/snacks.nvim" },
     event = { "BufNewFile", "BufReadPost", "BufWritePre" },
-    opts = {},
+    ---@module 'sidekick'
+    ---@class sidekick.Config
+    opts = {
+      cli = {
+        mux = {
+          enabled = true,
+          create = "split",
+          split = { size = 80 },
+        },
+        tools = {
+          opencode = {
+            env = { OPENCODE_THEME = "" }, -- No need to change theme, it works in tmux
+          },
+        },
+      },
+    },
     keys = {
-      { "<leader>a", "", mode = { "n", "v" }, desc = "+ai" },
       {
         "<tab>",
         function()
@@ -13,21 +28,8 @@ return {
           end
         end,
         expr = true,
-        desc = "Apply next edit suggestion",
+        desc = "Next edit suggestion",
       },
-      -- Wait for easier integration with with tmux
-      -- {
-      --   "<leader>aa",
-      --   function() require("sidekick.cli").toggle({ name = "opencode", focus = true }) end,
-      --   desc = "Sidekick toggle CLI",
-      --   mode = { "n", "v" },
-      -- },
-      -- {
-      --   "<leader>ap",
-      --   function() require("sidekick.cli").select_prompt() end,
-      --   desc = "Sidekick ask prompt",
-      --   mode = { "n", "v" },
-      -- },
     },
   },
 }

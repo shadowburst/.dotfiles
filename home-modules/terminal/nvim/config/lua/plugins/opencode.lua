@@ -1,66 +1,50 @@
----@param focus boolean
----@return boolean: true if the pane was opened successfully, false otherwise
-local function open_opencode(focus)
-  local success = require("tmux.wrapper.tmux").execute("split-window -h -l 80 opencode")
-  if not success then
-    vim.notify("Failed to open tmux pane", vim.log.levels.ERROR, { title = "opencode" })
-    return false
-  end
-  if focus then
-    require("tmux").move_right()
-  end
-  return true
-end
-
 return {
   {
     "NickvanDyke/opencode.nvim",
     dependencies = {
+      "folke/sidekick.nvim",
       "folke/snacks.nvim",
-      "aserowy/tmux.nvim",
     },
+    ---@module 'opencode'
     ---@type opencode.Opts
     opts = {
       auto_reload = true,
-      on_opencode_not_found = function() return open_opencode(false) end,
+      on_opencode_not_found = function() require("sidekick.cli").toggle("opencode") end,
     },
     config = function(_, opts) vim.g.opencode_opts = opts end,
     keys = {
+      { "<leader>a", "", mode = { "n", "x" }, desc = "+ai" },
       {
-        "<leader>oa",
-        function() require("opencode").ask("@cursor: ") end,
-        desc = "Ask opencode about this",
-        mode = "n",
+        "<leader>aa",
+        function() require("opencode").ask("@this: ", { submit = true }) end,
+        mode = { "n", "x" },
+        desc = "Ask AI about this",
       },
       {
-        "<leader>oa",
-        function() require("opencode").ask("@selection: ") end,
-        desc = "Ask opencode about selection",
-        mode = "v",
-      },
-      {
-        "<leader>oc",
+        "<leader>ac",
         function() require("opencode").prompt("Add documentation comments for @selection", { submit = true }) end,
         desc = "Document selection",
         mode = "v",
       },
       {
-        "<leader>od",
+        "<leader>ad",
         function() require("opencode").prompt("Fix this @diagnostic", { submit = true }) end,
         desc = "Fix line diagnostic",
       },
       {
-        "<leader>oD",
-        function() require("opencode").prompt("Fix these @diagnostics", { submit = true }) end,
-        desc = "Fix buffer diagnostics",
+        "<leader>ap",
+        function() require("opencode").ask() end,
+        mode = { "n", "x" },
+        desc = "Push to AI prompt",
       },
       {
-        "<leader>oo",
-        function() open_opencode(true) end,
-        desc = "Ask opencode",
+        "<leader>as",
+        function() require("opencode").prompt("", { submit = true }) end,
+        mode = { "n", "x" },
+        desc = "Submit AI prompt",
       },
       {
-        "<leader>or",
+        "<leader>ar",
         function() require("opencode").prompt("Review @buffer for correctness and readability", { submit = true }) end,
         desc = "Review file",
       },
