@@ -78,26 +78,7 @@ return {
       },
       {
         "<leader>,",
-        function()
-          Snacks.picker.smart({
-            title = "Buffers",
-            finder = "buffers",
-            format = "buffer",
-            multi = false,
-            current = false,
-            win = {
-              input = {
-                keys = {
-                  ["<c-x>"] = {
-                    "bufdelete",
-                    mode = { "n", "i" },
-                  },
-                },
-              },
-              list = { keys = { ["dd"] = "bufdelete" } },
-            },
-          })
-        end,
+        function() Snacks.picker.buffers() end,
         desc = "Buffers",
       },
       {
