@@ -63,6 +63,7 @@
   };
 
   programs.fish.shellAliases."neogit" = "nvim +Neogit";
+  programs.nushell.shellAliases."neogit" = "nvim +Neogit";
 
   xdg.configFile."nvim/init.lua".enable = false;
   xdg.configFile."nvim".source =

@@ -8,6 +8,7 @@
     ./fzf.nix
     ./git.nix
     ./lazydocker
+    ./nushell.nix
     ./nvim
     ./opencode
     ./starship.nix
