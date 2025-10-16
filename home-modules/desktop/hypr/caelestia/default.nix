@@ -20,6 +20,9 @@
         workspaces.activeTrail = true;
         workspaces.occupiedLabel = " ";
         workspaces.activeLabel = " ";
+        scrollActions.brightness = false;
+        scrollActions.workspaces = false;
+        scrollActions.volume = false;
         entries = [
           {
             id = "logo";
@@ -66,7 +69,7 @@
       };
       launcher = {
         vimKeybinds = true;
-        actionPrefix = "$";
+        actionPrefix = ":";
       };
       services = {
         smartScheme = false;

@@ -24,7 +24,7 @@
         "brightnessctl -s set 40%"
       ];
       exec = [
-        "systemctl --user is-active caelestia.service && systemctl --user restart caelestia.service"
+        "systemctl --user restart caelestia.service"
       ];
       env = [
         "XDG_SESSION_DESKTOP, wayland"
