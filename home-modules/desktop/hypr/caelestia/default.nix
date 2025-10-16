@@ -78,6 +78,18 @@
         smartScheme = false;
         weatherLocation = "48.306453773398786, -0.6214670156648004";
       };
+      utilities.vpn = {
+        enabled = true;
+        provider = [
+          {
+            name = "wireguard";
+            interface = "protonvpn";
+            displayName = "ProtonVPN";
+            connectCmd = ["nmcli" "connection" "up" "protonvpn"];
+            disconnectCmd = ["nmcli" "connection" "down" "protonvpn"];
+          }
+        ];
+      };
       session.vimKeybinds = true;
       paths.sessionGif = ./assets/eye.png;
     };
