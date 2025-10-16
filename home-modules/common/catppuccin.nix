@@ -11,6 +11,7 @@
     cava.enable = true;
     delta.enable = true;
     fish.enable = true;
+    fuzzel.enable = true;
     hyprland.enable = true;
     kitty.enable = true;
     gh-dash.enable = true;

@@ -26,10 +26,8 @@ in {
     wl-clipboard
   ];
 
-  services = {
-    hyprpolkitagent.enable = true;
-    network-manager-applet.enable = true;
-  };
+  services.hyprpolkitagent.enable = true;
+  services.network-manager-applet.enable = true;
 
   home.sessionVariables.NIXOS_OZONE_WL = "1";
 }

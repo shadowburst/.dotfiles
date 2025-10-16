@@ -231,6 +231,7 @@
         "$mod SHIFT CTRL, S, exec, caelestia screenshot"
 
         # Other
+        "$mod, v, exec, pkill fuzzel || caelestia clipboard"
         "$mod SHIFT, p, exec, hyprpicker -a"
       ];
       ecosystem = {

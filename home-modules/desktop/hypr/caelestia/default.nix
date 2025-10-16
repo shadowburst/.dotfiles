@@ -1,4 +1,7 @@
 {config, ...}: {
+  services.cliphist.enable = true;
+  programs.fuzzel.enable = true;
+
   programs.caelestia = {
     enable = true;
     cli.enable = true;
