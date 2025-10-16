@@ -5,5 +5,6 @@
     ../../../home-modules/terminal
     ./brave.nix
     ./caelestia.nix
+    ./hyprland.nix
   ];
 }

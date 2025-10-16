@@ -6,6 +6,7 @@
   imports = [
     inputs.nixos-hardware.nixosModules.asus-zephyrus-ga402x-nvidia
     ./hardware-configuration.nix
+    ./nvidia.nix
     ../../nixos-modules/common
     ../../nixos-modules/desktop
   ];
@@ -34,18 +35,6 @@
       enable = true;
       enable32Bit = true;
     };
-    nvidia = {
-      open = true;
-      powerManagement.enable = true;
-      dynamicBoost.enable = true;
-      prime = {
-        sync.enable = true;
-        offload = {
-          enable = false;
-          enableOffloadCmd = false;
-        };
-      };
-    };
   };
 
   networking.hostName = "zephyrus";
@@ -64,8 +53,7 @@
   };
 
   environment.variables = {
-    LIBVA_DRIVER_NAME = "nvidia";
-    VDPAU_DRIVER = "nvidia";
-    __GLX_VENDOR_LIBRARY_NAME = "nvidia";
+    LIBVA_DRIVER_NAME = "radeonsi";
+    VDPAU_DRIVER = "radeonsi";
   };
 }
