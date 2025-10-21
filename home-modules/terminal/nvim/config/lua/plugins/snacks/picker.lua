@@ -111,12 +111,17 @@ return {
       {
         "<leader>gc",
         function() Snacks.picker.git_log_file() end,
-        desc = "Commit history",
+        desc = "Git commit history",
       },
       {
         "<leader>gl",
         function() Snacks.picker.git_log_line() end,
-        desc = "Line history",
+        desc = "Git line history",
+      },
+      {
+        "<leader>gL",
+        function() Snacks.picker.git_log() end,
+        desc = "Git log",
       },
       {
         "<leader>gs",
