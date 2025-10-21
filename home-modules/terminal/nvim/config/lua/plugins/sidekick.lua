@@ -7,10 +7,10 @@ return {
     ---@class sidekick.Config
     opts = {
       cli = {
-        mux = {
-          enabled = true,
-          create = "split",
-          split = { size = 80 },
+        win = {
+          keys = {
+            files = { "<c-space>", "files", mode = "nt", desc = "open file picker" },
+          },
         },
         tools = {
           opencode = {
@@ -29,6 +29,34 @@ return {
         end,
         expr = true,
         desc = "Next edit suggestion",
+      },
+      { "<leader>a", "", mode = { "n", "x" }, desc = "+ai" },
+      {
+        "<leader>aa",
+        function()
+          if #require("sidekick.status").cli() > 0 then
+            require("sidekick.cli").focus()
+          else
+            require("sidekick.cli").toggle({
+              name = "opencode",
+              focus = true,
+            })
+          end
+        end,
+        mode = { "n", "x" },
+        desc = "Ask AI about this",
+      },
+      {
+        "<leader>ap",
+        function() require("sidekick.cli").prompt() end,
+        mode = { "n", "x" },
+        desc = "Sidekick Select Prompt",
+      },
+      {
+        "<leader>as",
+        function() require("sidekick.cli").send("{selection}") end,
+        mode = { "x" },
+        desc = "Sidekick send selection",
       },
     },
   },
