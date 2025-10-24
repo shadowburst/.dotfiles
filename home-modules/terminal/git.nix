@@ -11,13 +11,10 @@
     };
   };
 
-  programs.delta = {
+  programs.difftastic = {
     enable = true;
-    enableGitIntegration = true;
-    options = {
-      "line-numbers" = true;
-      "side-by-side" = true;
-    };
+    git.enable = true;
+    git.diffToolMode = true;
   };
 
   programs.gh = {
