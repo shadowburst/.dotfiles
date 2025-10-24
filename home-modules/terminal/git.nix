@@ -4,10 +4,8 @@
     settings = {
       init.defaultBranch = "main";
       pull.rebase = "true";
-      user = {
-        name = "ShadowBurst";
-        email = "37303345+shadowburst@users.noreply.github.com";
-      };
+      user.name = "ShadowBurst";
+      user.email = "37303345+shadowburst@users.noreply.github.com";
     };
   };
 
@@ -28,7 +26,5 @@
 
   programs.gh-dash.enable = true;
 
-  home.packages = with pkgs; [
-    wrkflw
-  ];
+  home.packages = with pkgs; [wrkflw];
 }
