@@ -16,7 +16,6 @@
     plugins = with pkgs; {
       mount = yaziPlugins.mount;
       smart-enter = yaziPlugins.smart-enter;
-      smart-filter = yaziPlugins.smart-filter;
       starship = yaziPlugins.starship;
     };
 
@@ -143,11 +142,6 @@
           run = "plugin smart-enter";
           on = ["<Enter>"];
           desc = "Enter the child directory, or open the file";
-        }
-        {
-          run = "plugin smart-filter";
-          on = ["F"];
-          desc = "Smart filter";
         }
       ];
       completion.prepend_keymap = [
