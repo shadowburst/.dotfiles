@@ -1,10 +1,18 @@
 {
   config,
+  inputs,
   lib,
+  pkgs,
   ...
 }: {
   wayland.windowManager.hyprland = {
     enable = true;
+    package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+    portalPackage = inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
+    plugins = [
+      inputs.hyprland-plugins.packages.${pkgs.system}.hyprscrolling
+      inputs.hypr-dynamic-cursors.packages.${pkgs.system}.hypr-dynamic-cursors
+    ];
     systemd.variables = ["--all"];
     settings = {
       "$mod" = "SUPER";
@@ -34,7 +42,7 @@
         border_size = 2;
         gaps_in = 2;
         gaps_out = 0;
-        layout = "dwindle";
+        layout = "scrolling";
         "col.active_border" = lib.mkForce "$accent";
       };
       group = {
@@ -140,26 +148,21 @@
 
         # Windows
         "CTRL ALT, delete, exec, hyprctl kill"
-        "$mod, q, killactive,"
         "$mod, c, togglefloating,"
-        "$mod, p, pin,"
         "$mod, f, fullscreenstate, 2 -1"
-        "$mod, h, movefocus, l"
-        "$mod, j, movefocus, d"
-        "$mod, k, movefocus, u"
-        "$mod, l, movefocus, r"
-        "$mod SHIFT, h, movewindow, l"
-        "$mod SHIFT, j, movewindow, d"
-        "$mod SHIFT, k, movewindow, u"
-        "$mod SHIFT, l, movewindow, r"
-
-        # Groups
-        "$mod, g, togglegroup"
-        "$mod ALT, tab, changegroupactive, f"
-        "$mod ALT, h, movewindoworgroup, l"
-        "$mod ALT, j, movewindoworgroup, d"
-        "$mod ALT, k, movewindoworgroup, u"
-        "$mod ALT, l, movewindoworgroup, r"
+        "$mod, g, layoutmsg, promote"
+        "$mod, h, layoutmsg, focus l"
+        "$mod, j, layoutmsg, focus d"
+        "$mod, k, layoutmsg, focus u"
+        "$mod, l, layoutmsg, focus r"
+        "$mod, m, layoutmsg, colresize +conf"
+        "$mod, p, pin,"
+        "$mod, q, killactive,"
+        "$mod, z, layoutmsg, togglefit"
+        "$mod SHIFT, h, layoutmsg, movewindowto l"
+        "$mod SHIFT, j, layoutmsg, movewindowto d"
+        "$mod SHIFT, k, layoutmsg, movewindowto u"
+        "$mod SHIFT, l, layoutmsg, movewindowto r"
 
         # Workspaces
         "$mod, ampersand, focusworkspaceoncurrentmonitor, 1"
@@ -237,6 +240,19 @@
       ecosystem = {
         no_update_news = true;
         no_donation_nag = true;
+      };
+
+      plugin = {
+        dynamic-cursors = {
+          mode = "stretch";
+          shake = {
+            effects = true;
+          };
+        };
+        hyprscrolling = {
+          fullscreen_on_one_column = true;
+          explicit_column_widths = "0.5, 0.7, 1";
+        };
       };
     };
   };
