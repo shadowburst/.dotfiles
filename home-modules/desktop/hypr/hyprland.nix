@@ -30,6 +30,7 @@
       ];
       exec-once = [
         "brightnessctl -s set 40%"
+        "sleep 2 && caelestia shell wallpaper set ~/.local/state/caelestia/wallpaper/current"
       ];
       exec = [
         "systemctl --user restart caelestia.service"
