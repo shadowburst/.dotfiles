@@ -252,7 +252,7 @@
         };
         hyprscrolling = {
           fullscreen_on_one_column = true;
-          explicit_column_widths = "0.5, 0.7, 1";
+          explicit_column_widths = "0.5, 1";
         };
       };
     };
