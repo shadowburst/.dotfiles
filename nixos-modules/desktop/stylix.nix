@@ -15,8 +15,8 @@
 
     fonts = {
       sansSerif = {
-        name = "Noto Sans";
-        package = pkgs.noto-fonts;
+        name = "Rubik Regular";
+        package = pkgs.rubik;
       };
       serif = config.stylix.fonts.sansSerif;
       monospace = {
