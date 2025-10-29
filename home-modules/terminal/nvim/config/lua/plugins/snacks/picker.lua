@@ -52,7 +52,8 @@ return {
           },
         },
         previewers = {
-          git = { native = true },
+          diff = { builtin = false },
+          git = { builtin = false },
         },
         win = {
           input = {
