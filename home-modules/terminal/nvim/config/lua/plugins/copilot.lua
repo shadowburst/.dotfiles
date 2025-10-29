@@ -25,7 +25,7 @@ return {
         function()
           local copilot = require("copilot.suggestion")
           if copilot.is_visible() then
-            copilot.accept_word()
+            copilot.accept()
           end
         end,
         mode = { "i", "s" },
@@ -36,10 +36,10 @@ return {
         function()
           local copilot = require("copilot.suggestion")
           if copilot.is_visible() then
-            copilot.accept()
+            copilot.accept_line()
           end
         end,
-        mode = { "i" },
+        mode = { "i", "s" },
         desc = "Copilot completion",
       },
     },
