@@ -8,9 +8,10 @@
     viAlias = true;
     vimAlias = true;
     extraPackages = with pkgs; [
-      lsof
-      tree-sitter
       copilot-language-server
+      lsof
+      imagemagick
+      tree-sitter
 
       # Bash
       bash-language-server
