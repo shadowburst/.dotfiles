@@ -2,8 +2,6 @@
   services.cliphist.enable = true;
   programs.fuzzel.enable = true;
 
-  home.sessionVariables.QSG_RHI_BACKEND = "vulkan";
-
   programs.caelestia = {
     enable = true;
     cli.enable = true;
