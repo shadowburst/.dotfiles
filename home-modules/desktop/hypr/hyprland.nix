@@ -97,7 +97,8 @@
       };
       gesture = [
         "3, vertical, workspace"
-        "3, horizontal, close"
+        "3, left, dispatcher, layoutmsg, focus r"
+        "3, right, dispatcher, layoutmsg, focus l"
       ];
       dwindle.force_split = 2;
       group.groupbar = {
@@ -252,6 +253,7 @@
         hyprscrolling = {
           fullscreen_on_one_column = true;
           explicit_column_widths = "0.5, 1";
+          focus_fit_method = 1;
         };
       };
     };
