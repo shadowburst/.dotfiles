@@ -59,11 +59,16 @@ return {
           end
         end,
       })
+
+      vim.api.nvim_create_autocmd("FileType", {
+        group = vim.api.nvim_create_augroup("neogit.hide_statuscolumn", { clear = true }),
+        pattern = { "Neogit*" },
+        callback = function() vim.opt_local.statuscolumn = "" end,
+      })
+
       vim.api.nvim_create_autocmd("FileType", {
         group = vim.api.nvim_create_augroup("neogit.reload_log_manual", { clear = true }),
-        pattern = {
-          "NeogitLogView",
-        },
+        pattern = { "NeogitLogView" },
         callback = function(event)
           vim.keymap.set(
             "n",
