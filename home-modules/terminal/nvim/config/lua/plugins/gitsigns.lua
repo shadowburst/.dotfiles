@@ -47,7 +47,7 @@ return {
         end, "Prev Hunk")
         map({ "n", "v" }, "<leader>gr", ":Gitsigns reset_hunk<CR>", "Reset hunk")
         map("n", "<leader>gR", gs.reset_buffer, "Reset buffer")
-        map("n", "<leader>gp", gs.preview_hunk_inline, "Preview hunk")
+        map("n", "<leader>gh", gs.preview_hunk_inline, "Preview hunk")
         map("n", "<leader>gb", function() gs.blame() end, "Blame buffer")
         map({ "o", "x" }, "ih", ":<C-U>Gitsigns select_hunk<CR>", "GitSigns Select Hunk")
       end,
