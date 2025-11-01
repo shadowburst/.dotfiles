@@ -52,10 +52,7 @@ return {
           },
         },
         previewers = {
-          diff = {
-            builtin = false,
-            cmd = { "difft" },
-          },
+          diff = { builtin = false },
           git = { builtin = false },
         },
         win = {
@@ -81,16 +78,16 @@ return {
       { "<leader>.", function() Snacks.picker.resume() end, desc = "Resume" },
       -- find
       { "<leader>ff", function() Snacks.picker.files() end, desc = "Find files" },
-      { "<leader>fg", function() Snacks.picker.grep() end, desc = "Grep" },
-      { "<leader>fr", function() Snacks.picker.recent() end, desc = "Recent" },
+      { "<leader>fg", function() Snacks.picker.grep() end, desc = "Grep files" },
+      { "<leader>fr", function() Snacks.picker.recent() end, desc = "Recent files" },
       -- git
       { "<leader>gc", function() Snacks.picker.git_log() end, desc = "Commit history" },
       { "<leader>gl", function() Snacks.picker.git_log_line() end, desc = "Line history" },
       { "<leader>gs", function() Snacks.picker.git_status() end, desc = "Git status" },
-      { "<leader>gi", function() Snacks.picker.gh_issue() end, desc = "GitHub Issues (open)" },
-      { "<leader>gI", function() Snacks.picker.gh_issue({ state = "all" }) end, desc = "GitHub Issues (all)" },
-      { "<leader>gp", function() Snacks.picker.gh_pr() end, desc = "GitHub Pull Requests (open)" },
-      { "<leader>gP", function() Snacks.picker.gh_pr({ state = "all" }) end, desc = "GitHub Pull Requests (all)" },
+      { "<leader>ghi", function() Snacks.picker.gh_issue() end, desc = "GitHub Issues (open)" },
+      { "<leader>ghI", function() Snacks.picker.gh_issue({ state = "all" }) end, desc = "GitHub Issues (all)" },
+      { "<leader>ghp", function() Snacks.picker.gh_pr() end, desc = "GitHub Pull Requests (open)" },
+      { "<leader>ghP", function() Snacks.picker.gh_pr({ state = "all" }) end, desc = "GitHub Pull Requests (all)" },
       -- notifications
       { "<leader>nn", function() Snacks.picker.notifications() end, desc = "All notifications" },
       -- Search
