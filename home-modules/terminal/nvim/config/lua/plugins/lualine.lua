@@ -12,12 +12,12 @@ return {
 
       local colors = require("catppuccin.palettes").get_palette("mocha")
 
-      local function separator(opts)
+      local function separator(separator_opts)
         return vim.tbl_deep_extend("force", {
           function() return "│" end,
           color = { fg = colors.surface0, bg = "NONE", gui = "bold" },
           padding = { left = 0, right = 0 },
-        }, opts or {})
+        }, separator_opts or {})
       end
 
       local function custom_branch()
@@ -51,27 +51,14 @@ return {
             fmt = function(str) return str:sub(1, 1) end,
             padding = { left = 1, right = 1 },
           },
-        },
-        lualine_b = {
           {
             custom_branch,
             color = { fg = colors.green, bg = "none" },
             padding = { left = 1, right = 1 },
           },
-          {
-            "diff",
-            colored = true,
-            diff_color = {
-              added = { fg = colors.teal, bg = "none", gui = "bold" },
-              modified = { fg = colors.yellow, bg = "none", gui = "bold" },
-              removed = { fg = colors.red, bg = "none", gui = "bold" },
-            },
-            source = nil,
-            padding = { left = 0, right = 1 },
-          },
           separator(),
         },
-        lualine_c = {
+        lualine_b = {
           {
             function()
               local grapple = require("grapple")
@@ -80,6 +67,13 @@ return {
             cond = function() return package.loaded["grapple"] and require("grapple").exists() end,
             padding = { left = 1, right = 0 },
             color = { fg = colors.blue, bg = "none" },
+          },
+          {
+            "filetype",
+            icon_only = true,
+            colored = false,
+            color = { fg = colors.blue, bg = "none" },
+            padding = { left = 1, right = 0 },
           },
           {
             "filename",
@@ -98,6 +92,8 @@ return {
             end,
             padding = { left = 1, right = 1 },
           },
+        },
+        lualine_c = {
           {
             "diagnostics",
             sources = { "nvim_diagnostic" },
@@ -129,11 +125,10 @@ return {
             colored = true,
             update_in_insert = false,
             always_visible = false,
-            padding = { left = 0, right = 1 },
+            padding = { left = 1, right = 1 },
           },
-          separator({
-            cond = function() return vim.fn.reg_recording() ~= "" end,
-          }),
+        },
+        lualine_x = {
           {
             "macro-recording",
             fmt = function() return "󰻃 " .. vim.fn.reg_recording() end,
@@ -141,8 +136,11 @@ return {
             padding = 1,
             color = { fg = colors.maroon, gui = "bold" },
           },
+          separator({
+            cond = function() return vim.fn.reg_recording() ~= "" end,
+          }),
         },
-        lualine_x = {
+        lualine_y = {
           {
             function()
               local bufnr_list = vim.fn.getbufinfo({ buflisted = 1 })
@@ -160,16 +158,6 @@ return {
               return string.format(" %d/%d", current_index, total)
             end,
             color = { fg = colors.yellow, bg = "none" },
-            padding = { left = 1, right = 1 },
-          },
-        },
-        lualine_y = {
-          separator(),
-          {
-            "filetype",
-            icon_only = true,
-            colored = false,
-            color = { fg = colors.blue, bg = "none" },
             padding = { left = 1, right = 1 },
           },
         },
