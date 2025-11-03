@@ -1,7 +1,6 @@
 {...}: {
   imports = [
     ./audio.nix
-    # ./cosmic.nix
     ./gaming.nix
     ./hypr
     ./printing.nix

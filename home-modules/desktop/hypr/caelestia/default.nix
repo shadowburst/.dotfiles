@@ -9,6 +9,7 @@
       appearance = {
         font.sans = config.stylix.fonts.sansSerif.name;
         font.mono = config.stylix.fonts.monospace.name;
+        font.clock = config.stylix.fonts.monospace.name;
       };
       # background.visualiser.enabled = true;
       background.visualiser.autoHide = false;

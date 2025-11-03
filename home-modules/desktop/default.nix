@@ -1,7 +1,6 @@
 {pkgs, ...}: {
   imports = [
     ./brave.nix
-    # ./cosmic
     ./ghostty
     ./hypr
     ./mpv.nix

@@ -1,6 +1,6 @@
 {lib, ...}: {
-  programs.git = {
-    userName = lib.mkForce "pbaudry";
-    userEmail = lib.mkForce "p.baudry@lynx-business.com";
+  programs.git.settings = {
+    user.name = lib.mkForce "pbaudry";
+    user.email = lib.mkForce "p.baudry@lynx-business.com";
   };
 }
