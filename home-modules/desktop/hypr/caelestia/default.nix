@@ -10,6 +10,11 @@
         font.sans = config.stylix.fonts.sansSerif.name;
         font.mono = config.stylix.fonts.monospace.name;
         font.clock = config.stylix.fonts.monospace.name;
+        transparency = {
+          enabled = true;
+          base = 0.9;
+          layers = 0.5;
+        };
       };
       # background.visualiser.enabled = true;
       background.visualiser.autoHide = false;
@@ -29,7 +34,7 @@
         scrollActions.volume = false;
         entries = [
           {
-            id = "logo";
+            id = "clock";
             enabled = true;
           }
           {
@@ -54,10 +59,6 @@
           }
           {
             id = "statusIcons";
-            enabled = true;
-          }
-          {
-            id = "clock";
             enabled = true;
           }
         ];

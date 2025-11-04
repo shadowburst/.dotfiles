@@ -127,6 +127,17 @@
         no_hardware_cursors = true;
         default_monitor = "DP-1";
       };
+      layerrule = [
+        "noanim, caelestia-(launcher|osd|notifications|border-exclusion|area-p)"
+        "animation fade, caelestia-(drawers|background)"
+        "order 1, caelestia-border-exclusion"
+        "order 2, caelestia-bar"
+        "xray 0, caelestia-.*"
+        "blur, caelestia-.*"
+        "blur, qs-.*"
+        "blurpopups, caelestia-.*"
+        "ignorealpha 0.8, caelestia-.*"
+      ];
       windowrule = [
         "float, class:org.gnome.Calculator"
         "minsize 300 500, class:org.gnome.Calculator"
