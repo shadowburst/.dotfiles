@@ -51,9 +51,6 @@ return {
             },
           },
         },
-        previewers = {
-          diff = { style = "terminal" },
-        },
         win = {
           input = {
             keys = {
