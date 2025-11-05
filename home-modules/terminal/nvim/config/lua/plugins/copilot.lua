@@ -25,11 +25,11 @@ return {
         function()
           local copilot = require("copilot.suggestion")
           if copilot.is_visible() then
-            copilot.accept()
+            copilot.accept_word()
           end
         end,
         mode = { "i", "s" },
-        desc = "Copilot completion",
+        desc = "Copilot accept word",
       },
       {
         "<s-tab>",
@@ -40,7 +40,7 @@ return {
           end
         end,
         mode = { "i", "s" },
-        desc = "Copilot completion",
+        desc = "Copilot accept line",
       },
     },
   },
