@@ -52,8 +52,7 @@ return {
           },
         },
         previewers = {
-          diff = { builtin = false },
-          git = { builtin = false },
+          diff = { style = "terminal" },
         },
         win = {
           input = {
