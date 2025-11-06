@@ -7,4 +7,6 @@
       openFirewall = true;
     };
   };
+
+  hardware.sane.brscan5.enable = true;
 }

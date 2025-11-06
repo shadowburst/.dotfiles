@@ -3,7 +3,7 @@
     ./audio.nix
     ./gaming.nix
     ./hypr
-    ./printing.nix
+    ./printers.nix
     ./stylix.nix
   ];
 
