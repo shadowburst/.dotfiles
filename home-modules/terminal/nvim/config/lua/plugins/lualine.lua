@@ -20,15 +20,6 @@ return {
         }, separator_opts or {})
       end
 
-      local function custom_branch()
-        local branch = vim.b.gitsigns_head
-        if branch == nil or branch == "" then
-          return ""
-        else
-          return " " .. branch
-        end
-      end
-
       local modes = { "normal", "insert", "visual", "replace", "command", "inactive", "terminal" }
       for _, mode in ipairs(modes) do
         if auto[mode] and auto[mode].c then
@@ -51,12 +42,6 @@ return {
             fmt = function(str) return str:sub(1, 1) end,
             padding = { left = 1, right = 1 },
           },
-          {
-            custom_branch,
-            color = { fg = colors.green, bg = "none" },
-            padding = { left = 1, right = 1 },
-          },
-          separator(),
         },
         lualine_b = {
           {
