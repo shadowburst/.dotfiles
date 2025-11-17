@@ -1,7 +1,7 @@
 {username, ...}: {
   hardware.uinput.enable = true;
   users.users.${username}.extraGroups = ["input" "uinput"];
-
+  environment.variables.GTK_IM_MODULE = "simple"; # Enables dead keys in GTK apps
   services.kanata = {
     enable = true;
     keyboards.default = {
