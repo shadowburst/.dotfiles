@@ -128,26 +128,26 @@
         default_monitor = "DP-1";
       };
       layerrule = [
-        "noanim, caelestia-(launcher|osd|notifications|border-exclusion|area-p)"
-        "animation fade, caelestia-(drawers|background)"
-        "order 1, caelestia-border-exclusion"
-        "order 2, caelestia-bar"
-        "xray 0, caelestia-.*"
-        "blur, caelestia-.*"
-        "blur, qs-.*"
-        "blurpopups, caelestia-.*"
-        "ignorealpha 0.8, caelestia-.*"
+        "match:namespace caelestia-(launcher|osd|notifications|border-exclusion|area-p), no_anim true"
+        "match:namespace caelestia-(drawers|background), animation fade"
+        "match:namespace caelestia-border-exclusion, order 1"
+        "match:namespace caelestia-bar, order 2"
+        "match:namespace caelestia-.*, xray 0"
+        "match:namespace caelestia-.*, blur true"
+        "match:namespace qs-.*, blur true"
+        "match:namespace caelestia-.*, blur_popups true"
+        "match:namespace caelestia-.*, ignore_alpha 0.8"
       ];
       windowrule = [
-        "float, class:org.gnome.Calculator"
-        "minsize 300 500, class:org.gnome.Calculator"
-        "float, class:brave(.*), initialClass:negative:brave-browser"
+        "match:class org.gnome.Calculator, float true"
+        "match:class org.gnome.Calculator, min_size 300 500"
+        "match:class brave(.*), match:initial_class negative:brave-browser, float true"
 
         # Smart gaps
-        "bordersize 0, floating:0, onworkspace:w[tv1]"
-        "rounding 0, floating:0, onworkspace:w[tv1]"
-        "bordersize 0, floating:0, onworkspace:f[1]"
-        "rounding 0, floating:0, onworkspace:f[1]"
+        "match:float false, match:workspace w[tv1], border_size 0"
+        "match:float false, match:workspace w[tv1], rounding 0"
+        "match:float false, match:workspace f[1], border_size 0"
+        "match:float false, match:workspace f[1], rounding 0"
       ];
       bindm = [
         "$mod, mouse:272, movewindow"
