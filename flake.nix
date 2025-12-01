@@ -7,7 +7,7 @@
 
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 
-    stylix.url = "github:danth/stylix";
+    stylix.url = "github:nix-community/stylix";
     stylix.inputs.nixpkgs.follows = "nixpkgs";
 
     catppuccin.url = "github:catppuccin/nix";
