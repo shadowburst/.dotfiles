@@ -10,6 +10,7 @@
 
   stylix = {
     enable = true;
+    enableReleaseChecks = false;
     autoEnable = false;
     polarity = "dark";
 

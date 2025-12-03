@@ -1,5 +1,6 @@
 {pkgs, ...}: {
   stylix = {
+    enableReleaseChecks = false;
     autoEnable = false;
     polarity = "dark";
     iconTheme = {
