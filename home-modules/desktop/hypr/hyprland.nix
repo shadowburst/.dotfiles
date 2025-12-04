@@ -26,7 +26,7 @@
         "f[1], gapsout:0, gapsin:0"
       ];
       exec-once = [
-        "caelestia-shell ipc call brightness set 0.4"
+        "sleep 3 && caelestia-shell ipc call brightness set 0.4"
       ];
       exec = [
         "systemctl --user restart caelestia.service"
