@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 
+SESSION_STATE_HOME="$XDG_STATE_HOME/$USER/tmux"
+SESSION_TEMPLATES_HOME="$SESSION_STATE_HOME/templates"
+SESSION_STATE_FILE="$SESSION_STATE_HOME/templates.json"
+
 if [[ $# -eq 1 ]]; then
-  choice=$1
+  session_path=$1
 else
   directories=(~ ~/Repos)
-  choice=$(
+  session_path=$(
     find "${directories[@]}" \
       -mindepth 1 -maxdepth 1 \
       -type d -exec test -e '{}/.git' \; \
@@ -14,35 +18,33 @@ else
   )
 fi
 
-if [[ -z $choice ]]; then
+if [[ -z $session_path ]]; then
   exit 0
 fi
 
-session=$(basename "$choice" | tr . _)
+session=$(basename "$session_path" | tr . _)
 editor=${EDITOR:-nvim}
 
 if ! tmux has-session -t="$session" 2>/dev/null; then
-  tmux new-session -ds "$session" -c "$choice" -n "$editor" "$editor; ${SHELL:-bash}"
+  tmux new-session -ds "$session" -c "$session_path" -n "$editor" "$editor; ${SHELL:-bash}"
 
-  template_directory="$XDG_STATE_HOME/$USER/tmux/templates"
-  state="$XDG_STATE_HOME/$USER/tmux/templates.json"
-  if [[ ! -f "${state}" ]]; then
-    mkdir -p "$(dirname $state)"
-    echo "{}" >"${state}"
+  if [[ ! -f "$SESSION_STATE_FILE" ]]; then
+    mkdir -p "$SESSION_STATE_HOME"
+    echo "{}" >"$SESSION_STATE_FILE"
   fi
-  if jq -e ".[\"${session}\"]" "${state}" >/dev/null; then
-    template=$(jq -r ".[\"${session}\"]" "${state}")
+  if jq -e ".[\"${session}\"]" "$SESSION_STATE_FILE" >/dev/null; then
+    template=$(jq -r ".[\"${session}\"]" "$SESSION_STATE_FILE")
   else
     template=$(
-      echo -e "No template\n$(find -L $template_directory -type f -executable -printf "%f\n")" | fzf
+      echo -e "No template\n$(find -L "$SESSION_TEMPLATES_HOME" -type f -executable -printf "%f\n")" | fzf
     )
-    jq ". + { \"${session}\": \"${template}\" }" "${state}" >"${state}.tmp"
-    mv "${state}.tmp" "${state}"
+    jq ". + { \"${session}\": \"${template}\" }" "$SESSION_STATE_FILE" >"$SESSION_STATE_FILE.tmp"
+    mv "$SESSION_STATE_FILE.tmp" "$SESSION_STATE_FILE"
   fi
 
-  template_script="$template_directory/$template"
+  template_script="$SESSION_TEMPLATES_HOME/$template"
   if [[ -f $template_script ]]; then
-    $template_script "$session"
+    $template_script "$session" "$session_path"
   fi
 fi
 
