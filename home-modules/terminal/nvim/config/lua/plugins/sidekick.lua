@@ -20,6 +20,7 @@ return {
           },
         },
       },
+      nes = { enabled = false },
     },
     keys = {
       {
