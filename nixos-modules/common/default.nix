@@ -45,7 +45,6 @@
 
   security.rtkit.enable = true;
 
-  nixpkgs.config.allowUnfree = true;
   nix = {
     gc = {
       automatic = true;

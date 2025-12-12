@@ -16,6 +16,7 @@
     pdfarranger
     protonvpn-gui
     simple-scan
+    tableplus
     video-downloader
   ];
 
