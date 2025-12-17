@@ -1,0 +1,6 @@
+{
+  "dockerManager": {
+    "enabled": true,
+    "groupByCompose": true
+  }
+}

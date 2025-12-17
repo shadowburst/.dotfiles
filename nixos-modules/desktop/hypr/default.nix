@@ -1,8 +1,9 @@
 {...}: {
   imports = [
     ./bluetooth.nix
-    ./greetd.nix
-    ./hyprland.nix
+    ./dms.nix
     ./power.nix
   ];
+
+  programs.hyprland.enable = true;
 }

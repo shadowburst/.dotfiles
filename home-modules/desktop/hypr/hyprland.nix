@@ -26,10 +26,8 @@
         "f[1], gapsout:0, gapsin:0"
       ];
       exec-once = [
-        "sleep 3 && caelestia-shell ipc call brightness set 0.4"
       ];
       exec = [
-        "systemctl --user restart caelestia.service"
       ];
       env = [
         "XDG_SESSION_DESKTOP, wayland"
@@ -208,43 +206,45 @@
         "$mod SHIFT CTRL, l, movewindow, mon:r"
 
         # Menus
-        "$mod, Space, global, caelestia:launcher"
-        "$mod, a, global, caelestia:dashboard"
-        "$mod, n, exec, caelestia shell drawers toggle sidebar"
-        "$mod, x, global, caelestia:session"
-        "$mod CTRL, n, global, caelestia:clearNotifs"
+        "$mod, Space, exec, dms ipc call spotlight toggle"
+        "$mod, x, exec, dms ipc call powermenu toggle"
 
         # Applications
         "$mod, return, exec, $terminal"
         "$mod, b, exec, $browser"
         "$mod, d, exec, launch-default"
         "$mod, e, exec, $terminal -e yazi"
-        "CTRL SHIFT, escape, exec, $terminal -e btop"
+        "CTRL SHIFT, escape, exec, $terminal -e dgop"
         ", xf86calculator, exec, gnome-calculator"
 
         # Audio
-        ", xf86audiomute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
-        ", xf86audiolowervolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ '5%-'"
-        ", xf86audioraisevolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ '5%+'"
-        ", xf86audioprev, global, caelestia:mediaPrev"
-        ", xf86audionext, global, caelestia:mediaNext"
-        ", xf86audioplay, global, caelestia:mediaToggle"
-        ", xf86audiopause, global, caelestia:mediaToggle"
-        "$mod CTRL, Space, global, caelestia:mediaToggle"
+        ", xf86audiomute, exec, dms ipc call audio mute"
+        ", xf86audiolowervolume, exec, dms ipc call audio decrement 5"
+        ", xf86audioraisevolume, exec, dms ipc call audio increment 5"
+        ", xf86audioprev, exec, dms ipc call mpris previous"
+        ", xf86audionext, exec, dms ipc call mpris next"
+        ", xf86audioplay, exec, dms ipc call mpris playPause"
+        ", xf86audiopause, exec, dms ipc call mpris playPause"
+        "$mod CTRL, Space, exec, dms ipc call mpris playPause"
 
         # Brightness
-        ", xf86monbrightnessdown, global, caelestia:brightnessDown"
-        ", xf86monbrightnessup, global, caelestia:brightnessUp"
+        ", xf86monbrightnessdown, exec, dms ipc call brightness decrement 5 backlight:amdgpu_bl1"
+        ", xf86monbrightnessup, exec, dms ipc call brightness increment 5 backlight:amdgpu_bl1"
+        ", xf86kbdbrightnessdown, exec, dms ipc call brightness decrement 33 leds:asus::kbd_backlight"
+        ", xf86kbdbrightnessup, exec, dms ipc call brightness increment 33 leds:asus::kbd_backlight"
 
         # Screenshots
-        ", print, exec, caelestia screenshot -r"
-        "$mod SHIFT, S, exec, caelestia screenshot -r"
-        "CTRL, print, exec, caelestia screenshot"
-        "$mod SHIFT CTRL, S, exec, caelestia screenshot"
+        ", print, exec, dms screenshot full --no-file"
+        "SHIFT, print, exec, dms screenshot --no-file"
+        "CTRL, print, exec, dms screenshot full"
+        "CTRL SHIFT, print, exec, dms screenshot full"
+
+        "$mod SHIFT, S, exec, dms screenshot --no-file"
+        "$mod CTRL SHIFT, S, exec, dms screenshot"
 
         # Other
-        "$mod, v, exec, pkill fuzzel || caelestia clipboard"
-        "$mod SHIFT, p, exec, hyprpicker -a"
+        "$mod, v, exec, dms ipc call clipboard toggle"
+        "$mod, p, exec, dms color pick -a"
       ];
       ecosystem = {
         no_update_news = true;

@@ -7,8 +7,7 @@
     ./stylix.nix
   ];
 
-  programs = {
-    gnome-disks.enable = true;
-    seahorse.enable = true;
-  };
+  programs.gnome-disks.enable = true;
+  programs.gpu-screen-recorder.enable = true;
+  programs.seahorse.enable = true;
 }
