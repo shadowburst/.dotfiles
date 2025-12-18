@@ -26,6 +26,7 @@
         "f[1], gapsout:0, gapsin:0"
       ];
       exec-once = [
+        "protonvpn-app"
       ];
       exec = [
       ];
