@@ -60,6 +60,7 @@ in {
       bind-key -n M-n next-window
       bind-key -n M-s split-window -v
       bind-key -n M-v split-window -h
+      bind-key -n M-b break-pane -d
 
       bind-key '&' select-window -t 1
       bind-key 'é' select-window -t 2
