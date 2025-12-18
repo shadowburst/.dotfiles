@@ -6,18 +6,7 @@ return {
       "nvim-treesitter/nvim-treesitter-context",
     },
     lazy = false,
-    branch = "main",
-    build = function()
-      local TS = require("nvim-treesitter")
-      if not TS.get_installed then
-        vim.notify(
-          "Please restart Neovim and run `:TSUpdate` to use the `nvim-treesitter` **main** branch.",
-          vim.log.levels.WARN
-        )
-        return
-      end
-      TS.update(nil, { summary = true })
-    end,
+    build = ":TSUpdate",
     event = { "BufNewFile", "BufReadPost", "BufWritePre" },
     opts = {
       ensure_installed = {
