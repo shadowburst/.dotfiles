@@ -7,6 +7,18 @@ return {
       terminal = {},
     },
     keys = {
+      {
+        "<leader>d",
+        function()
+          Snacks.terminal.toggle({ "lazydocker" }, {
+            win = {
+              width = 0,
+              height = 0,
+            },
+          })
+        end,
+        desc = "Toggle lazydocker",
+      },
       { "<leader>tt", function() Snacks.terminal.toggle() end, desc = "Toggle terminal" },
     },
   },
