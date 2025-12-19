@@ -11,7 +11,7 @@ in {
   programs.tmux = {
     enable = true;
     baseIndex = 1;
-    prefix = "C-f";
+    prefix = "C-b";
     escapeTime = 0;
     mouse = true;
     keyMode = "vi";
