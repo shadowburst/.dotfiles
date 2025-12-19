@@ -6,5 +6,6 @@
     ../../../home-modules/work
     ./brave.nix
     ./git.nix
+    ./options.nix
   ];
 }

@@ -229,10 +229,10 @@
         "$mod CTRL, Space, exec, dms ipc call mpris playPause"
 
         # Brightness
-        ", xf86monbrightnessdown, exec, dms ipc call brightness decrement 5 backlight:amdgpu_bl1"
-        ", xf86monbrightnessup, exec, dms ipc call brightness increment 5 backlight:amdgpu_bl1"
-        ", xf86kbdbrightnessdown, exec, dms ipc call brightness decrement 33 leds:asus::kbd_backlight"
-        ", xf86kbdbrightnessup, exec, dms ipc call brightness increment 33 leds:asus::kbd_backlight"
+        ", xf86monbrightnessdown, exec, dms ipc call brightness decrement 5 backlight:${config.custom.backlightDevice}"
+        ", xf86monbrightnessup, exec, dms ipc call brightness increment 5 backlight:${config.custom.backlightDevice}"
+        ", xf86kbdbrightnessdown, exec, dms ipc call brightness decrement 33 leds:${config.custom.kbdBacklightDevice}"
+        ", xf86kbdbrightnessup, exec, dms ipc call brightness increment 33 leds:${config.custom.kbdBacklightDevice}"
 
         # Screenshots
         ", print, exec, dms screenshot full --no-file"
