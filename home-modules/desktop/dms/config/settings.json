@@ -60,16 +60,6 @@
       "width": 50
     },
     {
-      "id": "builtin_vpn",
-      "enabled": true,
-      "width": 50
-    },
-    {
-      "id": "battery",
-      "enabled": true,
-      "width": 50
-    },
-    {
       "id": "audioOutput",
       "enabled": true,
       "width": 50
@@ -80,14 +70,21 @@
       "width": 50
     },
     {
-      "id": "doNotDisturb",
+      "id": "battery",
       "enabled": true,
-      "width": 50
+      "width": 25
     },
     {
       "id": "idleInhibitor",
       "enabled": true,
-      "width": 50
+      "width": 25
+    },
+    {
+      "id": "diskUsage",
+      "enabled": true,
+      "width": 50,
+      "instanceId": "mjda1mvd50vicgi3ko2",
+      "mountPath": "/"
     }
   ],
   "showWorkspaceIndex": true,
@@ -122,7 +119,7 @@
   "useAutoLocation": true,
   "weatherEnabled": true,
   "networkPreference": "auto",
-  "vpnLastConnected": "c66932d0-33d4-4d84-b381-79b9c72a8263",
+  "vpnLastConnected": "a7efc32e-9832-4cb0-809d-8a823cdff05b",
   "iconTheme": "System Default",
   "launcherLogoMode": "os",
   "launcherLogoCustomPath": "",
