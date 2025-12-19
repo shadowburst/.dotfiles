@@ -3,7 +3,7 @@
     enable = true;
     settings = {
       theme = "catppuccin";
-      model = "github-copilot/gpt-4.1";
+      permission.edit = "ask";
       keybinds = {
         messages_half_page_up = "ctrl+u";
         messages_half_page_down = "ctrl+d";
