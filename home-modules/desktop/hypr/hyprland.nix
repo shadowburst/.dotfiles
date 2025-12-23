@@ -1,15 +1,10 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }: {
   wayland.windowManager.hyprland = {
     enable = true;
-    plugins = with pkgs; [
-      hyprlandPlugins.hyprscrolling
-      hyprlandPlugins.hypr-dynamic-cursors
-    ];
     systemd.variables = ["--all"];
     settings = {
       "$mod" = "SUPER";
@@ -25,11 +20,6 @@
         "w[tv1], gapsout:0, gapsin:0"
         "f[1], gapsout:0, gapsin:0"
       ];
-      exec-once = [
-        "protonvpn-app"
-      ];
-      exec = [
-      ];
       env = [
         "XDG_SESSION_DESKTOP, wayland"
         "SSH_AUTH_SOCK, $XDG_RUNTIME_DIR/gcr/ssh"
@@ -38,7 +28,7 @@
         border_size = 2;
         gaps_in = 2;
         gaps_out = 0;
-        layout = "scrolling";
+        layout = "dwindle";
         "col.active_border" = lib.mkForce "$accent";
       };
       group = {
@@ -123,17 +113,6 @@
         no_hardware_cursors = true;
         default_monitor = "DP-1";
       };
-      layerrule = [
-        "noanim, caelestia-(launcher|osd|notifications|border-exclusion|area-p)"
-        "animation fade, caelestia-(drawers|background)"
-        "order 1, caelestia-border-exclusion"
-        "order 2, caelestia-bar"
-        "xray 0, caelestia-.*"
-        "blur, caelestia-.*"
-        "blur, qs-.*"
-        "blurpopups, caelestia-.*"
-        "ignorealpha 0.8, caelestia-.*"
-      ];
       windowrule = [
         "float, class:org.gnome.Calculator"
         "minsize 300 500, class:org.gnome.Calculator"
@@ -152,25 +131,24 @@
       bind = [
         # Compositor
         "$mod SHIFT, r, exec, hyprctl reload"
-        "$mod, Escape, exec, loginctl lock-session"
+        "$mod, Escape, exec, sleep 1 && hyprctl dispatch dpms off"
+        # "$mod, Escape, exec, loginctl lock-session"
 
         # Windows
         "CTRL ALT, delete, exec, hyprctl kill"
         "$mod, c, togglefloating,"
         "$mod, f, fullscreenstate, 2 -1"
         "$mod, g, layoutmsg, promote"
-        "$mod, h, layoutmsg, focus l"
-        "$mod, j, layoutmsg, focus d"
-        "$mod, k, layoutmsg, focus u"
-        "$mod, l, layoutmsg, focus r"
-        "$mod, m, layoutmsg, colresize +conf"
+        "$mod, h, movefocus, l"
+        "$mod, j, movefocus, d"
+        "$mod, k, movefocus, u"
+        "$mod, l, movefocus, r"
         "$mod, p, pin,"
         "$mod, q, killactive,"
-        "$mod, z, layoutmsg, togglefit"
-        "$mod SHIFT, h, layoutmsg, movewindowto l"
-        "$mod SHIFT, j, layoutmsg, movewindowto d"
-        "$mod SHIFT, k, layoutmsg, movewindowto u"
-        "$mod SHIFT, l, layoutmsg, movewindowto r"
+        "$mod SHIFT, h, movewindow, l"
+        "$mod SHIFT, j, movewindow, d"
+        "$mod SHIFT, k, movewindow, u"
+        "$mod SHIFT, l, movewindow, r"
 
         # Workspaces
         "$mod, ampersand, focusworkspaceoncurrentmonitor, 1"
@@ -250,20 +228,6 @@
       ecosystem = {
         no_update_news = true;
         no_donation_nag = true;
-      };
-
-      plugin = {
-        dynamic-cursors = {
-          mode = "stretch";
-          shake = {
-            effects = true;
-          };
-        };
-        hyprscrolling = {
-          fullscreen_on_one_column = true;
-          explicit_column_widths = "0.5, 1";
-          focus_fit_method = 1;
-        };
       };
     };
   };
