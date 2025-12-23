@@ -9,6 +9,9 @@ return {
       vim.g.opencode_opts = {
         provider = {
           enabled = "tmux",
+          tmux = {
+            options = "-h -l 80",
+          },
         },
       }
     end,
