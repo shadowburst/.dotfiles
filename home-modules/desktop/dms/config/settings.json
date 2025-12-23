@@ -205,13 +205,7 @@
   "osdAudioOutputEnabled": true,
   "powerActionConfirm": true,
   "powerActionHoldDuration": 0.5,
-  "powerMenuActions": [
-    "reboot",
-    "logout",
-    "poweroff",
-    "lock",
-    "restart"
-  ],
+  "powerMenuActions": ["reboot", "logout", "poweroff", "lock", "restart"],
   "powerMenuDefaultAction": "logout",
   "powerMenuGridLayout": false,
   "customPowerActionLock": "",
@@ -226,9 +220,7 @@
   "displayNameMode": "system",
   "screenPreferences": {
     "dock": [],
-    "notifications": [
-      "all"
-    ]
+    "notifications": ["all"]
   },
   "showOnLastDisplay": {},
   "barConfigs": [
@@ -237,9 +229,7 @@
       "name": "Main Bar",
       "enabled": true,
       "position": 0,
-      "screenPreferences": [
-        "all"
-      ],
+      "screenPreferences": ["all"],
       "showOnLastDisplay": true,
       "leftWidgets": [
         {
@@ -272,10 +262,6 @@
       "rightWidgets": [
         {
           "id": "systemTray",
-          "enabled": true
-        },
-        {
-          "id": "dockerManager",
           "enabled": true
         },
         {
@@ -323,3 +309,4 @@
   ],
   "configVersion": 2
 }
+

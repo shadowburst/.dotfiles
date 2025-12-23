@@ -1,21 +1,5 @@
-{
-  pkgs,
-  username,
-  ...
-}: {
-  programs.dms-shell = {
-    enable = true;
-    plugins = {
-      DockerManager = {
-        src = pkgs.fetchFromGitHub {
-          owner = "LuckShiba";
-          repo = "DmsDockerManager";
-          rev = "v1.2.0";
-          sha256 = "sha256-VoJCaygWnKpv0s0pqTOmzZnPM922qPDMHk4EPcgVnaU=";
-        };
-      };
-    };
-  };
+{username, ...}: {
+  programs.dms-shell.enable = true;
 
   services.displayManager.dms-greeter = {
     enable = true;
