@@ -93,7 +93,7 @@
   "showWorkspaceApps": false,
   "maxWorkspaceIcons": 3,
   "workspacesPerMonitor": true,
-  "showOccupiedWorkspacesOnly": true,
+  "showOccupiedWorkspacesOnly": false,
   "dwlShowAllTags": false,
   "workspaceNameIcons": {},
   "waveProgressEnabled": true,
@@ -110,7 +110,7 @@
   "mediaSize": 0,
   "appLauncherViewMode": "list",
   "spotlightModalViewMode": "list",
-  "sortAppsAlphabetically": false,
+  "sortAppsAlphabetically": true,
   "appLauncherGridColumns": 4,
   "spotlightCloseNiriOverview": true,
   "niriOverviewOverlayEnabled": true,
@@ -205,7 +205,13 @@
   "osdAudioOutputEnabled": true,
   "powerActionConfirm": true,
   "powerActionHoldDuration": 0.5,
-  "powerMenuActions": ["reboot", "logout", "poweroff", "lock", "restart"],
+  "powerMenuActions": [
+    "reboot",
+    "logout",
+    "poweroff",
+    "lock",
+    "restart"
+  ],
   "powerMenuDefaultAction": "logout",
   "powerMenuGridLayout": false,
   "customPowerActionLock": "",
@@ -220,7 +226,9 @@
   "displayNameMode": "system",
   "screenPreferences": {
     "dock": [],
-    "notifications": ["all"]
+    "notifications": [
+      "all"
+    ]
   },
   "showOnLastDisplay": {},
   "barConfigs": [
@@ -229,7 +237,9 @@
       "name": "Main Bar",
       "enabled": true,
       "position": 0,
-      "screenPreferences": ["all"],
+      "screenPreferences": [
+        "all"
+      ],
       "showOnLastDisplay": true,
       "leftWidgets": [
         {
@@ -279,7 +289,7 @@
         {
           "id": "clock",
           "enabled": true,
-          "clockCompactMode": false
+          "clockCompactMode": true
         }
       ],
       "spacing": 0,
@@ -309,4 +319,3 @@
   ],
   "configVersion": 2
 }
-

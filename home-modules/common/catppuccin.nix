@@ -6,16 +6,16 @@
     accent = "lavender";
 
     bat.enable = true;
-    btop.enable = true;
     brave.enable = true;
+    btop.enable = true;
     cava.enable = true;
     delta.enable = true;
     fish.enable = true;
     fuzzel.enable = true;
-    hyprland.enable = true;
-    kitty.enable = true;
     gh-dash.enable = true;
     ghostty.enable = true;
+    hyprland.enable = true;
+    kitty.enable = true;
     kvantum.enable = true;
     lazygit.enable = true;
     nushell.enable = true;
