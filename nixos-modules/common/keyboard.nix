@@ -10,7 +10,7 @@
       '';
       config = ''
         (defsrc
-          a s d f j k l ; bspc
+          a s d f j k l ;
         )
 
         (defvar
@@ -27,11 +27,10 @@
           k (multi f24 (tap-hold $tap-time $hold-time k rctl))
           l (multi f24 (tap-hold $tap-time $hold-time l rmet))
           ; (multi f24 (tap-hold $tap-time $hold-time ; ralt))
-          bspc (tap-dance $tap-time (bspc C-bspc))
          )
 
         (deflayer base
-          @a @s @d @f @j @k @l @; @bspc
+          @a @s @d @f @j @k @l @;
         )
       '';
     };
