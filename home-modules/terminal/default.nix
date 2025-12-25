@@ -7,7 +7,7 @@
     ./fish.nix
     ./fzf.nix
     ./git.nix
-    ./lazydocker
+    ./lazydocker.nix
     ./nushell.nix
     ./nvim
     ./opencode
