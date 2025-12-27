@@ -14,7 +14,13 @@
         ", highres, auto, 1"
       ];
       workspace = [
-        "1, default:true"
+        "1, persistent:true, default:true"
+        "2, persistent:true"
+        "3, persistent:true"
+        "4, persistent:true"
+        "5, persistent:true"
+        "6, persistent:true"
+        "7, persistent:true"
 
         # Smart gaps
         "w[tv1], gapsout:0, gapsin:0"
@@ -131,19 +137,17 @@
       bind = [
         # Compositor
         "$mod SHIFT, r, exec, hyprctl reload"
-        "$mod, Escape, exec, sleep 1 && hyprctl dispatch dpms off"
-        # "$mod, Escape, exec, loginctl lock-session"
+        "$mod, Escape, exec, loginctl lock-session"
 
         # Windows
         "CTRL ALT, delete, exec, hyprctl kill"
         "$mod, c, togglefloating,"
         "$mod, f, fullscreenstate, 2 -1"
-        "$mod, g, layoutmsg, promote"
         "$mod, h, movefocus, l"
         "$mod, j, movefocus, d"
         "$mod, k, movefocus, u"
         "$mod, l, movefocus, r"
-        "$mod, p, pin,"
+        "$mod SHIFT, p, pin,"
         "$mod, q, killactive,"
         "$mod SHIFT, h, movewindow, l"
         "$mod SHIFT, j, movewindow, d"
@@ -185,45 +189,42 @@
         "$mod SHIFT CTRL, l, movewindow, mon:r"
 
         # Menus
-        "$mod, Space, exec, dms ipc call spotlight toggle"
-        "$mod, x, exec, dms ipc call powermenu toggle"
+        "$mod, Space, exec, noctalia-shell ipc call launcher toggle"
+        "$mod, x, exec, noctalia-shell ipc call sessionMenu toggle"
+        "$mod, a, exec, noctalia-shell ipc call controlCenter toggle"
+        "$mod, n, exec, noctalia-shell ipc call calendar toggle"
 
         # Applications
         "$mod, return, exec, $terminal"
         "$mod, b, exec, $browser"
         "$mod, d, exec, launch-default"
         "$mod, e, exec, $terminal -e yazi"
-        "CTRL SHIFT, escape, exec, $terminal -e dgop"
-        ", xf86calculator, exec, gnome-calculator"
+        "CTRL SHIFT, escape, exec, $terminal -e btop"
+        ", xf86calculator, exec, noctalia-shell ipc call launcher calculator"
 
         # Audio
-        ", xf86audiomute, exec, dms ipc call audio mute"
-        ", xf86audiolowervolume, exec, dms ipc call audio decrement 5"
-        ", xf86audioraisevolume, exec, dms ipc call audio increment 5"
-        ", xf86audioprev, exec, dms ipc call mpris previous"
-        ", xf86audionext, exec, dms ipc call mpris next"
-        ", xf86audioplay, exec, dms ipc call mpris playPause"
-        ", xf86audiopause, exec, dms ipc call mpris playPause"
-        "$mod CTRL, Space, exec, dms ipc call mpris playPause"
+        ", xf86audiomute, exec, noctalia-shell ipc call volume muteOutput"
+        ", xf86audiolowervolume, exec, noctalia-shell ipc call volume decrease"
+        ", xf86audioraisevolume, exec, noctalia-shell ipc call volume increase"
+        ", xf86audioprev, exec, noctalia-shell ipc call media previous"
+        ", xf86audionext, exec, noctalia-shell ipc call media next"
+        ", xf86audioplay, exec, noctalia-shell ipc call media playPause"
+        ", xf86audiopause, exec, noctalia-shell ipc call media playPause"
+        "$mod CTRL, Space, exec, noctalia-shell ipc call media playPause"
 
         # Brightness
-        ", xf86monbrightnessdown, exec, dms ipc call brightness decrement 5 backlight:${config.custom.backlightDevice}"
-        ", xf86monbrightnessup, exec, dms ipc call brightness increment 5 backlight:${config.custom.backlightDevice}"
-        ", xf86kbdbrightnessdown, exec, dms ipc call brightness decrement 33 leds:${config.custom.kbdBacklightDevice}"
-        ", xf86kbdbrightnessup, exec, dms ipc call brightness increment 33 leds:${config.custom.kbdBacklightDevice}"
+        ", xf86monbrightnessdown, exec, noctalia-shell ipc call brightness decrease"
+        ", xf86monbrightnessup, exec, noctalia-shell ipc call brightness increase"
 
         # Screenshots
-        ", print, exec, dms screenshot full --no-file"
-        "SHIFT, print, exec, dms screenshot --no-file"
-        "CTRL, print, exec, dms screenshot full"
-        "CTRL SHIFT, print, exec, dms screenshot full"
-
-        "$mod SHIFT, S, exec, dms screenshot --no-file"
-        "$mod CTRL SHIFT, S, exec, dms screenshot"
+        ", print, exec, hyprshot --freeze --raw -m region | satty --filename -"
+        "CTRL, print, exec, hyprshot --freeze --raw -m window | satty --filename -"
+        "$mod SHIFT, S, exec, hyprshot --freeze --raw -m region | satty --filename -"
+        "$mod CTRL SHIFT, S, exec, hyprshot --freeze --raw -m window | satty --filename -"
 
         # Other
-        "$mod, v, exec, dms ipc call clipboard toggle"
-        "$mod, p, exec, dms color pick -a"
+        "$mod, v, exec, noctalia-shell ipc call launcher clipboard"
+        "$mod, p, exec, hyprpicker -a"
       ];
       ecosystem = {
         no_update_news = true;

@@ -30,11 +30,9 @@
 
   console.keyMap = "fr";
 
-  hardware = {
-    graphics = {
-      enable = true;
-      enable32Bit = true;
-    };
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true;
   };
 
   networking.hostName = "zephyrus";

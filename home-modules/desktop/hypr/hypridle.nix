@@ -3,7 +3,7 @@
     enable = true;
     settings = {
       general = {
-        lock_cmd = "dms ipc call lock lock";
+        lock_cmd = "noctalia-shell ipc call lockScreen lock";
         before_sleep_cmd = "loginctl lock-session";
         after_sleep_cmd = "hyprctl dispatch dpms on";
       };
@@ -15,7 +15,7 @@
             /*
             bash
             */
-            ''[[ "$(dms ipc call lock isLocked)" == "true" ]] && hyprctl dispatch dpms off'';
+            ''[[ "$(noctalia-shell ipc call state all | jq '.state.lockScreenActive')" == "true" ]] && hyprctl dispatch dpms off'';
           on-resume = "hyprctl dispatch dpms on";
         }
       ];

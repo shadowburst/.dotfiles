@@ -6,9 +6,9 @@
   launch-default = pkgs.writeShellScriptBin "launch-default" (lib.fileContents ./bin/launch-default);
 in {
   imports = [
-    ./dms
     ./hypridle.nix
     ./hyprland.nix
+    ./noctalia
     ./shikane.nix
   ];
 
@@ -17,9 +17,13 @@ in {
 
     nautilus
     gnome-calculator
+    hyprpicker
+    hyprshot
     pavucontrol
     socat
+    satty
     wdisplays
+    wl-clipboard
   ];
 
   services.hyprpolkitagent.enable = true;

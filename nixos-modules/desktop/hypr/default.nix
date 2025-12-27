@@ -1,7 +1,7 @@
 {...}: {
   imports = [
     ./bluetooth.nix
-    ./dms.nix
+    ./greetd.nix
     ./power.nix
   ];
 

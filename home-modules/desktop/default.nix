@@ -14,7 +14,6 @@
     discord
     ente-auth
     gimp3
-    gpu-screen-recorder-gtk
     pdfarranger
     protonvpn-gui
     simple-scan
