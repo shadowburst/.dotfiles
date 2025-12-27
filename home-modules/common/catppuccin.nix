@@ -17,6 +17,7 @@
     hyprland.enable = true;
     kitty.enable = true;
     lazygit.enable = true;
+    mpv.enable = true;
     nushell.enable = true;
     starship.enable = true;
     tmux.enable = true;

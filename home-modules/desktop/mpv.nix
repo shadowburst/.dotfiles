@@ -1,4 +1,8 @@
-{pkgs, ...}: {
+{
+  config,
+  pkgs,
+  ...
+}: {
   programs.mpv = {
     enable = true;
     bindings = {
@@ -49,7 +53,15 @@
     scripts = with pkgs.mpvScripts; [
       mpris
       thumbfast
-      modernx
+      modernz
     ];
+    scriptOpts = {
+      modernz = {
+        window_controls = false;
+        seekbarfg_color = config.lib.stylix.colors.withHashtag.base07;
+        seekbarbg_color = config.lib.stylix.colors.withHashtag.base00;
+        hover_effect_color = config.lib.stylix.colors.withHashtag.base07;
+      };
+    };
   };
 }
