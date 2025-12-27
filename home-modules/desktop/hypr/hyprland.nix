@@ -135,24 +135,19 @@
         "$mod, mouse:273, resizewindow"
       ];
       bind = [
-        # Compositor
-        "$mod SHIFT, r, exec, hyprctl reload"
-        "$mod, Escape, exec, loginctl lock-session"
-
         # Windows
-        "CTRL ALT, delete, exec, hyprctl kill"
         "$mod, c, togglefloating,"
         "$mod, f, fullscreenstate, 2 -1"
         "$mod, h, movefocus, l"
         "$mod, j, movefocus, d"
         "$mod, k, movefocus, u"
         "$mod, l, movefocus, r"
-        "$mod SHIFT, p, pin,"
         "$mod, q, killactive,"
         "$mod SHIFT, h, movewindow, l"
         "$mod SHIFT, j, movewindow, d"
         "$mod SHIFT, k, movewindow, u"
         "$mod SHIFT, l, movewindow, r"
+        "$mod SHIFT, p, pin,"
 
         # Workspaces
         "$mod, ampersand, focusworkspaceoncurrentmonitor, 1"
@@ -188,34 +183,12 @@
         "$mod SHIFT CTRL, k, movewindow, mon:u"
         "$mod SHIFT CTRL, l, movewindow, mon:r"
 
-        # Menus
-        "$mod, Space, exec, noctalia-shell ipc call launcher toggle"
-        "$mod, x, exec, noctalia-shell ipc call sessionMenu toggle"
-        "$mod, a, exec, noctalia-shell ipc call calendar toggle"
-        "$mod, n, exec, noctalia-shell ipc call controlCenter toggle"
-
         # Applications
         "$mod, return, exec, $terminal"
         "$mod, b, exec, $browser"
         "$mod, d, exec, launch-default"
         "$mod, e, exec, $terminal -e yazi"
         "CTRL SHIFT, escape, exec, $terminal -e btop"
-        ", xf86calculator, exec, noctalia-shell ipc call launcher calculator"
-
-        # Audio
-        ", xf86audiomute, exec, noctalia-shell ipc call volume muteOutput"
-        ", xf86audiolowervolume, exec, noctalia-shell ipc call volume decrease"
-        ", xf86audioraisevolume, exec, noctalia-shell ipc call volume increase"
-        ", xf86audiomicmute, exec, noctalia-shell ipc call volume muteInput"
-        ", xf86audioprev, exec, noctalia-shell ipc call media previous"
-        ", xf86audionext, exec, noctalia-shell ipc call media next"
-        ", xf86audioplay, exec, noctalia-shell ipc call media playPause"
-        ", xf86audiopause, exec, noctalia-shell ipc call media playPause"
-        "$mod CTRL, Space, exec, noctalia-shell ipc call media playPause"
-
-        # Brightness
-        ", xf86monbrightnessdown, exec, noctalia-shell ipc call brightness decrease"
-        ", xf86monbrightnessup, exec, noctalia-shell ipc call brightness increase"
 
         # Screenshots
         ", print, exec, hyprshot --freeze --raw -m region | satty --filename -"
@@ -224,7 +197,8 @@
         "$mod CTRL SHIFT, S, exec, hyprshot --freeze --raw -m window | satty --filename -"
 
         # Other
-        "$mod, v, exec, noctalia-shell ipc call launcher clipboard"
+        "CTRL ALT, delete, exec, hyprctl kill"
+        "$mod, Escape, exec, loginctl lock-session"
         "$mod, p, exec, hyprpicker -a"
       ];
       ecosystem = {

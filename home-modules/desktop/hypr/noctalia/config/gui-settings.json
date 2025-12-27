@@ -106,6 +106,9 @@
                     "showUnreadBadge": true
                 },
                 {
+                    "id": "ScreenRecorder"
+                },
+                {
                     "displayMode": "onhover",
                     "id": "Bluetooth"
                 },
@@ -467,7 +470,7 @@
         "fontFixedScale": 1,
         "panelBackgroundOpacity": 1,
         "panelsAttachedToBar": true,
-        "settingsPanelMode": "attached",
+        "settingsPanelMode": "window",
         "tooltipsEnabled": true,
         "wifiDetailsViewMode": "list"
     },
