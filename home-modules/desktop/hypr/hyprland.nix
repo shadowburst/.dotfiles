@@ -206,6 +206,7 @@
         ", xf86audiomute, exec, noctalia-shell ipc call volume muteOutput"
         ", xf86audiolowervolume, exec, noctalia-shell ipc call volume decrease"
         ", xf86audioraisevolume, exec, noctalia-shell ipc call volume increase"
+        ", xf86audiomicmute, exec, noctalia-shell ipc call volume muteInput"
         ", xf86audioprev, exec, noctalia-shell ipc call media previous"
         ", xf86audionext, exec, noctalia-shell ipc call media next"
         ", xf86audioplay, exec, noctalia-shell ipc call media playPause"
