@@ -315,7 +315,7 @@
         "criticalUrgencyDuration": 15,
         "enableKeyboardLayoutToast": true,
         "enabled": true,
-        "location": "bottom_left",
+        "location": "top",
         "lowUrgencyDuration": 3,
         "monitors": [
         ],

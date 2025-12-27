@@ -11,6 +11,10 @@
     targets = {
       gtk.enable = true;
       hyprland.enable = true;
+      qt = {
+        enable = true;
+        standardDialogs = "xdgdesktopportal";
+      };
     };
   };
 }

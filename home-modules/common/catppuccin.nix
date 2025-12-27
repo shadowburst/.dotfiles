@@ -16,7 +16,6 @@
     ghostty.enable = true;
     hyprland.enable = true;
     kitty.enable = true;
-    kvantum.enable = true;
     lazygit.enable = true;
     nushell.enable = true;
     starship.enable = true;
