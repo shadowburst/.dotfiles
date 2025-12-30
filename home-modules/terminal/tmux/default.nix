@@ -106,7 +106,7 @@ in {
         delete-buffer
         split-window
         resize-pane -Z
-        send-keys 'nvim /tmp/tmux_buffer_tmp' Enter
+        send-keys 'nvim + /tmp/tmux_buffer_tmp' Enter
       }
     '';
   };
