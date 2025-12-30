@@ -10,7 +10,7 @@
     ./lazydocker.nix
     ./nushell.nix
     ./nvim
-    ./opencode
+    ./opencode.nix
     ./starship.nix
     ./tmux
     ./yazi.nix
