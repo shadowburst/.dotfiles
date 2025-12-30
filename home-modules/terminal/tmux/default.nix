@@ -48,10 +48,11 @@ in {
       setw -g pane-active-border-style "bg=default,fg=#{@thm_mauve}"
       setw -g pane-border-lines single
 
-      # +--- Sessions ---+
-      bind-key -n M-d detach
-      bind-key -n M-Tab switch-client -n
-      bind-key -n M-Space run-shell "tmux neww tmux-sessionizer"
+       # +--- Sessions ---+
+       bind-key -n M-d detach
+       bind-key -n M-Tab switch-client -n
+       bind-key -n M-Space run-shell "tmux neww tmux-sessionizer"
+       bind-key -n M-a confirm-before "kill-session -a"
 
       # +--- Windows ---+
       bind-key w choose-window
