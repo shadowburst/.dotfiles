@@ -78,11 +78,6 @@ in {
       bind-key -n M-o confirm-before "kill-pane -a"
       bind-key -n M-f resize-pane -Z
 
-      # +--- Copy mode ---+
-      bind-key -T copy-mode-vi v send-keys -X begin-selection
-      bind-key -T copy-mode-vi Escape send-keys -X cancel
-      bind-key -n M-Escape copy-mode
-
       # +--- Other ---+
       bind-key -n M-r source-file ~/.config/tmux/tmux.conf
 
@@ -104,6 +99,15 @@ in {
       bind-key -n M-J swap-pane -d -t "{down-of}"
       bind-key -n M-K swap-pane -d -t "{up-of}"
       bind-key -n M-L swap-pane -d -t "{right-of}"
+
+      bind-key -n M-Escape {
+        capture-pane -S -
+        save-buffer /tmp/tmux_buffer_tmp
+        delete-buffer
+        split-window
+        resize-pane -Z
+        send-keys 'nvim /tmp/tmux_buffer_tmp' Enter
+      }
     '';
   };
 
