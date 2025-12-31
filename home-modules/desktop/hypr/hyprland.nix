@@ -5,7 +5,7 @@
 }: {
   wayland.windowManager.hyprland = {
     enable = true;
-    systemd.variables = ["--all"];
+    systemd.enable = false;
     settings = {
       "$mod" = "SUPER";
       "$terminal" = config.home.sessionVariables.TERMINAL;
@@ -28,7 +28,6 @@
       ];
       env = [
         "XDG_SESSION_DESKTOP, wayland"
-        "SSH_AUTH_SOCK, $XDG_RUNTIME_DIR/gcr/ssh"
       ];
       general = {
         border_size = 2;
@@ -184,11 +183,11 @@
         "$mod SHIFT CTRL, l, movewindow, mon:r"
 
         # Applications
-        "$mod, return, exec, $terminal"
-        "$mod, b, exec, $browser"
-        "$mod, d, exec, launch-default"
-        "$mod, e, exec, $terminal -e yazi"
-        "CTRL SHIFT, escape, exec, $terminal -e btop"
+        "$mod, return, exec, uwsm app -- $terminal"
+        "$mod, b, exec, uwsm app -- $browser"
+        "$mod, d, exec, uwsm app -- launch-default"
+        "$mod, e, exec, uwsm app -- $terminal -e yazi"
+        "CTRL SHIFT, escape, exec, uwsm app -- $terminal -e btop"
 
         # Screenshots
         ", print, exec, hyprshot --freeze --raw -m region | satty --filename -"
@@ -207,4 +206,5 @@
       };
     };
   };
+  xdg.configFile."uwsm/env".source = "${config.home.sessionVariablesPackage}/etc/profile.d/hm-session-vars.sh";
 }

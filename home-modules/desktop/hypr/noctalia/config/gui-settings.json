@@ -1,7 +1,7 @@
 {
     "appLauncher": {
-        "customLaunchPrefix": "",
-        "customLaunchPrefixEnabled": false,
+        "customLaunchPrefix": "uwsm app",
+        "customLaunchPrefixEnabled": true,
         "enableClipPreview": true,
         "enableClipboardHistory": true,
         "iconMode": "tabler",

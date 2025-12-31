@@ -44,6 +44,7 @@
   };
 
   security.rtkit.enable = true;
+  services.gnome.gnome-keyring.enable = true;
 
   nix = {
     gc = {
