@@ -1,22 +1,37 @@
 #!/usr/bin/env bash
 
+# A list of either directories or directory:depth pairs to search for projects.
+SESSION_DIRS=(~/.dotfiles ~/Repos:1)
 SESSION_STATE_HOME="$XDG_STATE_HOME/$USER/tmux"
 SESSION_TEMPLATES_HOME="$SESSION_STATE_HOME/templates"
 SESSION_STATE_FILE="$SESSION_STATE_HOME/templates.json"
 
-if [[ $# -eq 1 ]]; then
-  session_path=$1
-else
-  directories=(~ ~/Repos)
-  session_path=$(
-    find "${directories[@]}" \
-      -mindepth 1 -maxdepth 1 \
-      -type d -exec test -e '{}/.git' \; \
-      -print |
-      fzf \
-        --preview="tree -a -L 1 -C --dirsfirst --sort=name --noreport {}"
-  )
-fi
+# Parse directories and build find commands
+dirs=()
+for dir_spec in "${SESSION_DIRS[@]}"; do
+  path="${dir_spec%:*}"
+  depth="${dir_spec#*:}"
+  # If no depth specified, default to 0 (just the folder itself)
+  [[ "$depth" == "$dir_spec" ]] && depth=0
+
+  if [[ $depth -eq 0 ]]; then
+    # Depth 0: just the exact directory itself
+    if [[ -d "$path" ]]; then
+      dirs+=("$path")
+    fi
+  else
+    # Depth > 0: find subdirectories up to specified depth
+    while IFS= read -r result; do
+      dirs+=("$result")
+    done < <(find "$path" -maxdepth "$depth" -mindepth 1 -type d 2>/dev/null)
+  fi
+done
+
+session_path=$(
+  printf '%s\n' "${dirs[@]}" |
+    fzf \
+      --preview="tree -a -L 1 -C --dirsfirst --sort=name --noreport {}"
+)
 
 if [[ -z $session_path ]]; then
   exit 0
