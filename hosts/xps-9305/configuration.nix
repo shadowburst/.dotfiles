@@ -30,12 +30,11 @@
 
   console.keyMap = "fr";
 
-  hardware = {
-    graphics = {
-      enable = true;
-      enable32Bit = true;
-    };
-    intelgpu.driver = "xe";
+  hardware.bluetooth.enable = true;
+  hardware.intelgpu.driver = "xe";
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true;
   };
 
   networking.hostName = "xps";
