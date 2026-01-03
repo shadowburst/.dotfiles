@@ -5,10 +5,11 @@
         "enableClipPreview": true,
         "enableClipboardHistory": true,
         "iconMode": "tabler",
-        "ignoreMouseInput": false,
+        "ignoreMouseInput": true,
         "pinnedExecs": [
         ],
-        "position": "bottom_center",
+        "position": "top_center",
+        "screenshotAnnotationTool": "satty -f -",
         "showCategories": true,
         "sortByMostUsed": true,
         "terminalCommand": "$TERMINAL",
@@ -27,7 +28,7 @@
     },
     "bar": {
         "backgroundOpacity": 0.93,
-        "capsuleOpacity": 1,
+        "capsuleOpacity": 0.9,
         "density": "default",
         "exclusive": true,
         "floating": false,
@@ -53,7 +54,7 @@
                     "id": "Workspace",
                     "labelMode": "index",
                     "showApplications": false,
-                    "showLabelsOnlyWhenOccupied": true,
+                    "showLabelsOnlyWhenOccupied": false,
                     "unfocusedIconsOpacity": 1
                 }
             ],
@@ -65,7 +66,7 @@
                     "id": "Clock",
                     "tooltipFormat": "HH:mm ddd, MMM dd",
                     "useCustomFont": false,
-                    "usePrimaryColor": false
+                    "usePrimaryColor": true
                 },
                 {
                     "compactMode": true,
@@ -75,6 +76,7 @@
                     "showCpuUsage": true,
                     "showDiskUsage": false,
                     "showGpuTemp": false,
+                    "showLoadAverage": false,
                     "showMemoryAsPercent": false,
                     "showMemoryUsage": true,
                     "showNetworkStats": true,
@@ -148,7 +150,7 @@
         }
     },
     "brightness": {
-        "brightnessStep": 5,
+        "brightnessStep": 10,
         "enableDdcSupport": false,
         "enforceMinimum": true
     },
@@ -209,6 +211,7 @@
                 "id": "brightness-card"
             }
         ],
+        "diskPath": "/",
         "position": "close_to_bar_button",
         "shortcuts": {
             "left": [
@@ -219,18 +222,31 @@
                     "id": "Bluetooth"
                 },
                 {
-                    "id": "ScreenRecorder"
+                    "id": "Notifications"
+                },
+                {
+                    "id": "WallpaperSelector"
                 }
             ],
             "right": [
                 {
-                    "id": "Notifications"
+                    "id": "KeepAwake"
+                },
+                {
+                    "enableOnStateLogic": false,
+                    "generalTooltipText": "Pick a colour from the screen",
+                    "icon": "color-picker",
+                    "id": "CustomButton",
+                    "onClicked": "hyprpicker -a",
+                    "onMiddleClicked": "",
+                    "onRightClicked": "",
+                    "stateChecksJson": "[]"
+                },
+                {
+                    "id": "ScreenRecorder"
                 },
                 {
                     "id": "PowerProfile"
-                },
-                {
-                    "id": "KeepAwake"
                 }
             ]
         }
@@ -276,14 +292,14 @@
         "iRadiusRatio": 1,
         "language": "",
         "lockOnSuspend": true,
-        "radiusRatio": 1,
+        "radiusRatio": 0.66,
         "scaleRatio": 1,
-        "screenRadiusRatio": 1,
+        "screenRadiusRatio": 0.66,
         "shadowDirection": "center",
         "shadowOffsetX": 0,
         "shadowOffsetY": 0,
         "showHibernateOnLockScreen": false,
-        "showScreenCorners": false,
+        "showScreenCorners": true,
         "showSessionButtonsOnLockScreen": true
     },
     "hooks": {
@@ -298,7 +314,7 @@
     "location": {
         "analogClockInCalendar": false,
         "firstDayOfWeek": -1,
-        "name": "Tokyo",
+        "name": "Mayenne",
         "showCalendarEvents": true,
         "showCalendarWeather": true,
         "showWeekNumberInCalendar": true,
@@ -308,27 +324,32 @@
         "weatherShowEffects": true
     },
     "network": {
+        "bluetoothDetailsViewMode": "grid",
+        "bluetoothHideUnnamedDevices": false,
+        "bluetoothRssiPollIntervalMs": 10000,
+        "bluetoothRssiPollingEnabled": false,
+        "wifiDetailsViewMode": "grid",
         "wifiEnabled": true
     },
     "nightLight": {
-        "autoSchedule": true,
+        "autoSchedule": false,
         "dayTemp": "6500",
-        "enabled": false,
+        "enabled": true,
         "forced": false,
-        "manualSunrise": "06:30",
-        "manualSunset": "18:30",
+        "manualSunrise": "08:00",
+        "manualSunset": "22:00",
         "nightTemp": "4000"
     },
     "notifications": {
-        "backgroundOpacity": 1,
-        "criticalUrgencyDuration": 15,
+        "backgroundOpacity": 0.9,
+        "criticalUrgencyDuration": 10,
         "enableKeyboardLayoutToast": true,
         "enabled": true,
         "location": "top",
         "lowUrgencyDuration": 3,
         "monitors": [
         ],
-        "normalUrgencyDuration": 8,
+        "normalUrgencyDuration": 5,
         "overlayLayer": true,
         "respectExpireTimeout": false,
         "saveToHistory": {
@@ -348,7 +369,7 @@
     },
     "osd": {
         "autoHideMs": 2000,
-        "backgroundOpacity": 1,
+        "backgroundOpacity": 0.9,
         "enabled": true,
         "enabledTypes": [
             0,
@@ -373,8 +394,9 @@
         "videoSource": "portal"
     },
     "sessionMenu": {
-        "countdownDuration": 10000,
-        "enableCountdown": false,
+        "countdownDuration": 3000,
+        "enableCountdown": true,
+        "largeButtonsLayout": "single-row",
         "largeButtonsStyle": false,
         "position": "top_center",
         "powerOptions": [
@@ -418,14 +440,13 @@
         "showHeader": true,
         "showNumberLabels": true
     },
-    "settingsVersion": 35,
+    "settingsVersion": 37,
     "systemMonitor": {
         "cpuCriticalThreshold": 90,
         "cpuPollingInterval": 3000,
         "cpuWarningThreshold": 80,
         "criticalColor": "",
         "diskCriticalThreshold": 90,
-        "diskPath": "/",
         "diskPollingInterval": 3000,
         "diskWarningThreshold": 80,
         "enableDgpuMonitoring": true,
@@ -433,6 +454,7 @@
         "gpuCriticalThreshold": 90,
         "gpuPollingInterval": 3000,
         "gpuWarningThreshold": 80,
+        "loadAvgPollingInterval": 3000,
         "memCriticalThreshold": 90,
         "memPollingInterval": 3000,
         "memWarningThreshold": 80,
@@ -471,17 +493,15 @@
         "zed": false
     },
     "ui": {
-        "bluetoothDetailsViewMode": "grid",
-        "bluetoothHideUnnamedDevices": false,
+        "boxBorderEnabled": false,
         "fontDefault": "Rubik",
         "fontDefaultScale": 1,
         "fontFixed": "CaskaydiaCove Nerd Font Mono",
         "fontFixedScale": 1,
-        "panelBackgroundOpacity": 1,
+        "panelBackgroundOpacity": 0.9,
         "panelsAttachedToBar": true,
         "settingsPanelMode": "window",
-        "tooltipsEnabled": true,
-        "wifiDetailsViewMode": "list"
+        "tooltipsEnabled": true
     },
     "wallpaper": {
         "directory": "/home/pbaudry/Pictures/Wallpapers",
@@ -498,9 +518,11 @@
         "randomIntervalSec": 300,
         "recursiveSearch": false,
         "setWallpaperOnAllMonitors": true,
+        "solidColor": "#1a1a2e",
         "transitionDuration": 1000,
         "transitionEdgeSmoothness": 0.05,
         "transitionType": "fade",
+        "useSolidColor": false,
         "useWallhaven": false,
         "wallhavenApiKey": "",
         "wallhavenCategories": "111",
