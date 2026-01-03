@@ -26,7 +26,6 @@
   home.packages = with pkgs; [
     act
     curl
-    delta
     fd
     ffmpeg
     gcc

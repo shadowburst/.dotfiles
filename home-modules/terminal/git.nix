@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{...}: {
   programs.git = {
     enable = true;
     settings = {
@@ -24,10 +24,7 @@
       git_protocol = "ssh";
       prompt = "enabled";
     };
-    extensions = with pkgs; [gh-copilot];
   };
 
   programs.gh-dash.enable = true;
-
-  home.packages = with pkgs; [wrkflw];
 }
