@@ -3,16 +3,20 @@
   lib,
   ...
 }: {
+  xdg.configFile."uwsm/env".source = "${config.home.sessionVariablesPackage}/etc/profile.d/hm-session-vars.sh";
   wayland.windowManager.hyprland = {
     enable = true;
     systemd.enable = false;
+
     settings = {
       "$mod" = "SUPER";
       "$terminal" = config.home.sessionVariables.TERMINAL;
       "$browser" = config.home.sessionVariables.BROWSER;
+
       monitor = [
         ", highres, auto, 1"
       ];
+
       workspace = [
         "1, persistent:true, default:true"
         "2, persistent:true"
@@ -26,29 +30,36 @@
         "w[tv1], gapsout:0, gapsin:0"
         "f[1], gapsout:0, gapsin:0"
       ];
-      env = [
-        "XDG_SESSION_DESKTOP, wayland"
+
+      windowrule = [
+        "match:class org.gnome.Calculator, float 1, size 300 500"
+        "match:initial_class brave-(\\w+)-Default, float 1"
+
+        # Smart gaps
+        "match:workspace w[tv1], match:float 0, border_size 0"
+        "match:workspace w[tv1], match:float 0, rounding 0"
+        "match:workspace f[1], match:float 0, border_size 0"
+        "match:workspace f[1], match:float 0, rounding 0"
       ];
-      general = {
-        border_size = 2;
-        gaps_in = 2;
-        gaps_out = 0;
-        layout = "dwindle";
-        "col.active_border" = lib.mkForce "$accent";
+
+      layerrule = [
+        "match:namespace noctalia-background-.*$, ignore_alpha 0.5, blur true, blur_popups true"
+      ];
+
+      general."col.active_border" = lib.mkForce "$accent";
+      general.border_size = 2;
+      general.gaps_in = 2;
+      general.gaps_out = 0;
+      general.layout = "dwindle";
+
+      decoration.blur = {
+        enabled = true;
+        size = 6;
+        xray = true;
       };
-      group = {
-        "col.border_active" = lib.mkForce "$accent";
-        groupbar."col.active" = lib.mkForce "$accent";
-      };
-      decoration = {
-        rounding = 10;
-        blur = {
-          enabled = true;
-          size = 6;
-          xray = true;
-        };
-        shadow.enabled = false;
-      };
+      decoration.rounding = 10;
+      decoration.shadow.enabled = false;
+
       animations = {
         enabled = true;
         bezier = [
@@ -69,66 +80,46 @@
           "border, 1, 4, standard"
         ];
       };
-      input = {
-        kb_layout = "fr";
-        kb_variant = "azerty";
-        kb_options = "caps:escape_shifted_capslock";
-        numlock_by_default = true;
-        repeat_delay = 300;
-        follow_mouse = 1;
-        touchpad = {
-          disable_while_typing = true;
-          natural_scroll = true;
-          drag_lock = true;
-        };
-      };
-      gestures = {
-        workspace_swipe_distance = 200;
-        workspace_swipe_min_speed_to_force = 10;
-      };
+
+      input.follow_mouse = 1;
+      input.kb_layout = "fr";
+      input.kb_options = "caps:escape_shifted_capslock";
+      input.kb_variant = "azerty";
+      input.numlock_by_default = true;
+      input.repeat_delay = 300;
+      input.touchpad.disable_while_typing = true;
+      input.touchpad.drag_lock = true;
+      input.touchpad.natural_scroll = true;
+
+      gestures.workspace_swipe_distance = 200;
+      gestures.workspace_swipe_min_speed_to_force = 10;
+
+      dwindle.force_split = 2;
+
+      xwayland.force_zero_scaling = true;
+
+      misc.allow_session_lock_restore = true;
+      misc.disable_hyprland_logo = true;
+      misc.enable_swallow = true;
+      misc.key_press_enables_dpms = true;
+      misc.mouse_move_enables_dpms = true;
+      misc.on_focus_under_fullscreen = 1;
+      misc.session_lock_xray = true;
+      misc.swallow_regex = "^com\\.mitchellh\\.ghostty$";
+      misc.vrr = 0;
+
+      cursor.default_monitor = "DP-1";
+      cursor.no_hardware_cursors = true;
+
+      ecosystem.no_donation_nag = true;
+      ecosystem.no_update_news = true;
+
       gesture = [
         "3, vertical, workspace"
         "3, left, dispatcher, layoutmsg, focus r"
         "3, right, dispatcher, layoutmsg, focus l"
       ];
-      dwindle.force_split = 2;
-      group.groupbar = {
-        font_size = 15;
-        gradients = true;
-        gradient_round_only_edges = false;
-        gradient_rounding = 5;
-        height = 25;
-        indicator_height = 0;
-        gaps_in = 3;
-        gaps_out = 3;
-      };
-      xwayland.force_zero_scaling = true;
-      misc = {
-        session_lock_xray = true;
-        disable_hyprland_logo = true;
-        vrr = 0;
-        allow_session_lock_restore = true;
-        mouse_move_enables_dpms = true;
-        key_press_enables_dpms = true;
-        enable_swallow = true;
-        swallow_regex = "^com\\.mitchellh\\.ghostty$";
-        new_window_takes_over_fullscreen = 1;
-      };
-      cursor = {
-        no_hardware_cursors = true;
-        default_monitor = "DP-1";
-      };
-      windowrule = [
-        "float, class:org.gnome.Calculator"
-        "minsize 300 500, class:org.gnome.Calculator"
-        "float, class:brave(.*), initialClass:negative:brave-browser"
 
-        # Smart gaps
-        "bordersize 0, floating:0, onworkspace:w[tv1]"
-        "rounding 0, floating:0, onworkspace:w[tv1]"
-        "bordersize 0, floating:0, onworkspace:f[1]"
-        "rounding 0, floating:0, onworkspace:f[1]"
-      ];
       bindm = [
         "$mod, mouse:272, movewindow"
         "$mod, mouse:273, resizewindow"
@@ -200,11 +191,6 @@
         "$mod, Escape, exec, loginctl lock-session"
         "$mod, p, exec, hyprpicker -a"
       ];
-      ecosystem = {
-        no_update_news = true;
-        no_donation_nag = true;
-      };
     };
   };
-  xdg.configFile."uwsm/env".source = "${config.home.sessionVariablesPackage}/etc/profile.d/hm-session-vars.sh";
 }
