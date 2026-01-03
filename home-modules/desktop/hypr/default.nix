@@ -29,11 +29,15 @@ in {
   services.hyprpolkitagent.enable = true;
 
   # Fix screensharing double menu
-  xdg.configFile."hypr/xdph.conf".text = ''
-    screencopy {
-      allow_token_by_default = true
-    }
-  '';
+  xdg.configFile."hypr/xdph.conf".text =
+    /*
+    hyprlang
+    */
+    ''
+      screencopy {
+        allow_token_by_default = true
+      }
+    '';
 
   home.sessionVariables.NIXOS_OZONE_WL = "1";
 }
