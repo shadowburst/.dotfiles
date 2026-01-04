@@ -34,12 +34,16 @@ in {
 
       set -g window-status-format "#[fg=#{@thm_lavender},bg=default] #I:#W "
       set -g window-status-current-format "#[bg=#{@thm_surface_0},fg=#{@thm_mauve}]  #I:#W  "
+      set -g renumber-windows on
 
       setw -g pane-border-status top
       setw -g pane-border-format ""
       setw -g pane-border-style "bg=default,fg=#{@thm_surface_1}"
       setw -g pane-active-border-style "bg=default,fg=#{@thm_mauve}"
       setw -g pane-border-lines single
+      set -g main-pane-width 50%
+
+      bind-key -n S-Enter send-keys "[13;2u"
 
       # +--- Sessions ---+
       bind-key -n M-a confirm-before "kill-session -a"
@@ -51,9 +55,11 @@ in {
       # +--- Windows ---+
       bind-key -n M-n next-window
       bind-key -n M-p previous-window
-      bind-key -n M-s split-window -v
       bind-key -n M-t new-window
-      bind-key -n M-v split-window -h
+      bind-key -n M-Enter {
+        split-window -v
+        select-layout main-vertical
+      }
 
       bind-key '&' select-window -t 1
       bind-key 'é' select-window -t 2
@@ -69,9 +75,12 @@ in {
       bind-key -n M-b break-pane -d
       bind-key -n M-f resize-pane -Z
       bind-key -n M-o confirm-before "kill-pane -a"
-      bind-key -n M-q confirm-before "kill-pane"
+      bind-key -n M-q {
+        kill-pane
+        select-layout main-vertical
+      }
       bind-key -n M-x confirm-before "kill-session"
-      bind-key -n M-Escape {
+      bind-key -n M-e {
         capture-pane -S -
         save-buffer /tmp/tmux_buffer_tmp
         delete-buffer
