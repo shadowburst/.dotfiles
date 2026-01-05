@@ -3,6 +3,7 @@
     ./brave.nix
     ./ghostty
     ./hypr
+    ./images
     ./mpv.nix
     ./options.nix
     ./transmission.nix
@@ -19,9 +20,4 @@
     tableplus
     video-downloader
   ];
-
-  home.file."Pictures/Wallpapers" = {
-    source = ./wallpapers;
-    recursive = true;
-  };
 }

@@ -3,7 +3,6 @@
   username,
   ...
 }: {
-  imports = [./catppuccin.nix];
   imports = [
     ./catppuccin.nix
     ./stylix.nix
@@ -17,6 +16,5 @@
     inherit stateVersion username;
 
     homeDirectory = "/home/${username}";
-    file.".face".source = ./face.jpg;
   };
 }
