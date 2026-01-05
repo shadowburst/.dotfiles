@@ -348,7 +348,7 @@
         "criticalUrgencyDuration": 10,
         "enableKeyboardLayoutToast": true,
         "enabled": true,
-        "location": "top",
+        "location": "bottom_right",
         "lowUrgencyDuration": 3,
         "monitors": [
         ],
@@ -362,8 +362,8 @@
         },
         "sounds": {
             "criticalSoundFile": "",
-            "enabled": false,
-            "excludedApps": "discord,firefox,chrome,chromium,edge",
+            "enabled": true,
+            "excludedApps": "discord,firefox,chrome,chromium,edge,brave",
             "lowSoundFile": "",
             "normalSoundFile": "",
             "separateSounds": false,
