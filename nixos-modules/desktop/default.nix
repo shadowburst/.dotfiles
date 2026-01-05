@@ -4,7 +4,6 @@
     ./gaming.nix
     ./hypr
     ./printers.nix
-    ./stylix.nix
   ];
 
   programs.gnome-disks.enable = true;

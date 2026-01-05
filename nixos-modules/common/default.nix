@@ -10,6 +10,7 @@
     ./keyboard.nix
     ./networking.nix
     ./ssh.nix
+    ./stylix.nix
     ./virtualisation.nix
   ];
 

@@ -4,16 +4,19 @@
   ...
 }: {
   imports = [./catppuccin.nix];
+  imports = [
+    ./catppuccin.nix
+    ./stylix.nix
+  ];
 
   programs.home-manager.enable = true;
 
-  home = {
-    inherit stateVersion;
+  xdg.enable = true;
 
-    username = "${username}";
+  home = {
+    inherit stateVersion username;
+
     homeDirectory = "/home/${username}";
     file.".face".source = ./face.jpg;
   };
-
-  xdg.enable = true;
 }

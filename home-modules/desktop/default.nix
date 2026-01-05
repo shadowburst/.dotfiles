@@ -5,7 +5,6 @@
     ./hypr
     ./mpv.nix
     ./options.nix
-    ./stylix.nix
     ./transmission.nix
   ];
 
