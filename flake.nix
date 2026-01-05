@@ -26,11 +26,6 @@
     ];
     stateVersion = "24.05";
     username = "pbaudry";
-    overlays = [
-      (final: prev: {
-        tableplus = import ./pkgs/tableplus.nix {inherit (prev) autoPatchelfHook dpkg fetchurl gtk3 gtksourceview3 krb5 lib libgee libsecret libxkbcommon stdenv wrapGAppsHook3 xorg;};
-      })
-    ];
   in {
     nixosConfigurations = builtins.listToAttrs (
       builtins.map (host: {
@@ -43,11 +38,6 @@
               stateVersion
               username
               ;
-          };
-          pkgs = import nixpkgs {
-            system = "x86_64-linux";
-            overlays = overlays;
-            config = {allowUnfree = true;};
           };
           modules = with inputs; [
             ./hosts/${host}/configuration.nix

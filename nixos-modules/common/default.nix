@@ -46,6 +46,7 @@
   security.rtkit.enable = true;
   services.gnome.gnome-keyring.enable = true;
 
+  nixpkgs.config.allowUnfree = true;
   nix = {
     gc = {
       automatic = true;
