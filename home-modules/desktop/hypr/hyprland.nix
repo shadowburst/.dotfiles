@@ -13,6 +13,11 @@
       "$terminal" = config.home.sessionVariables.TERMINAL;
       "$browser" = config.home.sessionVariables.BROWSER;
 
+      env = [
+        "XDG_CURRENT_DESKTOP, Hyprland"
+        "XDG_SESSION_DESKTOP, wayland"
+      ];
+
       monitor = [
         ", highres, auto, 1"
       ];
