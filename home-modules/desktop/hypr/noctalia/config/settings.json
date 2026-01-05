@@ -1,5 +1,6 @@
 {
     "appLauncher": {
+        "autoPasteClipboard": false,
         "customLaunchPrefix": "uwsm app",
         "customLaunchPrefixEnabled": true,
         "enableClipPreview": true,
@@ -11,6 +12,7 @@
         "position": "top_center",
         "screenshotAnnotationTool": "satty -f -",
         "showCategories": true,
+        "showIconBackground": true,
         "sortByMostUsed": true,
         "terminalCommand": "$TERMINAL",
         "useApp2Unit": false,
@@ -122,7 +124,7 @@
                 },
                 {
                     "displayMode": "onhover",
-                    "id": "WiFi"
+                    "id": "Network"
                 },
                 {
                     "displayMode": "onhover",
@@ -298,6 +300,7 @@
         "shadowDirection": "center",
         "shadowOffsetX": 0,
         "shadowOffsetY": 0,
+        "showChangelogOnStartup": true,
         "showHibernateOnLockScreen": false,
         "showScreenCorners": true,
         "showSessionButtonsOnLockScreen": true
@@ -490,18 +493,23 @@
         "walker": false,
         "wezterm": false,
         "yazi": false,
-        "zed": false
+        "zed": false,
+        "zenBrowser": false
     },
     "ui": {
+        "bluetoothDetailsViewMode": "grid",
+        "bluetoothHideUnnamedDevices": false,
         "boxBorderEnabled": false,
         "fontDefault": "Rubik",
         "fontDefaultScale": 1,
         "fontFixed": "CaskaydiaCove Nerd Font Mono",
         "fontFixedScale": 1,
+        "networkPanelView": "wifi",
         "panelBackgroundOpacity": 0.9,
         "panelsAttachedToBar": true,
         "settingsPanelMode": "window",
-        "tooltipsEnabled": true
+        "tooltipsEnabled": true,
+        "wifiDetailsViewMode": "grid"
     },
     "wallpaper": {
         "directory": "/home/pbaudry/Pictures/Wallpapers",
