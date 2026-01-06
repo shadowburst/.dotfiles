@@ -17,6 +17,15 @@ return {
     end,
     keys = {
       {
+        "<leader>of",
+        function()
+          require("opencode").prompt("@buffer ", {
+            submit = false,
+          })
+        end,
+        desc = "Execute opencode action",
+      },
+      {
         "<leader>oo",
         function() require("opencode").toggle() end,
         mode = { "n", "x" },
