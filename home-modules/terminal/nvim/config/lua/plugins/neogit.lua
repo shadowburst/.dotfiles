@@ -3,7 +3,6 @@ return {
     "NeogitOrg/neogit",
     dependencies = {
       "nvim-lua/plenary.nvim",
-      "sindrets/diffview.nvim",
     },
     cmd = { "Neogit", "NeogitLogCurrent" },
     ---@module 'neogit'
@@ -18,10 +17,7 @@ return {
         kind = "split",
         show_staged_diff = false,
       },
-      integrations = {
-        diffview = true,
-        snacks = true,
-      },
+      integrations = { snacks = true },
       signs = {
         -- { CLOSED, OPENED }
         section = { "", "" },

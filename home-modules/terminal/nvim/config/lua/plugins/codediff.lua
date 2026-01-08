@@ -1,0 +1,20 @@
+return {
+  {
+    "esmuellert/codediff.nvim",
+    dependencies = { "MunifTanjim/nui.nvim" },
+    cmd = "CodeDiff",
+    opts = {},
+    keys = {
+      {
+        "<leader>gd",
+        "<cmd>CodeDiff file HEAD<cr>",
+        desc = "Diff current file",
+      },
+      {
+        "<leader>gD",
+        "<cmd>CodeDiff<cr>",
+        desc = "Diff project",
+      },
+    },
+  },
+}
