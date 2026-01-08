@@ -7,7 +7,7 @@
         "enableClipboardHistory": true,
         "iconMode": "tabler",
         "ignoreMouseInput": true,
-        "pinnedExecs": [
+        "pinnedApps": [
         ],
         "position": "top_center",
         "screenshotAnnotationTool": "satty -f -",
@@ -86,10 +86,15 @@
                     "usePrimaryColor": false
                 },
                 {
+                    "compactMode": false,
+                    "compactShowAlbumArt": true,
+                    "compactShowVisualizer": false,
                     "hideMode": "hidden",
                     "hideWhenIdle": false,
                     "id": "MediaMini",
                     "maxWidth": 145,
+                    "panelShowAlbumArt": true,
+                    "panelShowVisualizer": true,
                     "scrollingMode": "hover",
                     "showAlbumArt": false,
                     "showArtistFirst": true,
@@ -178,7 +183,6 @@
     },
     "colorSchemes": {
         "darkMode": true,
-        "generateTemplatesForPredefined": true,
         "manualSunrise": "06:30",
         "manualSunset": "18:30",
         "matugenSchemeType": "scheme-fruit-salad",
@@ -317,6 +321,8 @@
     "location": {
         "analogClockInCalendar": false,
         "firstDayOfWeek": -1,
+        "hideWeatherCityName": false,
+        "hideWeatherTimezone": false,
         "name": "Mayenne",
         "showCalendarEvents": true,
         "showCalendarWeather": true,
