@@ -10,7 +10,11 @@
       '';
       config = ''
         (defsrc
-          a s d f j k l ;
+          grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
+          tab  q    w    e    r    t    y    u    i    o    p    [    ]    \
+          caps a    s    d    f    g    h    j    k    l    ;    '    ret
+          lsft z    x    c    v    b    n    m    ,    .    /    rsft
+          lctl lmet lalt           spc            ralt rmet rctl
         )
 
         (defvar
@@ -19,18 +23,34 @@
         )
 
         (defalias
-          a (multi f24 (tap-hold $tap-time $hold-time a ralt))
+          l_sys (layer-toggle sys)
+
+          spc (multi f24 (tap-hold $tap-time $hold-time spc @l_sys))
+
+          a (multi f24 (tap-hold $tap-time $hold-time a lalt))
           s (multi f24 (tap-hold $tap-time $hold-time s lmet))
           d (multi f24 (tap-hold $tap-time $hold-time d lctl))
           f (multi f24 (tap-hold $tap-time $hold-time f lsft))
           j (multi f24 (tap-hold $tap-time $hold-time j rsft))
           k (multi f24 (tap-hold $tap-time $hold-time k rctl))
           l (multi f24 (tap-hold $tap-time $hold-time l rmet))
-          ; (multi f24 (tap-hold $tap-time $hold-time ; ralt))
+          ; (multi f24 (tap-hold $tap-time $hold-time ; lalt))
          )
 
-        (deflayer base
-          @a @s @d @f @j @k @l @;
+        (deflayer default
+          grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
+          tab  q    w    e    r    t    y    u    i    o    p    [    ]    \
+          esc  @a   @s   @d   @f   g    h    @j   @k   @l   @;   '    ret
+          lsft z    x    c    v    b    n    m    ,    .    /    rsft
+          lctl lmet lalt           @spc           ralt rmet rctl
+        )
+
+        (deflayer sys
+          grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
+          tab  q    RA-2 3    RA-4 RA-= RA-6 S-.  RA-8 RA-0 S-=  [    ]    \
+          caps a    6    4    5    -    RA-9 \    S-'  ]    RA-3 '    ret
+          lsft z    8    RA-7 RA-5 RA-- n    S-m  S-,  S-/  =    rsft
+          lctl lmet lalt           spc            ralt rmet rctl
         )
       '';
     };

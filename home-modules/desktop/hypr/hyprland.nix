@@ -88,7 +88,6 @@
 
       input.follow_mouse = 1;
       input.kb_layout = "fr";
-      input.kb_options = "caps:escape_shifted_capslock";
       input.kb_variant = "azerty";
       input.numlock_by_default = true;
       input.repeat_delay = 300;
