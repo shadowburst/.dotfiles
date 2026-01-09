@@ -3,7 +3,7 @@
     enableReleaseChecks = false;
     autoEnable = false;
     polarity = "dark";
-    iconTheme = {
+    icons = {
       enable = true;
       package = pkgs.tela-circle-icon-theme;
       dark = "Tela-circle-dark";
