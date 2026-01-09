@@ -16,6 +16,26 @@
         exec ${pkgs.brightnessctl}/bin/brightnessctl --device=${config.custom.backlightDevice} "$@"
       '';
     };
+    plugins = {
+      sources = [
+        {
+          enabled = true;
+          name = "Official Noctalia Plugins";
+          url = "https://github.com/noctalia-dev/noctalia-plugins";
+        }
+      ];
+      states = {
+        "screen-recorder" = {
+          "enabled" = true;
+          "sourceUrl" = "https://github.com/noctalia-dev/noctalia-plugins";
+        };
+      };
+    };
+    pluginSettings = {
+      "screen-recorder" = {
+        copyToClipboard = true;
+      };
+    };
   };
 
   wayland.windowManager.hyprland.settings.bind = [
@@ -46,6 +66,9 @@
     ", xf86calculator, exec, noctalia-shell ipc call launcher calculator"
   ];
 
-  xdg.configFile."noctalia".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/noctalia/config";
+  xdg.configFile = {
+    "noctalia/colors.json".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/noctalia/config/colors.json";
+    "noctalia/gui-settings.json".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/noctalia/config/gui-settings.json";
+    "noctalia/settings.json".source = ./config/gui-settings.json;
+  };
 }
