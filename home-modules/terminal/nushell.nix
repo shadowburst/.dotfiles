@@ -8,17 +8,6 @@
       edit_mode = "vi";
       cursor_shape.vi_insert = "line";
       cursor_shape.vi_normal = "block";
-      keybindings = [
-        {
-          name = "backspaceword";
-          modifier = "alt";
-          keycode = "backspace";
-          mode = ["emacs" "vi_insert" "vi_normal"];
-          event = {
-            edit = "backspaceword";
-          };
-        }
-      ];
     };
     environmentVariables = {
       PROMPT_INDICATOR_VI_NORMAL = "";

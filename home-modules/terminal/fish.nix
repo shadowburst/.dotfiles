@@ -3,12 +3,6 @@
 
   programs.fish = {
     enable = true;
-    binds = {
-      "alt-backspace".command = "backward-kill-word";
-      "alt-backspace".mode = "insert";
-      "alt-delete".command = "kill-word";
-      "alt-delete".mode = "insert";
-    };
     functions = {
       extract =
         /*
