@@ -185,10 +185,10 @@
         "CTRL SHIFT, escape, exec, uwsm app -- $terminal -e btop"
 
         # Screenshots
-        ", print, exec, hyprshot --freeze --raw -m region | satty --filename -"
-        "CTRL, print, exec, hyprshot --freeze --raw -m window | satty --filename -"
-        "$mod SHIFT, S, exec, hyprshot --freeze --raw -m region | satty --filename -"
-        "$mod CTRL SHIFT, S, exec, hyprshot --freeze --raw -m window | satty --filename -"
+        ", print, exec, hyprshot --raw -m output -m active | satty --filename -"
+        "CTRL, print, exec, hyprshot --raw -m window | satty --filename -"
+        "$mod SHIFT, S, exec, hyprshot --raw -m output -m active | satty --filename -"
+        "$mod CTRL SHIFT, S, exec, hyprshot --raw -m window | satty --filename -"
 
         # Other
         "CTRL ALT, delete, exec, hyprctl kill"
