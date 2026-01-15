@@ -20,11 +20,6 @@
         exec ${pkgs.brightnessctl}/bin/brightnessctl --device=${config.custom.backlightDevice} "$@"
       '';
     };
-    pluginSettings = {
-      "screen-recorder" = {
-        copyToClipboard = true;
-      };
-    };
   };
 
   wayland.windowManager.hyprland.settings.bind = [
@@ -58,7 +53,10 @@
   xdg.configFile = {
     "noctalia/colors.json".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/noctalia/config/colors.json";
     "noctalia/gui-settings.json".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/noctalia/config/gui-settings.json";
-    "noctalia/plugins.json".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/noctalia/config/plugins.json";
     "noctalia/settings.json".source = ./config/gui-settings.json;
+
+    "noctalia/plugins.json".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/noctalia/config/plugins.json";
+    "noctalia/plugins/pomodoro/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/noctalia/config/plugins/pomodoro.json";
+    "noctalia/plugins/screen-recorder/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/noctalia/config/plugins/screen-recorder.json";
   };
 }

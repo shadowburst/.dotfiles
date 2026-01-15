@@ -34,6 +34,7 @@
         "density": "default",
         "exclusive": true,
         "floating": false,
+        "hideOnOverview": false,
         "marginHorizontal": 5,
         "marginVertical": 5,
         "monitors": [
@@ -69,6 +70,18 @@
                     "tooltipFormat": "HH:mm ddd, MMM dd",
                     "useCustomFont": false,
                     "usePrimaryColor": true
+                },
+                {
+                    "defaultSettings": {
+                        "autoStartBreaks": false,
+                        "autoStartWork": false,
+                        "compactMode": false,
+                        "longBreakDuration": 15,
+                        "sessionsBeforeLongBreak": 4,
+                        "shortBreakDuration": 5,
+                        "workDuration": 25
+                    },
+                    "id": "plugin:pomodoro"
                 },
                 {
                     "compactMode": true,
@@ -157,15 +170,6 @@
                     "showNoctaliaPerformance": false,
                     "showPowerProfiles": true,
                     "warningThreshold": 20
-                },
-                {
-                    "colorizeDistroLogo": false,
-                    "colorizeSystemIcon": "primary",
-                    "customIconPath": "",
-                    "enableColorization": true,
-                    "icon": "noctalia",
-                    "id": "ControlCenter",
-                    "useDistroLogo": true
                 }
             ]
         }
@@ -215,7 +219,7 @@
                 "id": "audio-card"
             },
             {
-                "enabled": false,
+                "enabled": true,
                 "id": "weather-card"
             },
             {
@@ -228,7 +232,7 @@
             }
         ],
         "diskPath": "/",
-        "position": "close_to_bar_button",
+        "position": "top_center",
         "shortcuts": {
             "left": [
                 {
@@ -306,6 +310,7 @@
         "pinnedApps": [
         ],
         "pinnedStatic": false,
+        "position": "bottom",
         "size": 1
     },
     "general": {
@@ -330,7 +335,8 @@
         "showChangelogOnStartup": true,
         "showHibernateOnLockScreen": false,
         "showScreenCorners": true,
-        "showSessionButtonsOnLockScreen": true
+        "showSessionButtonsOnLockScreen": true,
+        "telemetryEnabled": true
     },
     "hooks": {
         "darkModeChange": "",
@@ -339,6 +345,7 @@
         "performanceModeEnabled": "",
         "screenLock": "",
         "screenUnlock": "",
+        "session": "",
         "wallpaperChange": ""
     },
     "location": {
@@ -460,7 +467,7 @@
         "showHeader": true,
         "showNumberLabels": true
     },
-    "settingsVersion": 39,
+    "settingsVersion": 40,
     "systemMonitor": {
         "cpuCriticalThreshold": 90,
         "cpuPollingInterval": 3000,
@@ -486,32 +493,9 @@
         "warningColor": ""
     },
     "templates": {
-        "alacritty": false,
-        "cava": false,
-        "code": false,
-        "discord": false,
-        "emacs": false,
-        "enableUserTemplates": false,
-        "foot": false,
-        "fuzzel": false,
-        "ghostty": false,
-        "gtk": false,
-        "helix": false,
-        "hyprland": false,
-        "kcolorscheme": false,
-        "kitty": false,
-        "mango": false,
-        "niri": false,
-        "pywalfox": false,
-        "qt": false,
-        "spicetify": false,
-        "telegram": false,
-        "vicinae": false,
-        "walker": false,
-        "wezterm": false,
-        "yazi": false,
-        "zed": false,
-        "zenBrowser": false
+        "activeTemplates": [
+        ],
+        "enableUserTemplates": false
     },
     "ui": {
         "bluetoothDetailsViewMode": "grid",
