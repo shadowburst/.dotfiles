@@ -18,7 +18,7 @@ return {
         "<tab>",
         function()
           if not require("sidekick").nes_jump_or_apply() then
-            return "<Tab>"
+            return "<cmd>Sidekick nes update<cr>"
           end
         end,
         expr = true,
