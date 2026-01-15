@@ -89,6 +89,7 @@
       input.follow_mouse = 1;
       input.kb_layout = "fr";
       input.kb_variant = "azerty";
+      input.kb_options = "caps:escape_shifted_capslock";
       input.numlock_by_default = true;
       input.repeat_delay = 300;
       input.touchpad.disable_while_typing = true;
