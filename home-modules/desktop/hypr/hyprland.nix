@@ -37,8 +37,8 @@
       ];
 
       windowrule = [
-        "match:class org.gnome.Calculator, float 1, size 300 500"
-        "match:initial_class brave-(\\w+)-Default, float 1"
+        "match:class org.gnome.Calculator, float 1, center 1, size 300 500"
+        "match:initial_class brave-(\\w+)-Default, float 1, center 1, size 400 600"
 
         # Smart gaps
         "match:workspace w[tv1], match:float 0, border_size 0"
