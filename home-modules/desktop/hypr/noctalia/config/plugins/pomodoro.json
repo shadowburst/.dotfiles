@@ -3,7 +3,7 @@
   "shortBreakDuration": 2,
   "longBreakDuration": 5,
   "sessionsBeforeLongBreak": 4,
-  "autoStartBreaks": true,
+  "autoStartBreaks": false,
   "autoStartWork": false,
   "compactMode": false
 }
