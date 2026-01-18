@@ -52,8 +52,7 @@
 
   xdg.configFile = {
     "noctalia/colors.json".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/noctalia/config/colors.json";
-    "noctalia/gui-settings.json".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/noctalia/config/gui-settings.json";
-    "noctalia/settings.json".source = ./config/gui-settings.json;
+    "noctalia/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/noctalia/config/settings.json";
 
     "noctalia/plugins.json".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/noctalia/config/plugins.json";
     "noctalia/plugins/pomodoro/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/noctalia/config/plugins/pomodoro.json";
