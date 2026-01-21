@@ -132,6 +132,7 @@
                 },
                 {
                     "hideWhenZero": true,
+                    "hideWhenZeroUnread": false,
                     "id": "NotificationHistory",
                     "showUnreadBadge": true
                 },
@@ -470,7 +471,7 @@
         "showHeader": true,
         "showNumberLabels": true
     },
-    "settingsVersion": 40,
+    "settingsVersion": 41,
     "systemMonitor": {
         "cpuCriticalThreshold": 90,
         "cpuPollingInterval": 3000,
