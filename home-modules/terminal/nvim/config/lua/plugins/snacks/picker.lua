@@ -78,7 +78,6 @@ return {
       { "<leader>fr", function() Snacks.picker.recent() end, desc = "Recent files" },
       -- git
       { "<leader>gc", function() Snacks.picker.git_log() end, desc = "Commit history" },
-      { "<leader>gf", function() Snacks.picker.git_log_file() end, desc = "File history" },
       { "<leader>gl", function() Snacks.picker.git_log_line() end, desc = "Line history" },
       { "<leader>gs", function() Snacks.picker.git_status() end, desc = "Git status" },
       { "<leader>ghi", function() Snacks.picker.gh_issue() end, desc = "GitHub Issues (open)" },
