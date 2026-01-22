@@ -10,8 +10,8 @@ return {
         win = {
           keys = {
             files = { "@", "files", mode = "nt", desc = "open file picker" },
-            hide_n = { "<esc>", "hide", mode = "n", desc = "hide the terminal window" },
-            stopinsert = { "<esc>", "stopinsert", mode = "t", desc = "enter normal mode" },
+            hide_n = { "<c-c>", "hide", mode = "n", desc = "hide the terminal window" },
+            stopinsert = { "<c-c>", "stopinsert", mode = "t", desc = "enter normal mode" },
           },
         },
         tools = {
