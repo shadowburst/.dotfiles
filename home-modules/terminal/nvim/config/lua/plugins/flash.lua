@@ -18,13 +18,25 @@ return {
     },
     keys = {
       {
-        "<c-space>",
-        mode = { "n", "x", "o" },
+        "sj",
+        mode = { "n" },
+        function()
+          require("flash").jump({
+            search = {
+              max_length = 1,
+            },
+          })
+        end,
+        desc = "Flash jump",
+      },
+      {
+        "s",
+        mode = { "o" },
         function()
           require("flash").treesitter({
             actions = {
-              ["<c-space>"] = "next",
-              ["<bs>"] = "prev",
+              ["s"] = "next",
+              ["S"] = "prev",
             },
           })
         end,
@@ -32,9 +44,9 @@ return {
       },
       {
         "r",
-        mode = "o",
+        mode = { "o" },
         function() require("flash").remote() end,
-        desc = "Remote",
+        desc = "Flash remote",
       },
     },
   },
