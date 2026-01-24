@@ -1,3 +1,15 @@
 {
-  "copyToClipboard": true
+  "copyToClipboard": true,
+  "hideInactive": true,
+  "directory": "",
+  "filenamePattern": "recording_yyyyMMdd_HHmmss",
+  "frameRate": "60",
+  "audioCodec": "opus",
+  "videoCodec": "h264",
+  "quality": "very_high",
+  "colorRange": "limited",
+  "showCursor": true,
+  "audioSource": "none",
+  "videoSource": "portal",
+  "resolution": "original"
 }
