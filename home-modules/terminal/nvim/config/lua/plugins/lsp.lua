@@ -35,9 +35,7 @@ return {
         bashls = {},
         copilot = {
           settings = {
-            telemetry = {
-              telemetryLevel = "off",
-            },
+            telemetry = { telemetryLevel = "off" },
           },
         },
         cssls = {},
@@ -77,13 +75,15 @@ return {
             "vue",
           },
           settings = {
+            css = {
+              validate = true,
+              lint = { unknownAtRules = "ignore" },
+            },
             complete_function_calls = true,
             vtsls = {
               autoUseWorkspaceTsdk = true,
               experimental = {
-                completion = {
-                  enableServerSideFuzzyMatch = true,
-                },
+                completion = { enableServerSideFuzzyMatch = true },
               },
               tsserver = {
                 globalPlugins = {
