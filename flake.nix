@@ -1,6 +1,7 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    vue-ls-nixpkgs.url = "github:nixos/nixpkgs/3a7affa77a5a539afa1c7859e2c31abdb1aeadf3";
 
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
