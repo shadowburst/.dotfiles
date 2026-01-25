@@ -63,9 +63,6 @@ return {
         },
         marksman = {},
         nil_ls = {},
-        qmlls = {
-          cmd = { "qmlls", "-E" },
-        },
         tailwindcss = {
           filetypes_exclude = { "markdown", "php" },
         },
@@ -82,7 +79,6 @@ return {
           settings = {
             complete_function_calls = true,
             vtsls = {
-              enableMoveToFileCodeAction = true,
               autoUseWorkspaceTsdk = true,
               experimental = {
                 completion = {
