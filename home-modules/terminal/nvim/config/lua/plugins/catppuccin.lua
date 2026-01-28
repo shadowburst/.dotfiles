@@ -30,6 +30,8 @@ return {
           -- Snacks
           SnacksDashboardHeader = { fg = colors.lavender },
           SnacksIndentScope = { fg = colors.lavender },
+          -- Lsp
+          ["@lsp.type.component"] = { link = "@type" },
         }
       end,
       default_integrations = false,
