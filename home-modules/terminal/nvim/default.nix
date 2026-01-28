@@ -11,7 +11,6 @@ in {
     viAlias = true;
     vimAlias = true;
     extraPackages = with pkgs; [
-      copilot-language-server
       lsof
       imagemagick
       tree-sitter
@@ -19,6 +18,9 @@ in {
       # Bash
       bash-language-server
       shfmt
+
+      # Copilot
+      # copilot-language-server
 
       # CSS
       tailwindcss-language-server

@@ -14,10 +14,10 @@ return {
         markdown = true,
         help = true,
       },
-      server = {
-        type = "binary",
-        custom_server_filepath = "copilot-language-server",
-      },
+      -- server = {
+      --   type = "binary",
+      --   custom_server_filepath = "copilot-language-server",
+      -- },
     },
     keys = {
       {

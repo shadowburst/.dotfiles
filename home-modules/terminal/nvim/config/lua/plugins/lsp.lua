@@ -33,11 +33,11 @@ return {
 
       local servers = {
         bashls = {},
-        copilot = {
-          settings = {
-            telemetry = { telemetryLevel = "off" },
-          },
-        },
+        -- copilot = {
+        --   settings = {
+        --     telemetry = { telemetryLevel = "off" },
+        --   },
+        -- },
         cssls = {},
         docker_compose_language_service = {},
         dockerls = {},
