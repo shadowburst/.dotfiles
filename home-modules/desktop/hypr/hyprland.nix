@@ -22,14 +22,12 @@
         ", highres, auto, 1"
       ];
 
+      exec-once = [
+        "hyprctl dispatch workspace 1"
+      ];
+
       workspace = [
-        "1, persistent:true, default:true"
-        "2, persistent:true"
-        "3, persistent:true"
-        "4, persistent:true"
-        "5, persistent:true"
-        "6, persistent:true"
-        "7, persistent:true"
+        "1, monitor:DP-1, default:true"
 
         # Smart gaps
         "w[tv1], gapsout:0, gapsin:0"
