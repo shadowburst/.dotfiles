@@ -2,7 +2,6 @@
   imports = [
     ./audio.nix
     ./gaming.nix
-    ./greetd.nix
     ./hyprland.nix
     ./power.nix
     ./printers.nix
