@@ -13,6 +13,7 @@
       resize-overlay = "never";
       window-padding-y = 2;
       window-padding-color = "extend";
+      window-decoration = "none";
       keybind = [
         "ctrl+backspace=text:\\x17" # C-W
 
