@@ -22,13 +22,7 @@
         ", highres, auto, 1"
       ];
 
-      exec-once = [
-        "hyprctl dispatch workspace 1"
-      ];
-
       workspace = [
-        "1, monitor:DP-1, default:true"
-
         # Smart gaps
         "w[tv1], gapsout:0, gapsin:0"
         "f[1], gapsout:0, gapsin:0"
@@ -53,7 +47,10 @@
       general.border_size = 2;
       general.gaps_in = 2;
       general.gaps_out = 0;
-      general.layout = "dwindle";
+      general.layout = "master";
+
+      master.allow_small_split = true;
+      master.orientation = "center";
 
       decoration.blur = {
         enabled = true;
@@ -136,6 +133,8 @@
         "$mod, k, movefocus, u"
         "$mod, l, movefocus, r"
         "$mod, q, killactive,"
+        "$mod, left, layoutmsg, rollprev"
+        "$mod, right, layoutmsg, rollnext"
         "$mod SHIFT, h, movewindow, l"
         "$mod SHIFT, j, movewindow, d"
         "$mod SHIFT, k, movewindow, u"
