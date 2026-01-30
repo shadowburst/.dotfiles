@@ -37,21 +37,21 @@ return {
           else
             gs.nav_hunk("next")
           end
-        end, "Next Hunk")
+        end, "Next hunk")
         map("n", "[h", function()
           if vim.wo.diff then
             vim.cmd.normal({ "[c", bang = true })
           else
             gs.nav_hunk("prev")
           end
-        end, "Prev Hunk")
+        end, "Prev hunk")
         map({ "n", "v" }, "<leader>gr", ":Gitsigns reset_hunk<CR>", "Reset hunk")
         map("n", "<leader>ga", ":Gitsigns stage_hunk<CR>", "Stage hunk")
         map("n", "<leader>gA", ":Gitsigns stage_buffer<CR>", "Stage buffer")
         map("n", "<leader>gR", gs.reset_buffer, "Reset buffer")
         map("n", "<leader>gp", gs.preview_hunk, "Preview hunk")
         map("n", "<leader>gb", function() gs.blame() end, "Blame buffer")
-        map({ "o", "x" }, "ih", ":<C-U>Gitsigns select_hunk<CR>", "GitSigns Select Hunk")
+        map({ "o", "x" }, "ih", ":<C-U>Gitsigns select_hunk<CR>", "GitSigns select hunk")
       end,
     },
   },
