@@ -58,7 +58,7 @@
                 {
                     "characterCount": 1,
                     "colorizeIcons": false,
-                    "emptyColor": "secondary",
+                    "emptyColor": "onSurface",
                     "enableScrollWheel": true,
                     "focusedColor": "primary",
                     "followFocusedScreen": false,
@@ -67,7 +67,7 @@
                     "iconScale": 0.8,
                     "id": "Workspace",
                     "labelMode": "index",
-                    "occupiedColor": "secondary",
+                    "occupiedColor": "onSurface",
                     "reverseScroll": false,
                     "showApplications": false,
                     "showBadge": true,
@@ -101,8 +101,10 @@
                     "compactMode": true,
                     "diskPath": "/",
                     "id": "SystemMonitor",
+                    "showCpuFreq": false,
                     "showCpuTemp": false,
                     "showCpuUsage": true,
+                    "showDiskAsFree": false,
                     "showDiskUsage": false,
                     "showGpuTemp": false,
                     "showLoadAverage": false,
@@ -147,7 +149,8 @@
                     "hideWhenZero": true,
                     "hideWhenZeroUnread": false,
                     "id": "NotificationHistory",
-                    "showUnreadBadge": true
+                    "showUnreadBadge": true,
+                    "unreadBadgeColor": "primary"
                 },
                 {
                     "defaultSettings": {
