@@ -38,14 +38,10 @@ return {
       {
         "<leader>oo",
         function()
-          if #require("sidekick.status").cli() > 0 then
-            require("sidekick.cli").focus()
-          else
-            require("sidekick.cli").toggle({
-              name = "opencode",
-              focus = true,
-            })
-          end
+          require("sidekick.cli").toggle({
+            name = "opencode",
+            focus = true,
+          })
         end,
         mode = { "n", "x" },
         desc = "Toggle opencode",
