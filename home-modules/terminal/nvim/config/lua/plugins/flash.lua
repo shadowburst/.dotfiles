@@ -20,13 +20,7 @@ return {
       {
         "<cr>",
         mode = { "n" },
-        function()
-          require("flash").jump({
-            search = {
-              max_length = 2,
-            },
-          })
-        end,
+        function() require("flash").jump() end,
         desc = "Flash jump",
       },
       {
