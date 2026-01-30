@@ -58,4 +58,6 @@
     "noctalia/plugins/pomodoro/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/noctalia/config/plugins/pomodoro.json";
     "noctalia/plugins/screen-recorder/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home-modules/desktop/hypr/noctalia/config/plugins/screen-recorder.json";
   };
+
+  home.sessionVariables.QT_AUDIO_BACKEND = "pulseaudio";
 }
