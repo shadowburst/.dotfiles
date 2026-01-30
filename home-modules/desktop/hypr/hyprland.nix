@@ -183,10 +183,10 @@
         "CTRL SHIFT, escape, exec, uwsm app -- $terminal -e btop"
 
         # Screenshots
-        ", print, exec, hyprshot --raw -m output -m active | satty --filename -"
-        "CTRL, print, exec, hyprshot --raw -m window | satty --filename -"
-        "$mod SHIFT, S, exec, hyprshot --raw -m output -m active | satty --filename -"
-        "$mod CTRL SHIFT, S, exec, hyprshot --raw -m window | satty --filename -"
+        ", print, exec, hyprshot -m region --clipboard-only"
+        "CTRL, print, exec, hyprshot -m window --clipboard-only"
+        "$mod SHIFT, S, exec, hyprshot -m region --clipboard-only"
+        "$mod CTRL SHIFT, S, exec, hyprshot -m window --clipboard-only"
 
         # Other
         "CTRL ALT, delete, exec, hyprctl kill"
