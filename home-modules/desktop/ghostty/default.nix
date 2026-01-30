@@ -25,13 +25,6 @@
         "ctrl+shift+space=text:\\x1b\\x20" # M-Space
         "ctrl+shift+tab=text:\\x1b\\x09" # M-Tab
         # Windows
-        "ctrl+shift+1=text:\\x02&" # C-b + &
-        "ctrl+shift+2=text:\\x02é" # C-b + é
-        "ctrl+shift+3=text:\\x02\"" # C-b + "
-        "ctrl+shift+4=text:\\x02'" # C-b + '
-        "ctrl+shift+5=text:\\x02(" # C-b + (
-        "ctrl+shift+6=text:\\x02-" # C-b + -
-        "ctrl+shift+7=text:\\x02è" # C-b + è
         "ctrl+shift+n=text:\\x1bn" # M-n
         "ctrl+shift+p=text:\\x1bp" # M-p
         "ctrl+shift+t=text:\\x1bt" # M-t
@@ -53,6 +46,4 @@
       ];
     };
   };
-
-  home.sessionVariables.TERMINAL = "ghostty";
 }

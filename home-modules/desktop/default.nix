@@ -5,6 +5,7 @@
     ./ghostty
     ./hypr
     ./images
+    ./kitty.nix
     ./mpv.nix
     ./options.nix
     ./transmission.nix
@@ -21,4 +22,6 @@
     tableplus
     video-downloader
   ];
+
+  home.sessionVariables.TERMINAL = "ghostty";
 }
