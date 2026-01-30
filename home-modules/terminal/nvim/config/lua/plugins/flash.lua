@@ -23,7 +23,7 @@ return {
         function()
           require("flash").jump({
             search = {
-              max_length = 1,
+              max_length = 2,
             },
           })
         end,
