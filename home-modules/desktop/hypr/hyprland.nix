@@ -49,8 +49,11 @@
       general.gaps_out = 0;
       general.layout = "master";
 
+      dwindle.force_split = 2;
+
       master.allow_small_split = true;
       master.orientation = "center";
+      master.slave_count_for_center_master = 3;
 
       decoration.blur = {
         enabled = true;
@@ -93,8 +96,6 @@
 
       gestures.workspace_swipe_distance = 200;
       gestures.workspace_swipe_min_speed_to_force = 10;
-
-      dwindle.force_split = 2;
 
       xwayland.force_zero_scaling = true;
 
