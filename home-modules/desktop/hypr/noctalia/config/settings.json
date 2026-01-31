@@ -9,6 +9,7 @@
         "enableClipPreview": true,
         "enableClipboardHistory": true,
         "enableSettingsSearch": true,
+        "enableWindowsSearch": true,
         "iconMode": "tabler",
         "ignoreMouseInput": true,
         "pinnedApps": [
@@ -33,10 +34,13 @@
         "volumeStep": 5
     },
     "bar": {
+        "autoHideDelay": 500,
+        "autoShowDelay": 150,
         "backgroundOpacity": 0.93,
         "barType": "simple",
         "capsuleOpacity": 0.9,
         "density": "default",
+        "displayMode": "always_visible",
         "exclusive": true,
         "floating": false,
         "frameRadius": 8,
