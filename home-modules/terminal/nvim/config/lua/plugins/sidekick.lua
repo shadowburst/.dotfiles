@@ -29,7 +29,7 @@ return {
         "<tab>",
         function()
           if not require("sidekick").nes_jump_or_apply() then
-            return "<cmd>Sidekick nes update<cr>"
+            return "<cmd>Sidekick nes update<cr><tab>"
           end
         end,
         expr = true,
