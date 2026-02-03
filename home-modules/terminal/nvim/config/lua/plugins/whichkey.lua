@@ -22,6 +22,7 @@ return {
           { "z", group = "fold" },
           { "<leader>b", group = "+buffer" },
           { "<leader>c", group = "+code" },
+          { "<leader>d", group = "+db" },
           { "<leader>f", group = "+file/find" },
           { "<leader>g", group = "+git" },
           { "<leader>n", group = "+notifications" },
