@@ -32,6 +32,7 @@
     gnumake
     jq
     ripgrep
+    sqlit-tui
     sshfs
     tldr
     trash-cli
