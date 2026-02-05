@@ -14,6 +14,11 @@ return {
         return { timeout_ms = 1000, lsp_fallback = true }
       end,
       formatters = {
+        mago = {
+          command = "./vendor/bin/mago",
+          stdin = true,
+          args = { "format", "-i" },
+        },
         pint = { command = "./vendor/bin/pint" },
       },
       formatters_by_ft = {
@@ -28,7 +33,7 @@ return {
         ["lua"] = { "stylua" },
         ["markdown"] = { "prettierd" },
         ["markdown.mdx"] = { "prettierd" },
-        ["php"] = { "pint" },
+        ["php"] = { "mago", "pint", stop_after_first = true },
         ["qml"] = { "qmlformat" },
         ["nix"] = { "alejandra" },
         ["scss"] = { "prettierd" },
