@@ -10,7 +10,7 @@ return {
       {
         "<leader>db",
         function()
-          Snacks.terminal.toggle({ "sqlit" }, {
+          Snacks.terminal.toggle({ "sqlit", "--theme", "textual-ansi" }, {
             win = {
               width = 0,
               height = 0,
