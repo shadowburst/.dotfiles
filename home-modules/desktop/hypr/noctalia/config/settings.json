@@ -71,6 +71,7 @@
                     "id": "Workspace",
                     "labelMode": "index",
                     "occupiedColor": "onSurface",
+                    "pillSize": 0.6,
                     "reverseScroll": false,
                     "showApplications": false,
                     "showBadge": true,
@@ -80,13 +81,13 @@
             ],
             "left": [
                 {
+                    "clockColor": "none",
                     "customFont": "",
                     "formatHorizontal": "HH:mm ddd, MMM dd",
                     "formatVertical": "HH mm",
                     "id": "Clock",
                     "tooltipFormat": "HH:mm ddd, MMM dd",
-                    "useCustomFont": false,
-                    "usePrimaryColor": true
+                    "useCustomFont": false
                 },
                 {
                     "defaultSettings": {
@@ -192,8 +193,7 @@
                     "hideIfNotDetected": true,
                     "id": "Battery",
                     "showNoctaliaPerformance": false,
-                    "showPowerProfiles": true,
-                    "warningThreshold": 20
+                    "showPowerProfiles": true
                 }
             ]
         }
@@ -411,6 +411,8 @@
     },
     "notifications": {
         "backgroundOpacity": 0.9,
+        "batteryCriticalThreshold": 5,
+        "batteryWarningThreshold": 20,
         "criticalUrgencyDuration": 10,
         "enableKeyboardLayoutToast": true,
         "enableMediaToast": false,
