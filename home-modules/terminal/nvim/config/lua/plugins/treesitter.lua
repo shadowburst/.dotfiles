@@ -7,7 +7,6 @@ return {
     },
     lazy = false,
     build = ":TSUpdate",
-    event = { "BufNewFile", "BufReadPost", "BufWritePre" },
     opts = {
       ensure_installed = {
         "bash",
