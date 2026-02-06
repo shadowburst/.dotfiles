@@ -81,7 +81,7 @@
             ],
             "left": [
                 {
-                    "clockColor": "none",
+                    "clockColor": "primary",
                     "customFont": "",
                     "formatHorizontal": "HH:mm ddd, MMM dd",
                     "formatVertical": "HH mm",
@@ -346,6 +346,8 @@
         "autoStartAuth": false,
         "avatarImage": "/home/pbaudry/.face",
         "boxRadiusRatio": 1,
+        "clockFormat": "hh\\nmm",
+        "clockStyle": "custom",
         "compactLockScreen": false,
         "dimmerOpacity": 0.2,
         "enableLockScreenCountdown": true,
