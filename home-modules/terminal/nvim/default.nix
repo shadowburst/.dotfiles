@@ -1,11 +1,8 @@
 {
   config,
-  inputs,
   pkgs,
   ...
-}: let
-  vue-ls = inputs.vue-ls-nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.vue-language-server;
-in {
+}: {
   programs.neovim = {
     enable = true;
     viAlias = true;
@@ -57,7 +54,7 @@ in {
       kdePackages.qtdeclarative
 
       # Vue
-      vue-ls
+      vue-language-server
 
       # XML
       xmlformat
@@ -78,6 +75,6 @@ in {
   home.sessionVariables = {
     EDITOR = "nvim";
     MANPAGER = "nvim +Man!";
-    VUE_TS_PLUGIN_PATH = "${vue-ls}/lib/language-tools/packages/language-server";
+    VUE_TS_PLUGIN_PATH = "${pkgs.vue-language-server}/lib/language-tools/packages/language-server";
   };
 }
