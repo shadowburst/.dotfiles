@@ -14,36 +14,41 @@ return {
         return { timeout_ms = 1000, lsp_fallback = true }
       end,
       formatters = {
-        mago = {
+        mago_format = {
           command = "./vendor/bin/mago",
           stdin = true,
           args = { "format", "-i" },
         },
+        mago_lint = {
+          command = "./vendor/bin/mago",
+          stdin = false,
+          args = { "lint", "--fix", "$RELATIVE_FILEPATH" },
+        },
         pint = { command = "./vendor/bin/pint" },
       },
       formatters_by_ft = {
-        ["css"] = { "prettierd" },
-        ["graphql"] = { "prettierd" },
-        ["html"] = { "prettierd" },
-        ["javascript"] = { "prettierd" },
-        ["javascriptreact"] = { "prettierd" },
-        ["json"] = { "prettierd" },
-        ["jsonc"] = { "prettierd" },
-        ["less"] = { "prettierd" },
+        ["css"] = { "oxfmt", "prettierd", stop_after_first = true },
+        ["graphql"] = { "oxfmt", "prettierd", stop_after_first = true },
+        ["html"] = { "oxfmt", "prettierd", stop_after_first = true },
+        ["javascript"] = { "oxfmt", "prettierd", stop_after_first = true },
+        ["javascriptreact"] = { "oxfmt", "prettierd", stop_after_first = true },
+        ["json"] = { "oxfmt", "prettierd", stop_after_first = true },
+        ["jsonc"] = { "oxfmt", "prettierd", stop_after_first = true },
+        ["less"] = { "oxfmt", "prettierd", stop_after_first = true },
         ["lua"] = { "stylua" },
-        ["markdown"] = { "prettierd" },
-        ["markdown.mdx"] = { "prettierd" },
-        ["php"] = { "mago", "pint", stop_after_first = true },
+        ["markdown"] = { "oxfmt", "prettierd", stop_after_first = true },
+        ["markdown.mdx"] = { "oxfmt", "prettierd", stop_after_first = true },
+        ["php"] = { "mago_format", "pint", stop_after_first = true },
         ["qml"] = { "qmlformat" },
         ["nix"] = { "alejandra" },
-        ["scss"] = { "prettierd" },
+        ["scss"] = { "oxfmt", "prettierd", stop_after_first = true },
         ["sh"] = { "shfmt" },
         ["svg"] = { "xmlformat" },
-        ["typescript"] = { "prettierd" },
-        ["typescriptreact"] = { "prettierd" },
-        ["vue"] = { "prettierd" },
+        ["typescript"] = { "oxfmt", "prettierd", stop_after_first = true },
+        ["typescriptreact"] = { "oxfmt", "prettierd", stop_after_first = true },
+        ["vue"] = { "oxfmt", "prettierd", stop_after_first = true },
         ["xml"] = { "xmlformat" },
-        ["yaml"] = { "prettierd" },
+        ["yaml"] = { "oxfmt", "prettierd", stop_after_first = true },
       },
     },
     config = function(_, opts)
@@ -64,6 +69,41 @@ return {
         "<leader>cf",
         function() require("conform").format() end,
         desc = "Format buffer",
+      },
+      {
+        "<leader>cl",
+        function()
+          if vim.tbl_contains({ "php" }, vim.bo.filetype) then
+            require("conform").format({ formatters = { "mago_lint" } })
+            return
+          end
+          if
+            vim.tbl_contains({
+              "javascript",
+              "javascriptreact",
+              "javascript.jsx",
+              "typescript",
+              "typescriptreact",
+              "typescript.tsx",
+              "vue",
+            }, vim.bo.filetype)
+          then
+            require("conform").format({ formatters = { "oxlint" } })
+            return
+          end
+          vim.notify("No linter configured for this filetype", vim.log.levels.WARN)
+        end,
+        desc = "Lint buffer",
+        ft = {
+          "javascript",
+          "javascriptreact",
+          "javascript.jsx",
+          "php",
+          "typescript",
+          "typescriptreact",
+          "typescript.tsx",
+          "vue",
+        },
       },
     },
   },
