@@ -17,7 +17,10 @@ return {
         kind = "split",
         show_staged_diff = false,
       },
-      integrations = { snacks = true },
+      integrations = {
+        codediff = true,
+        snacks = true,
+      },
       signs = {
         -- { CLOSED, OPENED }
         section = { "", "" },
