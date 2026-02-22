@@ -25,7 +25,7 @@
       "xps-9305"
       "zephyrus"
     ];
-    stateVersion = "24.05";
+    stateVersion = "26.05";
     username = "pbaudry";
   in {
     nixosConfigurations = builtins.listToAttrs (
