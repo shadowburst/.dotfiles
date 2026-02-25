@@ -15,11 +15,6 @@
   programs.noctalia-shell = {
     enable = true;
     systemd.enable = true;
-    package = inputs.noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
-      brightnessctl = pkgs.writeShellScriptBin "brightnessctl" ''
-        exec ${pkgs.brightnessctl}/bin/brightnessctl --device=${config.custom.backlightDevice} "$@"
-      '';
-    };
   };
 
   wayland.windowManager.hyprland.settings.bind = [
