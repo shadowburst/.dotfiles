@@ -216,6 +216,8 @@
         }
     },
     "brightness": {
+        "backlightDeviceMappings": [
+        ],
         "brightnessStep": 10,
         "enableDdcSupport": false,
         "enforceMinimum": true
@@ -459,6 +461,7 @@
         "bluetoothRssiPollIntervalMs": 10000,
         "bluetoothRssiPollingEnabled": false,
         "disableDiscoverability": false,
+        "networkPanelView": "wifi",
         "wifiDetailsViewMode": "grid",
         "wifiEnabled": true
     },
@@ -610,19 +613,16 @@
         "enableUserTheming": false
     },
     "ui": {
-        "bluetoothDetailsViewMode": "grid",
-        "bluetoothHideUnnamedDevices": false,
         "boxBorderEnabled": false,
         "fontDefault": "Rubik",
         "fontDefaultScale": 1,
         "fontFixed": "CaskaydiaCove Nerd Font Mono",
         "fontFixedScale": 1,
-        "networkPanelView": "wifi",
         "panelBackgroundOpacity": 0.9,
         "panelsAttachedToBar": true,
         "settingsPanelMode": "window",
-        "tooltipsEnabled": true,
-        "wifiDetailsViewMode": "grid"
+        "settingsPanelSideBarCardStyle": false,
+        "tooltipsEnabled": true
     },
     "wallpaper": {
         "automationEnabled": false,
