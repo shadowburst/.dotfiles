@@ -41,6 +41,7 @@
 
       layerrule = [
         "match:namespace noctalia-background-.*$, ignore_alpha 0.5, blur true, blur_popups true"
+        "match:namespace selection, no_anim on"
       ];
 
       general."col.active_border" = lib.mkForce "$accent";
@@ -184,10 +185,10 @@
         "CTRL SHIFT, escape, exec, uwsm app -- $terminal -e btop"
 
         # Screenshots
-        ", print, exec, hyprshot -m region --clipboard-only"
-        "CTRL, print, exec, hyprshot -m window --clipboard-only"
-        "$mod SHIFT, S, exec, hyprshot -m region --clipboard-only"
-        "$mod CTRL SHIFT, S, exec, hyprshot -m window --clipboard-only"
+        ", print, exec, hyprshot --freeze -m region --clipboard-only"
+        "CTRL, print, exec, hyprshot --freeze -m window --clipboard-only"
+        "$mod SHIFT, S, exec, hyprshot --freeze -m region --clipboard-only"
+        "$mod CTRL SHIFT, S, exec, hyprshot --freeze -m window --clipboard-only"
 
         # Other
         "CTRL ALT, delete, exec, hyprctl kill"
