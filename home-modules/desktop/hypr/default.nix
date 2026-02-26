@@ -26,8 +26,6 @@ in {
     wl-clipboard
   ];
 
-  services.hyprpolkitagent.enable = true;
-
   # Fix screensharing double menu
   xdg.configFile."hypr/xdph.conf".text =
     /*
