@@ -3,7 +3,6 @@ return {
     "nvim-lualine/lualine.nvim",
     dependencies = {
       "catppuccin/nvim",
-      "cbochs/grapple.nvim",
       "nvim-mini/mini.icons",
     },
     event = { "VeryLazy" },
@@ -44,15 +43,6 @@ return {
           },
         },
         lualine_b = {
-          {
-            function()
-              local grapple = require("grapple")
-              return grapple.app().settings.statusline.icon .. grapple.name_or_index()
-            end,
-            cond = function() return package.loaded["grapple"] and require("grapple").exists() end,
-            padding = { left = 1, right = 0 },
-            color = { fg = colors.blue, bg = "none" },
-          },
           {
             "filetype",
             icon_only = true,
