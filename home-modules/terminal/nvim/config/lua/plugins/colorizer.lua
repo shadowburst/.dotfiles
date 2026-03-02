@@ -17,17 +17,17 @@ return {
         "typescript.tsx",
         "vue",
       },
-      user_default_options = {
-        mode = "background",
-        virtualtext_inline = true,
-        RRGGBBAA = true,
-        css = true,
-        sass = {
-          enable = true,
-          parsers = { "css" },
+      options = {
+        parsers = {
+          css = true,
+          tailwind = {
+            enable = true,
+            lsp = true,
+            update_names = true,
+          },
         },
-        tailwind = true,
       },
+      user_default_options = { suppress_deprecation = true },
     },
     config = function(_, opts)
       local c = require("colorizer")
