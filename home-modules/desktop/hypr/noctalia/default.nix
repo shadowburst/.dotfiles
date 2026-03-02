@@ -12,11 +12,11 @@
     gpu-screen-recorder
   ];
 
-  programs.noctalia-shell = {
-    enable = true;
-    systemd.enable = true;
-  };
+  programs.noctalia-shell.enable = true;
 
+  wayland.windowManager.hyprland.settings.exec-once = [
+    "noctalia-shell"
+  ];
   wayland.windowManager.hyprland.settings.bind = [
     # Core
     "$mod, Space, exec, noctalia-shell ipc call launcher toggle"
