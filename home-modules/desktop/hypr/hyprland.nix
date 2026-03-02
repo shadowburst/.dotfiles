@@ -48,13 +48,15 @@
       general.border_size = 2;
       general.gaps_in = 2;
       general.gaps_out = 0;
-      general.layout = "master";
+      general.layout = "scrolling";
 
       dwindle.force_split = 2;
 
       master.allow_small_split = true;
       master.orientation = "center";
       master.slave_count_for_center_master = 3;
+
+      scrolling.column_width = 1;
 
       decoration.blur = {
         enabled = true;
@@ -94,6 +96,7 @@
       input.touchpad.disable_while_typing = true;
       input.touchpad.drag_lock = true;
       input.touchpad.natural_scroll = true;
+      input.focus_on_close = 1;
 
       gestures.workspace_swipe_distance = 200;
       gestures.workspace_swipe_min_speed_to_force = 10;
@@ -130,10 +133,12 @@
         # Windows
         "$mod, c, togglefloating,"
         "$mod, f, fullscreenstate, 2 -1"
-        "$mod, h, movefocus, l"
-        "$mod, j, movefocus, d"
-        "$mod, k, movefocus, u"
-        "$mod, l, movefocus, r"
+        "$mod, h, layoutmsg, focus l"
+        "$mod, j, layoutmsg, focus d"
+        "$mod, k, layoutmsg, focus u"
+        "$mod, l, layoutmsg, focus r"
+        "$mod, g, layoutmsg, promote"
+        "$mod, o, layoutmsg, colresize -conf"
         "$mod, q, killactive,"
         "$mod, left, layoutmsg, rollprev"
         "$mod, right, layoutmsg, rollnext"
@@ -142,6 +147,8 @@
         "$mod SHIFT, k, movewindow, u"
         "$mod SHIFT, l, movewindow, r"
         "$mod SHIFT, p, pin,"
+        "$mod ALT SHIFT, h, layoutmsg, swapcol l"
+        "$mod ALT SHIFT, l, layoutmsg, swapcol r"
 
         # Workspaces
         "$mod, ampersand, focusworkspaceoncurrentmonitor, 1"
