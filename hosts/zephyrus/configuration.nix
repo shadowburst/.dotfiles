@@ -1,10 +1,6 @@
-{
-  inputs,
-  pkgs,
-  ...
-}: {
+{pkgs, ...}: {
   imports = [
-    inputs.nixos-hardware.nixosModules.asus-zephyrus-ga402x-nvidia
+    ./upstream-hardware.nix
     ./hardware-configuration.nix
     ./nvidia.nix
     ../../nixos-modules/common
@@ -36,6 +32,8 @@
     enable32Bit = true;
   };
 
+  hardware.amdgpu.initrd.enable = true;
+
   networking.hostName = "zephyrus";
 
   systemd.settings.Manager = {
@@ -43,6 +41,7 @@
   };
 
   services.asusd = {
+    enable = true;
     asusdConfig.source = ./config/asusd.ron;
     auraConfigs."19b6".source = ./config/aura_19b6.ron;
   };
