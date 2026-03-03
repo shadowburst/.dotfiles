@@ -139,6 +139,7 @@
         "$mod, l, layoutmsg, focus r"
         "$mod, g, layoutmsg, promote"
         "$mod, o, layoutmsg, colresize -conf"
+        "$mod SHIFT, o, layoutmsg, colresize +conf"
         "$mod, q, killactive,"
         "$mod, left, layoutmsg, rollprev"
         "$mod, right, layoutmsg, rollnext"
