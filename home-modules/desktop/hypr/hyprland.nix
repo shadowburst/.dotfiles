@@ -22,21 +22,9 @@
         ", highres, auto, 1"
       ];
 
-      workspace = [
-        # Smart gaps
-        "w[tv1], gapsout:0, gapsin:0"
-        "f[1], gapsout:0, gapsin:0"
-      ];
-
       windowrule = [
         "match:class org.gnome.Calculator, float 1, center 1, size 300 500"
         "match:initial_class brave-(\\w+)-Default, float 1, center 1, size 400 600"
-
-        # Smart gaps
-        "match:workspace w[tv1], match:float 0, border_size 0"
-        "match:workspace w[tv1], match:float 0, rounding 0"
-        "match:workspace f[1], match:float 0, border_size 0"
-        "match:workspace f[1], match:float 0, rounding 0"
       ];
 
       layerrule = [
@@ -56,7 +44,11 @@
       master.orientation = "center";
       master.slave_count_for_center_master = 3;
 
-      scrolling.column_width = 1;
+      scrolling.fullscreen_on_one_column = false;
+      scrolling.column_width = 0.95;
+      scrolling.focus_fit_method = 0;
+      scrolling.follow_min_visible = 0.025;
+      scrolling.explicit_column_widths = "0.5, 0.9";
 
       decoration.blur = {
         enabled = true;
