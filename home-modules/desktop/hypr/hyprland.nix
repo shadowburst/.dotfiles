@@ -60,22 +60,17 @@
 
       animations = {
         enabled = true;
-        bezier = [
-          "emphasizedAccel, 0.3, 0, 0.8, 0.15"
-          "emphasizedDecel, 0.05, 0.7, 0.1, 1"
-          "standard, 0.2, 0, 0, 1"
-        ];
         animation = [
-          "layersIn, 1, 3, emphasizedDecel, slide"
-          "layersOut, 1, 2, emphasizedAccel, slide"
-          "fadeLayers, 1, 3, standard"
-          "windowsIn, 1, 3, emphasizedDecel"
-          "windowsOut, 1, 1, emphasizedAccel"
-          "windowsMove, 1, 4, standard"
-          "workspaces, 1, 3, standard, slidefadevert"
-          "fade, 1, 4, standard"
-          "fadeDim, 1, 4, standard"
-          "border, 1, 4, standard"
+          "layersIn, 1, 3, default, slide"
+          "layersOut, 1, 2, default, slide"
+          "fadeLayers, 1, 3, default"
+          "windowsIn, 1, 3, default, gnomed"
+          "windowsOut, 1, 1, default, gnomed"
+          "windowsMove, 1, 4, default"
+          "workspaces, 1, 3, default, slidefadevert"
+          "fade, 1, 4, default"
+          "fadeDim, 1, 4, default"
+          "border, 1, 4, default"
         ];
       };
 
