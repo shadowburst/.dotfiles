@@ -47,8 +47,8 @@
       scrolling.fullscreen_on_one_column = false;
       scrolling.column_width = 0.95;
       scrolling.focus_fit_method = 0;
-      scrolling.follow_min_visible = 0.025;
-      scrolling.explicit_column_widths = "0.5, 0.9";
+      scrolling.follow_min_visible = 0.05;
+      scrolling.explicit_column_widths = "O.25, 0.5, 0.95";
 
       decoration.blur = {
         enabled = true;
@@ -124,19 +124,17 @@
         "$mod, j, layoutmsg, focus d"
         "$mod, k, layoutmsg, focus u"
         "$mod, l, layoutmsg, focus r"
-        "$mod, g, layoutmsg, promote"
-        "$mod, o, layoutmsg, colresize -conf"
-        "$mod SHIFT, o, layoutmsg, colresize +conf"
+        "$mod, m, layoutmsg, promote"
         "$mod, q, killactive,"
-        "$mod, left, layoutmsg, rollprev"
-        "$mod, right, layoutmsg, rollnext"
+        "$mod, comma, layoutmsg, colresize -conf"
+        "$mod, semicolon, layoutmsg, colresize +conf"
+        "$mod SHIFT, comma, layoutmsg, swapcol l"
+        "$mod SHIFT, semicolon, layoutmsg, swapcol r"
         "$mod SHIFT, h, movewindow, l"
         "$mod SHIFT, j, movewindow, d"
         "$mod SHIFT, k, movewindow, u"
         "$mod SHIFT, l, movewindow, r"
         "$mod SHIFT, p, pin,"
-        "$mod ALT SHIFT, h, layoutmsg, swapcol l"
-        "$mod ALT SHIFT, l, layoutmsg, swapcol r"
 
         # Workspaces
         "$mod, ampersand, focusworkspaceoncurrentmonitor, 1"
