@@ -20,22 +20,14 @@ in {
     (GPUOffloadApp steam "steam")
   ];
 
-  hardware.nvidia = {
-    open = true;
-    dynamicBoost.enable = true;
-    modesetting.enable = true;
-    nvidiaSettings = true;
-    prime = {
-      offload = {
+  hardware = {
+    nvidia = {
+      open = true;
+      dynamicBoost.enable = true;
+      powerManagement = {
         enable = true;
-        enableOffloadCmd = true;
+        finegrained = true;
       };
-      amdgpuBusId = "PCI:101:0:0";
-      nvidiaBusId = "PCI:1:0:0";
-    };
-    powerManagement = {
-      enable = true;
-      finegrained = true;
     };
   };
 
