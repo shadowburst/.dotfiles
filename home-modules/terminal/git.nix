@@ -6,6 +6,10 @@
       pull.rebase = "true";
       user.name = "ShadowBurst";
       user.email = "37303345+shadowburst@users.noreply.github.com";
+      difftool.codediff.cmd = ''nvim "$LOCAL" "$REMOTE" +"CodeDiff file $LOCAL $REMOTE"'';
+      diff.tool = "codediff";
+      mergetool.codediff.cmd = ''nvim "$MERGED" -c "CodeDiff merge \"$MERGED\""'';
+      merge.tool = "codediff";
     };
   };
 
