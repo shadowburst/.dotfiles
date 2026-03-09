@@ -65,6 +65,9 @@ return {
             },
           },
         },
+        previewers = {
+          diff = { style = "terminal" },
+        },
       },
     },
     keys = {
