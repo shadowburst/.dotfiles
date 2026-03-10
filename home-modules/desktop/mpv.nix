@@ -2,7 +2,8 @@
   config,
   pkgs,
   ...
-}: {
+}:
+{
   programs.mpv = {
     enable = true;
     bindings = {
@@ -35,7 +36,7 @@
       "{" = "multiply speed 0.5";
       "}" = "multiply speed 2.0";
     };
-    defaultProfiles = ["gpu-hq"];
+    defaultProfiles = [ "gpu-hq" ];
     config = {
       fs = true;
       osc = false;

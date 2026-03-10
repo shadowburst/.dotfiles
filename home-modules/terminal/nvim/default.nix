@@ -2,7 +2,8 @@
   config,
   pkgs,
   ...
-}: {
+}:
+{
   programs.neovim = {
     enable = true;
     viAlias = true;
@@ -37,7 +38,8 @@
       marksman
 
       # Nix
-      alejandra
+      nixfmt
+      nixfmt-tree
       nil
 
       # Node

@@ -1,4 +1,5 @@
-{pkgs, ...}: {
+{ pkgs, ... }:
+{
   programs.brave = {
     package = pkgs.brave.override {
       vulkanSupport = true;

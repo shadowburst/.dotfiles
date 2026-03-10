@@ -40,7 +40,7 @@ return {
         ["markdown.mdx"] = { "oxfmt", "prettierd", stop_after_first = true },
         ["php"] = { "mago_format", "pint", stop_after_first = true },
         ["qml"] = { "qmlformat" },
-        ["nix"] = { "alejandra" },
+        ["nix"] = { "nixfmt" },
         ["scss"] = { "oxfmt", "prettierd", stop_after_first = true },
         ["sh"] = { "shfmt" },
         ["svg"] = { "xmlformat" },

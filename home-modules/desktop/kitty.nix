@@ -1,4 +1,5 @@
-{config, ...}: {
+{ config, ... }:
+{
   programs.kitty = {
     enable = false;
     font.name = config.stylix.fonts.monospace.name;

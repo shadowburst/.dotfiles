@@ -2,7 +2,8 @@
   inputs,
   pkgs,
   ...
-}: {
+}:
+{
   imports = [
     inputs.nixos-hardware.nixosModules.asus-zephyrus-ga402x-nvidia
     ./hardware-configuration.nix
@@ -14,11 +15,12 @@
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
 
-    initrd.luks.devices."luks-110fffaf-55a6-4c06-b218-0896a9217436".device = "/dev/disk/by-uuid/110fffaf-55a6-4c06-b218-0896a9217436";
+    initrd.luks.devices."luks-110fffaf-55a6-4c06-b218-0896a9217436".device =
+      "/dev/disk/by-uuid/110fffaf-55a6-4c06-b218-0896a9217436";
     loader = {
       grub = {
         enable = true;
-        devices = ["nodev"];
+        devices = [ "nodev" ];
         efiSupport = true;
         useOSProber = true;
         configurationLimit = 5;

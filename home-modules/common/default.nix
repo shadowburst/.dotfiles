@@ -2,7 +2,8 @@
   stateVersion,
   username,
   ...
-}: {
+}:
+{
   imports = [
     ./catppuccin.nix
     ./stylix.nix

@@ -1,5 +1,6 @@
-{username, ...}: {
-  users.users.${username}.extraGroups = ["networkmanager"];
+{ username, ... }:
+{
+  users.users.${username}.extraGroups = [ "networkmanager" ];
 
   networking = {
     firewall = {

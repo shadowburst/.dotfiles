@@ -2,9 +2,11 @@
   lib,
   pkgs,
   ...
-}: let
+}:
+let
   launch-default = pkgs.writeShellScriptBin "launch-default" (lib.fileContents ./bin/launch-default);
-in {
+in
+{
   imports = [
     ./hypridle.nix
     ./hyprland.nix
@@ -27,15 +29,11 @@ in {
   ];
 
   # Fix screensharing double menu
-  xdg.configFile."hypr/xdph.conf".text =
-    /*
-    hyprlang
-    */
-    ''
-      screencopy {
-        allow_token_by_default = true
-      }
-    '';
+  xdg.configFile."hypr/xdph.conf".text = /* hyprlang */ ''
+    screencopy {
+      allow_token_by_default = true
+    }
+  '';
 
   home.sessionVariables.NIXOS_OZONE_WL = "1";
 }

@@ -1,4 +1,5 @@
-{pkgs, ...}: {
+{ pkgs, ... }:
+{
   stylix = {
     enableReleaseChecks = false;
     autoEnable = false;

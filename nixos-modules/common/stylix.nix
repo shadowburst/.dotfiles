@@ -3,10 +3,11 @@
   inputs,
   pkgs,
   ...
-}: {
-  imports = [inputs.stylix.nixosModules.stylix];
+}:
+{
+  imports = [ inputs.stylix.nixosModules.stylix ];
 
-  fonts.packages = with pkgs; [nerd-fonts.caskaydia-cove];
+  fonts.packages = with pkgs; [ nerd-fonts.caskaydia-cove ];
 
   stylix = {
     enable = true;

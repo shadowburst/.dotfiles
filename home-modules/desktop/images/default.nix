@@ -1,4 +1,5 @@
-{...}: {
+{ ... }:
+{
   home.file.".face".source = ./face.jpg;
 
   home.file."Pictures/Wallpapers" = {

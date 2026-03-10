@@ -1,4 +1,5 @@
-{...}: {
+{ ... }:
+{
   services.hypridle = {
     enable = true;
     settings = {
@@ -11,11 +12,7 @@
       listener = [
         {
           timeout = 10;
-          on-timeout =
-            /*
-            bash
-            */
-            ''[[ "$(noctalia-shell ipc call state all | jq '.state.lockScreenActive')" == "true" ]] && hyprctl dispatch dpms off'';
+          on-timeout = /* bash */ ''[[ "$(noctalia-shell ipc call state all | jq '.state.lockScreenActive')" == "true" ]] && hyprctl dispatch dpms off'';
           on-resume = "hyprctl dispatch dpms on";
         }
       ];

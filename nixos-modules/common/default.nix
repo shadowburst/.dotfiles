@@ -3,7 +3,8 @@
   stateVersion,
   username,
   ...
-}: {
+}:
+{
   imports = [
     ./catppuccin.nix
     ./disks.nix

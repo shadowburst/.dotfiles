@@ -3,11 +3,13 @@
   pkgs,
   username,
   ...
-}: let
+}:
+let
   tmux-sessionizer = pkgs.writeShellScriptBin "tmux-sessionizer" (
     lib.fileContents ./bin/tmux-sessionizer
   );
-in {
+in
+{
   programs.tmux = {
     enable = true;
     baseIndex = 1;
@@ -107,7 +109,7 @@ in {
     '';
   };
 
-  home.packages = [tmux-sessionizer];
+  home.packages = [ tmux-sessionizer ];
 
   xdg.stateFile."${username}/tmux/templates" = {
     source = ./templates;

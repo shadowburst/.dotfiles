@@ -1,17 +1,14 @@
-{pkgs, ...}: {
+{ pkgs, ... }:
+{
   programs.yazi = {
     enable = true;
-    initLua =
-      /*
-      lua
-      */
-      ''
-        require("starship"):setup()
+    initLua = /* lua */ ''
+      require("starship"):setup()
 
-        require("session"):setup({
-          sync_yanked = true,
-        })
-      '';
+      require("session"):setup({
+        sync_yanked = true,
+      })
+    '';
 
     plugins = with pkgs; {
       mount = yaziPlugins.mount;
@@ -66,7 +63,7 @@
         # General
         {
           run = "close";
-          on = ["q"];
+          on = [ "q" ];
           desc = "Close the current tab, or quit if it is last tab";
         }
         # Operations
@@ -130,24 +127,24 @@
         # Plugins
         {
           run = "plugin mount";
-          on = ["M"];
+          on = [ "M" ];
           desc = "Handle mounted drives";
         }
         {
           run = "plugin smart-enter";
-          on = ["l"];
+          on = [ "l" ];
           desc = "Enter the child directory, or open the file";
         }
         {
           run = "plugin smart-enter";
-          on = ["<Enter>"];
+          on = [ "<Enter>" ];
           desc = "Enter the child directory, or open the file";
         }
       ];
       completion.prepend_keymap = [
         {
           run = "close --submit";
-          on = ["<C-y>"];
+          on = [ "<C-y>" ];
           desc = "Submit the completion";
         }
       ];

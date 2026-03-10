@@ -1,4 +1,5 @@
-{host, ...}: {
+{ host, ... }:
+{
   home.shell.enableNushellIntegration = true;
 
   programs.nushell = {
