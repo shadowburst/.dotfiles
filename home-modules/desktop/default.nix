@@ -13,7 +13,7 @@
   ];
 
   home.packages = with pkgs; [
-    # devtoolbox
+    devtoolbox
     discord
     ente-auth
     gimp3
