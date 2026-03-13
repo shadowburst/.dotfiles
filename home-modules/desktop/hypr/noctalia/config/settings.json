@@ -60,8 +60,8 @@
         "middleClickFollowMouse": false,
         "monitors": [
         ],
-        "mouseWheelAction": "none",
-        "mouseWheelWrap": true,
+        "mouseWheelAction": "workspace",
+        "mouseWheelWrap": false,
         "outerCorners": true,
         "position": "left",
         "reverseScroll": false,
