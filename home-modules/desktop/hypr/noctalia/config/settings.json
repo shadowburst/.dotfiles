@@ -341,13 +341,38 @@
         }
     },
     "desktopWidgets": {
-        "enabled": false,
-        "gridSnap": false,
-        "gridSnapScale": false,
+        "enabled": true,
+        "gridSnap": true,
+        "gridSnapScale": true,
         "monitorWidgets": [
             {
                 "name": "eDP-1",
                 "widgets": [
+                    {
+                        "colorName": "primary",
+                        "height": 900,
+                        "hideWhenIdle": false,
+                        "id": "AudioVisualizer",
+                        "roundedCorners": true,
+                        "showBackground": false,
+                        "visualizerType": "linear",
+                        "width": 1920,
+                        "x": 0,
+                        "y": 360
+                    },
+                    {
+                        "clockColor": "none",
+                        "clockStyle": "digital",
+                        "customFont": "",
+                        "format": "HH:mm\\nd MMMM yyyy",
+                        "id": "Clock",
+                        "roundedCorners": true,
+                        "scale": 1.4666666666666666,
+                        "showBackground": false,
+                        "useCustomFont": false,
+                        "x": 1700,
+                        "y": 0
+                    }
                 ]
             }
         ],
