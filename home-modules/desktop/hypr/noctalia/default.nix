@@ -23,7 +23,6 @@
     "$mod, Space, exec, noctalia-shell ipc call launcher toggle"
     "$mod, x, exec, noctalia-shell ipc call sessionMenu toggle"
     "$mod, a, exec, noctalia-shell ipc call calendar toggle"
-    "$mod, n, exec, noctalia-shell ipc call controlCenter toggle"
 
     # Audio
     ", xf86audiomute, exec, noctalia-shell ipc call volume muteOutput"
