@@ -39,13 +39,12 @@
       general.border_size = 2;
       general.gaps_in = 2;
       general.gaps_out = 0;
-      general.layout = "scrolling";
+      general.layout = "master";
 
       dwindle.force_split = 2;
 
       master.allow_small_split = true;
-      master.orientation = "center";
-      master.slave_count_for_center_master = 3;
+      master.orientation = "left";
 
       scrolling.fullscreen_on_one_column = false;
       scrolling.column_width = 0.95;
@@ -123,21 +122,36 @@
         # Windows
         "$mod, c, togglefloating,"
         "$mod, f, fullscreenstate, 2 -1"
-        "$mod, h, layoutmsg, focus l"
-        "$mod, j, layoutmsg, focus d"
-        "$mod, k, layoutmsg, focus u"
-        "$mod, l, layoutmsg, focus r"
-        "$mod, m, layoutmsg, promote"
         "$mod, q, killactive,"
-        "$mod, comma, layoutmsg, colresize -conf"
-        "$mod, semicolon, layoutmsg, colresize +conf"
-        "$mod SHIFT, comma, layoutmsg, swapcol l"
-        "$mod SHIFT, semicolon, layoutmsg, swapcol r"
+        "$mod SHIFT, p, pin,"
+
+        # Scrolling keybinds
+        # "$mod, h, layoutmsg, focus l"
+        # "$mod, j, layoutmsg, focus d"
+        # "$mod, k, layoutmsg, focus u"
+        # "$mod, l, layoutmsg, focus r"
+        # "$mod, m, layoutmsg, promote"
+        # "$mod, q, killactive,"
+        # "$mod, comma, layoutmsg, colresize -conf"
+        # "$mod, semicolon, layoutmsg, colresize +conf"
+        # "$mod SHIFT, comma, layoutmsg, swapcol l"
+        # "$mod SHIFT, semicolon, layoutmsg, swapcol r"
+        # "$mod SHIFT, h, movewindow, l"
+        # "$mod SHIFT, j, movewindow, d"
+        # "$mod SHIFT, k, movewindow, u"
+        # "$mod SHIFT, l, movewindow, r"
+
+        # Master keybinds
+        "$mod, h, movefocus, l"
+        "$mod, j, movefocus, d"
+        "$mod, k, movefocus, u"
+        "$mod, l, movefocus, r"
+        "$mod, comma, layoutmsg, addmaster"
+        "$mod, semicolon, layoutmsg, removemaster"
         "$mod SHIFT, h, movewindow, l"
         "$mod SHIFT, j, movewindow, d"
         "$mod SHIFT, k, movewindow, u"
         "$mod SHIFT, l, movewindow, r"
-        "$mod SHIFT, p, pin,"
 
         # Workspaces
         "$mod, ampersand, focusworkspaceoncurrentmonitor, 1"
