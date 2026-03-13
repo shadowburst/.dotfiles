@@ -24,10 +24,22 @@
         ", highres, auto, 1"
       ];
 
+      workspace = [
+        # Smart gaps
+        "w[tv1], gapsout:0, gapsin:0"
+        "f[1], gapsout:0, gapsin:0"
+      ];
+
       windowrule = [
         "match:class org.gnome.Calculator, float 1, center 1, size 300 500"
         "match:initial_class brave-(\\w+)-Default, float 1, center 1, size 400 600"
         "match:initial_class brave, match:initial_title Open File, float 1, center 1, size 1000 600"
+
+        # Smart gaps
+        "match:workspace w[tv1], match:float 0, border_size 0"
+        "match:workspace w[tv1], match:float 0, rounding 0"
+        "match:workspace f[1], match:float 0, border_size 0"
+        "match:workspace f[1], match:float 0, rounding 0"
       ];
 
       layerrule = [
