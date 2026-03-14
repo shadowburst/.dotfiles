@@ -8,7 +8,9 @@
         "customLaunchPrefixEnabled": true,
         "density": "default",
         "enableClipPreview": true,
+        "enableClipboardChips": true,
         "enableClipboardHistory": true,
+        "enableClipboardSmartIcons": true,
         "enableSessionSearch": true,
         "enableSettingsSearch": true,
         "enableWindowsSearch": true,
@@ -23,7 +25,6 @@
         "showIconBackground": true,
         "sortByMostUsed": true,
         "terminalCommand": "$TERMINAL",
-        "useApp2Unit": false,
         "viewMode": "list"
     },
     "audio": {
@@ -646,7 +647,7 @@
         "showHeader": true,
         "showKeybinds": true
     },
-    "settingsVersion": 57,
+    "settingsVersion": 58,
     "systemMonitor": {
         "batteryCriticalThreshold": 5,
         "batteryWarningThreshold": 20,
