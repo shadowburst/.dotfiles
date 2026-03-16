@@ -50,8 +50,6 @@
     };
     shellAbbrs = {
       sail = "./vendor/bin/sail";
-      pint = "./vendor/bin/sail php ./vendor/bin/pint";
-      pest = "./vendor/bin/sail php ./vendor/bin/pest";
     };
     interactiveShellInit = ''
       set fish_greeting
