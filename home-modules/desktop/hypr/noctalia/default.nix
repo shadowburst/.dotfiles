@@ -16,7 +16,7 @@
   programs.noctalia-shell.enable = true;
 
   wayland.windowManager.hyprland.settings.exec = [
-    "pkill quickshell; noctalia-shell"
+    "noctalia-shell kill; sleep 1.5; noctalia-shell"
   ];
   wayland.windowManager.hyprland.settings.bind = [
     # Core
