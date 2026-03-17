@@ -35,6 +35,11 @@
             echo "'$argv' is not a valid file"
         end
       '';
+      cdv = /* fish */ ''
+        cdi
+        printf "\e]7;file://%s%s\a" $hostname $PWD
+        $EDITOR
+      '';
     };
     shellAliases = {
       cp = "cp -i";
@@ -51,7 +56,7 @@
     shellAbbrs = {
       sail = "./vendor/bin/sail";
     };
-    interactiveShellInit = ''
+    interactiveShellInit = /* fish */ ''
       set fish_greeting
       set fish_color_param foreground
       set fish_color_command blue

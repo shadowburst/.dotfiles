@@ -10,37 +10,37 @@
       font-size = 10;
       cursor-color = config.lib.stylix.colors.withHashtag.base07;
       background-opacity = 0.9;
-      confirm-close-surface = false;
       resize-overlay = "never";
+      notify-on-command-finish = "unfocused";
       window-padding-y = 2;
       window-padding-color = "extend";
       window-decoration = "none";
       keybind = [
         "ctrl+backspace=text:\\x17" # C-W
 
-        # Tmux bindings
-        # Sessions
-        "ctrl+shift+a=text:\\x1ba" # M-a
-        "ctrl+shift+d=text:\\x1bd" # M-d
-        "ctrl+shift+r=text:\\x1br" # M-r
-        "ctrl+shift+space=text:\\x1b\\x20" # M-Space
-        "ctrl+shift+tab=text:\\x1b\\x09" # M-Tab
         # Windows
-        "ctrl+shift+n=text:\\x1bn" # M-n
-        "ctrl+shift+p=text:\\x1bp" # M-p
-        "ctrl+shift+t=text:\\x1bt" # M-t
-        "ctrl+shift+enter=text:\\x1b\\x0d" # M-Enter
+        "ctrl+shift+n=next_tab"
+        "ctrl+shift+p=previous_tab"
+        "ctrl+shift+t=new_tab"
+        "ctrl+shift+enter=new_split"
         # Panes
-        "ctrl+shift+b=text:\\x1bb" # M-b
-        "ctrl+shift+e=text:\\x1be" # M-e
-        "ctrl+shift+f=text:\\x1bf" # M-f
-        "ctrl+shift+h=text:\\x1bH" # M-H
-        "ctrl+shift+j=text:\\x1bJ" # M-J
-        "ctrl+shift+k=text:\\x1bK" # M-K
-        "ctrl+shift+l=text:\\x1bL" # M-L
-        "ctrl+shift+o=text:\\x1bo" # M-o
-        "ctrl+shift+q=text:\\x1bq" # M-q
-        "ctrl+shift+x=text:\\x1bx" # M-x
+        "ctrl+shift+digit_1=goto_tab:1"
+        "ctrl+shift+digit_2=goto_tab:2"
+        "ctrl+shift+digit_3=goto_tab:3"
+        "ctrl+shift+digit_4=goto_tab:4"
+        "ctrl+shift+digit_5=goto_tab:5"
+        "ctrl+shift+digit_6=goto_tab:6"
+        "ctrl+shift+digit_7=goto_tab:7"
+        "ctrl+shift+digit_8=goto_tab:8"
+        "ctrl+shift+digit_9=goto_tab:9"
+        "ctrl+shift+e=write_scrollback_file:paste"
+        "ctrl+shift+f=toggle_split_zoom"
+        "ctrl+shift+h=goto_split:left"
+        "ctrl+shift+j=goto_split:down"
+        "ctrl+shift+k=goto_split:up"
+        "ctrl+shift+l=goto_split:right"
+        "ctrl+shift+q=close_surface"
+        "ctrl+shift+equal=close_surface"
       ];
       custom-shader = [
         "${./shaders/cursor_smear.glsl}"

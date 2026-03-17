@@ -13,9 +13,7 @@ return {
           },
         },
         tools = {
-          opencode = {
-            env = { OPENCODE_THEME = "" }, -- No need to change theme, it works in tmux
-          },
+          opencode = {},
         },
       },
       nes = {

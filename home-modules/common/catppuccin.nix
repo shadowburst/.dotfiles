@@ -22,7 +22,6 @@
     nushell.enable = true;
     opencode.enable = true;
     starship.enable = true;
-    tmux.enable = true;
     yazi.enable = true;
   };
 }

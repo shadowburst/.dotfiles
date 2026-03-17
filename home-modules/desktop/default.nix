@@ -6,7 +6,6 @@
     ./ghostty
     ./hypr
     ./images
-    ./kitty.nix
     ./mpv.nix
     ./options.nix
     ./transmission.nix
