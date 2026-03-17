@@ -97,7 +97,7 @@
       input.touchpad.disable_while_typing = true;
       input.touchpad.drag_lock = true;
       input.touchpad.natural_scroll = true;
-      input.focus_on_close = 1;
+      # input.focus_on_close = 1;
 
       gestures.workspace_swipe_distance = 200;
       gestures.workspace_swipe_min_speed_to_force = 10;
