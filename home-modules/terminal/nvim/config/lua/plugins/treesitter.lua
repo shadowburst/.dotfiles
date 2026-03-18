@@ -49,7 +49,7 @@ return {
       TS.install(opts.ensure_installed)
 
       vim.filetype.add({
-        pattern = { ["%.env%.[%w_.-]+"] = "sh" },
+        pattern = { ["%.env%.[%w_.-]+"] = "dosini" },
       })
 
       vim.api.nvim_create_autocmd("FileType", {
