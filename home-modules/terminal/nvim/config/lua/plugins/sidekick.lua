@@ -6,18 +6,8 @@ return {
     ---@module 'sidekick'
     ---@class sidekick.Config
     opts = {
-      cli = {
-        win = {
-          keys = {
-            files = { "@", "files", mode = "nt", desc = "open file picker" },
-          },
-        },
-        tools = {
-          opencode = {},
-        },
-      },
       nes = {
-        enabled = function(buf)
+        enabled = function()
           return vim.g.sidekick_nes ~= false and vim.b.sidekick_nes ~= false and vim.fn.mode() ~= "s"
         end,
       },
@@ -32,29 +22,6 @@ return {
         end,
         expr = true,
         desc = "Next edit suggestion",
-      },
-      {
-        "<leader>oo",
-        function()
-          require("sidekick.cli").toggle({
-            name = "opencode",
-            focus = true,
-          })
-        end,
-        mode = { "n", "x" },
-        desc = "Toggle opencode",
-      },
-      {
-        "<leader>op",
-        function() require("sidekick.cli").prompt() end,
-        mode = { "n", "x" },
-        desc = "Prompt opencode",
-      },
-      {
-        "<leader>os",
-        function() require("sidekick.cli").send("{selection}") end,
-        mode = { "x" },
-        desc = "Send selection to opencode",
       },
     },
   },
