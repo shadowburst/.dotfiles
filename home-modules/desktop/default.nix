@@ -6,6 +6,7 @@
     ./ghostty
     ./hypr
     ./images
+    ./kitty.nix
     ./mpv.nix
     ./options.nix
     ./transmission.nix
@@ -23,5 +24,5 @@
     video-downloader
   ];
 
-  home.sessionVariables.TERMINAL = "ghostty";
+  home.sessionVariables.TERMINAL = "kitty";
 }
