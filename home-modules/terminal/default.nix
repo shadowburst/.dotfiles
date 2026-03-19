@@ -13,6 +13,7 @@
     ./nvim
     ./opencode.nix
     ./starship.nix
+    ./worktrunk.nix
     ./yazi.nix
     ./zoxide.nix
   ];
