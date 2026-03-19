@@ -34,7 +34,21 @@
   programs.gh-dash = {
     enable = true;
     settings = {
-      pager.diff = "delta";
+      prSections = [
+        {
+          title = "Needs Review";
+          filters = "is:open review-requested:@me";
+        }
+        {
+          title = "My Pull Requests";
+          filters = "is:open author:@me";
+        }
+        {
+          title = "All Pull Requests";
+          filters = "is:open";
+        }
+      ];
+      pager.diff = "delta --side-by-side --line-numbers";
     };
   };
 }
