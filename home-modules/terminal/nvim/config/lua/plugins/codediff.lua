@@ -3,7 +3,7 @@ return {
     "esmuellert/codediff.nvim",
     cmd = "CodeDiff",
     opts = {
-      diff = { conflict_result_height = 40 },
+      diff = { conflict_result_height = 50 },
     },
     keys = {
       { "<leader>gd", "<cmd>CodeDiff file HEAD<cr>", desc = "Diff current file" },
