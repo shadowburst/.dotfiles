@@ -24,11 +24,6 @@ return {
     },
     keys = {
       {
-        "<leader>of",
-        function() require("opencode").ask("@buffer ", { submit = true }) end,
-        desc = "Ask opencode for this buffer",
-      },
-      {
         "<leader>on",
         function() require("opencode").command("session.new") end,
         mode = { "n", "x" },
@@ -47,7 +42,7 @@ return {
       },
       {
         "<leader>or",
-        function() require("opencode").prompt("@review", { submit = true, clear = true }) end,
+        function() require("opencode").ask("@review ", { submit = true, clear = true }) end,
         desc = "Review with opencode",
       },
       {
