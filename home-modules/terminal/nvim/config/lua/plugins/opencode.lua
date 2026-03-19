@@ -46,6 +46,11 @@ return {
         desc = "Execute opencode action",
       },
       {
+        "<leader>or",
+        function() require("opencode").prompt("@review", { submit = true, clear = true }) end,
+        desc = "Review with opencode",
+      },
+      {
         "go",
         function() return require("opencode").operator("@this ") end,
         mode = { "n", "x" },
