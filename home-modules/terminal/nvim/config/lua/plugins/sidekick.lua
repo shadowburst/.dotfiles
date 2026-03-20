@@ -10,6 +10,7 @@ return {
         enabled = function()
           return vim.g.sidekick_nes ~= false and vim.b.sidekick_nes ~= false and vim.fn.mode() ~= "s"
         end,
+        diff = { show = "cursor" },
       },
     },
     keys = {
