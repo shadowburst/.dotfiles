@@ -9,7 +9,7 @@ no_sort = true
 frecency = false
 
 [preview]
-command = "ls -la --color=always '{}'"
+command = "tree -a -L 1 -C --dirsfirst --sort=name --noreport {}"
 
 [keybindings]
 enter = "actions:cd"
@@ -19,6 +19,12 @@ ctrl-e = "actions:edit"
 [actions.cd]
 description = "Change to the selected directory"
 command = "cd '{}' && $SHELL"
+mode = "execute"
+
+[actions.edit]
+description = "Edit the selected directory"
+command = "cd '{}' && ${EDITOR:-vim}; $SHELL"
+shell = "bash"
 mode = "execute"
 
 [actions.remove]

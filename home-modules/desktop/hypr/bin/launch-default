@@ -6,7 +6,8 @@ case $workspace in
   $BROWSER
   ;;
 2)
-  $TERMINAL -e "$SHELL" -i -c "cdv; exec $SHELL"
+  cmd="$TERMINAL -e tv zoxide"
+  $SHELL -c "$cmd"
   ;;
 3)
   discord

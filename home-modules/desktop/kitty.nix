@@ -4,7 +4,6 @@ let
     cwd=$(kitten @ ls | jq -r '.[0].tabs[] | select(.is_active) | .windows[] | select(.is_active) | .cwd')
     kitten @ set-tab-title "Nvim - $(basename "$cwd")"
     kitten @ launch --type=tab --cwd=current --tab-title=Opencode opencode --port
-    kitten @ launch --type=tab --cwd=current --tab-title=Github gh-dash
     kitten @ launch --type=tab --cwd=current
     kitten @ focus-tab --match title:Nvim
   '';
