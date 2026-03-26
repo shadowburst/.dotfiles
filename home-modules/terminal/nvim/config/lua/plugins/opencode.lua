@@ -22,29 +22,15 @@ return {
         },
       },
     },
+    config = function()
+      ---@type opencode.Opts
+      vim.g.opencode_opts = {
+        events = {
+          permissions = { enabled = false },
+        },
+      }
+    end,
     keys = {
-      {
-        "<leader>on",
-        function() require("opencode").command("session.new") end,
-        mode = { "n", "x" },
-        desc = "New opencode session",
-      },
-      {
-        "<leader>oo",
-        function() require("opencode").ask("@this ", { submit = true }) end,
-        mode = { "n", "x" },
-        desc = "Ask opencode for this",
-      },
-      {
-        "<leader>op",
-        function() require("opencode").select() end,
-        desc = "Execute opencode action",
-      },
-      {
-        "<leader>or",
-        function() require("opencode").ask("@review ", { submit = true, clear = true }) end,
-        desc = "Review with opencode",
-      },
       {
         "go",
         function() return require("opencode").operator("@this ") end,
