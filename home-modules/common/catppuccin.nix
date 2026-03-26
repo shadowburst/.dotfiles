@@ -22,6 +22,7 @@
     nushell.enable = true;
     opencode.enable = true;
     starship.enable = true;
+    television.enable = true;
     yazi.enable = true;
   };
 }
