@@ -1,0 +1,19 @@
+[metadata]
+name = "sessionizer"
+description = "Browse project sessionizer"
+requirements = ["sessionizer", "git"]
+
+[source]
+command = "sessionizer"
+
+[preview]
+command = "tree -a -L 1 -C --dirsfirst --sort=name --noreport {}"
+
+[keybindings]
+enter = "actions:cd"
+
+[actions.cd]
+description = "Edit the selected directory"
+command = "cd '{}' && tv git-worktrees"
+shell = "bash"
+mode = "execute"

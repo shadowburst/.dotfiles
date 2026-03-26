@@ -2,10 +2,11 @@
 let
   dev-session = pkgs.writeShellScript "kitty-dev-session" ''
     cwd=$(kitten @ ls | jq -r '.[0].tabs[] | select(.is_active) | .windows[] | select(.is_active) | .cwd')
-    kitten @ set-tab-title "Nvim - $(basename "$cwd")"
-    kitten @ launch --type=tab --cwd=current --tab-title=Opencode opencode --port
-    kitten @ launch --type=tab --cwd=current
-    kitten @ focus-tab --match title:Nvim
+    kitten @ launch --type tab --cwd current --tab-title "Nvim - $(basename "$cwd")" $EDITOR
+    kitten @ close-tab --match "not state:focused"
+    kitten @ launch --type tab --cwd current --tab-title "Opencode" opencode --port
+    kitten @ launch --type tab --cwd current
+    kitten @ focus-tab --match index:0
   '';
 in
 {

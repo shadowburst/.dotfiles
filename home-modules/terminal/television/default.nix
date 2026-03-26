@@ -1,5 +1,17 @@
-{ config, ... }:
 {
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+let
+  sessionizer = pkgs.writeShellScriptBin "sessionizer" (lib.fileContents ./bin/sessionizer);
+in
+{
+  home.packages = [
+    sessionizer
+  ];
+
   programs.television.enable = true;
 
   xdg.configFile = {
