@@ -10,10 +10,10 @@ command = "sessionizer"
 command = "tree -a -L 1 -C --dirsfirst --sort=name --noreport {}"
 
 [keybindings]
-enter = "actions:cd"
+enter = "actions:open"
 
-[actions.cd]
+[actions.open]
 description = "Edit the selected directory"
-command = "cd '{}' && tv git-worktrees"
+command = "cd '{}' && $EDITOR && $SHELL"
 shell = "bash"
 mode = "execute"
