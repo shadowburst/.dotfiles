@@ -6,7 +6,7 @@ case $workspace in
   $BROWSER
   ;;
 2)
-  cmd="$TERMINAL -e tv sessionizer"
+  cmd="$TERMINAL -e tv sesh"
   $SHELL -c "$cmd"
   ;;
 3)

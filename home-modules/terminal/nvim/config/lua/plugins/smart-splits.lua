@@ -1,8 +1,6 @@
 return {
   {
     "mrjones2014/smart-splits.nvim",
-    build = "./kitty/install-kittens.bash",
-    lazy = false,
     opts = {},
     keys = {
       { "<C-h>", function() require("smart-splits").move_cursor_left() end, desc = "Move to left split" },

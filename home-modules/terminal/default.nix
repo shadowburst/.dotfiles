@@ -14,6 +14,7 @@
     ./opencode.nix
     ./starship.nix
     ./television
+    ./tmux
     ./worktrunk.nix
     ./yazi.nix
     ./zoxide.nix

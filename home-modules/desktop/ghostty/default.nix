@@ -13,40 +13,39 @@
       notify-on-command-finish = "unfocused";
       notify-on-command-finish-action = "no-bell,notify";
       resize-overlay = "never";
-      window-decoration = "none";
-      window-new-tab-position = "end";
-      window-padding-color = "extend";
+      confirm-close-surface = false;
       window-padding-y = 2;
-      window-show-tab-bar = "always";
+      window-padding-color = "extend";
+      window-decoration = "none";
       keybind = [
-        # Tabs
-        "ctrl+shift+n=next_tab"
-        "ctrl+shift+p=previous_tab"
-        "ctrl+shift+t=new_tab"
-        "ctrl+shift+digit_1=goto_tab:1"
-        "ctrl+shift+digit_2=goto_tab:2"
-        "ctrl+shift+digit_3=goto_tab:3"
-        "ctrl+shift+digit_4=goto_tab:4"
-        "ctrl+shift+digit_5=goto_tab:5"
-        "ctrl+shift+digit_6=goto_tab:6"
-        "ctrl+shift+digit_7=goto_tab:7"
-        "ctrl+shift+digit_8=goto_tab:8"
-        "ctrl+shift+digit_9=goto_tab:9"
+        # Tmux bindings - Sessions
+        "ctrl+shift+a=text:\\x1ba" # M-a
+        "ctrl+shift+d=text:\\x1bd" # M-d
+        "ctrl+shift+r=text:\\x1br" # M-r
+        "ctrl+shift+space=text:\\x1b\\x20" # M-Space
+        "ctrl+shift+tab=text:\\x1b\\x09" # M-Tab
 
-        # Panes
-        "ctrl+shift+f=toggle_split_zoom"
-        "ctrl+shift+h=goto_split:left"
-        "ctrl+shift+j=goto_split:down"
-        "ctrl+shift+k=goto_split:up"
-        "ctrl+shift+l=goto_split:right"
-        "ctrl+shift+q=close_surface"
-        "ctrl+shift+enter=new_split"
-        "ctrl+shift+equal=equalize_splits"
+        # Tmux bindings - Windows
+        "ctrl+shift+n=text:\\x1bn" # M-n
+        "ctrl+shift+p=text:\\x1bp" # M-p
+        "ctrl+shift+t=text:\\x1bt" # M-t
+        "ctrl+shift+enter=text:\\x1b\\x0d" # M-Enter
+
+        # Tmux bindings - Panes
+        "ctrl+shift+b=text:\\x1bb" # M-b
+        "ctrl+shift+e=text:\\x1be" # M-e
+        "ctrl+shift+f=text:\\x1bf" # M-f
+        "ctrl+shift+h=text:\\x1bH" # M-H
+        "ctrl+shift+j=text:\\x1bJ" # M-J
+        "ctrl+shift+k=text:\\x1bK" # M-K
+        "ctrl+shift+l=text:\\x1bL" # M-L
+        "ctrl+shift+o=text:\\x1bo" # M-o
+        "ctrl+shift+q=text:\\x1bq" # M-q
+        "ctrl+shift+x=text:\\x1bx" # M-x
 
         # Other
         "ctrl+backspace=text:\\x17" # C-W
-        "ctrl+shift+r=prompt_tab_title"
-        "ctrl+shift+e=write_scrollback_file:paste"
+
       ];
       custom-shader = [
         "${./shaders/cursor_smear.glsl}"

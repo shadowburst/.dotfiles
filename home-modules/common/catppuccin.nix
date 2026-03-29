@@ -23,6 +23,7 @@
     opencode.enable = true;
     starship.enable = true;
     television.enable = true;
+    tmux.enable = true;
     yazi.enable = true;
   };
 }

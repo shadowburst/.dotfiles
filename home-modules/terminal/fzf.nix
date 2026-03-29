@@ -11,5 +11,6 @@
       "--layout=reverse"
       "--highlight-line"
     ];
+    tmux.enableShellIntegration = true;
   };
 }
