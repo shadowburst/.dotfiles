@@ -19,15 +19,15 @@
     ./zoxide.nix
   ];
 
-  programs = {
-    bat.enable = true;
-    carapace.enable = true;
-    cava.enable = true;
-  };
+  programs.bat.enable = true;
+  programs.carapace.enable = true;
+  programs.cava.enable = true;
+  programs.direnv.enable = true;
 
   home.packages = with pkgs; [
     act
     curl
+    devbox
     fd
     ffmpeg
     gcc
