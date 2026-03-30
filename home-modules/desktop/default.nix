@@ -18,7 +18,7 @@
     ente-auth
     gimp3
     pdfarranger
-    protonvpn-gui
+    proton-vpn
     simple-scan
     tableplus
     video-downloader
