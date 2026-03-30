@@ -6,7 +6,7 @@
   programs.tmux = {
     enable = true;
     baseIndex = 1;
-    prefix = "C-j";
+    prefix = "C-b";
     escapeTime = 0;
     mouse = true;
     keyMode = "vi";
