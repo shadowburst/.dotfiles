@@ -27,16 +27,16 @@
         )
 
         (defalias
-          spc (multi f24 (tap-hold $tap-time $hold-time spc ralt))
+          spc (tap-hold $tap-time $hold-time spc ralt)
 
-          a (multi f24 (tap-hold $tap-time $hold-time a lalt))
-          s (multi f24 (tap-hold $tap-time $hold-time s lmet))
-          d (multi f24 (tap-hold $tap-time $hold-time d lctl))
-          f (multi f24 (tap-hold $tap-time $hold-time f lsft))
-          j (multi f24 (tap-hold $tap-time $hold-time j rsft))
-          k (multi f24 (tap-hold $tap-time $hold-time k rctl))
-          l (multi f24 (tap-hold $tap-time $hold-time l rmet))
-          ; (multi f24 (tap-hold $tap-time $hold-time ; lalt))
+          a (tap-hold $tap-time $hold-time a lalt)
+          s (tap-hold $tap-time $hold-time s lmet)
+          d (tap-hold $tap-time $hold-time d lctl)
+          f (tap-hold $tap-time $hold-time f lsft)
+          j (tap-hold $tap-time $hold-time j rsft)
+          k (tap-hold $tap-time $hold-time k rctl)
+          l (tap-hold $tap-time $hold-time l rmet)
+          ; (tap-hold $tap-time $hold-time ; lalt)
          )
 
         (deflayer default
