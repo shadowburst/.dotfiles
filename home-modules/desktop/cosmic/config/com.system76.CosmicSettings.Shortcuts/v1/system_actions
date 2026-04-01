@@ -1,3 +1,0 @@
-{
-    Terminal: "/nix/store/9ama4nm6cjgdkw9fwdfqn3h6fg8rb4nd-ghostty-1.2.3/bin/ghostty --gtk-single-instance=true",
-}
