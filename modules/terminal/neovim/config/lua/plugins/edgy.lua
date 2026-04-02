@@ -19,7 +19,7 @@ return {
       },
       left = {
         { ft = "gitsigns-blame" },
-        { ft = "undotree" },
+        { ft = "nvim-undotree" },
       },
       right = {
         { ft = "help" },
