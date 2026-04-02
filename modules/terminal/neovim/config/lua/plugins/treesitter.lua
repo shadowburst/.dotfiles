@@ -74,12 +74,6 @@ return {
     end,
   },
   {
-    "windwp/nvim-ts-autotag",
-    dependencies = { "nvim-treesitter/nvim-treesitter" },
-    event = { "BufNewFile", "BufReadPost", "BufWritePre" },
-    opts = { enable = true },
-  },
-  {
     "nvim-treesitter/nvim-treesitter-context",
     opts = {
       max_lines = 4,
