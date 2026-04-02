@@ -1,5 +1,40 @@
 local config = require("config")
 
+local function accept_word(item)
+  local insert_text = item.insert_text
+  if type(insert_text) == "string" then
+    local range = item.range
+    if range then
+      local lines = vim.split(insert_text, "\n")
+      local current_lines =
+        vim.api.nvim_buf_get_text(range.buf, range.start_row, range.start_col, range.end_row, range.end_col, {})
+
+      local row = 1
+      while row <= #lines and row <= #current_lines and lines[row] == current_lines[row] do
+        row = row + 1
+      end
+
+      local col = 1
+      while
+        row <= #lines
+        and col <= #lines[row]
+        and row <= #current_lines
+        and col <= #current_lines[row]
+        and lines[row][col] == current_lines[row][col]
+      do
+        col = col + 1
+      end
+
+      local word = string.match(lines[row]:sub(col), "%s*[^%s]%w*")
+      item.insert_text = table.concat(vim.list_slice(lines, 1, row - 1), "\n")
+        .. (row <= #current_lines and "" or "\n")
+        .. (row <= #lines and col <= #lines[row] and lines[row]:sub(1, col - 1) or "")
+        .. word
+    end
+  end
+  return item
+end
+
 return {
   {
     "neovim/nvim-lspconfig",
@@ -33,11 +68,11 @@ return {
 
       local servers = {
         bashls = {},
-        -- copilot = {
-        --   settings = {
-        --     telemetry = { telemetryLevel = "off" },
-        --   },
-        -- },
+        copilot = {
+          settings = {
+            telemetry = { telemetryLevel = "off" },
+          },
+        },
         cssls = {},
         docker_compose_language_service = {},
         dockerls = {},
@@ -132,6 +167,32 @@ return {
         vim.lsp.config(server, settings)
         vim.lsp.enable(server)
       end
+
+      vim.schedule(function() vim.lsp.inline_completion.enable() end)
     end,
+    keys = {
+      {
+        "<tab>",
+        function()
+          if not vim.lsp.inline_completion.get({
+            on_accept = accept_word,
+          }) then
+            return "<Tab>"
+          end
+        end,
+        mode = { "i", "s" },
+        desc = "Accept word completion",
+      },
+      {
+        "<s-tab>",
+        function()
+          if not vim.lsp.inline_completion.get() then
+            return "<Tab>"
+          end
+        end,
+        mode = { "i", "s" },
+        desc = "Accept completion",
+      },
+    },
   },
 }

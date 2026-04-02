@@ -22,7 +22,7 @@
           shfmt
 
           # Copilot
-          # copilot-language-server
+          copilot-language-server
 
           # CSS
           tailwindcss-language-server
@@ -47,8 +47,6 @@
           nil
 
           # Node
-          nodePackages.npm
-          nodejs
           prettierd
           vtsls
 
