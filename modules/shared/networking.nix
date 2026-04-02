@@ -31,8 +31,9 @@
       # attempts unlink(), but then fails to open the PID file with O_CREAT|O_EXCL.
       # Forcibly removing the PID file before start (as root, before privilege drop)
       # guarantees a clean slate. The "-" prefix silently ignores a missing file.
-      systemd.services.avahi-daemon.serviceConfig.ExecStartPre = [
-        "-/bin/rm -f /run/avahi-daemon/pid"
-      ];
+      systemd.services.avahi-daemon.serviceConfig = {
+        ExecStartPre = [ "-${pkgs.coreutils}/bin/rm -f /run/avahi-daemon/pid" ];
+        ReadWritePaths = [ "/run/avahi-daemon" ];
+      };
     };
 }
