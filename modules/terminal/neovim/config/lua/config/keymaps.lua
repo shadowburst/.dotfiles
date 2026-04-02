@@ -35,7 +35,4 @@ set("n", "<leader>bb", "<cmd>e #<cr>", { desc = "Switch to other buffer" })
 -- Quickfix
 set("n", "<leader>xq", "<cmd>copen<cr>", { desc = "Quickfix list" })
 
--- Execute lua code under cursor
 set("n", "<leader>vr", "<cmd>restart<cr>", { desc = "Restart Neovim" })
-set("n", "<leader>vx", ":.lua<cr>", { desc = "Execute lua code" })
-set("x", "<leader>vx", ":lua<cr>", { desc = "Execute lua code" })
