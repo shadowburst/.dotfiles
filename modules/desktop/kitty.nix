@@ -7,6 +7,17 @@
       pkgs,
       ...
     }:
+
+    let
+      dev-session = pkgs.writeShellScript "kitty-dev-session" ''
+        cwd=$(kitten @ ls | jq -r '.[0].tabs[] | select(.is_active) | .windows[] | select(.is_active) | .cwd')
+        kitten @ launch --type tab --cwd current --tab-title "Nvim - $(basename "$cwd")" $EDITOR
+        kitten @ close-tab --match "not state:focused"
+        kitten @ launch --type tab --cwd current --tab-title "Opencode" opencode --port
+        kitten @ launch --type tab --cwd current
+        kitten @ focus-tab --match index:0
+      '';
+    in
     {
       programs.kitty = {
         enable = true;
@@ -25,35 +36,51 @@
           hide_window_decorations = true;
           kitty_mod = "ctrl+shift";
           listen_on = "unix:/tmp/kitty.sock";
+          scrollback_pager = "nvim --cmd 'set eventignore=FileType' +'nnoremap q ZQ' +'call nvim_open_term(0, {})' +'set nomodified nolist' +'$' -";
+          tab_bar_align = "center";
+          tab_bar_edge = "top";
+          tab_bar_filter = "session:~ or session:^$";
+          tab_bar_min_tabs = 1;
+          url_style = "curly";
+          window_padding_width = "4 0";
         };
         keybindings = {
-          # Tmux bindings - Sessions
-          "ctrl+shift+a" = "send_key alt+a";
-          "ctrl+shift+d" = "send_key alt+d";
-          "ctrl+shift+r" = "send_key alt+r";
-          "ctrl+shift+space" = "send_key alt+space";
-          "ctrl+shift+tab" = "send_key alt+tab";
+          # Tabs
+          "kitty_mod+n" = "next_tab";
+          "kitty_mod+p" = "previous_tab";
+          "kitty_mod+t" = "new_tab_with_cwd";
+          "kitty_mod+&" = "goto_tab 1";
+          "kitty_mod+é" = "goto_tab 2";
+          "kitty_mod+\"" = "goto_tab 3";
+          "kitty_mod+'" = "goto_tab 4";
+          "kitty_mod+(" = "goto_tab 5";
+          "kitty_mod+-" = "goto_tab 6";
+          "kitty_mod+è" = "goto_tab 7";
+          "kitty_mod+_" = "goto_tab 8";
+          "kitty_mod+ç" = "goto_tab 9";
+          "kitty_mod+h" = "move_tab_backward";
+          "kitty_mod+l" = "move_tab_forward";
 
-          # Tmux bindings - Windows
-          "ctrl+shift+n" = "send_key alt+n";
-          "ctrl+shift+p" = "send_key alt+p";
-          "ctrl+shift+t" = "send_key alt+t";
-          "ctrl+shift+enter" = "send_key alt+enter";
-
-          # Tmux bindings - Panes
-          "ctrl+shift+b" = "send_key alt+b";
-          "ctrl+shift+e" = "send_key alt+e";
-          "ctrl+shift+f" = "send_key alt+f";
-          "ctrl+shift+h" = "send_key alt+shift+h";
-          "ctrl+shift+j" = "send_key alt+shift+j";
-          "ctrl+shift+k" = "send_key alt+shift+k";
-          "ctrl+shift+l" = "send_key alt+shift+l";
-          "ctrl+shift+o" = "send_key alt+o";
-          "ctrl+shift+q" = "send_key alt+q";
-          "ctrl+shift+x" = "send_key alt+x";
+          # Windows
+          "ctrl+j" = "neighboring_window down";
+          "ctrl+k" = "neighboring_window up";
+          "ctrl+h" = "neighboring_window left";
+          "ctrl+l" = "neighboring_window right";
+          "alt+j" = "kitten relative_resize.py down  3";
+          "alt+k" = "kitten relative_resize.py up    3";
+          "alt+h" = "kitten relative_resize.py left  3";
+          "alt+l" = "kitten relative_resize.py right 3";
+          "kitty_mod+j" = "move_window_forward";
+          "kitty_mod+k" = "move_window_backward";
+          "kitty_mod+f" = "toggle_layout stack";
+          "kitty_mod+q" = "close_window";
+          "kitty_mod+enter" = "new_window_with_cwd";
+          "kitty_mod+equal" = "resize_window reset";
 
           # Other
           "ctrl+backspace" = "send_key ctrl+w";
+          "kitty_mod+d" = "remote_control_script ${dev-session}";
+          "kitty_mod+e" = "show_scrollback";
         };
         extraConfig = ''
           map --when-focus-on var:IS_NVIM ctrl+j

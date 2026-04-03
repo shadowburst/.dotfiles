@@ -19,9 +19,9 @@
           set -g  status-style "fg=#{@thm_mauve},bg=default"
           set -g  status-left-length 100
           set -g  status-left ""
-          set -ga status-left "#{?client_prefix,#{#[bg=#{@thm_red},fg=#{@thm_bg},bold]   },#{#[bg=default,fg=#{@thm_red},bold]   }}"
+          set -ga status-left "#{?client_prefix,#{#[bg=#{@thm_blue},fg=#{@thm_bg},bold]   },#{#[bg=default,fg=#{@thm_blue},bold]   }}"
           set -ga status-left "#[bg=default,fg=#{@thm_surface_0},none] "
-          set -ga status-left "#{#[bg=default,fg=#{@thm_green},bold]#S }"
+          set -ga status-left "#{#[bg=default,fg=#{@thm_lavender},bold]#S }"
           set -ga status-left "#[bg=default,fg=#{@thm_surface_0},none]│ "
           set -g  status-right-length 100
           set -g  status-right ""
