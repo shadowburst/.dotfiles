@@ -10,21 +10,21 @@
 
     let
       session-switch = pkgs.writeShellScriptBin "kitty-session-switch" ''
-                path="$1"
-                if [ -z "$path" ]; then
-                  echo "Usage: kitty-session-switch <path>" >&2
-                  exit 1
-                fi
+        path="$1"
+        if [ -z "$path" ]; then
+          echo "Usage: kitty-session-switch <path>" >&2
+          exit 1
+        fi
 
-                dirname=$(basename "$path")
-                session_dir="/tmp/kitty/sessions"
-                session_file="$session_dir/$dirname.kitty-session"
+        dirname=$(basename "$path")
+        session_dir="/tmp/kitty/sessions"
+        session_file="$session_dir/$dirname.kitty-session"
 
-                mkdir -p "$session_dir"
+        mkdir -p "$session_dir"
 
-                # Generate a session file if it doesn't exist yet
-                if [ ! -f "$session_file" ]; then
-                  cat > "$session_file" <<EOF
+        # Generate a session file if it doesn't exist yet
+        if [ ! -f "$session_file" ]; then
+          cat > "$session_file" <<EOF
         new_tab $dirname - Nvim
         cd $path
         launch $EDITOR
@@ -39,10 +39,10 @@
 
         focus_tab 0
         EOF
-                fi
+        fi
 
-                # goto_session focuses the session if already active, otherwise opens the file
-                kitten @ action goto_session "$session_file"
+        # goto_session focuses the session if already active, otherwise opens the file
+        kitten @ action goto_session "$session_file"
       '';
     in
     {
