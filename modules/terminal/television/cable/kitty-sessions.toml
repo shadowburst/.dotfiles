@@ -1,0 +1,29 @@
+# Television channel for kitty session management
+# Lists zoxide directories and switches to or creates a kitty dev session for the selected path
+
+[metadata]
+name = "kitty-sessions"
+description = "Switch to or create a kitty dev session (Nvim + Opencode + Shell) for a zoxide directory"
+requirements = ["zoxide", "kitten", "jq"]
+
+[source]
+command = "zoxide query -l"
+no_sort = true
+frecency = false
+
+[preview]
+command = "tree -a -L 1 -C --dirsfirst --sort=name --noreport {}"
+
+[keybindings]
+enter = "actions:switch"
+ctrl-d = "actions:remove"
+
+[actions.switch]
+description = "Focus existing kitty tab at this path or create a new dev session"
+command = "kitty-session-switch '{}'"
+mode = "execute"
+
+[actions.remove]
+description = "Remove the selected directory from zoxide"
+command = "zoxide remove '{}'"
+mode = "fork"

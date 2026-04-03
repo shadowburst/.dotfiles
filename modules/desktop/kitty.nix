@@ -9,13 +9,40 @@
     }:
 
     let
-      dev-session = pkgs.writeShellScript "kitty-dev-session" ''
-        cwd=$(kitten @ ls | jq -r '.[0].tabs[] | select(.is_active) | .windows[] | select(.is_active) | .cwd')
-        kitten @ launch --type tab --cwd current --tab-title "Nvim - $(basename "$cwd")" $EDITOR
-        kitten @ close-tab --match "not state:focused"
-        kitten @ launch --type tab --cwd current --tab-title "Opencode" opencode --port
-        kitten @ launch --type tab --cwd current
-        kitten @ focus-tab --match index:0
+      session-switch = pkgs.writeShellScriptBin "kitty-session-switch" ''
+                path="$1"
+                if [ -z "$path" ]; then
+                  echo "Usage: kitty-session-switch <path>" >&2
+                  exit 1
+                fi
+
+                dirname=$(basename "$path")
+                session_dir="/tmp/kitty/sessions"
+                session_file="$session_dir/$dirname.kitty-session"
+
+                mkdir -p "$session_dir"
+
+                # Generate a session file if it doesn't exist yet
+                if [ ! -f "$session_file" ]; then
+                  cat > "$session_file" <<EOF
+        new_tab $dirname - Nvim
+        cd $path
+        launch $EDITOR
+
+        new_tab Opencode
+        cd $path
+        launch opencode --port
+
+        new_tab
+        cd $path
+        launch
+
+        focus_tab 0
+        EOF
+                fi
+
+                # goto_session focuses the session if already active, otherwise opens the file
+                kitten @ action goto_session "$session_file"
       '';
     in
     {
@@ -45,6 +72,10 @@
           window_padding_width = "4 0";
         };
         keybindings = {
+          # Sessions
+          "kitty_mod+space" = "launch --type overlay tv kitty-sessions";
+          "kitty_mod+tab" = "goto_session -1";
+
           # Tabs
           "kitty_mod+n" = "next_tab";
           "kitty_mod+p" = "previous_tab";
@@ -79,7 +110,6 @@
 
           # Other
           "ctrl+backspace" = "send_key ctrl+w";
-          "kitty_mod+d" = "remote_control_script ${dev-session}";
           "kitty_mod+e" = "show_scrollback";
         };
         extraConfig = ''
@@ -93,5 +123,7 @@
           map --when-focus-on var:IS_NVIM alt+l
         '';
       };
+
+      home.packages = [ session-switch ];
     };
 }

@@ -6,7 +6,7 @@ case $workspace in
   $BROWSER
   ;;
 2)
-  cmd="$TERMINAL -e tv zoxide"
+  cmd="$TERMINAL -e tv kitty-sessions"
   $SHELL -c "$cmd"
   ;;
 3)
