@@ -27,7 +27,7 @@
           cat > "$session_file" <<EOF
         new_tab $dirname - Nvim
         cd $path
-        launch $EDITOR
+        launch $SHELL -c "$EDITOR; exec $SHELL"
 
         new_tab Opencode
         cd $path
