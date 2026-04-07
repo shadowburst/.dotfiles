@@ -12,13 +12,13 @@ vim.g.opencode_opts = {
 
 Snacks.keymap.set(
   "n",
-  "<leader>go",
+  "go",
   function() return require("opencode").operator("@this ") end,
   { expr = true, desc = "Add range to opencode" }
 )
 Snacks.keymap.set(
   "n",
-  "<leader>goo",
+  "goo",
   function() return require("opencode").operator("@this ") .. "_" end,
   { expr = true, desc = "Add line to opencode" }
 )
