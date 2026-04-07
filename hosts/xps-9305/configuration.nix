@@ -38,7 +38,7 @@
         enable32Bit = true;
       };
 
-      networking.hostName = "xps";
+      networking.hostName = "xps-9305";
 
       services.fprintd.enable = lib.mkForce false;
     };
