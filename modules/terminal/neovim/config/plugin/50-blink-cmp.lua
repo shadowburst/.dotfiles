@@ -1,5 +1,4 @@
 vim.pack.add({
-  "https://github.com/nvim-mini/mini.icons",
   "https://github.com/rafamadriz/friendly-snippets",
   {
     src = "https://github.com/saghen/blink.cmp",
