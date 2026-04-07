@@ -15,7 +15,6 @@ vim.pack.add({
 })
 
 local treesitter = require("nvim-treesitter")
-treesitter.setup()
 
 treesitter.install({
   "bash",
@@ -39,7 +38,6 @@ treesitter.install({
   "nix",
   "php",
   "phpdoc",
-  "qmljs",
   "regex",
   "scss",
   "sql",
