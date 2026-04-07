@@ -61,9 +61,10 @@
           enabled_layouts = "tall,stack";
           font_size = 10.0;
           hide_window_decorations = true;
-          kitty_mod = "ctrl+shift";
+          kitty_mod = "alt";
           listen_on = "unix:/tmp/kitty.sock";
           scrollback_pager = "nvim --cmd 'set eventignore=FileType' +'nnoremap q ZQ' +'call nvim_open_term(0, {})' +'set nomodified nolist' +'$' -";
+          scrollback_lines = 10000;
           tab_bar_align = "center";
           tab_bar_edge = "top";
           tab_bar_filter = "session:~ or session:^$";
@@ -111,6 +112,8 @@
           # Other
           "ctrl+backspace" = "send_key ctrl+w";
           "kitty_mod+e" = "show_scrollback";
+          "ctrl+shift+c" = "copy_to_clipboard";
+          "ctrl+shift+v" = "paste_from_clipboard";
         };
         extraConfig = ''
           map --when-focus-on var:IS_NVIM ctrl+j
