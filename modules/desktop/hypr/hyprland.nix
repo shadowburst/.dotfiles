@@ -80,7 +80,7 @@
             size = 6;
             xray = true;
           };
-          decoration.rounding = 10;
+          decoration.rounding = 6;
           decoration.shadow.enabled = false;
 
           animations = {
