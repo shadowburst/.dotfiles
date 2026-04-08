@@ -19,6 +19,7 @@
     {
       imports = [
         self.homeModules.catppuccin
+        self.homeModules.docker
         self.homeModules.stylix
         self.homeModules.user
       ];
