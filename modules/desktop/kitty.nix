@@ -110,8 +110,8 @@
           "kitty_mod+equal" = "resize_window reset";
 
           # Other
+          "kitty_mod+esc" = "show_scrollback";
           "ctrl+backspace" = "send_key ctrl+w";
-          "kitty_mod+e" = "show_scrollback";
           "ctrl+shift+c" = "copy_to_clipboard";
           "ctrl+shift+v" = "paste_from_clipboard";
         };
