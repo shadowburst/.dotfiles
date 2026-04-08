@@ -216,6 +216,7 @@
             "$mod, d, exec, uwsm app -- launch-default"
             "$mod, e, exec, uwsm app -- $terminal -e yazi"
             "CTRL SHIFT, escape, exec, uwsm app -- $terminal -e btop"
+            ", xf86calculator, exec, uwsm app -- gnome-calculator"
 
             # Screenshots
             ", print, exec, hyprshot --freeze -m region --clipboard-only"

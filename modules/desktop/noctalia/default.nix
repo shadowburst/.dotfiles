@@ -50,7 +50,6 @@
         # Utility
         "$mod, v, exec, noctalia-shell ipc call launcher clipboard"
         "$mod CTRL, r, exec, noctalia-shell ipc call plugin:screen-recorder toggle"
-        ", xf86calculator, exec, noctalia-shell ipc call launcher calculator"
       ];
 
       xdg.configFile = {
