@@ -62,18 +62,18 @@
           general.border_size = 2;
           general.gaps_in = 2;
           general.gaps_out = 0;
-          general.layout = "master";
+          general.layout = "scrolling";
 
           dwindle.force_split = 2;
 
           master.allow_small_split = true;
           master.orientation = "left";
 
-          scrolling.fullscreen_on_one_column = false;
-          scrolling.column_width = 0.95;
-          scrolling.focus_fit_method = 0;
-          scrolling.follow_min_visible = 0.05;
-          scrolling.explicit_column_widths = "O.25, 0.5, 0.95";
+          scrolling.fullscreen_on_one_column = true;
+          scrolling.column_width = 0.667;
+          scrolling.focus_fit_method = 1;
+          scrolling.follow_min_visible = 0.40;
+          scrolling.explicit_column_widths = "0.333, 0.5, 0.667, 1.0";
 
           decoration.blur = {
             enabled = true;
@@ -108,7 +108,7 @@
           input.touchpad.disable_while_typing = true;
           input.touchpad.drag_lock = true;
           input.touchpad.natural_scroll = true;
-          # input.focus_on_close = 1;
+          input.focus_on_close = 1;
 
           gestures.workspace_swipe_distance = 200;
           gestures.workspace_swipe_min_speed_to_force = 10;
@@ -122,7 +122,7 @@
           misc.mouse_move_enables_dpms = true;
           misc.on_focus_under_fullscreen = 1;
           misc.session_lock_xray = true;
-          misc.swallow_regex = "^com\\.mitchellh\\.ghostty$";
+          misc.swallow_regex = "^kitty$";
           misc.vrr = 0;
 
           cursor.default_monitor = "DP-1";
@@ -149,32 +149,31 @@
             "$mod SHIFT, p, pin,"
 
             # Scrolling keybinds
-            # "$mod, h, layoutmsg, focus l"
-            # "$mod, j, layoutmsg, focus d"
-            # "$mod, k, layoutmsg, focus u"
-            # "$mod, l, layoutmsg, focus r"
-            # "$mod, m, layoutmsg, promote"
-            # "$mod, q, killactive,"
-            # "$mod, comma, layoutmsg, colresize -conf"
-            # "$mod, semicolon, layoutmsg, colresize +conf"
-            # "$mod SHIFT, comma, layoutmsg, swapcol l"
-            # "$mod SHIFT, semicolon, layoutmsg, swapcol r"
-            # "$mod SHIFT, h, movewindow, l"
-            # "$mod SHIFT, j, movewindow, d"
-            # "$mod SHIFT, k, movewindow, u"
-            # "$mod SHIFT, l, movewindow, r"
-
-            # Master keybinds
-            "$mod, h, movefocus, l"
-            "$mod, j, movefocus, d"
-            "$mod, k, movefocus, u"
-            "$mod, l, movefocus, r"
-            "$mod, comma, layoutmsg, addmaster"
-            "$mod, semicolon, layoutmsg, removemaster"
+            "$mod, h, layoutmsg, focus l"
+            "$mod, j, layoutmsg, focus d"
+            "$mod, k, layoutmsg, focus u"
+            "$mod, l, layoutmsg, focus r"
+            "$mod, m, layoutmsg, promote"
+            "$mod, comma, layoutmsg, colresize -conf"
+            "$mod, semicolon, layoutmsg, colresize +conf"
+            "$mod SHIFT, comma, layoutmsg, swapcol l"
+            "$mod SHIFT, semicolon, layoutmsg, swapcol r"
             "$mod SHIFT, h, movewindow, l"
             "$mod SHIFT, j, movewindow, d"
             "$mod SHIFT, k, movewindow, u"
             "$mod SHIFT, l, movewindow, r"
+
+            # Master keybinds
+            # "$mod, h, movefocus, l"
+            # "$mod, j, movefocus, d"
+            # "$mod, k, movefocus, u"
+            # "$mod, l, movefocus, r"
+            # "$mod, comma, layoutmsg, addmaster"
+            # "$mod, semicolon, layoutmsg, removemaster"
+            # "$mod SHIFT, h, movewindow, l"
+            # "$mod SHIFT, j, movewindow, d"
+            # "$mod SHIFT, k, movewindow, u"
+            # "$mod SHIFT, l, movewindow, r"
 
             # Workspaces
             "$mod, ampersand, focusworkspaceoncurrentmonitor, 1"
