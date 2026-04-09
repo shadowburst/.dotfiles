@@ -229,7 +229,7 @@ Snacks.keymap.set(
 )
 Snacks.keymap.set(
   "n",
-  "gr",
+  "grr",
   function() Snacks.picker.lsp_references() end,
   { desc = "LSP references", lsp = { method = "textDocument/references" } }
 )
