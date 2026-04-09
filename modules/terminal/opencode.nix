@@ -7,6 +7,8 @@
         enable = true;
         settings = {
           permission.edit = "ask";
+        };
+        tui = {
           keybinds = {
             leader = "ctrl+space";
             command_list = "<leader>p";
