@@ -45,7 +45,7 @@ require("mini.surround").setup({
   },
 })
 
-Snacks.keymap.set("n", "<s-x>", function()
+Snacks.keymap.set("o", "x", function()
   local keys = require("mini.operators").replace() .. vim.api.nvim_replace_termcodes("$", true, true, true)
   vim.api.nvim_feedkeys(keys, "n", false)
 end)
