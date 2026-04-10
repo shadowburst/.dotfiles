@@ -42,6 +42,9 @@ require("mini.surround").setup({
     add = "sa",
     delete = "sd",
     replace = "sc",
+    find = "",
+    find_left = "",
+    highlight = "",
   },
 })
 
