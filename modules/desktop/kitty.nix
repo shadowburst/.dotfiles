@@ -98,10 +98,6 @@
           "ctrl+k" = "neighboring_window up";
           "ctrl+h" = "neighboring_window left";
           "ctrl+l" = "neighboring_window right";
-          "alt+j" = "kitten relative_resize.py down  3";
-          "alt+k" = "kitten relative_resize.py up    3";
-          "alt+h" = "kitten relative_resize.py left  3";
-          "alt+l" = "kitten relative_resize.py right 3";
           "kitty_mod+j" = "move_window_forward";
           "kitty_mod+k" = "move_window_backward";
           "kitty_mod+f" = "toggle_layout stack";
@@ -120,10 +116,6 @@
           map --when-focus-on var:IS_NVIM ctrl+k
           map --when-focus-on var:IS_NVIM ctrl+h
           map --when-focus-on var:IS_NVIM ctrl+l
-          map --when-focus-on var:IS_NVIM alt+j
-          map --when-focus-on var:IS_NVIM alt+k
-          map --when-focus-on var:IS_NVIM alt+h
-          map --when-focus-on var:IS_NVIM alt+l
         '';
       };
 

@@ -35,7 +35,3 @@ Snacks.keymap.set(
   function() require("smart-splits").move_cursor_right() end,
   { desc = "Move to right split" }
 )
-Snacks.keymap.set("n", "<A-h>", function() require("smart-splits").resize_left() end, { desc = "Resize left" })
-Snacks.keymap.set("n", "<A-j>", function() require("smart-splits").resize_down() end, { desc = "Resize down" })
-Snacks.keymap.set("n", "<A-k>", function() require("smart-splits").resize_up() end, { desc = "Resize up" })
-Snacks.keymap.set("n", "<A-l>", function() require("smart-splits").resize_right() end, { desc = "Resize right" })
