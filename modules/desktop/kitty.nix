@@ -25,11 +25,11 @@
         # Generate a session file if it doesn't exist yet
         if [ ! -f "$session_file" ]; then
           cat > "$session_file" <<EOF
-        new_tab $dirname - Nvim
+        new_tab $dirname - $EDITOR
         cd $path
         launch $SHELL -c "$EDITOR; exec $SHELL"
 
-        new_tab Opencode
+        new_tab
         cd $path
         launch opencode --port
 
