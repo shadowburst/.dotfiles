@@ -58,6 +58,7 @@
           cursor_text_color = "background";
           cursor_trail = 3;
           detect_urls = true;
+          enable_audio_bell = false;
           enabled_layouts = "tall,stack";
           font_size = 10.0;
           hide_window_decorations = true;
