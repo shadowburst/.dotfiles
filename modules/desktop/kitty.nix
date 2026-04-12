@@ -31,7 +31,7 @@
 
         new_tab
         cd $path
-        launch opencode --port
+        launch claude
 
         new_tab
         cd $path

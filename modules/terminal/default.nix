@@ -15,6 +15,7 @@
       imports = [
         self.homeModules.bash
         self.homeModules.btop
+        self.homeModules.claude-code
         self.homeModules.comma
         self.homeModules.eza
         self.homeModules.fish

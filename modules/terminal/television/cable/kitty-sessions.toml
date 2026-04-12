@@ -3,7 +3,7 @@
 
 [metadata]
 name = "kitty-sessions"
-description = "Switch to or create a kitty dev session (Nvim + Opencode + Shell) for a zoxide directory"
+description = "Switch to or create a kitty dev session (Nvim + Ai assistant + Shell) for a zoxide directory"
 requirements = ["zoxide", "kitten", "jq"]
 
 [source]
