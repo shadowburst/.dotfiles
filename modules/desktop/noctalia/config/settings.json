@@ -584,7 +584,7 @@
         "sounds": {
             "criticalSoundFile": "",
             "enabled": true,
-            "excludedApps": "discord,firefox,chrome,chromium,edge,brave",
+            "excludedApps": "discord,firefox,chrome,chromium,edge,brave,kitty",
             "lowSoundFile": "",
             "normalSoundFile": "",
             "separateSounds": false,
