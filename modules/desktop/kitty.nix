@@ -31,7 +31,7 @@
 
         new_tab
         cd $path
-        launch claude
+        launch $SHELL -c "claude --dangerously-skip-permissions; exec $SHELL"
 
         new_tab
         cd $path
