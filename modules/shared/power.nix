@@ -1,4 +1,4 @@
-{ ... }:
+_:
 {
   flake.nixosModules.power =
     { lib, pkgs, ... }:

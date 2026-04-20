@@ -1,4 +1,4 @@
-{ ... }:
+_:
 {
   flake.homeModules.xps-9305 =
     { lib, pkgs, ... }:

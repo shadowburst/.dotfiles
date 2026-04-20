@@ -1,4 +1,4 @@
-{ ... }:
+_:
 {
   flake.homeModules.yazi =
     { lib, pkgs, ... }:
@@ -14,9 +14,9 @@
         '';
 
         plugins = with pkgs; {
-          mount = yaziPlugins.mount;
-          smart-enter = yaziPlugins.smart-enter;
-          starship = yaziPlugins.starship;
+          inherit (yaziPlugins) mount;
+          inherit (yaziPlugins) smart-enter;
+          inherit (yaziPlugins) starship;
         };
 
         settings = {

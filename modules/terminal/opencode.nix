@@ -1,4 +1,4 @@
-{ ... }:
+_:
 {
   flake.homeModules.opencode =
     { lib, pkgs, ... }:

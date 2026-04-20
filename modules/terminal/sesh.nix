@@ -1,4 +1,4 @@
-{ ... }:
+_:
 {
   flake.homeModules.sesh =
     { lib, pkgs, ... }:

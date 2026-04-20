@@ -1,4 +1,4 @@
-{ ... }:
+_:
 {
   flake.nixosModules.xps-9305-hardware =
     {

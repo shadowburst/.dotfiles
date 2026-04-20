@@ -1,4 +1,4 @@
-{ ... }:
+_:
 {
   flake.homeModules.claude-code =
     { lib, pkgs, ... }:

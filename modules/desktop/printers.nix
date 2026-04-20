@@ -1,4 +1,4 @@
-{ ... }:
+_:
 {
   flake.nixosModules.printers =
     { lib, pkgs, ... }:

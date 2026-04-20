@@ -1,4 +1,4 @@
-{ ... }:
+_:
 {
   flake.homeModules.zephyrus =
     { lib, pkgs, ... }:

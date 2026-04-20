@@ -1,4 +1,4 @@
-{ ... }:
+_:
 {
   flake.homeModules.images =
     { lib, pkgs, ... }:

@@ -1,4 +1,4 @@
-{ ... }:
+_:
 {
   flake.homeModules.eza =
     { lib, pkgs, ... }:
