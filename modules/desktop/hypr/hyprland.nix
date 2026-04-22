@@ -1,5 +1,4 @@
-_:
-{
+_: {
   flake.nixosModules.hyprland =
     { lib, pkgs, ... }:
     {
@@ -61,7 +60,7 @@ _:
           general."col.active_border" = lib.mkForce "$accent";
           general.border_size = 2;
           general.gaps_in = 2;
-          general.gaps_out = 0;
+          general.gaps_out = "0,20,0,20";
           general.layout = "scrolling";
 
           dwindle.force_split = 2;
@@ -70,10 +69,9 @@ _:
           master.orientation = "left";
 
           scrolling.fullscreen_on_one_column = true;
-          scrolling.column_width = 0.667;
+          scrolling.column_width = 1.0;
           scrolling.focus_fit_method = 1;
-          scrolling.follow_min_visible = 0.40;
-          scrolling.explicit_column_widths = "0.333, 0.5, 0.667, 1.0";
+          scrolling.explicit_column_widths = "0.5, 1.0";
 
           decoration.blur = {
             enabled = true;
