@@ -18,6 +18,9 @@ _:
         };
       };
 
+      programs.fish.shellAbbrs = {
+        wtc = "wt switch --create --base HEAD";
+      };
       programs.fish.interactiveShellInit = ''
         ${lib.getExe pkgs.worktrunk} config shell init fish | source
       '';
