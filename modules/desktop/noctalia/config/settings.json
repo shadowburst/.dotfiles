@@ -21,7 +21,7 @@
         ],
         "position": "top_center",
         "screenshotAnnotationTool": "satty -f -",
-        "showCategories": true,
+        "showCategories": false,
         "showIconBackground": true,
         "sortByMostUsed": true,
         "terminalCommand": "$TERMINAL",
@@ -47,8 +47,8 @@
         "capsuleColorKey": "none",
         "capsuleOpacity": 0.9,
         "contentPadding": 2,
-        "density": "default",
-        "displayMode": "always_visible",
+        "density": "spacious",
+        "displayMode": "auto_hide",
         "enableExclusionZoneInset": true,
         "fontScale": 1,
         "frameRadius": 8,
@@ -64,7 +64,7 @@
         "mouseWheelAction": "workspace",
         "mouseWheelWrap": false,
         "outerCorners": true,
-        "position": "left",
+        "position": "top",
         "reverseScroll": false,
         "rightClickAction": "controlCenter",
         "rightClickCommand": "",
@@ -212,21 +212,21 @@
                     "textColor": "none"
                 },
                 {
-                    "displayMode": "onhover",
+                    "displayMode": "alwaysShow",
                     "iconColor": "none",
                     "id": "Network",
                     "textColor": "none"
                 },
                 {
-                    "displayMode": "onhover",
+                    "displayMode": "alwaysShow",
                     "iconColor": "none",
                     "id": "Volume",
                     "middleClickCommand": "pwvucontrol || pavucontrol",
                     "textColor": "none"
                 },
                 {
-                    "deviceNativePath": "",
-                    "displayMode": "onhover",
+                    "deviceNativePath": "__default__",
+                    "displayMode": "graphic",
                     "hideIfIdle": false,
                     "hideIfNotDetected": true,
                     "id": "Battery",
@@ -474,7 +474,7 @@
         "language": "",
         "lockOnSuspend": true,
         "lockScreenAnimations": false,
-        "lockScreenBlur": 0,
+        "lockScreenBlur": 0.5,
         "lockScreenCountdownDuration": 3000,
         "lockScreenMonitors": [
         ],
@@ -621,49 +621,56 @@
                 "command": "",
                 "countdownEnabled": true,
                 "enabled": true,
-                "keybind": ""
+                "keybind": "1"
             },
             {
                 "action": "reboot",
                 "command": "",
                 "countdownEnabled": true,
                 "enabled": true,
-                "keybind": ""
+                "keybind": "2"
             },
             {
                 "action": "rebootToUefi",
                 "command": "",
                 "countdownEnabled": true,
                 "enabled": true,
-                "keybind": ""
+                "keybind": "3"
             },
             {
                 "action": "logout",
                 "command": "",
                 "countdownEnabled": true,
                 "enabled": true,
-                "keybind": ""
+                "keybind": "4"
             },
             {
                 "action": "lock",
                 "command": "",
                 "countdownEnabled": true,
                 "enabled": false,
-                "keybind": "1"
+                "keybind": ""
             },
             {
                 "action": "suspend",
                 "command": "",
                 "countdownEnabled": false,
                 "enabled": false,
-                "keybind": "2"
+                "keybind": ""
             },
             {
                 "action": "hibernate",
                 "command": "",
                 "countdownEnabled": false,
                 "enabled": false,
-                "keybind": "3"
+                "keybind": ""
+            },
+            {
+                "action": "userspaceReboot",
+                "command": "",
+                "countdownEnabled": true,
+                "enabled": false,
+                "keybind": ""
             }
         ],
         "showHeader": true,
