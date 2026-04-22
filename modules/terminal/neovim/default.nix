@@ -1,5 +1,4 @@
-_:
-{
+_: {
   flake.homeModules.neovim =
     {
       config,
@@ -10,6 +9,7 @@ _:
     {
       programs.neovim = {
         enable = true;
+        sideloadInitLua = true;
         viAlias = true;
         vimAlias = true;
         extraPackages = with pkgs; [
@@ -72,7 +72,6 @@ _:
       programs.fish.shellAliases."neogit" = "nvim +Neogit";
       programs.nushell.shellAliases."neogit" = "nvim +Neogit";
 
-      xdg.configFile."nvim/init.lua".enable = false;
       xdg.configFile."nvim".source =
         config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/modules/terminal/neovim/config";
 
