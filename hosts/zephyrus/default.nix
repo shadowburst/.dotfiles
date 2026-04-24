@@ -9,6 +9,7 @@
       self.nixosModules.shared
       self.nixosModules.terminal
       self.nixosModules.desktop
+      self.nixosModules.work
 
       inputs.home-manager.nixosModules.home-manager
       {
@@ -20,6 +21,7 @@
           self.homeModules.shared
           self.homeModules.terminal
           self.homeModules.desktop
+          self.homeModules.work
         ];
       }
     ];

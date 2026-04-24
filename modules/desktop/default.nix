@@ -35,7 +35,6 @@
         pdfarranger
         proton-vpn
         simple-scan
-        tableplus
         video-downloader
       ];
 
