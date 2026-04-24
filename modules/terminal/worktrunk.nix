@@ -1,5 +1,4 @@
-_:
-{
+_: {
   flake.homeModules.worktrunk =
     { lib, pkgs, ... }:
     let
@@ -19,7 +18,7 @@ _:
       };
 
       programs.fish.shellAbbrs = {
-        wtc = "wt switch --create --base HEAD";
+        wtc = "wt switch --no-cd --base HEAD --create";
       };
       programs.fish.interactiveShellInit = ''
         ${lib.getExe pkgs.worktrunk} config shell init fish | source
