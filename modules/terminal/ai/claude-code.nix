@@ -1,10 +1,10 @@
-_:
-{
+_: {
   flake.homeModules.claude-code =
     { lib, pkgs, ... }:
     {
       programs.claude-code = {
         enable = true;
+        skills = ./skills;
         agents = {
           code-reviewer = ''
             ---

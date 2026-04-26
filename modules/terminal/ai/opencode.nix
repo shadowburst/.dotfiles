@@ -1,10 +1,10 @@
-_:
-{
+_: {
   flake.homeModules.opencode =
     { lib, pkgs, ... }:
     {
       programs.opencode = {
         enable = true;
+        skills = ./skills;
         settings = {
           permission.edit = "ask";
         };

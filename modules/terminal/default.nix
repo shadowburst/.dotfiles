@@ -13,9 +13,9 @@
     { lib, pkgs, ... }:
     {
       imports = [
+        self.homeModules.ai
         self.homeModules.bash
         self.homeModules.btop
-        self.homeModules.claude-code
         self.homeModules.comma
         self.homeModules.eza
         self.homeModules.fish
@@ -23,7 +23,6 @@
         self.homeModules.git
         self.homeModules.nushell
         self.homeModules.neovim
-        self.homeModules.opencode
         self.homeModules.sesh
         self.homeModules.starship
         self.homeModules.television
