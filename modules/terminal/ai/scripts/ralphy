@@ -1001,6 +1001,11 @@ check_requirements() {
       log_error "GitHub CLI (gh) is required. Install from https://cli.github.com/"
       exit 1
     fi
+    if [[ "$PARALLEL" == true ]]; then
+      log_error "--parallel is incompatible with --github (AI-driven selection is serial)."
+      log_info "Drop --parallel, or use --prd/--yaml for parallel mode."
+      exit 1
+    fi
     ;;
   esac
 
@@ -1290,6 +1295,38 @@ get_github_issue_body() {
   local task=$1
   local issue_num="${task%%:*}"
   gh issue view "$issue_num" --repo "$GITHUB_REPO" --json body --jq '.body' 2>/dev/null || echo ""
+}
+
+# Parse <issue-complete>/<issue-incomplete> tags from AI output and act
+# on them via gh. Called after the AI returns in GitHub (RALPH) mode.
+handle_github_outcome_tags() {
+  local result=$1
+
+  local complete_num
+  complete_num=$(printf '%s' "$result" | grep -oE '<issue-complete>[0-9]+</issue-complete>' | tail -n1 | grep -oE '[0-9]+' || true)
+
+  if [[ -n "$complete_num" ]]; then
+    log_info "AI signaled completion of issue #$complete_num — closing"
+    gh issue close "$complete_num" --repo "$GITHUB_REPO" 2>/dev/null ||
+      log_warn "Failed to close issue #$complete_num"
+    return 0
+  fi
+
+  local incomplete_block incomplete_num incomplete_notes
+  incomplete_block=$(printf '%s' "$result" | perl -0777 -ne 'print $1 if /<issue-incomplete\s+number="(\d+)">(.*?)<\/issue-incomplete>/s' 2>/dev/null || true)
+  incomplete_num=$(printf '%s' "$result" | perl -0777 -ne 'print $1 if /<issue-incomplete\s+number="(\d+)">/' 2>/dev/null || true)
+  incomplete_notes=$(printf '%s' "$result" | perl -0777 -ne 'print $1 if /<issue-incomplete\s+number="\d+">(.*?)<\/issue-incomplete>/s' 2>/dev/null || true)
+
+  if [[ -n "$incomplete_num" ]]; then
+    log_info "AI signaled partial progress on issue #$incomplete_num — commenting"
+    gh issue comment "$incomplete_num" --repo "$GITHUB_REPO" --body "$incomplete_notes" >/dev/null 2>&1 ||
+      log_warn "Failed to comment on issue #$incomplete_num"
+    return 0
+  fi
+
+  if [[ "$result" != *"<promise>COMPLETE</promise>"* ]]; then
+    log_warn "AI did not emit an outcome tag (<issue-complete>, <issue-incomplete>, or <promise>COMPLETE</promise>); leaving issues untouched"
+  fi
 }
 
 # ============================================
@@ -1601,79 +1638,137 @@ $never_touch
 
   # Add context based on PRD source
   case "$PRD_SOURCE" in
-  markdown)
+  markdown | yaml)
     prompt="@${PRD_FILE} @$PROGRESS_FILE"
-    ;;
-  yaml)
-    prompt="@${PRD_FILE} @$PROGRESS_FILE"
-    ;;
-  github)
-    # For GitHub issues, we include the issue body
-    local issue_body=""
-    if [[ -n "$task_override" ]]; then
-      issue_body=$(get_github_issue_body "$task_override")
-    fi
-    prompt="Task from GitHub Issue: $task_override
-
-Issue Description:
-$issue_body
-
-@$PROGRESS_FILE"
-    ;;
-  esac
-
-  prompt="$prompt
+    prompt="$prompt
 1. Find the highest-priority incomplete task and implement it."
 
-  local step=2
+    local step=2
 
-  if [[ "$SKIP_TESTS" == false ]]; then
-    prompt="$prompt
+    if [[ "$SKIP_TESTS" == false ]]; then
+      prompt="$prompt
 $step. Write tests for the feature.
 $((step + 1)). Run tests and ensure they pass before proceeding."
-    step=$((step + 2))
-  fi
+      step=$((step + 2))
+    fi
 
-  if [[ "$SKIP_LINT" == false ]]; then
-    prompt="$prompt
+    if [[ "$SKIP_LINT" == false ]]; then
+      prompt="$prompt
 $step. Run linting and ensure it passes before proceeding."
-    step=$((step + 1))
-  fi
+      step=$((step + 1))
+    fi
 
-  # Adjust completion step based on PRD source
-  case "$PRD_SOURCE" in
-  markdown)
-    prompt="$prompt
+    if [[ "$PRD_SOURCE" == "markdown" ]]; then
+      prompt="$prompt
 $step. Update the PRD to mark the task as complete (change '- [ ]' to '- [x]')."
-    ;;
-  yaml)
-    prompt="$prompt
+    else
+      prompt="$prompt
 $step. Update ${PRD_FILE} to mark the task as completed (set completed: true)."
-    ;;
-  github)
+    fi
+
+    step=$((step + 1))
+
     prompt="$prompt
-$step. The task will be marked complete automatically. Just note the completion in $PROGRESS_FILE."
-    ;;
-  esac
-
-  step=$((step + 1))
-
-  prompt="$prompt
 $step. Append your progress to $PROGRESS_FILE.
 $((step + 1)). Commit your changes with a descriptive message.
 ONLY WORK ON A SINGLE TASK."
 
-  if [[ "$SKIP_TESTS" == false ]]; then
-    prompt="$prompt Do not proceed if tests fail."
-  fi
-  if [[ "$SKIP_LINT" == false ]]; then
-    prompt="$prompt Do not proceed if linting fails."
-  fi
+    if [[ "$SKIP_TESTS" == false ]]; then
+      prompt="$prompt Do not proceed if tests fail."
+    fi
+    if [[ "$SKIP_LINT" == false ]]; then
+      prompt="$prompt Do not proceed if linting fails."
+    fi
 
-  prompt="$prompt
+    prompt="$prompt
 If ALL tasks in the PRD are complete, output <promise>COMPLETE</promise>."
+    ;;
+  github)
+    prompt+="$(build_github_ralph_section)"
+    ;;
+  esac
 
   echo "$prompt"
+}
+
+# Build the GitHub-issues "RALPH" prompt section: issues JSON + recent
+# RALPH commits + selection/execution/commit/issue rules. The AI picks
+# the task itself from the inlined JSON.
+build_github_ralph_section() {
+  local issues_json
+  local list_args=(--repo "$GITHUB_REPO" --state open --json number,title,body,labels,createdAt --limit 200)
+  [[ -n "$GITHUB_LABEL" ]] && list_args+=(--label "$GITHUB_LABEL")
+  issues_json=$(gh issue list "${list_args[@]}" 2>/dev/null || echo "[]")
+  [[ -z "$issues_json" ]] && issues_json="[]"
+
+  local commits
+  commits=$(git log --all --grep='^RALPH:' -n 10 --format='%H %ai%n%s%n%b%n---' 2>/dev/null || true)
+  [[ -z "$commits" ]] && commits="No prior RALPH commits."
+
+  cat <<RALPH_EOF
+
+# ISSUES
+
+Open issues (JSON):
+\`\`\`json
+$issues_json
+\`\`\`
+
+Last 10 RALPH commits:
+\`\`\`
+$commits
+\`\`\`
+
+# TASK SELECTION
+
+Pick the next task. Prioritize tasks in this order:
+
+1. Critical bugfixes
+2. Tracer bullets for new features
+
+Tracer bullets comes from the Pragmatic Programmer. When building systems, you want to write code that gets you feedback as quickly as possible. Tracer bullets are small slices of functionality that go through all layers of the system, allowing you to test and validate your approach early. This helps in identifying potential issues and ensures that the overall architecture is sound before investing significant time in development.
+
+TL;DR - build a tiny, end-to-end slice of the feature first, then expand it out.
+
+3. Polish and quick wins
+4. Refactors
+
+If all tasks are complete, output <promise>COMPLETE</promise> and stop.
+
+# EXPLORATION
+
+Explore the repo and fill your context window with relevant information that will allow you to complete the task.
+
+# EXECUTION
+
+Complete the task.
+
+# COMMIT
+
+Make a git commit. The commit message must:
+
+1. Start with \`RALPH:\` prefix
+2. Include task completed + issue reference (e.g. \`#123\`)
+3. Key decisions made
+4. Files changed
+5. Blockers or notes for next iteration
+
+Keep it concise.
+
+# THE ISSUE
+
+Do NOT call \`gh issue close\` or \`gh issue comment\` yourself. Instead, signal the outcome via one of the tags below; the runner handles the GitHub side.
+
+# FINAL RULES
+
+ONLY WORK ON A SINGLE TASK.
+
+Emit exactly ONE of these tags as the final line of your output:
+
+- \`<promise>COMPLETE</promise>\` — no open issues remain (no work selected).
+- \`<issue-complete>NUMBER</issue-complete>\` — task finished; the runner will close issue NUMBER.
+- \`<issue-incomplete number="NUMBER">progress notes here, multi-line ok</issue-incomplete>\` — partial progress; the runner will post the notes as a comment on issue NUMBER.
+RALPH_EOF
 }
 
 # ============================================
@@ -1936,10 +2031,13 @@ run_single_task() {
   echo "${DIM}    Completed: $completed | Remaining: $remaining${RESET}"
   echo "--------------------------------------------"
 
-  # Get current task for display
+  # Get current task for display. In GitHub mode the AI picks the task
+  # itself from the inlined issues JSON, so we just show a placeholder.
   local current_task
   if [[ -n "$task_name" ]]; then
     current_task="$task_name"
+  elif [[ "$PRD_SOURCE" == "github" ]]; then
+    current_task="AI selecting from $remaining open issues"
   else
     current_task=$(get_next_task)
   fi
@@ -2078,9 +2176,9 @@ run_single_task() {
       CODEX_LAST_MESSAGE_FILE=""
     fi
 
-    # Mark task complete for GitHub issues (since AI can't do it)
+    # GitHub mode: parse outcome tags and update the issue.
     if [[ "$PRD_SOURCE" == "github" ]]; then
-      mark_task_complete "$current_task"
+      handle_github_outcome_tags "$result"
     fi
 
     # Sync PRD to GitHub issue if configured
