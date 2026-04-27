@@ -32,6 +32,7 @@
         discord
         ente-auth
         gimp3
+        papers
         pdfarranger
         proton-vpn
         simple-scan
