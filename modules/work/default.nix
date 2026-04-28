@@ -16,6 +16,7 @@
       ];
 
       home.packages = with pkgs; [
+        pnpm
         stripe-cli
         tableplus
       ];
