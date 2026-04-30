@@ -10,6 +10,10 @@ _:
           pull.rebase = "true";
           user.name = "ShadowBurst";
           user.email = "37303345+shadowburst@users.noreply.github.com";
+          user.signingKey = "~/.ssh/id_ed25519.pub";
+          gpg.format = "ssh";
+          commit.gpgsign = true;
+          tag.gpgsign = true;
           difftool.codediff.cmd = ''nvim "$LOCAL" "$REMOTE" +"CodeDiff file $LOCAL $REMOTE"'';
           diff.tool = "codediff";
           mergetool.codediff.cmd = ''nvim "$MERGED" -c "CodeDiff merge \"$MERGED\""'';
