@@ -16,16 +16,29 @@ _:
           exit 1
         fi
 
-        dirname=$(basename "$path")
+        tab_title=$(basename "$path")
+
+        # Paths outside $HOME (and $HOME itself) get a plain new tab, no session.
+        case "$path" in
+          "$HOME"/*)
+            rel="''${path#$HOME/}"
+            session_key=$(printf '%s' "$rel" | tr '/' '-')
+            ;;
+          *)
+            kitten @ launch --type=tab --cwd="$path"
+            exit 0
+            ;;
+        esac
+
         session_dir="/tmp/kitty/sessions"
-        session_file="$session_dir/$dirname.kitty-session"
+        session_file="$session_dir/$session_key.kitty-session"
 
         mkdir -p "$session_dir"
 
         # Generate a session file if it doesn't exist yet
         if [ ! -f "$session_file" ]; then
           cat > "$session_file" <<EOF
-        new_tab $dirname - $EDITOR
+        new_tab $tab_title - $EDITOR
         cd $path
         launch $SHELL -c "$EDITOR; exec $SHELL"
 
