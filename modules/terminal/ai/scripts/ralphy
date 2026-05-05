@@ -1524,10 +1524,7 @@ run_subissue_iteration() {
   local issue_title="$RALPHY_DISPATCHED_TITLE"
   local current_task="#${issue_num}: ${issue_title}"
 
-  echo ""
-  echo "${BOLD}>>> Sub-issue #${issue_num} (epic #${RALPHY_EPIC})${RESET}"
-  echo "${DIM}    Title: ${issue_title}${RESET}"
-  echo "--------------------------------------------"
+  log_info "Active sub-issue: ${BOLD}#${issue_num}${RESET} ${DIM}(${issue_title})${RESET}"
 
   current_step="Thinking"
   tmpfile=$(mktemp)
@@ -1540,7 +1537,7 @@ run_subissue_iteration() {
     echo "${DIM}$prompt${RESET}"
     rm -f "$tmpfile"
     tmpfile=""
-    echo "noop"
+    RALPHY_LAST_OUTCOME="noop"
     return 0
   fi
 
@@ -1572,7 +1569,7 @@ run_subissue_iteration() {
       fi
       rm -f "$tmpfile"
       tmpfile=""
-      echo "fail"
+      RALPHY_LAST_OUTCOME="fail"
       return 1
     fi
 
@@ -1587,7 +1584,7 @@ run_subissue_iteration() {
       fi
       rm -f "$tmpfile"
       tmpfile=""
-      echo "fail"
+      RALPHY_LAST_OUTCOME="fail"
       return 1
     fi
 
@@ -1636,15 +1633,15 @@ run_subissue_iteration() {
     local outcome_code=0
     handle_subissue_outcome "$result" "$issue_num" || outcome_code=$?
     case $outcome_code in
-    0) echo "complete" ;;
-    1) echo "incomplete" ;;
-    2) echo "nowork" ;;
-    *) echo "noop" ;;
+    0) RALPHY_LAST_OUTCOME="complete" ;;
+    1) RALPHY_LAST_OUTCOME="incomplete" ;;
+    2) RALPHY_LAST_OUTCOME="nowork" ;;
+    *) RALPHY_LAST_OUTCOME="noop" ;;
     esac
     return 0
   done
 
-  echo "fail"
+  RALPHY_LAST_OUTCOME="fail"
   return 1
 }
 
@@ -1694,7 +1691,9 @@ run_epic_loop() {
       SUBISSUE_PROCESSED[$RALPHY_DISPATCHED_ISSUE]=1
 
       local outcome
-      outcome=$(run_subissue_iteration | tail -n 1)
+      RALPHY_LAST_OUTCOME=""
+      run_subissue_iteration || true
+      outcome="$RALPHY_LAST_OUTCOME"
 
       case "$outcome" in
       complete)
