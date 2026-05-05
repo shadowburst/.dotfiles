@@ -38,6 +38,10 @@ REPO=""           # owner/repo; defaults to `gh repo view` of cwd
 BASE="main"       # base branch the epic PR targets
 EPIC_FILTER=""    # if set, only this epic number is processed
 
+# Pre-push review/fix loop
+PRE_PUSH_REVIEW_ENABLED=true
+REVIEW_ROUNDS=3
+
 # Browser automation (agent-browser)
 BROWSER_ENABLED="auto" # auto, true, false
 
@@ -80,6 +84,10 @@ retry_count=0
 RALPHY_DISPATCHED_ISSUE=""
 RALPHY_DISPATCHED_TITLE=""
 RALPHY_DISPATCHED_JSON=""
+
+# Pre-push review state.
+RALPHY_PRE_PUSH_UNRESOLVED=""
+RALPHY_LAST_PR_URL=""
 
 # Disclaimer prefixed to every comment ralphy posts on a GitHub issue.
 RALPHY_AI_COMMENT_DISCLAIMER="> *This comment was posted automatically by AI.*"
@@ -334,6 +342,14 @@ load_ralphy_boundaries() {
   fi
 }
 
+load_ralphy_command() {
+  local cmd_key="$1"
+  [[ ! -f "$CONFIG_FILE" ]] && return
+  if command -v yq &>/dev/null; then
+    yq -r ".commands.$cmd_key // \"\"" "$CONFIG_FILE" 2>/dev/null || true
+  fi
+}
+
 load_browser_setting() {
   [[ ! -f "$CONFIG_FILE" ]] && echo "auto" && return
   if command -v yq &>/dev/null; then
@@ -488,6 +504,8 @@ ${BOLD}OPTIONS:${RESET}
   --max-iterations N   Stop after N sub-issue iterations (0 = unlimited)
   --max-retries N      Max retries per sub-issue on failure (default: 3)
   --retry-delay N      Seconds between retries (default: 5)
+  --review-rounds N    Max pre-push review/fix rounds per epic (default: 3)
+  --no-pre-push-review Skip the pre-push review/fix loop entirely
   --dry-run            Show what would be done without invoking the AI
   --browser            Enable browser automation (requires agent-browser)
   --no-browser         Disable browser automation
@@ -555,6 +573,8 @@ parse_args() {
     --max-iterations) MAX_ITERATIONS="${2:-0}"; shift 2 ;;
     --max-retries)    MAX_RETRIES="${2:-3}"; shift 2 ;;
     --retry-delay)    RETRY_DELAY="${2:-5}"; shift 2 ;;
+    --review-rounds)  REVIEW_ROUNDS="${2:-3}"; shift 2 ;;
+    --no-pre-push-review) PRE_PUSH_REVIEW_ENABLED=false; shift ;;
     -v | --verbose)   VERBOSE=true; shift ;;
     -h | --help)      show_help; exit 0 ;;
     --version)        show_version; exit 0 ;;
@@ -1047,6 +1067,8 @@ open_epic_pr() {
   local -n _completed_subs=$4
   local draft=$5
 
+  RALPHY_LAST_PR_URL=""
+
   log_info "Pushing $branch and opening pull request"
 
   git push -u origin "$branch" >/dev/null 2>&1 || {
@@ -1077,8 +1099,8 @@ open_epic_pr() {
     return 1
   }
 
+  RALPHY_LAST_PR_URL="$pr_url"
   log_success "Pull request opened: $pr_url"
-  echo "$pr_url"
 }
 
 # ============================================
@@ -1646,6 +1668,336 @@ run_subissue_iteration() {
 }
 
 # ============================================
+# PRE-PUSH REVIEW + FIX
+# ============================================
+
+# Run a configured local check. Captured output (capped to last 200 lines)
+# is appended to $out_file on failure. Returns the command's exit code.
+run_pre_push_check() {
+  local label="$1"
+  local cmd="$2"
+  local out_file="$3"
+  [[ -z "$cmd" ]] && return 0
+
+  log_info "Running ${BOLD}${label}${RESET}: ${DIM}${cmd}${RESET}"
+
+  local raw_log
+  raw_log=$(mktemp)
+  local rc=0
+  bash -c "$cmd" >"$raw_log" 2>&1 || rc=$?
+
+  if [[ $rc -eq 0 ]]; then
+    log_success "${label} passed"
+  else
+    log_warn "${label} failed (exit ${rc})"
+    {
+      printf '\n### %s failed (exit %s; cmd: %s)\n\n' "$label" "$rc" "$cmd"
+      printf '```\n'
+      tail -n 200 "$raw_log"
+      printf '```\n'
+    } >>"$out_file"
+  fi
+
+  rm -f "$raw_log"
+  return $rc
+}
+
+build_pre_push_review_prompt() {
+  local round=$1
+  local epic_num=$2
+  local epic_title=$3
+  local checks_output_file=$4
+  local prior_recap=$5
+
+  local prompt=""
+
+  if [[ -d "$RALPHY_DIR" ]]; then
+    local context
+    context=$(load_project_context)
+    if [[ -n "$context" ]]; then
+      prompt+="## Project Context
+$context
+
+"
+    fi
+
+    local rules
+    rules=$(load_ralphy_rules)
+    if [[ -n "$rules" ]]; then
+      prompt+="## Rules (you MUST follow these)
+$rules
+
+"
+    fi
+
+    local never_touch
+    never_touch=$(load_ralphy_boundaries "never_touch")
+    if [[ -n "$never_touch" ]]; then
+      prompt+="## Boundaries - Do NOT modify these files:
+$never_touch
+
+"
+    fi
+  fi
+
+  local failed_checks=""
+  if [[ -n "$checks_output_file" ]] && [[ -s "$checks_output_file" ]]; then
+    failed_checks=$(cat "$checks_output_file")
+  fi
+
+  prompt+=$(cat <<REVIEW_EOF
+
+# CONTEXT
+
+You are conducting a pre-push code review of the epic branch for epic
+#${epic_num} ("${epic_title}"). Treat the diff as if a colleague authored
+it — your job is to find real bugs, missing edge cases, and mismatches
+with the epic's intent. Skip nits and style debates.
+
+The branch has been built up by sub-issue commits but has NOT been pushed
+yet, and no PR exists yet. The runner will push and open the PR after
+this review pass converges.
+
+This is review round ${round} of at most ${REVIEW_ROUNDS}.
+
+# GATHERING CONTEXT
+
+- Read the cumulative diff against the base branch:
+  \`git diff ${BASE}...HEAD\`
+- Inspect the recent RALPH commits:
+  \`git log --grep='^RALPH' ${BASE}..HEAD\`
+- Read the epic parent issue and its sub-issues:
+  \`gh issue view ${epic_num} --repo ${REPO} --comments\`
+  Use \`gh issue view <sub#>\` for any sub-issue you need details on.
+REVIEW_EOF
+)
+
+  if [[ -n "$failed_checks" ]]; then
+    prompt+=$(cat <<REVIEW_EOF
+
+
+# FAILED LOCAL CHECKS
+
+The following configured checks failed. You MUST fix the underlying
+issues; do not silence them by tweaking the check itself.
+
+${failed_checks}
+REVIEW_EOF
+)
+  else
+    prompt+=$(cat <<'REVIEW_EOF'
+
+
+# LOCAL CHECKS
+
+No configured local checks failed (or none were configured). Focus the
+review on the diff itself: behaviour correctness against the epic intent,
+integration with adjacent code, and obvious bugs.
+REVIEW_EOF
+)
+  fi
+
+  if [[ -n "$prior_recap" ]]; then
+    prompt+=$(cat <<REVIEW_EOF
+
+
+# PRIOR ATTEMPTS (this run)
+
+${prior_recap}
+Do not repeat fixes that already failed; investigate further.
+REVIEW_EOF
+)
+  fi
+
+  prompt+=$(cat <<'REVIEW_EOF'
+
+
+# ACTION
+
+Review the diff. If you find anything worth fixing, fix it: edit files on
+the current branch and make a single git commit with a `RALPH-FIX:` prefix
+that summarises what you changed and why. Do NOT push and do NOT open a
+PR — the runner handles that.
+
+Stay strictly inside the epic's scope. Do NOT call `gh pr create`,
+`gh issue close`, `gh issue comment`, or `gh issue edit`.
+
+# OUTCOME REPORTING
+
+Signal the outcome of this review pass with EXACTLY ONE of the tags below
+as the final line of your output:
+
+- `<ralphy-fix-outcome>clean</ralphy-fix-outcome>` — diff looks good and
+  all local checks pass; nothing to fix.
+- `<ralphy-fix-outcome>fixed</ralphy-fix-outcome>` — you found and
+  committed fixes; the runner will re-run checks and may dispatch
+  another review round.
+- `<ralphy-fix-outcome>unresolved</ralphy-fix-outcome>` — you found
+  problems but cannot fix them in this round. Also emit a
+  `<ralphy-unresolved>...</ralphy-unresolved>` block describing what
+  remains and why.
+REVIEW_EOF
+)
+
+  echo "$prompt"
+}
+
+# Returns 0 if the branch is clean (push as-is), 1 on bailout (push as draft).
+run_pre_push_review() {
+  local epic=$1
+  local epic_title=$2
+
+  RALPHY_PRE_PUSH_UNRESOLVED=""
+
+  if [[ "$PRE_PUSH_REVIEW_ENABLED" != true ]]; then
+    log_debug "Pre-push review disabled"
+    return 0
+  fi
+
+  if [[ "$DRY_RUN" == true ]]; then
+    log_info "DRY RUN — skipping pre-push review"
+    return 0
+  fi
+
+  log_info "Pre-push review (max ${REVIEW_ROUNDS} rounds)"
+
+  local test_cmd lint_cmd build_cmd
+  test_cmd=$(load_ralphy_command "test")
+  lint_cmd=$(load_ralphy_command "lint")
+  build_cmd=$(load_ralphy_command "build")
+
+  local prior_recap=""
+  local round=0
+  while (( round < REVIEW_ROUNDS )); do
+    ((round++)) || true
+    log_info "Pre-push review round ${BOLD}${round}/${REVIEW_ROUNDS}${RESET}"
+
+    local checks_file
+    checks_file=$(mktemp)
+
+    [[ -n "$test_cmd"  ]] && run_pre_push_check "test"  "$test_cmd"  "$checks_file" || true
+    [[ -n "$lint_cmd"  ]] && run_pre_push_check "lint"  "$lint_cmd"  "$checks_file" || true
+    [[ -n "$build_cmd" ]] && run_pre_push_check "build" "$build_cmd" "$checks_file" || true
+
+    local head_before
+    head_before=$(git rev-parse HEAD 2>/dev/null || echo "")
+
+    local prompt
+    prompt=$(build_pre_push_review_prompt "$round" "$epic" "$epic_title" "$checks_file" "$prior_recap")
+    rm -f "$checks_file"
+
+    tmpfile=$(mktemp)
+    current_step="Reviewing"
+    local current_task="Pre-push review #${round}"
+
+    run_ai_command "$prompt" "$tmpfile"
+    monitor_progress "$tmpfile" "${current_task:0:40}" &
+    monitor_pid=$!
+    wait "$ai_pid" 2>/dev/null || true
+    kill "$monitor_pid" 2>/dev/null || true
+    wait "$monitor_pid" 2>/dev/null || true
+    monitor_pid=""
+    tput cr 2>/dev/null || printf "\r"
+    tput el 2>/dev/null || true
+
+    local result
+    result=$(cat "$tmpfile" 2>/dev/null || echo "")
+    rm -f "$tmpfile"
+    tmpfile=""
+    if [[ "$AI_ENGINE" == "codex" ]] && [[ -n "$CODEX_LAST_MESSAGE_FILE" ]]; then
+      rm -f "$CODEX_LAST_MESSAGE_FILE"
+      CODEX_LAST_MESSAGE_FILE=""
+    fi
+
+    if [[ -z "$result" ]]; then
+      log_warn "Pre-push review round ${round}: empty AI response → bailout"
+      RALPHY_PRE_PUSH_UNRESOLVED="(no AI output on round ${round})"
+      return 1
+    fi
+
+    local error_msg
+    if ! error_msg=$(check_for_errors "$result"); then
+      log_warn "Pre-push review round ${round}: API error: ${error_msg} → bailout"
+      RALPHY_PRE_PUSH_UNRESOLVED="API error during review: ${error_msg}"
+      return 1
+    fi
+
+    local parsed response
+    parsed=$(parse_ai_result "$result")
+    response=$(echo "$parsed" | sed '/^---TOKENS---$/,$d')
+    if [[ -n "$response" ]]; then
+      echo ""
+      echo "$response"
+    fi
+
+    local outcome="malformed"
+    if printf '%s' "$result" | grep -q '<ralphy-fix-outcome>clean</ralphy-fix-outcome>'; then
+      outcome="clean"
+    elif printf '%s' "$result" | grep -q '<ralphy-fix-outcome>fixed</ralphy-fix-outcome>'; then
+      outcome="fixed"
+    elif printf '%s' "$result" | grep -q '<ralphy-fix-outcome>unresolved</ralphy-fix-outcome>'; then
+      outcome="unresolved"
+    fi
+
+    case "$outcome" in
+    clean)
+      log_success "Pre-push review: clean (round ${round})"
+      return 0
+      ;;
+    fixed)
+      local head_after
+      head_after=$(git rev-parse HEAD 2>/dev/null || echo "")
+      if [[ "$head_after" == "$head_before" ]]; then
+        log_info "AI reported 'fixed' but HEAD unchanged → treating as clean"
+        return 0
+      fi
+      log_info "AI committed fixes; re-checking next round"
+      prior_recap+="- Round ${round}: fixed (HEAD ${head_before:0:7} → ${head_after:0:7})"$'\n'
+      ;;
+    unresolved | malformed)
+      local note
+      note=$(printf '%s' "$result" | perl -0777 -ne 'print $1 if /<ralphy-unresolved>(.*?)<\/ralphy-unresolved>/s' 2>/dev/null || true)
+      if [[ -z "$note" ]]; then
+        if [[ "$outcome" == "malformed" ]]; then
+          note="(AI did not emit a valid outcome tag on round ${round}.)"
+        else
+          note="(AI signaled unresolved but did not provide an unresolved block on round ${round}.)"
+        fi
+      fi
+      log_warn "Pre-push review round ${round}: ${outcome} → bailout"
+      RALPHY_PRE_PUSH_UNRESOLVED="$note"
+      return 1
+      ;;
+    esac
+  done
+
+  log_warn "Pre-push review hit round cap (${REVIEW_ROUNDS}) without converging"
+  RALPHY_PRE_PUSH_UNRESOLVED="Reached --review-rounds cap (${REVIEW_ROUNDS}) without convergence."
+  return 1
+}
+
+post_pre_push_unresolved_comment() {
+  local pr_url=$1
+  local notes=$2
+  [[ -z "$pr_url" ]] && return 0
+  [[ -z "$notes" ]] && return 0
+
+  local body
+  body="${RALPHY_AI_COMMENT_DISCLAIMER}
+
+ralphy stopped pre-push review without converging. Opening as draft for human follow-up.
+
+<details><summary>Unresolved</summary>
+
+${notes}
+
+</details>"
+
+  gh pr comment "$pr_url" --repo "$REPO" --body "$body" >/dev/null 2>&1 || \
+    log_warn "Failed to post unresolved comment on ${pr_url}"
+}
+
+# ============================================
 # EPIC LOOP
 # ============================================
 
@@ -1738,10 +2090,19 @@ run_epic_loop() {
       continue
     fi
 
+    local pre_push_bailed=false
+    run_pre_push_review "$epic" "$epic_title" || pre_push_bailed=true
+
     local draft="false"
     [[ "$partial" == true ]] && draft="true"
-    open_epic_pr "$epic" "$epic_title" "$branch" completed_subs "$draft" || \
+    [[ "$pre_push_bailed" == true ]] && draft="true"
+    if open_epic_pr "$epic" "$epic_title" "$branch" completed_subs "$draft"; then
+      if [[ "$pre_push_bailed" == true ]]; then
+        post_pre_push_unresolved_comment "$RALPHY_LAST_PR_URL" "$RALPHY_PRE_PUSH_UNRESOLVED"
+      fi
+    else
       log_warn "Epic #${epic}: PR creation failed"
+    fi
 
     # Move back to base for the next epic to start cleanly.
     git checkout "$BASE" >/dev/null 2>&1 || true
