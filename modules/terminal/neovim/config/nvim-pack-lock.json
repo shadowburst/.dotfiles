@@ -58,8 +58,9 @@
       "src": "https://github.com/nvim-mini/mini.nvim"
     },
     "neogit": {
-      "rev": "88000e7e60177558d1b428a0d561c92e5d81341e",
-      "src": "https://github.com/NeogitOrg/neogit"
+      "rev": "172cbdc5999d279e58e1e6fbb9c43052444b47b6",
+      "src": "https://github.com/NeogitOrg/neogit",
+      "version": "'172cbdc5999d279e58e1e6fbb9c43052444b47b6'"
     },
     "noice.nvim": {
       "rev": "7bfd942445fb63089b59f97ca487d605e715f155",
@@ -138,7 +139,7 @@
       "src": "https://github.com/folke/which-key.nvim"
     },
     "yazi.nvim": {
-      "rev": "d6ffa819eac0acc071664aa3d8a10c02f66ee0b6",
+      "rev": "37290c539dbc5ea6f4c4ef10ffe1de25cab33015",
       "src": "https://github.com/mikavilpas/yazi.nvim"
     }
   }

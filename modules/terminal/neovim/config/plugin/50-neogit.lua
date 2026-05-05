@@ -1,5 +1,9 @@
 vim.pack.add({
-  "https://github.com/NeogitOrg/neogit",
+  "https://github.com/nvim-lua/plenary.nvim",
+  {
+    src = "https://github.com/NeogitOrg/neogit",
+    version = "172cbdc5999d279e58e1e6fbb9c43052444b47b6",
+  },
 })
 
 require("neogit").setup({
