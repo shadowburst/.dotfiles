@@ -1281,6 +1281,19 @@ mark_subissue_in_pr() {
     log_warn "Failed to flip labels on issue #$sub"
 }
 
+# Format an epic title as a conventional-commit PR title. Pass through if it
+# already starts with one of the standard types (case-sensitive, optional
+# scope, optional `!`); otherwise prepend `feat: `.
+format_pr_title() {
+  local epic_title=$1
+  local re='^(feat|fix|chore|docs|refactor|perf|test|build|ci|style|revert)(\([^)]+\))?!?: .+'
+  if [[ "$epic_title" =~ $re ]]; then
+    printf '%s' "$epic_title"
+  else
+    printf 'feat: %s' "$epic_title"
+  fi
+}
+
 # Push the epic branch and open (or update) the PR. $5 is "true" for draft.
 # When a PR already exists for the branch, the ralphy-managed Closes block is
 # rewritten in place via `gh pr edit`, leaving any human-added content outside
@@ -1359,7 +1372,7 @@ open_epic_pr() {
     --repo "$REPO" \
     --base "$BASE" \
     --head "$branch" \
-    --title "Epic #${epic}: ${epic_title}" \
+    --title "$(format_pr_title "$epic_title")" \
     --body "$body" \
     $draft_flag 2>/dev/null) || {
     log_warn "Failed to create PR (a PR may already exist for $branch)"
