@@ -34,9 +34,9 @@ RETRY_DELAY=5
 VERBOSE=false
 
 # GitHub / epic options
-REPO=""           # owner/repo; defaults to `gh repo view` of cwd
-BASE="main"       # base branch the epic PR targets
-EPIC_FILTER=""    # if set, only this epic number is processed
+REPO=""        # owner/repo; defaults to `gh repo view` of cwd
+BASE="main"    # base branch the epic PR targets
+EPIC_FILTER="" # if set, only this epic number is processed
 
 # Pre-push review/fix loop
 PRE_PUSH_REVIEW_ENABLED=true
@@ -93,13 +93,13 @@ RALPHY_LAST_PR_URL=""
 RALPHY_AI_COMMENT_DISCLAIMER="> *This comment was posted automatically by AI.*"
 
 # Caches populated per epic-loop pass.
-declare -A EPIC_PARENT_CREATED_AT=()  # epic# → ISO timestamp
-declare -A EPIC_PARENT_STATE=()       # epic# → OPEN | CLOSED | UNKNOWN
-declare -A EPIC_PARENT_TITLE=()       # epic# → title
-declare -A SUBISSUE_BLOCKERS=()       # sub# → space-separated blocker numbers
-declare -A SUBISSUE_BY_NUMBER=()      # sub# → JSON record
-declare -a EPIC_SUBS_ORDERED=()       # ordered sub-issues for the active epic
-declare -A ISSUE_STATE_CACHE=()       # issue# → state (cached gh issue view)
+declare -A EPIC_PARENT_CREATED_AT=() # epic# → ISO timestamp
+declare -A EPIC_PARENT_STATE=()      # epic# → OPEN | CLOSED | UNKNOWN
+declare -A EPIC_PARENT_TITLE=()      # epic# → title
+declare -A SUBISSUE_BLOCKERS=()      # sub# → space-separated blocker numbers
+declare -A SUBISSUE_BY_NUMBER=()     # sub# → JSON record
+declare -a EPIC_SUBS_ORDERED=()      # ordered sub-issues for the active epic
+declare -A ISSUE_STATE_CACHE=()      # issue# → state (cached gh issue view)
 
 # ============================================
 # UTILITY FUNCTIONS
@@ -553,13 +553,34 @@ parse_args() {
       AI_ENGINE="${2:-claude}"
       shift 2
       ;;
-    --opencode) AI_ENGINE="opencode"; shift ;;
-    --claude)   AI_ENGINE="claude"; shift ;;
-    --cursor | --agent) AI_ENGINE="cursor"; shift ;;
-    --codex)    AI_ENGINE="codex"; shift ;;
-    --qwen)     AI_ENGINE="qwen"; shift ;;
-    --droid)    AI_ENGINE="droid"; shift ;;
-    --copilot)  AI_ENGINE="copilot"; shift ;;
+    --opencode)
+      AI_ENGINE="opencode"
+      shift
+      ;;
+    --claude)
+      AI_ENGINE="claude"
+      shift
+      ;;
+    --cursor | --agent)
+      AI_ENGINE="cursor"
+      shift
+      ;;
+    --codex)
+      AI_ENGINE="codex"
+      shift
+      ;;
+    --qwen)
+      AI_ENGINE="qwen"
+      shift
+      ;;
+    --droid)
+      AI_ENGINE="droid"
+      shift
+      ;;
+    --copilot)
+      AI_ENGINE="copilot"
+      shift
+      ;;
     --sonnet)
       AI_ENGINE="claude"
       MODEL_OVERRIDE="sonnet"
@@ -569,17 +590,50 @@ parse_args() {
       MODEL_OVERRIDE="${2:-}"
       shift 2
       ;;
-    --dry-run)        DRY_RUN=true; shift ;;
-    --max-iterations) MAX_ITERATIONS="${2:-0}"; shift 2 ;;
-    --max-retries)    MAX_RETRIES="${2:-3}"; shift 2 ;;
-    --retry-delay)    RETRY_DELAY="${2:-5}"; shift 2 ;;
-    --review-rounds)  REVIEW_ROUNDS="${2:-3}"; shift 2 ;;
-    --no-pre-push-review) PRE_PUSH_REVIEW_ENABLED=false; shift ;;
-    -v | --verbose)   VERBOSE=true; shift ;;
-    -h | --help)      show_help; exit 0 ;;
-    --version)        show_version; exit 0 ;;
-    --init)           INIT_MODE=true; shift ;;
-    --config)         SHOW_CONFIG=true; shift ;;
+    --dry-run)
+      DRY_RUN=true
+      shift
+      ;;
+    --max-iterations)
+      MAX_ITERATIONS="${2:-0}"
+      shift 2
+      ;;
+    --max-retries)
+      MAX_RETRIES="${2:-3}"
+      shift 2
+      ;;
+    --retry-delay)
+      RETRY_DELAY="${2:-5}"
+      shift 2
+      ;;
+    --review-rounds)
+      REVIEW_ROUNDS="${2:-3}"
+      shift 2
+      ;;
+    --no-pre-push-review)
+      PRE_PUSH_REVIEW_ENABLED=false
+      shift
+      ;;
+    -v | --verbose)
+      VERBOSE=true
+      shift
+      ;;
+    -h | --help)
+      show_help
+      exit 0
+      ;;
+    --version)
+      show_version
+      exit 0
+      ;;
+    --init)
+      INIT_MODE=true
+      shift
+      ;;
+    --config)
+      SHOW_CONFIG=true
+      shift
+      ;;
     --add-rule)
       [[ -z "${2:-}" ]] && {
         log_error "--add-rule requires an argument"
@@ -588,8 +642,14 @@ parse_args() {
       ADD_RULE="$2"
       shift 2
       ;;
-    --browser)    BROWSER_ENABLED="true"; shift ;;
-    --no-browser) BROWSER_ENABLED="false"; shift ;;
+    --browser)
+      BROWSER_ENABLED="true"
+      shift
+      ;;
+    --no-browser)
+      BROWSER_ENABLED="false"
+      shift
+      ;;
     -*)
       log_error "Unknown option: $1"
       echo "Use --help for usage"
@@ -619,22 +679,40 @@ check_requirements() {
   # AI CLI
   case "$AI_ENGINE" in
   opencode)
-    command -v opencode &>/dev/null || { log_error "OpenCode CLI not found."; exit 1; }
+    command -v opencode &>/dev/null || {
+      log_error "OpenCode CLI not found."
+      exit 1
+    }
     ;;
   codex)
-    command -v codex &>/dev/null || { log_error "Codex CLI not found."; exit 1; }
+    command -v codex &>/dev/null || {
+      log_error "Codex CLI not found."
+      exit 1
+    }
     ;;
   cursor)
-    command -v agent &>/dev/null || { log_error "Cursor agent CLI not found."; exit 1; }
+    command -v agent &>/dev/null || {
+      log_error "Cursor agent CLI not found."
+      exit 1
+    }
     ;;
   qwen)
-    command -v qwen &>/dev/null || { log_error "Qwen-Code CLI not found."; exit 1; }
+    command -v qwen &>/dev/null || {
+      log_error "Qwen-Code CLI not found."
+      exit 1
+    }
     ;;
   droid)
-    command -v droid &>/dev/null || { log_error "Factory Droid CLI not found."; exit 1; }
+    command -v droid &>/dev/null || {
+      log_error "Factory Droid CLI not found."
+      exit 1
+    }
     ;;
   copilot)
-    command -v copilot &>/dev/null || { log_error "GitHub Copilot CLI not found."; exit 1; }
+    command -v copilot &>/dev/null || {
+      log_error "GitHub Copilot CLI not found."
+      exit 1
+    }
     ;;
   claude | *)
     command -v claude &>/dev/null || {
@@ -660,9 +738,18 @@ check_requirements() {
     esac
   fi
 
-  command -v jq &>/dev/null || { log_error "jq is required."; exit 1; }
-  command -v gh &>/dev/null || { log_error "GitHub CLI (gh) is required."; exit 1; }
-  command -v git &>/dev/null || { log_error "git is required."; exit 1; }
+  command -v jq &>/dev/null || {
+    log_error "jq is required."
+    exit 1
+  }
+  command -v gh &>/dev/null || {
+    log_error "GitHub CLI (gh) is required."
+    exit 1
+  }
+  command -v git &>/dev/null || {
+    log_error "git is required."
+    exit 1
+  }
 
   if ! git rev-parse --git-dir >/dev/null 2>&1; then
     log_error "Not a git repository."
@@ -732,10 +819,16 @@ parse_parent_ref() {
 
   local n
   n=$(printf '%s\n' "$block" | grep -oE 'https://github\.com/[^/]+/[^/]+/issues/[0-9]+' | head -1 | grep -oE '[0-9]+$' || true)
-  [[ -n "$n" ]] && { echo "$n"; return; }
+  [[ -n "$n" ]] && {
+    echo "$n"
+    return
+  }
 
   n=$(printf '%s\n' "$block" | grep -oE '[A-Za-z0-9._-]+/[A-Za-z0-9._-]+#[0-9]+' | head -1 | grep -oE '[0-9]+$' || true)
-  [[ -n "$n" ]] && { echo "$n"; return; }
+  [[ -n "$n" ]] && {
+    echo "$n"
+    return
+  }
 
   n=$(printf '%s\n' "$block" | grep -oE '#[0-9]+' | head -1 | tr -d '#' || true)
   [[ -n "$n" ]] && echo "$n"
@@ -754,11 +847,11 @@ parse_blocked_by() {
 
   [[ -z "$block" ]] && return
 
-  printf '%s\n' "$block" \
-    | grep -oE '#[0-9]+' \
-    | tr -d '#' \
-    | sort -u \
-    | tr '\n' ' '
+  printf '%s\n' "$block" |
+    grep -oE '#[0-9]+' |
+    tr -d '#' |
+    sort -u |
+    tr '\n' ' '
 }
 
 # Cached lookup of an issue's state (OPEN / CLOSED).
@@ -901,9 +994,11 @@ select_active_epic() {
   return 1
 }
 
-# True if any sub-issue of the given epic has all blockers closed.
+# True if any sub-issue of the given epic has all blockers resolved.
 epic_has_eligible_subissue() {
   local epic=$1
+  local ref
+  ref=$(resolve_epic_ref "$epic")
   local sub
   for sub in "${!SUBISSUE_BY_NUMBER[@]}"; do
     local rec_parent
@@ -911,21 +1006,63 @@ epic_has_eligible_subissue() {
     [[ -z "$rec_parent" ]] && rec_parent=$sub
     [[ "$rec_parent" != "$epic" ]] && continue
 
-    if subissue_blockers_clear "$sub"; then
+    if subissue_blockers_clear "$sub" "$ref"; then
       return 0
     fi
   done
   return 1
 }
 
-# True if every blocker of this sub-issue is CLOSED.
+# True if a RALPH marker commit for sub-issue $2 exists on ref $1.
+# Marker shape: subject `RALPH: <title>`, body contains `Closes #N`.
+# Both must match in the same commit (--all-match).
+subissue_marker_exists() {
+  local ref=$1
+  local n=$2
+  [[ -z "$ref" || -z "$n" ]] && return 1
+  git rev-parse --verify --quiet "$ref" >/dev/null 2>&1 || return 1
+  local hit
+  hit=$(git log "$ref" --all-match \
+    --grep="^RALPH:" \
+    --grep="Closes #${n}\\b" \
+    --format=%H 2>/dev/null | head -1)
+  [[ -n "$hit" ]]
+}
+
+# Resolve a ref usable for marker queries on the given epic. Prefers the local
+# branch, falls back to origin's tracking ref. Echoes empty if neither exists.
+resolve_epic_ref() {
+  local epic=$1
+  local title="${EPIC_PARENT_TITLE[$epic]:-}"
+  local branch
+  branch=$(epic_branch_name "$epic" "$title")
+  if git show-ref --verify --quiet "refs/heads/$branch"; then
+    echo "$branch"
+    return 0
+  fi
+  if git show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+    echo "origin/$branch"
+    return 0
+  fi
+  echo ""
+}
+
+# True if every blocker of this sub-issue is resolved. A blocker counts as
+# resolved if a RALPH marker commit for it exists on $2 (the active epic ref)
+# OR the issue is CLOSED on GitHub. The branch-marker check is the same-epic
+# shortcut: in-PR sub-issues whose code is on the shared epic branch unblock
+# downstream sub-issues immediately, without waiting for the epic PR to merge.
 subissue_blockers_clear() {
   local sub=$1
+  local ref="${2:-${RALPHY_EPIC_BRANCH:-}}"
   local blockers="${SUBISSUE_BLOCKERS[$sub]:-}"
   [[ -z "$blockers" ]] && return 0
 
   local b
   for b in $blockers; do
+    if [[ -n "$ref" ]] && subissue_marker_exists "$ref" "$b"; then
+      continue
+    fi
     local s
     s=$(get_issue_state "$b")
     [[ "$s" != "CLOSED" ]] && return 1
@@ -1045,7 +1182,92 @@ ensure_epic_branch() {
     }
   fi
 
-  echo "$branch"
+  RALPHY_EPIC_BRANCH="$branch"
+}
+
+# Guarantee a RALPH marker for sub-issue $n on the current branch.
+#
+# A "marker" = a commit whose subject starts with `RALPH:` AND whose message
+# contains `Closes #N`. The blocker resolver (subissue_marker_exists) requires
+# both signals in the same commit.
+#
+# Two paths, depending on whether the AI made a commit during this iteration:
+#
+#   - AI committed (HEAD moved past $pre_head): amend HEAD to ensure the
+#     `RALPH:` prefix on the subject and the `Closes #N` trailer in the body,
+#     preserving the AI's descriptive message. No-op if both are already there.
+#
+#   - AI did not commit (e.g. <promise>COMPLETE</promise>): create an empty
+#     marker `RALPH: <title>\n\nCloses #N` so downstream blockers still unblock.
+#
+# Idempotent: if a marker for $n is already present on the active ref, returns
+# without touching history.
+write_subissue_marker() {
+  local n=$1
+  local title=$2
+  local pre_head="${3:-}"
+  local ref="${RALPHY_EPIC_BRANCH:-HEAD}"
+
+  if subissue_marker_exists "$ref" "$n"; then
+    log_debug "Marker for #$n already on $ref; skipping"
+    return 0
+  fi
+
+  local cur_head=""
+  cur_head=$(git rev-parse HEAD 2>/dev/null || echo "")
+
+  if [[ -n "$pre_head" && -n "$cur_head" && "$cur_head" != "$pre_head" ]]; then
+    # AI committed at least one new commit. Amend HEAD to guarantee the
+    # marker shape while preserving the AI's prose.
+    local subject body new_subject new_body needs_amend=false
+    subject=$(git log -1 --format=%s 2>/dev/null || echo "")
+    body=$(git log -1 --format=%b 2>/dev/null || echo "")
+
+    if [[ "$subject" != RALPH:* ]]; then
+      new_subject="RALPH: $subject"
+      needs_amend=true
+    else
+      new_subject="$subject"
+    fi
+
+    new_body="$body"
+    if ! printf '%s\n%s' "$subject" "$body" | grep -qE "Closes #${n}\\b"; then
+      if [[ -n "$body" ]]; then
+        new_body="${body}"$'\n\n'"Closes #${n}"
+      else
+        new_body="Closes #${n}"
+      fi
+      needs_amend=true
+    fi
+
+    if [[ "$needs_amend" != true ]]; then
+      log_debug "HEAD already RALPH-shaped for #$n; no amend"
+      return 0
+    fi
+
+    if [[ -n "$new_body" ]]; then
+      git commit --amend -m "$new_subject" -m "$new_body" >/dev/null 2>&1 || {
+        log_warn "Failed to amend HEAD for #$n"
+        return 1
+      }
+    else
+      git commit --amend -m "$new_subject" >/dev/null 2>&1 || {
+        log_warn "Failed to amend HEAD for #$n"
+        return 1
+      }
+    fi
+    log_debug "Amended HEAD to enforce RALPH:/Closes #$n"
+    return 0
+  fi
+
+  # AI made no commit. Create an empty marker so the chain unblocks.
+  git commit --allow-empty \
+    -m "RALPH: ${title}" \
+    -m "Closes #${n}" >/dev/null 2>&1 || {
+    log_warn "Failed to write empty marker for #$n"
+    return 1
+  }
+  log_debug "Wrote empty marker for #$n"
 }
 
 # Strip ready-for-agent, add ralphy:in-pr (closure deferred to PR merge).
@@ -1055,11 +1277,14 @@ mark_subissue_in_pr() {
   gh issue edit "$sub" \
     --repo "$REPO" \
     --remove-label "$READY_LABEL" \
-    --add-label "$IN_PR_LABEL" >/dev/null 2>&1 || \
+    --add-label "$IN_PR_LABEL" >/dev/null 2>&1 ||
     log_warn "Failed to flip labels on issue #$sub"
 }
 
-# Push the epic branch and open the PR. $5 is "true" for draft.
+# Push the epic branch and open (or update) the PR. $5 is "true" for draft.
+# When a PR already exists for the branch, the ralphy-managed Closes block is
+# rewritten in place via `gh pr edit`, leaving any human-added content outside
+# the delimiters intact.
 open_epic_pr() {
   local epic=$1
   local epic_title=$2
@@ -1076,13 +1301,55 @@ open_epic_pr() {
     return 1
   }
 
-  local body
-  body="Closes #${epic}"$'\n'
+  # Ralphy-managed block. Everything between start/end markers is replaced on
+  # each run; everything outside is preserved.
+  local closes_block
+  closes_block="<!-- ralphy:start -->"$'\n'
+  closes_block+="Closes #${epic}"$'\n'
   local s
   for s in "${_completed_subs[@]}"; do
-    body+="Closes #${s}"$'\n'
+    closes_block+="Closes #${s}"$'\n'
   done
-  body+=$'\n'"Automated by ralphy. Sub-issues processed in dependency order on the epic branch."
+  closes_block+="<!-- ralphy:end -->"
+
+  # Look up an existing PR for this branch.
+  local existing
+  existing=$(gh pr list --repo "$REPO" --head "$branch" --state open \
+    --json number,body,url --limit 1 2>/dev/null || echo "[]")
+  local pr_count
+  pr_count=$(printf '%s' "$existing" | jq 'length' 2>/dev/null || echo 0)
+
+  if [[ "$pr_count" -gt 0 ]]; then
+    local pr_number pr_url existing_body new_body
+    pr_number=$(printf '%s' "$existing" | jq -r '.[0].number')
+    pr_url=$(printf '%s' "$existing" | jq -r '.[0].url')
+    existing_body=$(printf '%s' "$existing" | jq -r '.[0].body // ""')
+
+    if [[ "$existing_body" == *"<!-- ralphy:start -->"* && "$existing_body" == *"<!-- ralphy:end -->"* ]]; then
+      local prefix="${existing_body%%<!-- ralphy:start -->*}"
+      local suffix="${existing_body#*<!-- ralphy:end -->}"
+      new_body="${prefix}${closes_block}${suffix}"
+    elif [[ "$existing_body" == *"<!-- ralphy:start -->"* ]]; then
+      log_warn "PR #${pr_number} body has ralphy:start without ralphy:end; not editing"
+      return 1
+    else
+      new_body="${closes_block}"$'\n\n'"${existing_body}"
+    fi
+
+    log_info "Updating existing pull request #${pr_number}"
+    gh pr edit "$pr_number" --repo "$REPO" --body "$new_body" >/dev/null 2>&1 || {
+      log_warn "Failed to update existing PR #${pr_number}"
+      return 1
+    }
+    log_success "Pull request updated: $pr_url"
+    echo "$pr_url"
+    return 0
+  fi
+
+  log_info "Opening pull request"
+
+  local body
+  body="${closes_block}"$'\n\n'"Automated by ralphy. Sub-issues processed in dependency order on the epic branch."
 
   local draft_flag=""
   [[ "$draft" == "true" ]] && draft_flag="--draft"
@@ -1411,7 +1678,8 @@ $never_touch
   commits=$(git log --all --grep='^RALPH:' -n 10 --format='%H %ai%n%s%n%b%n---' 2>/dev/null || true)
   [[ -z "$commits" ]] && commits="No prior RALPH commits."
 
-  prompt+=$(cat <<RALPH_EOF
+  prompt+=$(
+    cat <<RALPH_EOF
 
 # CONTEXT
 
@@ -1486,7 +1754,7 @@ of your output:
 
 ONLY WORK ON THIS SINGLE SUB-ISSUE.
 RALPH_EOF
-)
+  )
 
   echo "$prompt"
 }
@@ -1515,10 +1783,10 @@ handle_subissue_outcome() {
     local body="${RALPHY_AI_COMMENT_DISCLAIMER}
 
 ${incomplete_notes}"
-    gh issue comment "$issue_num" --repo "$REPO" --body "$body" >/dev/null 2>&1 || \
+    gh issue comment "$issue_num" --repo "$REPO" --body "$body" >/dev/null 2>&1 ||
       log_warn "Failed to comment on issue #$issue_num"
     gh issue edit "$issue_num" --repo "$REPO" \
-      --remove-label "$READY_LABEL" --add-label "needs-info" >/dev/null 2>&1 || \
+      --remove-label "$READY_LABEL" --add-label "needs-info" >/dev/null 2>&1 ||
       log_warn "Failed to flip labels on issue #$issue_num"
     return 1
   fi
@@ -1745,7 +2013,8 @@ $never_touch
     failed_checks=$(cat "$checks_output_file")
   fi
 
-  prompt+=$(cat <<REVIEW_EOF
+  prompt+=$(
+    cat <<REVIEW_EOF
 
 # CONTEXT
 
@@ -1770,10 +2039,11 @@ This is review round ${round} of at most ${REVIEW_ROUNDS}.
   \`gh issue view ${epic_num} --repo ${REPO} --comments\`
   Use \`gh issue view <sub#>\` for any sub-issue you need details on.
 REVIEW_EOF
-)
+  )
 
   if [[ -n "$failed_checks" ]]; then
-    prompt+=$(cat <<REVIEW_EOF
+    prompt+=$(
+      cat <<REVIEW_EOF
 
 
 # FAILED LOCAL CHECKS
@@ -1783,9 +2053,10 @@ issues; do not silence them by tweaking the check itself.
 
 ${failed_checks}
 REVIEW_EOF
-)
+    )
   else
-    prompt+=$(cat <<'REVIEW_EOF'
+    prompt+=$(
+      cat <<'REVIEW_EOF'
 
 
 # LOCAL CHECKS
@@ -1794,11 +2065,12 @@ No configured local checks failed (or none were configured). Focus the
 review on the diff itself: behaviour correctness against the epic intent,
 integration with adjacent code, and obvious bugs.
 REVIEW_EOF
-)
+    )
   fi
 
   if [[ -n "$prior_recap" ]]; then
-    prompt+=$(cat <<REVIEW_EOF
+    prompt+=$(
+      cat <<REVIEW_EOF
 
 
 # PRIOR ATTEMPTS (this run)
@@ -1806,10 +2078,11 @@ REVIEW_EOF
 ${prior_recap}
 Do not repeat fixes that already failed; investigate further.
 REVIEW_EOF
-)
+    )
   fi
 
-  prompt+=$(cat <<'REVIEW_EOF'
+  prompt+=$(
+    cat <<'REVIEW_EOF'
 
 
 # ACTION
@@ -1837,7 +2110,7 @@ as the final line of your output:
   `<ralphy-unresolved>...</ralphy-unresolved>` block describing what
   remains and why.
 REVIEW_EOF
-)
+  )
 
   echo "$prompt"
 }
@@ -1868,15 +2141,15 @@ run_pre_push_review() {
 
   local prior_recap=""
   local round=0
-  while (( round < REVIEW_ROUNDS )); do
+  while ((round < REVIEW_ROUNDS)); do
     ((round++)) || true
     log_info "Pre-push review round ${BOLD}${round}/${REVIEW_ROUNDS}${RESET}"
 
     local checks_file
     checks_file=$(mktemp)
 
-    [[ -n "$test_cmd"  ]] && run_pre_push_check "test"  "$test_cmd"  "$checks_file" || true
-    [[ -n "$lint_cmd"  ]] && run_pre_push_check "lint"  "$lint_cmd"  "$checks_file" || true
+    [[ -n "$test_cmd" ]] && run_pre_push_check "test" "$test_cmd" "$checks_file" || true
+    [[ -n "$lint_cmd" ]] && run_pre_push_check "lint" "$lint_cmd" "$checks_file" || true
     [[ -n "$build_cmd" ]] && run_pre_push_check "build" "$build_cmd" "$checks_file" || true
 
     local head_before
@@ -1993,7 +2266,7 @@ ${notes}
 
 </details>"
 
-  gh pr comment "$pr_url" --repo "$REPO" --body "$body" >/dev/null 2>&1 || \
+  gh pr comment "$pr_url" --repo "$REPO" --body "$body" >/dev/null 2>&1 ||
     log_warn "Failed to post unresolved comment on ${pr_url}"
 }
 
@@ -2025,11 +2298,12 @@ run_epic_loop() {
     local epic_title="$RALPHY_EPIC_TITLE"
     log_info "Active epic: ${BOLD}#${epic}${RESET} ${DIM}(${epic_title})${RESET}"
 
-    local branch
-    branch=$(ensure_epic_branch "$epic" "$epic_title") || {
+    RALPHY_EPIC_BRANCH=""
+    ensure_epic_branch "$epic" "$epic_title" || {
       log_error "Could not prepare epic branch; aborting"
       break
     }
+    local branch="$RALPHY_EPIC_BRANCH"
 
     SUBISSUE_PROCESSED=()
     order_epic_subissues "$epic"
@@ -2042,6 +2316,9 @@ run_epic_loop() {
       ((iteration++)) || true
       SUBISSUE_PROCESSED[$RALPHY_DISPATCHED_ISSUE]=1
 
+      local pre_head=""
+      pre_head=$(git rev-parse HEAD 2>/dev/null || echo "")
+
       local outcome
       RALPHY_LAST_OUTCOME=""
       run_subissue_iteration || true
@@ -2050,6 +2327,7 @@ run_epic_loop() {
       case "$outcome" in
       complete)
         completed_subs+=("$RALPHY_DISPATCHED_ISSUE")
+        write_subissue_marker "$RALPHY_DISPATCHED_ISSUE" "$RALPHY_DISPATCHED_TITLE" "$pre_head"
         mark_subissue_in_pr "$RALPHY_DISPATCHED_ISSUE"
         ;;
       incomplete)
@@ -2061,6 +2339,7 @@ run_epic_loop() {
         # Sub-issue required no work. Treat as completed for PR purposes
         # and strip ready-for-agent so it's not re-picked.
         completed_subs+=("$RALPHY_DISPATCHED_ISSUE")
+        write_subissue_marker "$RALPHY_DISPATCHED_ISSUE" "$RALPHY_DISPATCHED_TITLE" "$pre_head"
         mark_subissue_in_pr "$RALPHY_DISPATCHED_ISSUE"
         ;;
       fail)
@@ -2201,12 +2480,12 @@ main() {
   local engine_display
   case "$AI_ENGINE" in
   opencode) engine_display="${CYAN}OpenCode${RESET}" ;;
-  cursor)   engine_display="${YELLOW}Cursor Agent${RESET}" ;;
-  codex)    engine_display="${BLUE}Codex${RESET}" ;;
-  qwen)     engine_display="${GREEN}Qwen-Code${RESET}" ;;
-  droid)    engine_display="${MAGENTA}Factory Droid${RESET}" ;;
-  copilot)  engine_display="${BLUE}GitHub Copilot${RESET}" ;;
-  *)        engine_display="${MAGENTA}Claude Code${RESET}" ;;
+  cursor) engine_display="${YELLOW}Cursor Agent${RESET}" ;;
+  codex) engine_display="${BLUE}Codex${RESET}" ;;
+  qwen) engine_display="${GREEN}Qwen-Code${RESET}" ;;
+  droid) engine_display="${MAGENTA}Factory Droid${RESET}" ;;
+  copilot) engine_display="${BLUE}GitHub Copilot${RESET}" ;;
+  *) engine_display="${MAGENTA}Claude Code${RESET}" ;;
   esac
   echo "Engine:  $engine_display"
   echo "Repo:    ${CYAN}$REPO${RESET}"
