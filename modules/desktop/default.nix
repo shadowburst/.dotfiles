@@ -12,6 +12,7 @@
       ];
 
       programs.gnome-disks.enable = true;
+      services.blueman.enable = true;
     };
 
   flake.homeModules.desktop =
@@ -40,6 +41,7 @@
       ];
 
       programs.brave.enable = true;
+      services.blueman-applet.enable = true;
 
       home.sessionVariables.BROWSER = "brave";
       home.sessionVariables.TERMINAL = "kitty";
