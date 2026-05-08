@@ -31,6 +31,9 @@ _: {
       boot.initrd.luks.devices."luks-6833b3fb-677d-417e-8fd3-8fb55d0fba12".device =
         "/dev/disk/by-uuid/6833b3fb-677d-417e-8fd3-8fb55d0fba12";
 
+      boot.initrd.luks.devices."luks-131a82b2-3093-4528-805f-b98ad2bc62ea".device =
+        "/dev/disk/by-uuid/131a82b2-3093-4528-805f-b98ad2bc62ea";
+
       fileSystems."/boot" = {
         device = "/dev/disk/by-uuid/E275-F417";
         fsType = "vfat";
