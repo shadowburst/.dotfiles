@@ -1,6 +1,6 @@
 { inputs, self, ... }:
 {
-  flake.nixosModules.lenovo-p14-configuration =
+  flake.nixosModules.lenovo-p14s-configuration =
     {
       lib,
       pkgs,
@@ -9,7 +9,7 @@
     {
       imports = [
         inputs.nixos-hardware.nixosModules.lenovo-thinkpad-p14s-amd-gen6
-        self.nixosModules.lenovo-p14-hardware
+        self.nixosModules.lenovo-p14s-hardware
       ];
 
       boot = {
@@ -36,6 +36,6 @@
         enable32Bit = true;
       };
 
-      networking.hostName = "lenovo-p14";
+      networking.hostName = "lenovo-p14s";
     };
 }

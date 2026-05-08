@@ -1,5 +1,5 @@
 _: {
-  flake.homeModules.lenovo-p14 =
+  flake.homeModules.lenovo-p14s =
     { lib, pkgs, ... }:
     {
       programs.brave = {
