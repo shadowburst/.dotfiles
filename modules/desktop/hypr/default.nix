@@ -5,6 +5,7 @@
     {
       imports = [
         self.nixosModules.hyprland
+        self.nixosModules.hyprwhspr-rs
       ];
 
       programs.seahorse.enable = true;
@@ -28,6 +29,7 @@
       imports = [
         self.homeModules.hypridle
         self.homeModules.hyprland
+        self.homeModules.hyprwhspr-rs
         self.homeModules.shikane
       ];
 
