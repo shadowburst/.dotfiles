@@ -5,7 +5,6 @@ _: {
       programs.opencode = {
         enable = true;
         settings = {
-          permission.edit = "ask";
           plugin = [ "superpowers@git+https://github.com/obra/superpowers.git" ];
         };
         tui = {
