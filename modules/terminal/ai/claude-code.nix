@@ -4,7 +4,6 @@ _: {
     {
       programs.claude-code = {
         enable = true;
-        skills = ./skills;
         agents = {
           code-reviewer = ''
             ---

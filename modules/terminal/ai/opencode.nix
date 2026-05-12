@@ -4,7 +4,6 @@ _: {
     {
       programs.opencode = {
         enable = true;
-        skills = ./skills;
         settings = {
           permission.edit = "ask";
           plugin = [ "superpowers@git+https://github.com/obra/superpowers.git" ];
