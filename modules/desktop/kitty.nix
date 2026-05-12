@@ -43,7 +43,7 @@ _: {
 
         new_tab
         cd $path
-        launch $SHELL -c "claude --dangerously-skip-permissions; exec $SHELL"
+        launch $SHELL -c "opencode --port; exec $SHELL"
 
         new_tab
         cd $path

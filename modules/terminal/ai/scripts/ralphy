@@ -25,8 +25,8 @@ SHOW_CONFIG=false
 ADD_RULE=""
 
 # Runtime options
-AI_ENGINE="claude"
-MODEL_OVERRIDE="sonnet"
+AI_ENGINE="opencode"
+MODEL_OVERRIDE="openai/gpt-5.4"
 DRY_RUN=false
 MAX_ITERATIONS=100 # 0 = unlimited; counts sub-issue iterations
 MAX_RETRIES=3
