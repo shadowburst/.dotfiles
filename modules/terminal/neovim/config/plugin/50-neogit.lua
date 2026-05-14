@@ -58,7 +58,7 @@ vim.api.nvim_create_autocmd("User", {
 vim.api.nvim_create_autocmd("FileType", {
   group = vim.api.nvim_create_augroup("neogit.hide_statuscolumn", { clear = true }),
   pattern = { "Neogit*" },
-  callback = function() vim.opt_local.statuscolumn = "" end,
+  callback = function() vim.b.snacks_statuscolumn_right = false end,
 })
 
 vim.api.nvim_create_autocmd("FileType", {
