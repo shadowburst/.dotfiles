@@ -1,9 +1,6 @@
 vim.pack.add({
   "https://github.com/nvim-lua/plenary.nvim",
-  {
-    src = "https://github.com/NeogitOrg/neogit",
-    version = "172cbdc5999d279e58e1e6fbb9c43052444b47b6",
-  },
+  "https://github.com/NeogitOrg/neogit",
 })
 
 require("neogit").setup({
@@ -68,11 +65,15 @@ vim.api.nvim_create_autocmd("FileType", {
   group = vim.api.nvim_create_augroup("neogit.reload_log_manual", { clear = true }),
   pattern = { "NeogitLogView" },
   callback = function(event)
-    vim.keymap.set(
+    Snacks.keymap.set(
       "n",
       "<c-r>",
-      function() require("neogit").action("fetch", "fetch_all_remotes", { "--prune" })() end,
-      { buffer = event.buf, silent = true }
+      require("neogit.lib.async").void(function()
+        require("neogit.popups.fetch.actions").fetch_all_remotes({
+          get_arguments = function() return { "--prune" } end,
+        })
+      end),
+      { buffer = event.buf, desc = "Fetch all remotes with prune" }
     )
   end,
 })
