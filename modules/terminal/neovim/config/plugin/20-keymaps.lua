@@ -32,3 +32,9 @@ Snacks.keymap.set("n", "<leader>xq", "<cmd>copen<cr>", { desc = "Quickfix list" 
 
 Snacks.keymap.set("n", "<leader>vr", "<cmd>restart<cr>", { desc = "Restart Neovim" })
 Snacks.keymap.set("n", "<leader>vu", vim.pack.update, { desc = "Update plugins" })
+Snacks.keymap.set(
+  "n",
+  "<leader>vx",
+  function() vim.pack.update(nil, { target = "lockfile" }) end,
+  { desc = "Update plugins" }
+)
