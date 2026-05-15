@@ -17,6 +17,7 @@ local picker_config = {
   hidden = true,
   ignored = true,
   exclude = {
+    ".worktrees/**",
     "storage/**",
     "node_modules/**",
     "vendor/**",
