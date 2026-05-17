@@ -61,7 +61,7 @@ _: {
           general."col.active_border" = lib.mkForce "$accent";
           general.border_size = 2;
           general.gaps_in = 2;
-          general.gaps_out = "0,20,0,20";
+          general.gaps_out = 0;
           general.layout = "scrolling";
 
           dwindle.force_split = 2;
@@ -70,9 +70,8 @@ _: {
           master.orientation = "left";
 
           scrolling.fullscreen_on_one_column = true;
-          scrolling.column_width = 1.0;
-          scrolling.focus_fit_method = 1;
-          scrolling.explicit_column_widths = "0.5, 1.0";
+          scrolling.focus_fit_method = 0;
+          scrolling.wrap_focus = false;
 
           decoration.blur = {
             enabled = true;
@@ -106,7 +105,7 @@ _: {
           input.touchpad.disable_while_typing = true;
           input.touchpad.drag_lock = true;
           input.touchpad.natural_scroll = true;
-          input.focus_on_close = 1;
+          input.focus_on_close = 0;
 
           gestures.workspace_swipe_distance = 200;
           gestures.workspace_swipe_min_speed_to_force = 10;
@@ -131,8 +130,7 @@ _: {
 
           gesture = [
             "3, vertical, workspace"
-            "3, left, dispatcher, layoutmsg, focus r"
-            "3, right, dispatcher, layoutmsg, focus l"
+            "3, horizontal, scrollMove"
           ];
 
           bindm = [
@@ -156,10 +154,8 @@ _: {
             "$mod, semicolon, layoutmsg, colresize +conf"
             "$mod SHIFT, comma, layoutmsg, swapcol l"
             "$mod SHIFT, semicolon, layoutmsg, swapcol r"
-            "$mod SHIFT, h, movewindow, l"
-            "$mod SHIFT, j, movewindow, d"
-            "$mod SHIFT, k, movewindow, u"
-            "$mod SHIFT, l, movewindow, r"
+            "$mod SHIFT, h, layoutmsg, consume_or_expel prev"
+            "$mod SHIFT, l, layoutmsg, consume_or_expel next"
 
             # Master keybinds
             # "$mod, h, movefocus, l"
