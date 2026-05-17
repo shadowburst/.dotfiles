@@ -31,6 +31,7 @@
 
             (defalias
               spc (tap-hold $tap-time $hold-time spc ralt)
+              caps (fork esc caps (lsft rsft))
 
               a (tap-hold $tap-time $hold-time a lalt)
               s (tap-hold $tap-time $hold-time s lmet)
@@ -43,11 +44,11 @@
              )
 
             (deflayer default
-              grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
-              tab  q    w    e    r    t    y    u    i    o    p    [    ]    \
-              caps @a   @s   @d   @f   g    h    @j   @k   @l   @;   '    ret
-              lsft z    x    c    v    b    n    m    ,    .    /    rsft
-              lctl lmet lalt           @spc           ralt rmet rctl
+              grv   1    2    3    4    5    6    7    8    9    0    -    =    bspc
+              tab   q    w    e    r    t    y    u    i    o    p    [    ]    \
+              @caps @a   @s   @d   @f   g    h    @j   @k   @l   @;   '    ret
+              lsft  z    x    c    v    b    n    m    ,    .    /    rsft
+              lctl  lmet lalt           @spc           ralt rmet rctl
             )
           '';
         };
