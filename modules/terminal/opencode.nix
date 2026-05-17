@@ -5,7 +5,7 @@ _: {
       programs.opencode = {
         enable = true;
         settings = {
-          plugin = [ "superpowers@git+https://github.com/obra/superpowers.git" ];
+          lsp = false;
         };
         tui = {
           keybinds = {
