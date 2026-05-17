@@ -13,7 +13,7 @@ A non-Nix file or directory owned by a tool or app and linked or referenced for 
 _Avoid_: Static asset, resource
 
 **Feature Module**:
-A Nix Module for one installable or configurable capability such as Neovim, Noctalia, Television, or Hyprland.
+A Nix Module for one installable or configurable capability such as Neovim, Noctalia, Television, Pi, or Hyprland.
 _Avoid_: App module, package module
 
 ## Relationships

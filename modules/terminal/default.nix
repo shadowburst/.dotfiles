@@ -24,6 +24,7 @@
         self.homeModules.nushell
         self.homeModules.neovim
         self.homeModules.opencode
+        self.homeModules.pi
         self.homeModules.sesh
         self.homeModules.starship
         self.homeModules.television

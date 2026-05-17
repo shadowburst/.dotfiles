@@ -1,0 +1,10 @@
+{
+  "lastChangelogVersion": "0.70.5",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.5",
+  "defaultThinkingLevel": "medium",
+  "theme": "catppuccin-mocha-transparent",
+  "doubleEscapeAction": "tree",
+  "quietStartup": true,
+  "hideThinkingBlock": true
+}
