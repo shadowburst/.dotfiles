@@ -21,10 +21,12 @@
     };
 
   flake.homeModules.hypr =
-    { lib, pkgs, ... }:
-    let
-      launch-default = pkgs.writeShellScriptBin "launch-default" (lib.fileContents ./bin/launch-default);
-    in
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     {
       imports = [
         self.homeModules.hypridle
@@ -33,9 +35,12 @@
         self.homeModules.shikane
       ];
 
-      home.packages = with pkgs; [
-        launch-default
+      home.file.".local/bin/launch-default".source =
+        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/hypr/bin/launch-default";
 
+      home.sessionPath = [ "$HOME/.local/bin" ];
+
+      home.packages = with pkgs; [
         nautilus
         gnome-calculator
         hyprpicker

@@ -11,7 +11,7 @@ _: {
 
       xdg.configFile = {
         "television/cable" = {
-          source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/modules/terminal/television/cable";
+          source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/television/cable";
           recursive = true;
         };
       };

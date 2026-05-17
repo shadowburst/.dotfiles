@@ -73,7 +73,7 @@ _: {
       programs.nushell.shellAliases."neogit" = "nvim +Neogit";
 
       xdg.configFile."nvim".source =
-        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/modules/terminal/neovim/config";
+        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/neovim";
 
       home.sessionVariables = {
         EDITOR = "nvim";

@@ -53,16 +53,16 @@ _: {
 
       xdg.configFile = {
         "noctalia/colors.json".source =
-          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/modules/desktop/noctalia/config/colors.json";
+          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/noctalia/colors.json";
         "noctalia/settings.json".source =
-          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/modules/desktop/noctalia/config/settings.json";
+          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/noctalia/settings.json";
 
         "noctalia/plugins.json".source =
-          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/modules/desktop/noctalia/config/plugins.json";
+          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/noctalia/plugins.json";
         "noctalia/plugins/pomodoro/settings.json".source =
-          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/modules/desktop/noctalia/config/plugins/pomodoro.json";
+          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/noctalia/plugins/pomodoro.json";
         "noctalia/plugins/screen-recorder/settings.json".source =
-          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/modules/desktop/noctalia/config/plugins/screen-recorder.json";
+          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/noctalia/plugins/screen-recorder.json";
       };
 
       home.sessionVariables.QT_AUDIO_BACKEND = "pulseaudio";
