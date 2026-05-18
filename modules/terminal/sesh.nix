@@ -8,12 +8,12 @@ _: {
           default_session = {
             startup_command = "$EDITOR";
             preview_command = "tree -a -L 1 -C --dirsfirst --sort=name --noreport {}";
-            windows = [ "opencode" ];
+            windows = [ "pi" ];
           };
           window = [
             {
-              name = "opencode";
-              startup_script = "opencode --port";
+              name = "pi";
+              startup_script = "pi";
             }
           ];
         };
