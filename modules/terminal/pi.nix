@@ -12,5 +12,8 @@ _: {
 
       home.file.".pi/agent/settings.json".source =
         config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/pi/settings.json";
+
+      home.file.".pi/agent/keybindings.json".source =
+        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/pi/keybindings.json";
     };
 }
