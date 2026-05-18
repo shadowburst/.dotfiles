@@ -49,7 +49,7 @@
     "customMessageText": "",
     "customMessageLabel": "lavender",
     "toolPendingBg": "mantle",
-    "toolSuccessBg": "#1e3328",
+    "toolSuccessBg": "mantle",
     "toolErrorBg": "#3a1f2a",
     "toolTitle": "lavender",
     "toolOutput": "subtext0",
@@ -65,8 +65,8 @@
     "mdHr": "surface1",
     "mdListBullet": "lavender",
 
-    "toolDiffAdded": "green",
-    "toolDiffRemoved": "red",
+    "toolDiffAdded": "#8bbc8b",
+    "toolDiffRemoved": "#c87591",
     "toolDiffContext": "overlay2",
 
     "syntaxComment": "overlay1",
