@@ -530,7 +530,8 @@ function validationEvidenceBlock(): string {
 - Record each command exactly, its result, and the relevant output summary.
 - If no meaningful automated verification exists, stop with the task implemented but unchecked unless the user explicitly authorizes manual verification.
 - After implementation and initial validation, call ralph_start_task_review with the implementation summary, commands run, and validation output so Ralph can start a fresh-session clean-eye review.
-- Do not call ralph_complete_task unless deterministic verification and clean-eye review both pass.`;
+- Do not call ralph_complete_task unless deterministic verification and clean-eye review both pass.
+- When calling ralph_complete_task, include finalValidationCommand so Ralph can rerun validation after the Feature Spec checkbox edit, or finalValidationEvidence when a rerun is unnecessary and explicitly confirmed.`;
 }
 
 function extractSection(markdown: string, heading: string): string {
@@ -668,7 +669,7 @@ Required loop:
 
 Completion tool guidance:
 - Use a Conventional Commit title like: ${conventionalTitleForTask(task)}
-- Include validation evidence and review summary in the tool arguments.
+- Include validation evidence, final validation command or evidence after the checkbox edit, and review summary in the tool arguments.
 - Do not edit the checkbox yourself; ralph_complete_task owns the task ledger update.`;
 }
 
@@ -732,6 +733,23 @@ async function commandTaskReview(args: string, ctx: ExtensionCommandContext) {
       await newCtx.sendUserMessage(reviewPrompt);
     },
   });
+}
+
+export function isConventionalCommitTitle(title: string): boolean {
+  return /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([^)]+\))?: .+/.test(title);
+}
+
+export function taskCommitBody(taskNumber: number, validationEvidence: string, finalValidationEvidence: string, reviewSummary: string): string {
+  return `Ralph task: ${taskNumber}\n\nValidation evidence:\n${validationEvidence}\n\nFinal validation after checkbox edit:\n${finalValidationEvidence}\n\nReview summary:\n${reviewSummary}`;
+}
+
+export async function finalValidationAfterCheckbox(root: string, command?: string, evidence?: string): Promise<string> {
+  if (command?.trim()) {
+    const { stdout, stderr } = await runCombined("sh", ["-lc", command], root, 120_000);
+    return `Command after checkbox edit: ${command}\nResult: PASS\n${stdout ? `stdout:\n${stdout}\n` : ""}${stderr ? `stderr:\n${stderr}` : ""}`.trim();
+  }
+  if (evidence?.trim()) return evidence;
+  throw new Error("Ralph task completion requires final validation after the checkbox edit: provide finalValidationCommand or finalValidationEvidence.");
 }
 
 function prBodyTemplate(state: RalphState, specPath: string): string {
@@ -961,24 +979,32 @@ export default function (pi: ExtensionAPI) {
       specPath: Type.String({ description: "Feature Spec path, relative to the current Ralph worktree or absolute." }),
       taskNumber: Type.Number({ description: "The verified task number to mark complete." }),
       commitTitle: Type.String({ description: "Conventional Commit title for this task." }),
-      validationEvidence: Type.String({ description: "Commands/checks run and their passing results." }),
+      validationEvidence: Type.String({ description: "Commands/checks run and their passing results before completion." }),
+      finalValidationCommand: Type.Optional(Type.String({ description: "Validation command for Ralph to rerun after the Feature Spec checkbox edit and before committing." })),
+      finalValidationEvidence: Type.Optional(Type.String({ description: "Explicit final validation confirmation when no rerun is necessary after the Feature Spec checkbox edit." })),
       reviewSummary: Type.String({ description: "Clean-eye review PASS summary." }),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx: ExtensionContext) {
+      if (!isConventionalCommitTitle(params.commitTitle)) throw new Error(`Ralph task commit title is not Conventional Commit style: ${params.commitTitle}`);
+      if (!params.validationEvidence.trim()) throw new Error("Ralph task completion requires deterministic validation evidence.");
+      if (!params.reviewSummary.trim()) throw new Error("Ralph task completion requires a clean-eye review PASS summary.");
+
       const root = await repoRoot(ctx.cwd);
       const spec = resolveInRepo(root, params.specPath.replace(/^@/, ""));
+      const specKey = canonicalSpecKey(root, spec);
+      const cachePath = statePath(await repoIdentity(root), specKey);
+      const state = await readState(cachePath, specKey);
+      if (!state) throw new Error(`No Ralph state found for ${spec}; refusing to complete a verified task without metadata.`);
+
       await checkTask(spec, params.taskNumber);
+      const finalValidationEvidence = await finalValidationAfterCheckbox(root, params.finalValidationCommand, params.finalValidationEvidence);
       await git(["add", "-A"], root);
       const status = await git(["status", "--porcelain"], root);
       if (!status) throw new Error("No changes to commit after checking the task. Refusing to create an empty Ralph task commit.");
-      const body = `Ralph task: ${params.taskNumber}\n\nValidation evidence:\n${params.validationEvidence}\n\nReview summary:\n${params.reviewSummary}`;
+      const body = taskCommitBody(params.taskNumber, params.validationEvidence, finalValidationEvidence, params.reviewSummary);
       await git(["commit", "-m", params.commitTitle, "-m", body], root, 120_000);
       const sha = await git(["rev-parse", "HEAD"], root);
 
-      const canonicalSpec = resolveInRepo(root, params.specPath.replace(/^@/, ""));
-      const specKey = canonicalSpecKey(root, canonicalSpec);
-      const cachePath = statePath(await repoIdentity(root), specKey);
-      const state = await readState(cachePath, specKey);
       let followUp = "";
       if (state) {
         state.taskCommits[String(params.taskNumber)] = sha;
@@ -1042,7 +1068,7 @@ export default function (pi: ExtensionAPI) {
       body: Type.String({ description: "Detailed Pull Request body derived mostly from the Feature Spec." }),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx: ExtensionContext) {
-      if (!/^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([^)]+\))?: .+/.test(params.title)) {
+      if (!isConventionalCommitTitle(params.title)) {
         throw new Error(`Pull Request title is not Conventional Commit style: ${params.title}`);
       }
       const root = await repoRoot(ctx.cwd);
