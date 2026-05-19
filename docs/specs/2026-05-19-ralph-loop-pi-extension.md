@@ -136,6 +136,54 @@ The Ralph Loop Pi Extension SHALL isolate implementation work in a dedicated git
 - **THEN** Ralph creates a feature branch and worktree under `.worktrees/ralph-<spec-slug>`
 - **AND** implementation occurs in that worktree rather than the original checkout.
 
+#### Scenario: Dirty original checkout before first worktree creation
+
+- **WHEN** the user invokes Ralph outside an existing Ralph worktree
+- **AND** no Ralph worktree exists yet for that Feature Spec
+- **AND** the original checkout has tracked or untracked changes
+- **THEN** Ralph shows the dirty status and warns that those changes will be missing from the Ralph worktree unless committed
+- **AND** Ralph asks whether to commit all dirty changes before creating the worktree.
+
+#### Scenario: User confirms Context-Capture Commit
+
+- **WHEN** Ralph asks whether to commit dirty original-checkout changes before first worktree creation
+- **AND** the user confirms
+- **THEN** Ralph stages all dirty changes with `git add -A`
+- **AND** Ralph creates a Context-Capture Commit on the current checkout branch titled `chore(ralph): capture pre-worktree changes`
+- **AND** the commit body records that the user approved the Context-Capture Commit and includes the pre-commit `git status --short` output
+- **AND** Ralph creates the Ralph branch and worktree from that new commit
+- **AND** Ralph records that new commit as `createdFrom` in cache metadata.
+
+#### Scenario: Context-Capture Commit fails
+
+- **WHEN** Ralph attempts the user-approved Context-Capture Commit
+- **AND** `git commit` fails because of hooks, signing, concurrent file changes, or any other git error
+- **THEN** Ralph does not bypass hooks or retry with `--no-verify`
+- **AND** Ralph stops before creating or handing off to the worktree
+- **AND** it reports the failure and leaves the checkout in git's resulting state for the user to resolve.
+
+#### Scenario: User declines Context-Capture Commit
+
+- **WHEN** Ralph asks whether to commit dirty original-checkout changes before first worktree creation
+- **AND** the user declines
+- **THEN** Ralph stops before creating or handing off to the worktree
+- **AND** it explains that continuing would omit uncommitted context.
+
+#### Scenario: Pre-worktree commit confirmation unavailable
+
+- **WHEN** the original checkout is dirty before first worktree creation
+- **AND** Ralph cannot ask for interactive confirmation
+- **THEN** Ralph stops safely without committing
+- **AND** it shows the dirty status and the manual commands needed to commit the changes before rerunning Ralph.
+
+#### Scenario: Dirty original checkout after worktree already exists
+
+- **WHEN** the user invokes Ralph outside the Ralph worktree
+- **AND** a Ralph worktree already exists for that Feature Spec
+- **AND** the original checkout has tracked or untracked changes
+- **THEN** Ralph warns that those changes are not part of the existing Ralph branch
+- **AND** Ralph does not automatically commit, merge, cherry-pick, or otherwise port those changes into the Ralph worktree.
+
 #### Scenario: Repeated manual invocation
 
 - **WHEN** the user invokes Ralph again for the same spec from the existing Ralph worktree
@@ -153,6 +201,13 @@ The Ralph Loop Pi Extension SHALL isolate implementation work in a dedicated git
 - **WHEN** the user invokes Ralph for any mode from outside the Ralph worktree
 - **THEN** Ralph creates or reuses the feature branch and worktree under `.worktrees/ralph-<spec-slug>`
 - **AND** Ralph performs Automatic Handoff by starting a replacement Pi process rooted in that worktree and rerunning the Ralph command there.
+
+#### Scenario: Review or Pull Request mode without an existing run
+
+- **WHEN** the user invokes Ralph with `--final-review` or `--pr`
+- **AND** no Ralph state or worktree exists for that Feature Spec
+- **THEN** Ralph stops without creating a new worktree
+- **AND** it reports that final-review and Pull Request modes require an existing Ralph run.
 
 #### Scenario: Automatic Handoff preserves Ralph intent
 
@@ -377,7 +432,7 @@ The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all 
   - Covers: Requirement: Feature Spec task ledger; Requirement: Validation and review tasks
 - [ ] 3. Implement Pi cache metadata storage keyed by repository and Feature Spec, including resume behavior for branch, worktree path, Review Base, created-from commit, task commits, and final review status.
   - Covers: Requirement: Pi cache metadata; Requirement: Review Base selection
-- [ ] 4. Implement git worktree orchestration under `.worktrees`, including first-run creation, existing-worktree reuse, branch naming, Review Base recording, `.worktrees` ignore warning, Automatic Handoff from outside the worktree, loop prevention, `--no-handoff`, and Manual Handoff fallback.
+- [ ] 4. Implement git worktree orchestration under `.worktrees`, including first-run creation, dirty original-checkout detection, interactive Context-Capture Commit creation, existing-worktree dirty warnings, existing-worktree reuse, branch naming, Review Base recording, `.worktrees` ignore warning, Automatic Handoff from outside the worktree, loop prevention, `--no-handoff`, and Manual Handoff fallback.
   - Covers: Requirement: Worktree isolation; Requirement: Review Base selection
 - [ ] 5. Implement the task implementation prompt/handoff that loads the Feature Spec context, instructs meaningful TDD only when applicable, avoids tests for mundane implementation details, and asks for deterministic validation evidence.
   - Covers: Requirement: Meaningful test-first behavior; Requirement: Deterministic verification gate
@@ -417,6 +472,7 @@ The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all 
 - `.agents/skills/to-spec/SKILL.md`
 - `docs/specs/2026-05-19-to-spec-skill.md`
 - `docs/adr/0003-ralph-automatic-handoff.md`
+- `docs/adr/0004-ralph-context-capture-commits.md`
 - `modules/terminal/pi.nix`
 - `config/pi/extensions/pi-header.ts`
 - `config/pi/settings.json`

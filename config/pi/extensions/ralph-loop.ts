@@ -65,6 +65,42 @@ async function git(args: string[], cwd: string, timeout?: number): Promise<strin
   return run("git", args, cwd, timeout);
 }
 
+async function gitStatus(root: string): Promise<string> {
+  return git(["status", "--porcelain"], root);
+}
+
+function contextCaptureBody(status: string): string {
+  return `User approved committing dirty original-checkout changes before Ralph\nworktree creation so the Ralph branch includes the current context.\n\nPre-commit status:\n${status}`;
+}
+
+function manualContextCaptureText(status: string): string {
+  return `# Ralph cannot continue safely while the original checkout is dirty.\n# Commit or clean these changes, then rerun Ralph.\n\n# Current status:\n${status
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => `# ${line}`)
+    .join("\n")}\n\ngit status --short\ngit add -A\ngit commit -m ${shellQuote("chore(ralph): capture pre-worktree changes")}`;
+}
+
+async function createContextCaptureCommit(ctx: ExtensionCommandContext, root: string, status: string): Promise<void> {
+  if (!ctx.hasUI) {
+    ctx.ui.notify("Ralph cannot create a worktree safely while the original checkout is dirty and confirmation is unavailable.", "error");
+    ctx.ui.setEditorText(manualContextCaptureText(status));
+    throw new Error("Original checkout is dirty and Context-Capture Commit confirmation is unavailable.");
+  }
+
+  const approved = await ctx.ui.confirm(
+    "Create Context-Capture Commit?",
+    `The original checkout has uncommitted changes that will be missing from the Ralph worktree unless committed.\n\nDirty status:\n${status}\n\nCommit all dirty changes before creating the Ralph worktree?`,
+  );
+  if (!approved) {
+    ctx.ui.notify("Ralph stopped before worktree creation because uncommitted context would be omitted.", "warning");
+    throw new Error("User declined Context-Capture Commit before Ralph worktree creation.");
+  }
+
+  await git(["add", "-A"], root, 120_000);
+  await git(["commit", "-m", "chore(ralph): capture pre-worktree changes", "-m", contextCaptureBody(status)], root, 120_000);
+}
+
 function tokenize(input: string): string[] {
   const tokens: string[] = [];
   let current = "";
@@ -243,6 +279,10 @@ async function ensureWorktree(ctx: ExtensionCommandContext, parsed: ParsedArgs, 
   const cachePath = statePath(await repoIdentity(root), relativeTo(root, absoluteSpec));
   const existing = await readState(cachePath);
   if (existing) {
+    const status = await gitStatus(root);
+    if (status && !isInside(existing.worktreePath, ctx.cwd)) {
+      ctx.ui.notify("The original checkout is dirty; those changes are not part of the existing Ralph branch and will not be ported automatically.", "warning");
+    }
     if (parsed.reviewBase) {
       existing.reviewBase = parsed.reviewBase;
       await writeState(cachePath, existing);
@@ -252,6 +292,17 @@ async function ensureWorktree(ctx: ExtensionCommandContext, parsed: ParsedArgs, 
 
   const branch = safeBranchName(slug);
   const worktreePath = join(root, ".worktrees", safeWorktreeName(slug));
+  if ((parsed.mode === "final-review" || parsed.mode === "pr") && !existsSync(worktreePath)) {
+    throw new Error("Ralph final-review and Pull Request modes require an existing Ralph run; no Ralph state or worktree exists for this Feature Spec.");
+  }
+
+  const status = await gitStatus(root);
+  if (status && !existsSync(worktreePath)) {
+    await createContextCaptureCommit(ctx, root, status);
+  } else if (status && existsSync(worktreePath)) {
+    ctx.ui.notify("The original checkout is dirty; those changes are not part of the existing Ralph branch and will not be ported automatically.", "warning");
+  }
+
   const currentBranch = await git(["branch", "--show-current"], root);
   const createdFrom = await git(["rev-parse", "HEAD"], root);
   const reviewBase = parsed.reviewBase || currentBranch || createdFrom;

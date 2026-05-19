@@ -48,6 +48,10 @@ _Avoid_: Automatic restart, cwd switch
 A Ralph Loop transfer where Ralph shows or writes the worktree startup command for the user to perform because Automatic Handoff is disabled, unavailable, or failed.
 _Avoid_: Manual restart, cd prompt
 
+**Context-Capture Commit**:
+A user-approved commit created by Ralph on the original checkout branch before first Ralph worktree creation, so uncommitted planning or spec context is included in the Ralph branch.
+_Avoid_: Auto-commit, stash commit, handoff commit
+
 ## Relationships
 
 - A **Feature Module** may link one or more **Config Assets**.
