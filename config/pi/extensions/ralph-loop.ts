@@ -1,0 +1,539 @@
+import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import { StringEnum } from "@mariozechner/pi-ai";
+import { Type } from "typebox";
+import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { promisify } from "node:util";
+import { execFile as execFileCb } from "node:child_process";
+
+const execFile = promisify(execFileCb);
+const STATE_VERSION = 1;
+
+type RalphMode = "one" | "all" | "final-review" | "pr";
+
+type RalphState = {
+  version: number;
+  repoRoot: string;
+  specPath: string;
+  specSlug: string;
+  worktreePath: string;
+  branch: string;
+  reviewBase: string;
+  createdFrom: string;
+  taskCommits: Record<string, string>;
+  allMode?: boolean;
+  finalReviewStatus?: "PASS" | "FAIL" | "BLOCKED";
+  finalReviewSummary?: string;
+  pullRequestUrl?: string;
+};
+
+type ParsedTask = {
+  number: number;
+  checked: boolean;
+  text: string;
+  lineIndex: number;
+  raw: string;
+};
+
+type ParsedArgs = {
+  specPath?: string;
+  taskNumber?: number;
+  mode: RalphMode;
+  reviewBase?: string;
+  title?: string;
+};
+
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'"'"'`)}'`;
+}
+
+async function run(command: string, args: string[], cwd: string, timeout = 30_000): Promise<string> {
+  const { stdout } = await execFile(command, args, { cwd, timeout, maxBuffer: 1024 * 1024 * 10 });
+  return stdout.trim();
+}
+
+async function runCombined(command: string, args: string[], cwd: string, timeout = 60_000): Promise<{ stdout: string; stderr: string }> {
+  const result = await execFile(command, args, { cwd, timeout, maxBuffer: 1024 * 1024 * 10 });
+  return { stdout: result.stdout.trim(), stderr: result.stderr.trim() };
+}
+
+async function git(args: string[], cwd: string, timeout?: number): Promise<string> {
+  return run("git", args, cwd, timeout);
+}
+
+function tokenize(input: string): string[] {
+  const tokens: string[] = [];
+  let current = "";
+  let quote: "'" | '"' | undefined;
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+    if (quote) {
+      if (ch === quote) quote = undefined;
+      else current += ch;
+      continue;
+    }
+    if (ch === "'" || ch === '"') {
+      quote = ch;
+      continue;
+    }
+    if (/\s/.test(ch)) {
+      if (current) {
+        tokens.push(current);
+        current = "";
+      }
+      continue;
+    }
+    current += ch;
+  }
+  if (current) tokens.push(current);
+  return tokens;
+}
+
+function parseArgs(input: string): ParsedArgs {
+  const tokens = tokenize(input);
+  const parsed: ParsedArgs = { mode: "one" };
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (token === "--all") {
+      parsed.mode = "all";
+    } else if (token === "--final-review") {
+      parsed.mode = "final-review";
+    } else if (token === "--pr" || token === "--create-pr") {
+      parsed.mode = "pr";
+    } else if (token === "--base") {
+      parsed.reviewBase = tokens[++i];
+    } else if (token.startsWith("--base=")) {
+      parsed.reviewBase = token.slice("--base=".length);
+    } else if (token === "--title") {
+      parsed.title = tokens[++i];
+    } else if (token.startsWith("--title=")) {
+      parsed.title = token.slice("--title=".length);
+    } else if (/^\d+$/.test(token)) {
+      parsed.taskNumber = Number(token);
+    } else if (!parsed.specPath) {
+      parsed.specPath = token.replace(/^@/, "");
+    }
+  }
+  return parsed;
+}
+
+function stripDatePrefix(name: string): string {
+  return name.replace(/^\d{4}-\d{2}-\d{2}-/, "");
+}
+
+function specSlug(specPath: string): string {
+  return stripDatePrefix(basename(specPath).replace(/\.md$/, ""));
+}
+
+function safeBranchName(slug: string): string {
+  return `ralph/${slug.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "")}`;
+}
+
+function safeWorktreeName(slug: string): string {
+  return `ralph-${slug.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "")}`;
+}
+
+function cacheRoot(): string {
+  const agentDir = process.env.PI_CODING_AGENT_DIR || join(homedir(), ".pi", "agent");
+  return join(agentDir, "cache", "ralph");
+}
+
+function statePath(repoIdentityPath: string, specKey: string): string {
+  const repoId = createHash("sha256").update(repoIdentityPath).digest("hex").slice(0, 16);
+  const specId = createHash("sha256").update(specKey).digest("hex").slice(0, 12);
+  return join(cacheRoot(), repoId, `${specSlug(specKey)}-${specId}.json`);
+}
+
+async function readState(path: string): Promise<RalphState | undefined> {
+  if (!existsSync(path)) return undefined;
+  return JSON.parse(await readFile(path, "utf8")) as RalphState;
+}
+
+async function writeState(path: string, state: RalphState): Promise<void> {
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+}
+
+async function repoRoot(cwd: string): Promise<string> {
+  return git(["rev-parse", "--show-toplevel"], cwd);
+}
+
+async function repoIdentity(cwd: string): Promise<string> {
+  const commonDir = await git(["rev-parse", "--git-common-dir"], cwd);
+  return isAbsolute(commonDir) ? commonDir : resolve(cwd, commonDir);
+}
+
+function resolveInRepo(repo: string, inputPath: string): string {
+  return isAbsolute(inputPath) ? inputPath : resolve(repo, inputPath);
+}
+
+function relativeTo(repo: string, path: string): string {
+  const rel = relative(repo, path);
+  return rel && !rel.startsWith("..") ? rel : path;
+}
+
+function parseImplementationTasks(markdown: string): ParsedTask[] {
+  const lines = markdown.split(/\r?\n/);
+  const headingIndex = lines.findIndex((line) => /^##\s+Implementation Tasks\s*$/.test(line));
+  if (headingIndex < 0) return [];
+  const tasks: ParsedTask[] = [];
+  for (let i = headingIndex + 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^##\s+/.test(line)) break;
+    const match = line.match(/^- \[([ xX])]\s+(\d+)\.\s+(.+)$/);
+    if (!match) continue;
+    tasks.push({
+      number: Number(match[2]),
+      checked: match[1].toLowerCase() === "x",
+      text: match[3],
+      lineIndex: i,
+      raw: line,
+    });
+  }
+  return tasks;
+}
+
+async function loadTasks(specPath: string): Promise<{ markdown: string; tasks: ParsedTask[] }> {
+  const markdown = await readFile(specPath, "utf8");
+  return { markdown, tasks: parseImplementationTasks(markdown) };
+}
+
+function selectTask(tasks: ParsedTask[], taskNumber?: number): ParsedTask | undefined {
+  if (taskNumber !== undefined) return tasks.find((task) => task.number === taskNumber && !task.checked);
+  return tasks.find((task) => !task.checked);
+}
+
+async function checkTask(specPath: string, taskNumber: number): Promise<void> {
+  const markdown = await readFile(specPath, "utf8");
+  const lines = markdown.split(/\r?\n/);
+  const tasks = parseImplementationTasks(markdown);
+  const task = tasks.find((candidate) => candidate.number === taskNumber);
+  if (!task) throw new Error(`Task ${taskNumber} was not found in ${specPath}`);
+  if (task.checked) return;
+  lines[task.lineIndex] = task.raw.replace("- [ ]", "- [x]");
+  await writeFile(specPath, lines.join("\n"), "utf8");
+}
+
+async function branchExists(repo: string, branch: string): Promise<boolean> {
+  try {
+    await git(["rev-parse", "--verify", branch], repo);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function isIgnored(repo: string, path: string): Promise<boolean> {
+  try {
+    await git(["check-ignore", "-q", path], repo);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function ensureWorktree(ctx: ExtensionCommandContext, parsed: ParsedArgs, root: string, absoluteSpec: string): Promise<RalphState> {
+  const slug = specSlug(absoluteSpec);
+  const cachePath = statePath(await repoIdentity(root), relativeTo(root, absoluteSpec));
+  const existing = await readState(cachePath);
+  if (existing) {
+    if (parsed.reviewBase) {
+      existing.reviewBase = parsed.reviewBase;
+      await writeState(cachePath, existing);
+    }
+    return existing;
+  }
+
+  const branch = safeBranchName(slug);
+  const worktreePath = join(root, ".worktrees", safeWorktreeName(slug));
+  const currentBranch = await git(["branch", "--show-current"], root);
+  const createdFrom = await git(["rev-parse", "HEAD"], root);
+  const reviewBase = parsed.reviewBase || currentBranch || createdFrom;
+
+  await mkdir(dirname(worktreePath), { recursive: true });
+  if (!existsSync(worktreePath)) {
+    if (await branchExists(root, branch)) {
+      await git(["worktree", "add", worktreePath, branch], root, 120_000);
+    } else {
+      await git(["worktree", "add", "-b", branch, worktreePath, "HEAD"], root, 120_000);
+    }
+  }
+
+  if (!(await isIgnored(root, ".worktrees")) && ctx.hasUI) {
+    ctx.ui.notify("Ralph worktrees live under .worktrees, but .worktrees is not ignored by this repo.", "warning");
+  }
+
+  const state: RalphState = {
+    version: STATE_VERSION,
+    repoRoot: root,
+    specPath: relativeTo(root, absoluteSpec),
+    specSlug: slug,
+    worktreePath,
+    branch,
+    reviewBase,
+    createdFrom,
+    taskCommits: {},
+  };
+  await writeState(cachePath, state);
+  return state;
+}
+
+function isInside(parent: string, child: string): boolean {
+  const rel = relative(parent, child);
+  return rel === "" || (!!rel && !rel.startsWith("..") && !isAbsolute(rel));
+}
+
+function conventionalTitleForTask(task: ParsedTask): string {
+  const cleaned = task.text.replace(/`/g, "").replace(/[.!]$/g, "").slice(0, 72);
+  return `feat(ralph): complete task ${task.number} - ${cleaned}`;
+}
+
+function buildTaskPrompt(state: RalphState, specPath: string, task: ParsedTask, mode: RalphMode): string {
+  return `Run a Ralph Loop for exactly one Feature Spec task.
+
+Feature Spec: @${specPath}
+Selected task: ${task.number}. ${task.text}
+Mode: ${mode}
+Review Base: ${state.reviewBase}
+Branch: ${state.branch}
+
+Required loop:
+1. Load repository context and the Feature Spec.
+2. Implement only task ${task.number}. Do not broaden scope to other unchecked tasks.
+3. Use TDD only if a meaningful feature-level automated test is applicable. Do not add tests for mundane implementation details such as merely checking that a CSS class exists on an HTML tag.
+4. Run deterministic validation. Prefer the smallest relevant existing project checks first, then broader CI-quality checks when appropriate.
+5. Create a clean-eye review using only the spec, selected task, final diff, changed files, and validation output. The review verdict must be PASS, FAIL, or BLOCKED.
+6. If review returns FAIL, fix only real required issues and re-test. Do at most 3 fix/retest iterations.
+7. If review returns BLOCKED or deterministic verification is unavailable, stop without marking the task complete.
+8. Only after PASS and final deterministic verification, call the ralph_complete_task tool for task ${task.number}. The tool will check the spec checkbox and create the conventional commit.
+9. After the commit, report the commit SHA and whether more unchecked tasks remain.
+
+Completion tool guidance:
+- Use a Conventional Commit title like: ${conventionalTitleForTask(task)}
+- Include validation evidence and review summary in the tool arguments.
+- Do not edit the checkbox yourself; ralph_complete_task owns the task ledger update.`;
+}
+
+function buildFinalReviewPrompt(state: RalphState, specPath: string): string {
+  return `Run the final Ralph branch review with a clean context.
+
+Feature Spec: @${specPath}
+Review Base: ${state.reviewBase}
+Branch: ${state.branch}
+Diff to review: git diff ${state.reviewBase}...HEAD
+
+Review axes:
+1. Standards — does the code conform to this repo's documented coding standards, domain language, architecture conventions, and CI-quality validation expectations?
+2. Spec — does the branch faithfully implement the Feature Spec and any explicitly linked external issue?
+
+Use only review-relevant artifacts: the Feature Spec, repository docs/context, final branch diff, changed files, and validation output. Do not rely on implementation-conversation memory.
+
+Return a structured verdict: PASS, FAIL, or BLOCKED.
+- PASS only if both axes pass and validation evidence supports merge readiness.
+- FAIL only for real issues requiring changes, not subjective preferences.
+- BLOCKED for missing information or unverifiable state.
+
+If PASS, call ralph_record_final_review with verdict PASS and a detailed summary. Then call ralph_create_pull_request with a Conventional Commit style title and a body derived mostly from the Feature Spec.
+If FAIL, fix real issues with additional conventional commits, re-run validation, and repeat review.
+If BLOCKED, stop and report what is missing.`;
+}
+
+function prBodyTemplate(state: RalphState, specPath: string): string {
+  return `Create a detailed Pull Request body derived mostly from @${specPath}.
+
+Include these sections:
+## Summary
+- Purpose of the Feature Spec
+- Source branch: ${state.branch}
+- Review Base / target branch: ${state.reviewBase}
+
+## Requirements Implemented
+- Summarize completed Feature Spec requirements.
+
+## Implementation Notes
+- Notable constraints and design decisions from the Feature Spec.
+
+## Validation Evidence
+- Commands run and results.
+
+## Final Review
+- Standards axis result.
+- Spec axis result.
+
+## Out of Scope
+- Boundaries from the Feature Spec.
+
+## Human Review Checklist
+- Checklist derived from the Feature Spec Review Checklist.`;
+}
+
+async function commandHandler(args: string, ctx: ExtensionCommandContext, pi: ExtensionAPI) {
+  const parsed = parseArgs(args);
+  if (!parsed.specPath) {
+    ctx.ui.notify("Usage: /ralph <spec-path> [task-number] [--all] [--base <ref>] [--final-review] [--pr]", "error");
+    return;
+  }
+
+  const root = await repoRoot(ctx.cwd);
+  const absoluteSpec = resolveInRepo(root, parsed.specPath);
+  if (!existsSync(absoluteSpec)) throw new Error(`Feature Spec not found: ${absoluteSpec}`);
+
+  const state = await ensureWorktree(ctx, parsed, root, absoluteSpec);
+  if (parsed.mode === "all" && !state.allMode) {
+    state.allMode = true;
+    await writeState(statePath(await repoIdentity(root), relativeTo(root, absoluteSpec)), state);
+  }
+  if (!isInside(state.worktreePath, ctx.cwd)) {
+    const worktreeSpec = join(state.worktreePath, relativeTo(root, absoluteSpec));
+    ctx.ui.notify(`Ralph worktree ready: ${state.worktreePath}`, "info");
+    ctx.ui.setEditorText(`cd ${shellQuote(state.worktreePath)}\npi\n/ralph ${shellQuote(relativeTo(state.worktreePath, worktreeSpec))}${parsed.mode === "all" ? " --all" : ""}`);
+    return;
+  }
+
+  const worktreeSpec = resolveInRepo(state.worktreePath, relativeTo(root, absoluteSpec));
+  const { tasks } = await loadTasks(worktreeSpec);
+  if (tasks.length === 0) throw new Error(`No top-level checkbox tasks found under ## Implementation Tasks in ${worktreeSpec}`);
+
+  const unchecked = tasks.filter((task) => !task.checked);
+  if (parsed.mode === "final-review" || (unchecked.length === 0 && parsed.mode !== "pr")) {
+    pi.sendUserMessage(`${buildFinalReviewPrompt(state, relativeTo(state.worktreePath, worktreeSpec))}\n\n${prBodyTemplate(state, relativeTo(state.worktreePath, worktreeSpec))}`);
+    return;
+  }
+
+  if (parsed.mode === "pr") {
+    pi.sendUserMessage(`Create the Pull Request for this completed Ralph branch.\n\n${prBodyTemplate(state, relativeTo(state.worktreePath, worktreeSpec))}\n\nUse ralph_create_pull_request after confirming final review status is PASS.`);
+    return;
+  }
+
+  const task = selectTask(tasks, parsed.taskNumber);
+  if (!task) {
+    ctx.ui.notify(parsed.taskNumber ? `Task ${parsed.taskNumber} is missing or already checked.` : "No unchecked implementation tasks remain.", "info");
+    return;
+  }
+
+  pi.sendUserMessage(buildTaskPrompt(state, relativeTo(state.worktreePath, worktreeSpec), task, parsed.mode));
+}
+
+export default function (pi: ExtensionAPI) {
+  pi.registerCommand("ralph", {
+    description: "Run a Ralph Loop from a Feature Spec, one task at a time by default.",
+    handler: async (args, ctx) => commandHandler(args, ctx, pi),
+  });
+
+  pi.registerTool({
+    name: "ralph_complete_task",
+    label: "Complete Ralph Task",
+    description: "After Ralph review PASS and deterministic verification, check one Feature Spec task and create the conventional task commit.",
+    promptSnippet: "Complete a verified Ralph task by updating the Feature Spec checkbox and creating the task commit.",
+    promptGuidelines: [
+      "Use ralph_complete_task only after the selected Ralph task has PASS review and deterministic verification evidence.",
+      "Do not use ralph_complete_task for blocked, failed, or unverifiable Ralph tasks.",
+    ],
+    parameters: Type.Object({
+      specPath: Type.String({ description: "Feature Spec path, relative to the current Ralph worktree or absolute." }),
+      taskNumber: Type.Number({ description: "The verified task number to mark complete." }),
+      commitTitle: Type.String({ description: "Conventional Commit title for this task." }),
+      validationEvidence: Type.String({ description: "Commands/checks run and their passing results." }),
+      reviewSummary: Type.String({ description: "Clean-eye review PASS summary." }),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx: ExtensionContext) {
+      const root = await repoRoot(ctx.cwd);
+      const spec = resolveInRepo(root, params.specPath.replace(/^@/, ""));
+      await checkTask(spec, params.taskNumber);
+      await git(["add", "-A"], root);
+      const status = await git(["status", "--porcelain"], root);
+      if (!status) throw new Error("No changes to commit after checking the task. Refusing to create an empty Ralph task commit.");
+      const body = `Ralph task: ${params.taskNumber}\n\nValidation evidence:\n${params.validationEvidence}\n\nReview summary:\n${params.reviewSummary}`;
+      await git(["commit", "-m", params.commitTitle, "-m", body], root, 120_000);
+      const sha = await git(["rev-parse", "HEAD"], root);
+
+      const canonicalSpec = resolveInRepo(root, params.specPath.replace(/^@/, ""));
+      const cachePath = statePath(await repoIdentity(root), relativeTo(root, canonicalSpec));
+      const state = await readState(cachePath);
+      let followUp = "";
+      if (state) {
+        state.taskCommits[String(params.taskNumber)] = sha;
+        await writeState(cachePath, state);
+
+        if (state.allMode) {
+          const { tasks } = await loadTasks(spec);
+          const nextTask = selectTask(tasks);
+          if (nextTask) {
+            followUp = ` Continuing all-tasks mode with task ${nextTask.number}.`;
+            pi.sendUserMessage(buildTaskPrompt(state, relativeTo(root, spec), nextTask, "all"), { deliverAs: "followUp" });
+          } else {
+            followUp = " All tasks are complete; queued final branch review.";
+            pi.sendUserMessage(`${buildFinalReviewPrompt(state, relativeTo(root, spec))}\n\n${prBodyTemplate(state, relativeTo(root, spec))}`, { deliverAs: "followUp" });
+          }
+        }
+      }
+
+      return {
+        content: [{ type: "text", text: `Ralph task ${params.taskNumber} completed and committed as ${sha}.${followUp}` }],
+        details: { taskNumber: params.taskNumber, commit: sha, followUp },
+      };
+    },
+  });
+
+  pi.registerTool({
+    name: "ralph_record_final_review",
+    label: "Record Ralph Final Review",
+    description: "Record the final two-axis Ralph branch review verdict in Pi cache.",
+    parameters: Type.Object({
+      specPath: Type.String(),
+      verdict: StringEnum(["PASS", "FAIL", "BLOCKED"] as const),
+      standardsSummary: Type.String(),
+      specSummary: Type.String(),
+      validationEvidence: Type.String(),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx: ExtensionContext) {
+      const root = await repoRoot(ctx.cwd);
+      const spec = resolveInRepo(root, params.specPath.replace(/^@/, ""));
+      const cachePath = statePath(await repoIdentity(root), relativeTo(root, spec));
+      const state = await readState(cachePath);
+      if (!state) throw new Error(`No Ralph state found for ${spec}`);
+      state.finalReviewStatus = params.verdict;
+      state.finalReviewSummary = `Standards: ${params.standardsSummary}\n\nSpec: ${params.specSummary}\n\nValidation: ${params.validationEvidence}`;
+      await writeState(cachePath, state);
+      return {
+        content: [{ type: "text", text: `Recorded Ralph final review verdict: ${params.verdict}.` }],
+        details: { verdict: params.verdict },
+      };
+    },
+  });
+
+  pi.registerTool({
+    name: "ralph_create_pull_request",
+    label: "Create Ralph Pull Request",
+    description: "Create the final Ralph Pull Request with gh after final review PASS.",
+    parameters: Type.Object({
+      specPath: Type.String(),
+      title: Type.String({ description: "Conventional Commit style Pull Request title." }),
+      body: Type.String({ description: "Detailed Pull Request body derived mostly from the Feature Spec." }),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx: ExtensionContext) {
+      if (!/^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([^)]+\))?: .+/.test(params.title)) {
+        throw new Error(`Pull Request title is not Conventional Commit style: ${params.title}`);
+      }
+      const root = await repoRoot(ctx.cwd);
+      const spec = resolveInRepo(root, params.specPath.replace(/^@/, ""));
+      const cachePath = statePath(await repoIdentity(root), relativeTo(root, spec));
+      const state = await readState(cachePath);
+      if (!state) throw new Error(`No Ralph state found for ${spec}`);
+      if (state.finalReviewStatus !== "PASS") throw new Error(`Final review status is ${state.finalReviewStatus ?? "unknown"}; refusing to create Pull Request.`);
+
+      const branch = await git(["branch", "--show-current"], root);
+      await git(["push", "-u", "origin", branch], root, 120_000);
+      const { stdout } = await runCombined("gh", ["pr", "create", "--base", state.reviewBase, "--head", branch, "--title", params.title, "--body", params.body], root, 120_000);
+      state.pullRequestUrl = stdout.trim();
+      await writeState(cachePath, state);
+      return {
+        content: [{ type: "text", text: `Created Pull Request: ${state.pullRequestUrl}` }],
+        details: { url: state.pullRequestUrl },
+      };
+    },
+  });
+}
