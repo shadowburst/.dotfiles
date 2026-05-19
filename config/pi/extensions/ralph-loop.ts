@@ -15,6 +15,7 @@ const STATE_VERSION = 1;
 type RalphMode = "one" | "all" | "final-review" | "pr";
 
 export type FinalReviewStatus = "PASS" | "FAIL" | "BLOCKED";
+export type TaskReviewVerdict = FinalReviewStatus;
 
 export type RalphState = {
   version: number;
@@ -53,7 +54,14 @@ export type TaskReviewPacket = {
   changedFiles: string[];
   commandsRun: string[];
   validationOutput: string;
+  reviewAttempt: number;
 };
+
+type TaskReviewDecision =
+  | { action: "pass"; message: string }
+  | { action: "fix"; nextAttempt: number; message: string }
+  | { action: "stop-failed"; message: string }
+  | { action: "stop-blocked"; message: string };
 
 export type ParsedArgs = {
   specPath?: string;
@@ -548,12 +556,48 @@ function relevantSpecSections(markdown: string): string {
   return sections.join("\n\n");
 }
 
+export function taskReviewDecision(verdict: TaskReviewVerdict, reviewAttempt: number, maxFixIterations = 3): TaskReviewDecision {
+  const attempt = Math.max(0, Math.floor(reviewAttempt));
+  if (verdict === "PASS") {
+    return { action: "pass", message: "Review passed. Proceed only after final deterministic verification, then use ralph_complete_task." };
+  }
+  if (verdict === "BLOCKED") {
+    return { action: "stop-blocked", message: "Review is blocked. Stop without checking the task or creating a success commit." };
+  }
+  if (attempt >= maxFixIterations) {
+    return { action: "stop-failed", message: `Review remains failing after ${maxFixIterations} fix/retest iterations. Stop without checking the task or creating a success commit.` };
+  }
+  return { action: "fix", nextAttempt: attempt + 1, message: `Review failed. Run fix/retest iteration ${attempt + 1} of ${maxFixIterations}, fixing only the required issues.` };
+}
+
+function buildFixRetestPrompt(packet: TaskReviewPacket, requiredFixes: string, reviewSummary: string, nextAttempt: number): string {
+  return `Continue the bounded Ralph fix/retest flow for exactly one Feature Spec task.
+
+Feature Spec: @${packet.specPath}
+Selected task: ${packet.task.number}. ${packet.task.text}
+Fix/retest iteration: ${nextAttempt} of 3
+
+Clean-eye review summary:
+${reviewSummary}
+
+Required fixes from review:
+${requiredFixes}
+
+Instructions:
+1. Fix only the real required issues listed above. Do not make subjective or unrelated changes.
+2. Re-run the smallest relevant deterministic validation checks, then broader checks if needed.
+3. Capture updated implementation summary, changed files, diff, commands run, and validation output.
+4. Call ralph_start_task_review again with reviewAttempt ${nextAttempt} so Ralph starts another fresh-session clean-eye review.
+5. Stop without ralph_complete_task if deterministic verification is unavailable.`;
+}
+
 export function buildTaskReviewPrompt(packet: TaskReviewPacket, specMarkdown: string): string {
   return `Run a fresh-session clean-eye review for exactly one Ralph task.
 
 Feature Spec: @${packet.specPath}
 Selected task: ${packet.task.number}. ${packet.task.text}
 Selected task kind: ${packet.task.kind}${taskGuidanceBlock(packet.task)}
+Review/fix iteration already completed before this review: ${packet.reviewAttempt} of 3
 
 Relevant Feature Spec sections:
 ${relevantSpecSections(specMarkdown) || "(No relevant sections were extracted; read the Feature Spec path above if needed.)"}
@@ -585,8 +629,9 @@ Review rules:
 - PASS only when the selected task is implemented, scoped correctly, maintainable, and supported by deterministic validation evidence.
 - FAIL only for real required fixes; list the required fixes and keep them scoped to this selected task.
 - BLOCKED when required information or deterministic verification is missing or unavailable.
+- After deciding the verdict, call ralph_handle_task_review with the same verdict, this task number, reviewAttempt ${packet.reviewAttempt}, the review summary, required fixes, and blocking issues. That tool enforces the bounded fix/retest controller.
 
-Required response format:
+Required response format before calling the tool:
 Verdict: PASS|FAIL|BLOCKED
 Summary: <concise review summary>
 Required fixes: <only for FAIL; otherwise "None">
@@ -824,6 +869,7 @@ export default function (pi: ExtensionAPI) {
       implementationSummary: Type.String({ description: "Concise implementation summary for the selected task." }),
       commandsRun: Type.Array(Type.String(), { description: "Validation commands/checks run." }),
       validationOutput: Type.String({ description: "Validation command results and relevant output summary." }),
+      reviewAttempt: Type.Optional(Type.Number({ description: "Number of review-driven fix/retest iterations already completed before this review. Defaults to 0." })),
       diff: Type.Optional(Type.String({ description: "Diff to review. Defaults to git diff when omitted." })),
       changedFiles: Type.Optional(Type.Array(Type.String(), { description: "Changed files. Defaults to git diff --name-only when omitted." })),
     }),
@@ -843,6 +889,7 @@ export default function (pi: ExtensionAPI) {
         changedFiles,
         commandsRun: params.commandsRun,
         validationOutput: params.validationOutput,
+        reviewAttempt: params.reviewAttempt ?? 0,
       };
       const packetPath = await writeReviewPacket(root, spec, packet);
       const command = `/ralph-task-review ${shellQuote(packetPath)}`;
@@ -850,6 +897,53 @@ export default function (pi: ExtensionAPI) {
       return {
         content: [{ type: "text", text: `Queued fresh-session Ralph task review for task ${params.taskNumber}. Review packet: ${packetPath}` }],
         details: { packetPath, command },
+      };
+    },
+  });
+
+  pi.registerTool({
+    name: "ralph_handle_task_review",
+    label: "Handle Ralph Task Review",
+    description: "Apply the bounded Ralph fix/retest controller to a task review verdict.",
+    promptSnippet: "Handle PASS, FAIL, or BLOCKED task review verdicts with at most three review-driven fix/retest iterations.",
+    promptGuidelines: [
+      "Use ralph_handle_task_review after a fresh-session Ralph task review returns PASS, FAIL, or BLOCKED.",
+      "For FAIL, ralph_handle_task_review may queue one narrowly scoped fix/retest prompt until the three-iteration limit is reached.",
+      "For BLOCKED or exhausted failures, ralph_handle_task_review stops without marking the task complete.",
+    ],
+    parameters: Type.Object({
+      specPath: Type.String({ description: "Feature Spec path, relative to the current Ralph worktree or absolute." }),
+      taskNumber: Type.Number({ description: "The reviewed Ralph task number." }),
+      verdict: StringEnum(["PASS", "FAIL", "BLOCKED"] as const),
+      reviewAttempt: Type.Number({ description: "Number of review-driven fix/retest iterations already completed before this verdict." }),
+      reviewSummary: Type.String({ description: "Concise clean-eye review summary." }),
+      requiredFixes: Type.Optional(Type.String({ description: "Required fixes for FAIL verdicts." })),
+      blockingIssues: Type.Optional(Type.String({ description: "Blocking issues for BLOCKED verdicts." })),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx: ExtensionContext) {
+      const decision = taskReviewDecision(params.verdict, params.reviewAttempt);
+      if (decision.action === "fix") {
+        const root = await repoRoot(ctx.cwd);
+        const spec = resolveInRepo(root, params.specPath.replace(/^@/, ""));
+        const { tasks } = await loadTasks(spec);
+        const task = tasks.find((candidate) => candidate.number === params.taskNumber);
+        if (!task) throw new Error(`Task ${params.taskNumber} was not found in ${spec}`);
+        const packet: TaskReviewPacket = {
+          specPath: relativeTo(root, spec),
+          task,
+          implementationSummary: "Previous review failed; fix/retest iteration required.",
+          diff: "",
+          changedFiles: [],
+          commandsRun: [],
+          validationOutput: "",
+          reviewAttempt: params.reviewAttempt,
+        };
+        pi.sendUserMessage(buildFixRetestPrompt(packet, params.requiredFixes || "(No required fixes were provided.)", params.reviewSummary, decision.nextAttempt), { deliverAs: "followUp" });
+      }
+      const detailText = decision.action === "stop-blocked" && params.blockingIssues ? `${decision.message}\n\nBlocking issues:\n${params.blockingIssues}` : decision.action === "stop-failed" && params.requiredFixes ? `${decision.message}\n\nRemaining required fixes:\n${params.requiredFixes}` : decision.message;
+      return {
+        content: [{ type: "text", text: detailText }],
+        details: { decision },
       };
     },
   });

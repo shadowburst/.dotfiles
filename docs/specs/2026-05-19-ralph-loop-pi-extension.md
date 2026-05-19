@@ -527,7 +527,7 @@ The Ralph Loop Pi Extension SHALL use a bounded fix loop for Remote Check Gate f
   - Covers: Requirement: Meaningful test-first behavior; Requirement: Deterministic verification gate
 - [x] 6. Implement fresh-session clean-eye task review that seeds the review with the selected task, relevant spec sections, diff, changed files, commands run, and validation output, and requires a `PASS`, `FAIL`, or `BLOCKED` verdict.
   - Covers: Requirement: Fresh-session clean-eye review
-- [ ] 7. Implement the bounded fix/retest controller with at most three review-driven fix iterations and clear stop behavior for exhausted failures or blocked reviews.
+- [x] 7. Implement the bounded fix/retest controller with at most three review-driven fix iterations and clear stop behavior for exhausted failures or blocked reviews.
   - Covers: Requirement: Bounded fix and retest flow
 - [ ] 8. Implement verified task completion: update the spec checkbox, rerun or confirm final validation after the checkbox edit, create one conventional commit for the task, and record the commit in metadata.
   - Covers: Requirement: Conventional commit per verified task; Requirement: Feature Spec task ledger
