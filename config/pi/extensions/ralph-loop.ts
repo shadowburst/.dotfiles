@@ -1119,8 +1119,9 @@ async function commandHandler(args: string, ctx: ExtensionCommandContext, pi: Ex
       ctx.ui.notify(`Final review status is ${state.finalReviewStatus ?? "unknown"}; run /ralph ${shellQuote(worktreeSpecRelative)} --final-review before creating a Pull Request.`, "error");
       return;
     }
-    if (state.pullRequestUrl) {
-      ctx.ui.notify(`Ralph Pull Request already recorded: ${state.pullRequestUrl}`, "info");
+    if (state.pullRequestUrl || state.pullRequestNumber) {
+      ctx.ui.notify(`Ralph Pull Request already recorded: ${state.pullRequestUrl || state.pullRequestNumber}; resuming Remote Check Gate.`, "info");
+      pi.sendUserMessage(buildRemoteChecksPrompt(state, worktreeSpecRelative));
       return;
     }
     pi.sendUserMessage(await pullRequestPrompt(state, worktreeSpecRelative));
@@ -1531,10 +1532,10 @@ export default function (pi: ExtensionAPI) {
       const state = await readState(cachePath, specKey);
       if (!state) throw new Error(`No Ralph state found for ${spec}`);
       if (state.finalReviewStatus !== "PASS") throw new Error(`Final review status is ${state.finalReviewStatus ?? "unknown"}; refusing to create Pull Request.`);
-      if (state.pullRequestUrl) {
+      if (state.pullRequestUrl || state.pullRequestNumber) {
         return {
-          content: [{ type: "text", text: `Ralph Pull Request already recorded: ${state.pullRequestUrl}` }],
-          details: { url: state.pullRequestUrl, alreadyExists: true },
+          content: [{ type: "text", text: `Ralph Pull Request already recorded: ${state.pullRequestUrl || state.pullRequestNumber}` }],
+          details: { url: state.pullRequestUrl, number: state.pullRequestNumber, alreadyExists: true },
         };
       }
 
