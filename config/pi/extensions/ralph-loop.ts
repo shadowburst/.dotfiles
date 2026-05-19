@@ -45,6 +45,16 @@ export type RalphState = {
 
 type TaskKind = "implementation" | "validation" | "review";
 
+type RemoteCheck = {
+  name?: string;
+  workflow?: string;
+  state?: string;
+  conclusion?: string;
+  bucket?: string;
+  link?: string;
+  detailsUrl?: string;
+};
+
 export type ParsedTask = {
   number: number;
   checked: boolean;
@@ -71,6 +81,13 @@ type TaskReviewDecision =
   | { action: "fix"; nextAttempt: number; message: string }
   | { action: "stop-failed"; message: string }
   | { action: "stop-blocked"; message: string };
+
+export type RemoteCheckGateResult = {
+  verdict: RemoteCheckVerdict;
+  failedCheckSummaries: string[];
+  pendingCheckSummaries: string[];
+  summary: string;
+};
 
 export type ParsedArgs = {
   specPath?: string;
@@ -101,6 +118,65 @@ async function git(args: string[], cwd: string, timeout?: number): Promise<strin
 
 async function gitStatus(root: string): Promise<string> {
   return git(["status", "--porcelain"], root);
+}
+
+function checkDisplayName(check: RemoteCheck): string {
+  return check.workflow && check.workflow !== check.name ? `${check.workflow}: ${check.name || "unnamed check"}` : check.name || check.workflow || "unnamed check";
+}
+
+function checkSummary(check: RemoteCheck): string {
+  const status = [check.bucket, check.state, check.conclusion].filter(Boolean).join("/") || "unknown";
+  const url = check.link || check.detailsUrl;
+  return `${checkDisplayName(check)} (${status})${url ? ` - ${url}` : ""}`;
+}
+
+export function classifyRemoteChecks(checks: RemoteCheck[]): RemoteCheckGateResult {
+  if (checks.length === 0) {
+    return {
+      verdict: "BLOCKED",
+      failedCheckSummaries: [],
+      pendingCheckSummaries: ["No hosted Pull Request checks were reported."],
+      summary: "Remote Check Gate is blocked because no hosted Pull Request checks were reported.",
+    };
+  }
+
+  const failed = checks.filter((check) => {
+    const bucket = check.bucket?.toLowerCase();
+    const state = check.state?.toLowerCase();
+    const conclusion = check.conclusion?.toLowerCase();
+    return bucket === "fail" || state === "failure" || state === "failed" || conclusion === "failure" || conclusion === "cancelled" || conclusion === "timed_out" || conclusion === "action_required";
+  });
+  const pending = checks.filter((check) => {
+    const bucket = check.bucket?.toLowerCase();
+    const state = check.state?.toLowerCase();
+    const conclusion = check.conclusion?.toLowerCase();
+    return !failed.includes(check) && (!bucket && !state && !conclusion || bucket === "pending" || state === "pending" || state === "queued" || state === "in_progress" || state === "waiting" || conclusion === "");
+  });
+
+  if (failed.length > 0) {
+    const failedCheckSummaries = failed.map(checkSummary);
+    return {
+      verdict: "FAIL",
+      failedCheckSummaries,
+      pendingCheckSummaries: pending.map(checkSummary),
+      summary: `Remote Check Gate failed: ${failedCheckSummaries.join("; ")}`,
+    };
+  }
+  if (pending.length > 0) {
+    const pendingCheckSummaries = pending.map(checkSummary);
+    return {
+      verdict: "BLOCKED",
+      failedCheckSummaries: [],
+      pendingCheckSummaries,
+      summary: `Remote Check Gate is blocked by pending checks: ${pendingCheckSummaries.join("; ")}`,
+    };
+  }
+  return {
+    verdict: "PASS",
+    failedCheckSummaries: [],
+    pendingCheckSummaries: [],
+    summary: `Remote Check Gate passed: ${checks.map(checkDisplayName).join(", ")}`,
+  };
 }
 
 function contextCaptureBody(status: string): string {
@@ -868,6 +944,30 @@ Body:
 ${body}`;
 }
 
+async function fetchRemoteChecks(root: string, pullRequestRef: string): Promise<RemoteCheck[]> {
+  const { stdout } = await runCombined("gh", ["pr", "checks", pullRequestRef, "--json", "name,workflow,state,conclusion,bucket,link,detailsUrl"], root, 120_000);
+  return JSON.parse(stdout || "[]") as RemoteCheck[];
+}
+
+async function watchRemoteChecks(root: string, pullRequestRef: string, timeoutSeconds: number, pollIntervalSeconds: number): Promise<RemoteCheckGateResult> {
+  const deadline = Date.now() + Math.max(0, timeoutSeconds) * 1000;
+  let lastResult: RemoteCheckGateResult | undefined;
+  while (true) {
+    const checks = await fetchRemoteChecks(root, pullRequestRef);
+    const result = classifyRemoteChecks(checks);
+    lastResult = result;
+    if (result.verdict === "PASS" || result.verdict === "FAIL") return result;
+    if (Date.now() >= deadline) {
+      return {
+        ...result,
+        verdict: "BLOCKED",
+        summary: `${result.summary}\nResume with: /ralph <spec> --remote-checks`,
+      };
+    }
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, Math.max(1, pollIntervalSeconds) * 1000));
+  }
+}
+
 export function buildRemoteChecksPrompt(state: RalphState, specPath: string): string {
   return `Resume the Ralph Remote Check Gate for an existing draft Pull Request.
 
@@ -884,7 +984,7 @@ ${state.pendingCheckSummaries?.length ? state.pendingCheckSummaries.map((item) =
 Instructions:
 - Resume hosted Pull Request check watching for the existing recorded Pull Request only.
 - Do not create a new Pull Request in --remote-checks mode.
-- Use ralph_record_remote_check_state to update the cached Remote Check Gate verdict and failed or pending check summaries.
+- Use ralph_watch_remote_checks to watch all hosted checks and update the cached Remote Check Gate verdict with failed or pending check summaries.
 - If no Pull Request URL or number is recorded, report BLOCKED and do not create a Pull Request.`;
 }
 
@@ -1199,6 +1299,59 @@ export default function (pi: ExtensionAPI) {
       return {
         content: [{ type: "text", text: params.verdict === "PASS" ? "Recorded Ralph final review verdict: PASS. Ask the user whether to create the Pull Request now; do not call ralph_create_pull_request unless the user explicitly approves." : `Recorded Ralph final review verdict: ${params.verdict}.` }],
         details: { verdict: params.verdict },
+      };
+    },
+  });
+
+  pi.registerTool({
+    name: "ralph_watch_remote_checks",
+    label: "Watch Ralph Remote Checks",
+    description: "Watch hosted Pull Request checks and return PASS, FAIL, or BLOCKED with failed or pending check summaries.",
+    promptSnippet: "Watch hosted Pull Request checks for a Ralph Pull Request and report PASS, FAIL, or BLOCKED.",
+    promptGuidelines: [
+      "Use ralph_watch_remote_checks for the Remote Check Gate after a draft Ralph Pull Request exists.",
+      "ralph_watch_remote_checks defaults to all hosted checks and blocks rather than creating a Pull Request when no Pull Request is recorded.",
+    ],
+    parameters: Type.Object({
+      specPath: Type.String({ description: "Feature Spec path, relative to the current Ralph worktree or absolute." }),
+      timeoutSeconds: Type.Optional(Type.Number({ description: "Maximum seconds to wait for pending checks. Defaults to 600." })),
+      pollIntervalSeconds: Type.Optional(Type.Number({ description: "Seconds between hosted check polls. Defaults to 15." })),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx: ExtensionContext) {
+      const root = await repoRoot(ctx.cwd);
+      const spec = resolveInRepo(root, params.specPath.replace(/^@/, ""));
+      const specKey = canonicalSpecKey(root, spec);
+      const cachePath = statePath(await repoIdentity(root), specKey);
+      const state = await readState(cachePath, specKey);
+      if (!state) throw new Error(`No Ralph state found for ${spec}`);
+      const pullRequestRef = state.pullRequestUrl || (state.pullRequestNumber ? String(state.pullRequestNumber) : "");
+      let result: RemoteCheckGateResult;
+      if (!pullRequestRef) {
+        result = {
+          verdict: "BLOCKED",
+          failedCheckSummaries: [],
+          pendingCheckSummaries: ["No Pull Request URL or number is recorded; run /ralph <spec> --pr after final review PASS first."],
+          summary: "Remote Check Gate is blocked because no Pull Request is recorded. --remote-checks does not create Pull Requests.",
+        };
+      } else {
+        try {
+          result = await watchRemoteChecks(root, pullRequestRef, params.timeoutSeconds ?? 600, params.pollIntervalSeconds ?? 15);
+        } catch (error) {
+          result = {
+            verdict: "BLOCKED",
+            failedCheckSummaries: [],
+            pendingCheckSummaries: [`Hosted check watching unavailable: ${error instanceof Error ? error.message : String(error)}`],
+            summary: "Remote Check Gate is blocked because hosted check tooling, authentication, permissions, or repository support is unavailable. Resume with /ralph <spec> --remote-checks after resolving it.",
+          };
+        }
+      }
+      state.remoteCheckVerdict = result.verdict;
+      state.failedCheckSummaries = result.failedCheckSummaries;
+      state.pendingCheckSummaries = result.pendingCheckSummaries;
+      await writeState(cachePath, state);
+      return {
+        content: [{ type: "text", text: result.summary }],
+        details: result,
       };
     },
   });
