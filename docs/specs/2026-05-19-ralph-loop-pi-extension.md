@@ -324,7 +324,7 @@ Ralph SHALL perform a final clean-context two-axis branch review after all tasks
 
 ## Implementation Tasks
 
-- [ ] 1. Replace the existing Ralph extension with a thin `/ralph` and `/ralph:once` command surface that accepts only a Feature Spec path and launches the Ralph Orchestrator subprocess.
+- [x] 1. Replace the existing Ralph extension with a thin `/ralph` and `/ralph:once` command surface that accepts only a Feature Spec path and launches the Ralph Orchestrator subprocess.
   - Covers: Requirement: Ralph command entrypoints; Requirement: Orchestrator subprocess
 - [ ] 2. Implement current-branch startup safety, including clean-start Review Base recording, dirty-start prompting, matching-cache detection, and reconcile-before-resume behavior.
   - Covers: Requirement: Current-branch git workflow
