@@ -487,7 +487,34 @@ function taskGuidanceBlock(task: ParsedTask): string {
   return `\nTask guidance from non-checkbox sub-bullets:\n${task.guidance.map((item) => `- ${item}`).join("\n")}`;
 }
 
-function buildTaskPrompt(state: RalphState, specPath: string, task: ParsedTask, mode: RalphMode): string {
+function taskContextChecklist(specPath: string): string {
+  return `Context to load before implementation:
+- Repository instructions from AGENTS.md files that apply to the current worktree.
+- Domain language from CONTEXT.md when present.
+- Repository validation guidance from docs/agents/specs.md when present.
+- The Feature Spec at @${specPath}, including Purpose, Requirements, Implementation Constraints, Out of Scope, Source Context, and Review Checklist.
+- Only the source files or docs needed for the selected task; do not broaden into unrelated unchecked tasks.`;
+}
+
+function tddPolicyBlock(task: ParsedTask): string {
+  if (task.kind === "validation") {
+    return "TDD policy: this is a validation task. Do not invent tests merely to satisfy TDD; run or discover the specified validation checks first, then fix only directly revealed relevant issues.";
+  }
+  if (task.kind === "review") {
+    return "TDD policy: this is a review task. Do not invent implementation tests unless the review uncovers a concrete missing behavior with an existing meaningful test style.";
+  }
+  return "TDD policy: before editing, decide whether meaningful feature behavior can be covered by an existing automated test style. If yes, write or update the failing test first. If the only possible test would assert an incidental implementation detail (for example a CSS class, an HTML attribute, or another mechanical marker without behavior), do not add that test; state why TDD is not applicable and rely on stronger deterministic validation.";
+}
+
+function validationEvidenceBlock(): string {
+  return `Deterministic validation evidence required before completion:
+- Prefer the smallest relevant existing project check first, then broader CI-quality checks when needed.
+- Record each command exactly, its result, and the relevant output summary.
+- If no meaningful automated verification exists, stop with the task implemented but unchecked unless the user explicitly authorizes manual verification.
+- Do not call ralph_complete_task unless deterministic verification and clean-eye review both pass.`;
+}
+
+export function buildTaskPrompt(state: RalphState, specPath: string, task: ParsedTask, mode: RalphMode): string {
   return `Run a Ralph Loop for exactly one Feature Spec task.
 
 Feature Spec: @${specPath}
@@ -497,12 +524,18 @@ Mode: ${mode}
 Review Base: ${state.reviewBase}
 Branch: ${state.branch}
 
+${taskContextChecklist(specPath)}
+
+${tddPolicyBlock(task)}
+
+${validationEvidenceBlock()}
+
 Required loop:
-1. Load repository context and the Feature Spec.
+1. Load the repository context and Feature Spec context listed above before making changes.
 2. Implement only task ${task.number}. Do not broaden scope to other unchecked tasks. Treat the non-checkbox sub-bullets above as guidance for this selected task, not as independently runnable tasks.
 3. If the selected task kind is validation or review, execute it as a first-class Ralph task; if it already passes and produces no code changes, deterministic verification plus the spec checkbox update may be the only commit content.
-4. Use TDD only if a meaningful feature-level automated test is applicable. Do not add tests for mundane implementation details such as merely checking that a CSS class exists on an HTML tag.
-5. Run deterministic validation. Prefer the smallest relevant existing project checks first, then broader CI-quality checks when appropriate.
+4. Apply the TDD policy above: use test-first development only for meaningful feature behavior, and explicitly skip new tests for incidental implementation details.
+5. Run deterministic validation and capture the validation evidence described above.
 6. Create a clean-eye review using only the spec, selected task, final diff, changed files, and validation output. The review verdict must be PASS, FAIL, or BLOCKED.
 7. If review returns FAIL, fix only real required issues and re-test. Do at most 3 fix/retest iterations.
 8. If review returns BLOCKED or deterministic verification is unavailable, stop without marking the task complete.

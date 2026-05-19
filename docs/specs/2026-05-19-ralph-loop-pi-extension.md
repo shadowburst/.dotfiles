@@ -523,7 +523,7 @@ The Ralph Loop Pi Extension SHALL use a bounded fix loop for Remote Check Gate f
   - Covers: Requirement: Pi cache metadata; Requirement: Review Base selection
 - [x] 4. Implement git worktree orchestration under `.worktrees`, including first-run creation, dirty original-checkout detection, interactive Context-Capture Commit creation, existing-worktree dirty warnings, existing-worktree reuse, branch naming, Review Base recording, `.worktrees` ignore warning, Automatic Handoff from outside the worktree, loop prevention, `--no-handoff`, and Manual Handoff fallback.
   - Covers: Requirement: Worktree isolation; Requirement: Review Base selection
-- [ ] 5. Implement the task implementation prompt/handoff that loads the Feature Spec context, instructs meaningful TDD only when applicable, avoids tests for mundane implementation details, and asks for deterministic validation evidence.
+- [x] 5. Implement the task implementation prompt/handoff that loads the Feature Spec context, instructs meaningful TDD only when applicable, avoids tests for mundane implementation details, and asks for deterministic validation evidence.
   - Covers: Requirement: Meaningful test-first behavior; Requirement: Deterministic verification gate
 - [ ] 6. Implement fresh-session clean-eye task review that seeds the review with the selected task, relevant spec sections, diff, changed files, commands run, and validation output, and requires a `PASS`, `FAIL`, or `BLOCKED` verdict.
   - Covers: Requirement: Fresh-session clean-eye review
