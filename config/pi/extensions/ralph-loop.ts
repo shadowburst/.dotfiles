@@ -14,10 +14,13 @@ const STATE_VERSION = 1;
 
 type RalphMode = "one" | "all" | "final-review" | "pr";
 
-type RalphState = {
+export type FinalReviewStatus = "PASS" | "FAIL" | "BLOCKED";
+
+export type RalphState = {
   version: number;
   repoRoot: string;
   specPath: string;
+  canonicalSpecPath: string;
   specSlug: string;
   worktreePath: string;
   branch: string;
@@ -25,7 +28,7 @@ type RalphState = {
   createdFrom: string;
   taskCommits: Record<string, string>;
   allMode?: boolean;
-  finalReviewStatus?: "PASS" | "FAIL" | "BLOCKED";
+  finalReviewStatus?: FinalReviewStatus;
   finalReviewSummary?: string;
   pullRequestUrl?: string;
 };
@@ -179,25 +182,53 @@ function safeWorktreeName(slug: string): string {
   return `ralph-${slug.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "")}`;
 }
 
-function cacheRoot(): string {
-  const agentDir = process.env.PI_CODING_AGENT_DIR || join(homedir(), ".pi", "agent");
+function cacheRoot(agentDir = process.env.PI_CODING_AGENT_DIR || join(homedir(), ".pi", "agent")): string {
   return join(agentDir, "cache", "ralph");
 }
 
-function statePath(repoIdentityPath: string, specKey: string): string {
+export function statePath(repoIdentityPath: string, specKey: string, agentDir?: string): string {
   const repoId = createHash("sha256").update(repoIdentityPath).digest("hex").slice(0, 16);
   const specId = createHash("sha256").update(specKey).digest("hex").slice(0, 12);
-  return join(cacheRoot(), repoId, `${specSlug(specKey)}-${specId}.json`);
+  return join(cacheRoot(agentDir), repoId, `${specSlug(specKey)}-${specId}.json`);
 }
 
-async function readState(path: string): Promise<RalphState | undefined> {
+export function canonicalSpecKey(repo: string, absoluteSpec: string): string {
+  return relativeTo(repo, absoluteSpec).replace(/\\/g, "/");
+}
+
+export function normalizeState(raw: Partial<RalphState>, fallbackSpecPath: string): RalphState {
+  const specPath = raw.specPath || fallbackSpecPath;
+  const state: RalphState = {
+    version: raw.version || STATE_VERSION,
+    repoRoot: raw.repoRoot || "",
+    specPath,
+    canonicalSpecPath: raw.canonicalSpecPath || specPath,
+    specSlug: raw.specSlug || specSlug(specPath),
+    worktreePath: raw.worktreePath || "",
+    branch: raw.branch || "",
+    reviewBase: raw.reviewBase || "",
+    createdFrom: raw.createdFrom || "",
+    taskCommits: raw.taskCommits || {},
+    allMode: raw.allMode,
+    finalReviewStatus: raw.finalReviewStatus,
+    finalReviewSummary: raw.finalReviewSummary,
+    pullRequestUrl: raw.pullRequestUrl,
+  };
+
+  for (const field of ["repoRoot", "specPath", "canonicalSpecPath", "worktreePath", "branch", "reviewBase", "createdFrom"] as const) {
+    if (!state[field]) throw new Error(`Ralph state is missing required metadata field: ${field}`);
+  }
+  return state;
+}
+
+async function readState(path: string, fallbackSpecPath: string): Promise<RalphState | undefined> {
   if (!existsSync(path)) return undefined;
-  return JSON.parse(await readFile(path, "utf8")) as RalphState;
+  return normalizeState(JSON.parse(await readFile(path, "utf8")) as Partial<RalphState>, fallbackSpecPath);
 }
 
 async function writeState(path: string, state: RalphState): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+  await writeFile(path, `${JSON.stringify(normalizeState(state, state.specPath), null, 2)}\n`, "utf8");
 }
 
 async function repoRoot(cwd: string): Promise<string> {
@@ -307,9 +338,10 @@ async function isIgnored(repo: string, path: string): Promise<boolean> {
 }
 
 async function ensureWorktree(ctx: ExtensionCommandContext, parsed: ParsedArgs, root: string, absoluteSpec: string): Promise<RalphState> {
-  const slug = specSlug(absoluteSpec);
-  const cachePath = statePath(await repoIdentity(root), relativeTo(root, absoluteSpec));
-  const existing = await readState(cachePath);
+  const specKey = canonicalSpecKey(root, absoluteSpec);
+  const slug = specSlug(specKey);
+  const cachePath = statePath(await repoIdentity(root), specKey);
+  const existing = await readState(cachePath, specKey);
   if (existing) {
     const status = await gitStatus(root);
     if (status && !isInside(existing.worktreePath, ctx.cwd)) {
@@ -355,7 +387,8 @@ async function ensureWorktree(ctx: ExtensionCommandContext, parsed: ParsedArgs, 
   const state: RalphState = {
     version: STATE_VERSION,
     repoRoot: root,
-    specPath: relativeTo(root, absoluteSpec),
+    specPath: specKey,
+    canonicalSpecPath: specKey,
     specSlug: slug,
     worktreePath,
     branch,
@@ -539,7 +572,7 @@ async function commandHandler(args: string, ctx: ExtensionCommandContext, pi: Ex
   const state = await ensureWorktree(ctx, parsed, root, absoluteSpec);
   if (parsed.mode === "all" && !state.allMode) {
     state.allMode = true;
-    await writeState(statePath(await repoIdentity(root), relativeTo(root, absoluteSpec)), state);
+    await writeState(statePath(await repoIdentity(root), canonicalSpecKey(root, absoluteSpec)), state);
   }
   if (!isInside(state.worktreePath, ctx.cwd)) {
     const worktreeSpec = join(state.worktreePath, relativeTo(root, absoluteSpec));
@@ -639,8 +672,9 @@ export default function (pi: ExtensionAPI) {
       const sha = await git(["rev-parse", "HEAD"], root);
 
       const canonicalSpec = resolveInRepo(root, params.specPath.replace(/^@/, ""));
-      const cachePath = statePath(await repoIdentity(root), relativeTo(root, canonicalSpec));
-      const state = await readState(cachePath);
+      const specKey = canonicalSpecKey(root, canonicalSpec);
+      const cachePath = statePath(await repoIdentity(root), specKey);
+      const state = await readState(cachePath, specKey);
       let followUp = "";
       if (state) {
         state.taskCommits[String(params.taskNumber)] = sha;
@@ -680,8 +714,9 @@ export default function (pi: ExtensionAPI) {
     async execute(_toolCallId, params, _signal, _onUpdate, ctx: ExtensionContext) {
       const root = await repoRoot(ctx.cwd);
       const spec = resolveInRepo(root, params.specPath.replace(/^@/, ""));
-      const cachePath = statePath(await repoIdentity(root), relativeTo(root, spec));
-      const state = await readState(cachePath);
+      const specKey = canonicalSpecKey(root, spec);
+      const cachePath = statePath(await repoIdentity(root), specKey);
+      const state = await readState(cachePath, specKey);
       if (!state) throw new Error(`No Ralph state found for ${spec}`);
       state.finalReviewStatus = params.verdict;
       state.finalReviewSummary = `Standards: ${params.standardsSummary}\n\nSpec: ${params.specSummary}\n\nValidation: ${params.validationEvidence}`;
@@ -708,8 +743,9 @@ export default function (pi: ExtensionAPI) {
       }
       const root = await repoRoot(ctx.cwd);
       const spec = resolveInRepo(root, params.specPath.replace(/^@/, ""));
-      const cachePath = statePath(await repoIdentity(root), relativeTo(root, spec));
-      const state = await readState(cachePath);
+      const specKey = canonicalSpecKey(root, spec);
+      const cachePath = statePath(await repoIdentity(root), specKey);
+      const state = await readState(cachePath, specKey);
       if (!state) throw new Error(`No Ralph state found for ${spec}`);
       if (state.finalReviewStatus !== "PASS") throw new Error(`Final review status is ${state.finalReviewStatus ?? "unknown"}; refusing to create Pull Request.`);
 

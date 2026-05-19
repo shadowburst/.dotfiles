@@ -519,7 +519,7 @@ The Ralph Loop Pi Extension SHALL use a bounded fix loop for Remote Check Gate f
   - Covers: Requirement: Ralph command entrypoint
 - [x] 2. Implement Feature Spec parsing for `## Implementation Tasks`, including top-level checkbox selection, task-number targeting, all-tasks iteration, validation/review task recognition, and deterministic checkbox updates.
   - Covers: Requirement: Feature Spec task ledger; Requirement: Validation and review tasks
-- [ ] 3. Implement Pi cache metadata storage keyed by repository and Feature Spec, including resume behavior for branch, worktree path, Review Base, created-from commit, task commits, and final review status.
+- [x] 3. Implement Pi cache metadata storage keyed by repository and Feature Spec, including resume behavior for branch, worktree path, Review Base, created-from commit, task commits, and final review status.
   - Covers: Requirement: Pi cache metadata; Requirement: Review Base selection
 - [ ] 4. Implement git worktree orchestration under `.worktrees`, including first-run creation, dirty original-checkout detection, interactive Context-Capture Commit creation, existing-worktree dirty warnings, existing-worktree reuse, branch naming, Review Base recording, `.worktrees` ignore warning, Automatic Handoff from outside the worktree, loop prevention, `--no-handoff`, and Manual Handoff fallback.
   - Covers: Requirement: Worktree isolation; Requirement: Review Base selection
