@@ -33,24 +33,20 @@ A Pi Extension that exposes Model Context Protocol server capabilities to Pi.
 _Avoid_: MCP plugin, MCP package
 
 **Ralph Loop**:
-A Pi Extension-driven implementation loop that consumes one Feature Spec, selects exactly one unchecked implementation task, asks Pi to implement it, validates it with tests or CI-quality checks, hands off to a fresh Pi session seeded only with review-relevant artifacts, performs a clean-eye review, fixes real issues through a bounded fix/retest cycle, verifies, commits the completed task, and then completes that one task before stopping or continuing by explicit loop control.
+A deterministic implementation loop, invoked from Pi, that consumes one Feature Spec, selects exactly one unchecked implementation task, asks Pi to implement it, validates it with tests or CI-quality checks, hands off to a fresh Pi session seeded only with review-relevant artifacts, performs a clean-eye review, fixes real issues through a bounded fix/retest cycle, verifies, commits the completed task, and then completes that one task before stopping or continuing by explicit loop control.
 _Avoid_: Autonomous sprint, agent workflow, task runner
 
+**Ralph Orchestrator**:
+The workflow engine behind a Ralph Loop that coordinates phase-specific Pi sessions, validation gates, review gates, task completion commits, and final review on the current branch.
+_Avoid_: Handoff script, wrapper command, extension logic
+
+**Ralph Agent Session**:
+A fresh Pi agent session created for one Ralph phase, such as task implementation, task review, refactoring, or final branch review.
+_Avoid_: Subagent, nested Pi, continuation
+
 **Review Base**:
-The git ref or commit used as the left side of a Ralph Loop final branch review, defaulting to the closest branch point from which the Ralph feature branch was created unless the user supplies an explicit base.
+The git ref or commit used as the left side of a Ralph Loop final branch review, recorded at the start of a Ralph run on the current branch.
 _Avoid_: Fixed point, base thing, original HEAD
-
-**Automatic Handoff**:
-A Ralph Loop transfer where Ralph starts a replacement Pi process rooted in the Ralph worktree and reruns the Ralph command without requiring the user to accept or perform a manual prompt.
-_Avoid_: Automatic restart, cwd switch
-
-**Manual Handoff**:
-A Ralph Loop transfer where Ralph shows or writes the worktree startup command for the user to perform because Automatic Handoff is disabled, unavailable, or failed.
-_Avoid_: Manual restart, cd prompt
-
-**Context-Capture Commit**:
-A user-approved commit created by Ralph on the original checkout branch before first Ralph worktree creation, so uncommitted planning or spec context is included in the Ralph branch.
-_Avoid_: Auto-commit, stash commit, handoff commit
 
 ## Relationships
 
@@ -61,6 +57,8 @@ _Avoid_: Auto-commit, stash commit, handoff commit
 - An **MCP Bridge** is a **Pi Extension**.
 - An **Agent Skill** may produce or maintain one or more **Feature Specs**.
 - A **Ralph Loop** consumes a **Feature Spec** and operates on exactly one implementation task at a time.
+- A **Ralph Loop** runs on the current branch and requires a clean working tree before starting.
+- A **Ralph Agent Session** may be guided by an **Agent Skill** for phase-specific behavior such as behavior-preserving refactoring.
 
 ## Example dialogue
 

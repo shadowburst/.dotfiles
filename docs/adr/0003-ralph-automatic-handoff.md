@@ -1,3 +1,5 @@
-# Ralph uses Automatic Handoff for worktree entry
+# Superseded: Ralph Automatic Handoff
 
-Ralph will prefer Automatic Handoff when a `/ralph` command is invoked outside the Ralph worktree: it starts a replacement Pi process rooted in the worktree and reruns the Ralph command there. This is a deliberate best-effort process handoff rather than an in-process cwd switch because Pi does not expose a safe command-context API for replacing the active runtime with a different cwd; Ralph keeps Manual Handoff as the fallback when Automatic Handoff is disabled, unavailable, already attempted, or fails.
+This ADR is superseded by `docs/adr/0005-ralph-current-branch-orchestration.md`.
+
+The previous design had Ralph create a worktree and perform Automatic Handoff into a replacement Pi process rooted in that worktree. Ralph no longer uses that workflow. Ralph now runs on the current checkout and current branch, requires a clean working tree before starting, and focuses on deterministic task orchestration, validation, review, refactor, commits, and final branch review.
