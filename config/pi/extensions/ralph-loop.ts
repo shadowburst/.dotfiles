@@ -89,6 +89,11 @@ export type RemoteCheckGateResult = {
   summary: string;
 };
 
+export type RemoteFixDecision =
+  | { action: "no-fix"; message: string }
+  | { action: "fix"; nextAttempt: number; message: string }
+  | { action: "stop-blocked"; message: string };
+
 export type ParsedArgs = {
   specPath?: string;
   taskNumber?: number;
@@ -179,7 +184,32 @@ export function classifyRemoteChecks(checks: RemoteCheck[]): RemoteCheckGateResu
   };
 }
 
-function contextCaptureBody(status: string): string {
+export function remoteFixDecision(verdict: RemoteCheckVerdict | undefined, remoteFixAttemptCount: number, maxRemoteFixAttempts = 3): RemoteFixDecision {
+  const attempt = Math.max(0, Math.floor(remoteFixAttemptCount));
+  if (verdict === "PASS") return { action: "no-fix", message: "Remote Check Gate passed; no remote-fix iteration is needed." };
+  if (verdict === "BLOCKED" || verdict === undefined) return { action: "stop-blocked", message: "Remote Check Gate is blocked or unavailable. Stop without marking the Pull Request ready." };
+  if (attempt >= maxRemoteFixAttempts) return { action: "stop-blocked", message: `Remote Check Gate still fails after ${maxRemoteFixAttempts} remote-fix iterations. Stop and leave the Pull Request in draft.` };
+  return { action: "fix", nextAttempt: attempt + 1, message: `Remote Check Gate failed. Run remote-fix iteration ${attempt + 1} of ${maxRemoteFixAttempts}.` };
+}
+
+function buildRemoteFixPrompt(state: RalphState, specPath: string, decision: Extract<RemoteFixDecision, { action: "fix" }>, localValidationCommand?: string): string {
+  return `Continue the bounded Ralph Remote Check Gate fix loop.
+
+Feature Spec: @${specPath}
+Pull Request: ${state.pullRequestUrl || state.pullRequestNumber || "(unknown)"}
+Remote-fix iteration: ${decision.nextAttempt} of 3
+Failed hosted checks:
+${state.failedCheckSummaries?.length ? state.failedCheckSummaries.map((item) => `- ${item}`).join("\n") : "(No failed check summaries recorded.)"}
+
+Instructions:
+1. Fix only issues directly indicated by the failing hosted checks. Do not rewrite prior task commits; create an additional conventional fix commit.
+2. ${localValidationCommand ? `Run mapped local validation before committing: ${localValidationCommand}` : "If a failing hosted check cannot be reproduced locally, state why the hosted check is the verifier and make only a narrowly targeted fix."}
+3. Commit the fix with a Conventional Commit title, push the branch, then call ralph_watch_remote_checks again.
+4. If the next Remote Check Gate verdict is FAIL, call ralph_start_remote_fix with the updated state; Ralph will stop after three remote-fix iterations.
+5. If the gate is BLOCKED, stop and report the unavailable or pending checks.`;
+}
+
+function contextCaptureBody(status: string) {
   return `User approved committing dirty original-checkout changes before Ralph\nworktree creation so the Ralph branch includes the current context.\n\nPre-commit status:\n${status}`;
 }
 
@@ -985,6 +1015,7 @@ Instructions:
 - Resume hosted Pull Request check watching for the existing recorded Pull Request only.
 - Do not create a new Pull Request in --remote-checks mode.
 - Use ralph_watch_remote_checks to watch all hosted checks and update the cached Remote Check Gate verdict with failed or pending check summaries.
+- If the verdict is FAIL, use ralph_start_remote_fix to enter the bounded remote-fix loop with at most three additional conventional fix commits.
 - If no Pull Request URL or number is recorded, report BLOCKED and do not create a Pull Request.`;
 }
 
@@ -1348,10 +1379,44 @@ export default function (pi: ExtensionAPI) {
       state.remoteCheckVerdict = result.verdict;
       state.failedCheckSummaries = result.failedCheckSummaries;
       state.pendingCheckSummaries = result.pendingCheckSummaries;
+      if (result.verdict === "PASS") state.remoteFixAttemptCount = state.remoteFixAttemptCount || 0;
       await writeState(cachePath, state);
       return {
         content: [{ type: "text", text: result.summary }],
         details: result,
+      };
+    },
+  });
+
+  pi.registerTool({
+    name: "ralph_start_remote_fix",
+    label: "Start Ralph Remote Fix",
+    description: "Start or stop the bounded remote-check fix loop after a Remote Check Gate verdict.",
+    promptSnippet: "Use ralph_start_remote_fix after Remote Check Gate FAIL to run at most three remote-fix iterations.",
+    promptGuidelines: [
+      "Use ralph_start_remote_fix only for Remote Check Gate follow-up on an existing draft Pull Request.",
+      "ralph_start_remote_fix queues a narrowly scoped fix prompt for FAIL until the three-attempt limit is reached; it stops for PASS or BLOCKED.",
+    ],
+    parameters: Type.Object({
+      specPath: Type.String(),
+      localValidationCommand: Type.Optional(Type.String({ description: "Mapped local validation command for the failing hosted check, when available." })),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx: ExtensionContext) {
+      const root = await repoRoot(ctx.cwd);
+      const spec = resolveInRepo(root, params.specPath.replace(/^@/, ""));
+      const specKey = canonicalSpecKey(root, spec);
+      const cachePath = statePath(await repoIdentity(root), specKey);
+      const state = await readState(cachePath, specKey);
+      if (!state) throw new Error(`No Ralph state found for ${spec}`);
+      const decision = remoteFixDecision(state.remoteCheckVerdict, state.remoteFixAttemptCount || 0);
+      if (decision.action === "fix") {
+        state.remoteFixAttemptCount = decision.nextAttempt;
+        await writeState(cachePath, state);
+        pi.sendUserMessage(buildRemoteFixPrompt(state, relativeTo(root, spec), decision, params.localValidationCommand), { deliverAs: "followUp" });
+      }
+      return {
+        content: [{ type: "text", text: decision.message }],
+        details: { decision, remoteFixAttemptCount: state.remoteFixAttemptCount || 0 },
       };
     },
   });
