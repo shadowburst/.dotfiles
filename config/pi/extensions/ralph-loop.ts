@@ -682,28 +682,58 @@ Completion tool guidance:
 - Do not edit the checkbox yourself; ralph_complete_task owns the task ledger update.`;
 }
 
-function buildFinalReviewPrompt(state: RalphState, specPath: string): string {
+export function buildFinalReviewPrompt(state: RalphState, specPath: string, specMarkdown = "", diff = "", changedFiles: string[] = [], validationEvidence = ""): string {
   return `Run the final Ralph branch review with a clean context.
 
 Feature Spec: @${specPath}
 Review Base: ${state.reviewBase}
 Branch: ${state.branch}
-Diff to review: git diff ${state.reviewBase}...HEAD
+Diff reviewed: git diff ${state.reviewBase}...HEAD
+
+Relevant Feature Spec sections:
+${specMarkdown ? relevantSpecSections(specMarkdown) || "(No relevant sections were extracted; read the Feature Spec path above if needed.)" : "Read the Feature Spec path above before deciding the Spec axis."}
+
+Changed files:
+${changedFiles.length > 0 ? changedFiles.map((file) => `- ${file}`).join("\n") : "(No changed files were supplied.)"}
+
+Branch diff:
+\`\`\`diff
+${diff || "(No diff was supplied; run git diff for the Review Base before deciding.)"}
+\`\`\`
+
+Validation evidence:
+${validationEvidence || "No validation evidence was supplied to the final review session. Run or request deterministic validation before returning PASS; return BLOCKED if validation cannot be produced."}
 
 Review axes:
 1. Standards — does the code conform to this repo's documented coding standards, domain language, architecture conventions, and CI-quality validation expectations?
 2. Spec — does the branch faithfully implement the Feature Spec and any explicitly linked external issue?
 
-Use only review-relevant artifacts: the Feature Spec, repository docs/context, final branch diff, changed files, and validation output. Do not rely on implementation-conversation memory.
+Use only review-relevant artifacts in this fresh session: the Feature Spec, repository docs/context, final branch diff, changed files, and validation output. Do not rely on implementation-conversation memory.
 
 Return a structured verdict: PASS, FAIL, or BLOCKED.
 - PASS only if both axes pass and validation evidence supports merge readiness.
 - FAIL only for real issues requiring changes, not subjective preferences.
 - BLOCKED for missing information or unverifiable state.
 
-If PASS, call ralph_record_final_review with verdict PASS and a detailed summary. Do not call ralph_create_pull_request automatically. After recording PASS, ask the user explicitly whether to create the Pull Request now; only call ralph_create_pull_request after the user clearly approves.
+If PASS, call ralph_record_final_review with verdict PASS and a detailed Standards summary, Spec summary, and validation evidence. Do not call ralph_create_pull_request automatically. After recording PASS, ask the user explicitly whether to create the Pull Request now; only call ralph_create_pull_request after the user clearly approves.
 If FAIL, fix real issues with additional conventional commits, re-run validation, and repeat review.
 If BLOCKED, stop and report what is missing.`;
+}
+
+async function startFinalBranchReview(ctx: ExtensionCommandContext, state: RalphState, specPath: string): Promise<void> {
+  const root = await repoRoot(ctx.cwd);
+  const spec = resolveInRepo(root, specPath.replace(/^@/, ""));
+  const specMarkdown = await readFile(spec, "utf8");
+  const diff = await git(["diff", "--no-ext-diff", `${state.reviewBase}...HEAD`], root, 120_000);
+  const changedFiles = (await git(["diff", "--name-only", `${state.reviewBase}...HEAD`], root, 120_000)).split("\n").filter(Boolean);
+  const prompt = buildFinalReviewPrompt(state, relativeTo(root, spec), specMarkdown, diff, changedFiles);
+  const parentSession = ctx.sessionManager.getSessionFile();
+  await ctx.newSession({
+    parentSession,
+    withSession: async (newCtx) => {
+      await newCtx.sendUserMessage(prompt);
+    },
+  });
 }
 
 function reviewPacketPath(repoIdentityPath: string, specKey: string, packetId: string): string {
@@ -830,7 +860,11 @@ async function commandHandler(args: string, ctx: ExtensionCommandContext, pi: Ex
   const unchecked = tasks.filter((task) => !task.checked);
   const worktreeSpecRelative = relativeTo(state.worktreePath, worktreeSpec);
   if (parsed.mode === "final-review") {
-    pi.sendUserMessage(`${buildFinalReviewPrompt(state, worktreeSpecRelative)}\n\n${prBodyTemplate(state, worktreeSpecRelative)}`);
+    if (unchecked.length > 0) {
+      ctx.ui.notify(`Final branch review requires all implementation tasks to be complete; ${unchecked.length} unchecked task(s) remain.`, "error");
+      return;
+    }
+    await startFinalBranchReview(ctx, state, worktreeSpecRelative);
     return;
   }
 
@@ -849,7 +883,7 @@ async function commandHandler(args: string, ctx: ExtensionCommandContext, pi: Ex
       return;
     }
 
-    pi.sendUserMessage(`${buildFinalReviewPrompt(state, worktreeSpecRelative)}\n\n${prBodyTemplate(state, worktreeSpecRelative)}`);
+    await startFinalBranchReview(ctx, state, worktreeSpecRelative);
     return;
   }
 
@@ -1037,7 +1071,7 @@ export default function (pi: ExtensionAPI) {
             pi.sendUserMessage(buildTaskPrompt(state, relativeTo(root, spec), action.task, "all"), { deliverAs: "followUp" });
           } else {
             followUp = " All tasks are complete; queued final branch review.";
-            pi.sendUserMessage(`${buildFinalReviewPrompt(state, relativeTo(root, spec))}\n\n${prBodyTemplate(state, relativeTo(root, spec))}`, { deliverAs: "followUp" });
+            pi.sendUserMessage(`/ralph ${shellQuote(relativeTo(root, spec))} --final-review`, { deliverAs: "followUp" });
           }
         }
       }
