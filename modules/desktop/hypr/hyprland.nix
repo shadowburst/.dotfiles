@@ -72,6 +72,7 @@ _: {
           scrolling.fullscreen_on_one_column = true;
           scrolling.focus_fit_method = 0;
           scrolling.wrap_focus = false;
+          scrolling.column_width = 0.667;
 
           decoration.blur = {
             enabled = true;
