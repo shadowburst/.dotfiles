@@ -545,7 +545,7 @@ The Ralph Loop Pi Extension SHALL use a bounded fix loop for Remote Check Gate f
   - Covers: Requirement: Remote check fix loop
 - [x] 15. Implement a `ralph_mark_pull_request_ready` tool that marks a draft Pull Request ready only after final review PASS and Remote Check Gate PASS.
   - Covers: Requirement: Remote Check Gate; Requirement: Pull Request creation
-- [ ] 16. Add validation for the extension itself using the smallest safely discoverable checks for this repository, including TypeScript or Pi extension loading checks if available and Nix validation from `flake.nix` where applicable.
+- [x] 16. Add validation for the extension itself using the smallest safely discoverable checks for this repository, including TypeScript or Pi extension loading checks if available and Nix validation from `flake.nix` where applicable.
   - Covers: Requirement: Deterministic verification gate
 - [ ] 17. Perform a manual Ralph-readiness review of this spec and the implemented extension, ensuring review verdicts, Remote Check Gate verdicts, cache state, worktree behavior, commit behavior, draft Pull Request behavior, and mark-ready behavior are auditable before marking the feature complete.
   - Covers: Requirement: Final branch review; Requirement: Conventional commit per verified task; Requirement: Pull Request creation; Requirement: Remote Check Gate
