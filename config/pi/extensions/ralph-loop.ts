@@ -192,6 +192,14 @@ export function remoteFixDecision(verdict: RemoteCheckVerdict | undefined, remot
   return { action: "fix", nextAttempt: attempt + 1, message: `Remote Check Gate failed. Run remote-fix iteration ${attempt + 1} of ${maxRemoteFixAttempts}.` };
 }
 
+export function canMarkPullRequestReady(state: RalphState): { ok: true; pullRequestRef: string } | { ok: false; reason: string } {
+  if (state.finalReviewStatus !== "PASS") return { ok: false, reason: `Final review status is ${state.finalReviewStatus ?? "unknown"}; refusing to mark ready.` };
+  if (state.remoteCheckVerdict !== "PASS") return { ok: false, reason: `Remote Check Gate verdict is ${state.remoteCheckVerdict ?? "unknown"}; refusing to mark ready.` };
+  const pullRequestRef = state.pullRequestUrl || (state.pullRequestNumber ? String(state.pullRequestNumber) : "");
+  if (!pullRequestRef) return { ok: false, reason: "No Pull Request URL or number is recorded; refusing to mark ready." };
+  return { ok: true, pullRequestRef };
+}
+
 function buildRemoteFixPrompt(state: RalphState, specPath: string, decision: Extract<RemoteFixDecision, { action: "fix" }>, localValidationCommand?: string): string {
   return `Continue the bounded Ralph Remote Check Gate fix loop.
 
@@ -1139,6 +1147,15 @@ export default function (pi: ExtensionAPI) {
     handler: async (args, ctx) => commandTaskReview(args, ctx),
   });
 
+  pi.registerCommand("ralph-mark-ready", {
+    description: "Mark a Ralph Pull Request ready after final review and Remote Check Gate pass.",
+    handler: async (args, _ctx) => {
+      const [specPath] = tokenize(args);
+      if (!specPath) throw new Error("Usage: /ralph-mark-ready <spec-path>");
+      pi.sendUserMessage(`Call ralph_mark_pull_request_ready for @${specPath}. It must refuse unless final review PASS and Remote Check Gate PASS are recorded.`);
+    },
+  });
+
   pi.registerTool({
     name: "ralph_start_task_review",
     label: "Start Ralph Task Review",
@@ -1381,6 +1398,9 @@ export default function (pi: ExtensionAPI) {
       state.pendingCheckSummaries = result.pendingCheckSummaries;
       if (result.verdict === "PASS") state.remoteFixAttemptCount = state.remoteFixAttemptCount || 0;
       await writeState(cachePath, state);
+      if (result.verdict === "PASS" && canMarkPullRequestReady(state).ok) {
+        pi.sendUserMessage(`/ralph-mark-ready ${shellQuote(relativeTo(root, spec))}`, { deliverAs: "followUp" });
+      }
       return {
         content: [{ type: "text", text: result.summary }],
         details: result,
@@ -1456,6 +1476,37 @@ export default function (pi: ExtensionAPI) {
       return {
         content: [{ type: "text", text: `Recorded Remote Check Gate verdict: ${params.verdict}` }],
         details: { verdict: params.verdict, failedCheckSummaries: state.failedCheckSummaries, pendingCheckSummaries: state.pendingCheckSummaries, remoteFixAttemptCount: state.remoteFixAttemptCount },
+      };
+    },
+  });
+
+  pi.registerTool({
+    name: "ralph_mark_pull_request_ready",
+    label: "Mark Ralph Pull Request Ready",
+    description: "Mark a draft Ralph Pull Request ready only after final review PASS and Remote Check Gate PASS.",
+    promptSnippet: "Mark a draft Ralph Pull Request ready after both final review and Remote Check Gate pass.",
+    promptGuidelines: [
+      "Use ralph_mark_pull_request_ready only after final review PASS and Remote Check Gate PASS are recorded.",
+      "Do not use ralph_mark_pull_request_ready for blocked, failing, pending, or unavailable Remote Check Gate states.",
+    ],
+    parameters: Type.Object({
+      specPath: Type.String({ description: "Feature Spec path, relative to the current Ralph worktree or absolute." }),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx: ExtensionContext) {
+      const root = await repoRoot(ctx.cwd);
+      const spec = resolveInRepo(root, params.specPath.replace(/^@/, ""));
+      const specKey = canonicalSpecKey(root, spec);
+      const cachePath = statePath(await repoIdentity(root), specKey);
+      const state = await readState(cachePath, specKey);
+      if (!state) throw new Error(`No Ralph state found for ${spec}`);
+      const decision = canMarkPullRequestReady(state);
+      if (!decision.ok) throw new Error(decision.reason);
+      await runCombined("gh", ["pr", "ready", decision.pullRequestRef], root, 120_000);
+      state.pullRequestDraftState = "ready";
+      await writeState(cachePath, state);
+      return {
+        content: [{ type: "text", text: `Marked Ralph Pull Request ready: ${state.pullRequestUrl || state.pullRequestNumber}` }],
+        details: { pullRequestUrl: state.pullRequestUrl, pullRequestNumber: state.pullRequestNumber, pullRequestDraftState: state.pullRequestDraftState },
       };
     },
   });
