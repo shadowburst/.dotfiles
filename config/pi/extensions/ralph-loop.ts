@@ -45,7 +45,7 @@ export type ParsedTask = {
   kind: TaskKind;
 };
 
-type ParsedArgs = {
+export type ParsedArgs = {
   specPath?: string;
   taskNumber?: number;
   mode: RalphMode;
@@ -174,11 +174,11 @@ function specSlug(specPath: string): string {
   return stripDatePrefix(basename(specPath).replace(/\.md$/, ""));
 }
 
-function safeBranchName(slug: string): string {
+export function safeBranchName(slug: string): string {
   return `ralph/${slug.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "")}`;
 }
 
-function safeWorktreeName(slug: string): string {
+export function safeWorktreeName(slug: string): string {
   return `ralph-${slug.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "")}`;
 }
 
@@ -238,6 +238,10 @@ async function repoRoot(cwd: string): Promise<string> {
 async function repoIdentity(cwd: string): Promise<string> {
   const commonDir = await git(["rev-parse", "--git-common-dir"], cwd);
   return isAbsolute(commonDir) ? commonDir : resolve(cwd, commonDir);
+}
+
+function primaryRepoRoot(currentRoot: string, repoIdentityPath: string): string {
+  return basename(repoIdentityPath) === ".git" ? dirname(repoIdentityPath) : currentRoot;
 }
 
 function resolveInRepo(repo: string, inputPath: string): string {
@@ -340,7 +344,9 @@ async function isIgnored(repo: string, path: string): Promise<boolean> {
 async function ensureWorktree(ctx: ExtensionCommandContext, parsed: ParsedArgs, root: string, absoluteSpec: string): Promise<RalphState> {
   const specKey = canonicalSpecKey(root, absoluteSpec);
   const slug = specSlug(specKey);
-  const cachePath = statePath(await repoIdentity(root), specKey);
+  const identity = await repoIdentity(root);
+  const baseRoot = primaryRepoRoot(root, identity);
+  const cachePath = statePath(identity, specKey);
   const existing = await readState(cachePath, specKey);
   if (existing) {
     const status = await gitStatus(root);
@@ -355,24 +361,28 @@ async function ensureWorktree(ctx: ExtensionCommandContext, parsed: ParsedArgs, 
   }
 
   const branch = safeBranchName(slug);
-  const worktreePath = join(root, ".worktrees", safeWorktreeName(slug));
-  if ((parsed.mode === "final-review" || parsed.mode === "pr") && !existsSync(worktreePath)) {
+  const defaultWorktreePath = join(baseRoot, ".worktrees", safeWorktreeName(slug));
+  const currentBranch = await git(["branch", "--show-current"], root);
+  const insideExpectedWorktree = basename(root) === safeWorktreeName(slug);
+  const worktreePath = existsSync(defaultWorktreePath) ? defaultWorktreePath : insideExpectedWorktree ? root : defaultWorktreePath;
+  const worktreeExists = existsSync(worktreePath);
+
+  if ((parsed.mode === "final-review" || parsed.mode === "pr") && !worktreeExists) {
     throw new Error("Ralph final-review and Pull Request modes require an existing Ralph run; no Ralph state or worktree exists for this Feature Spec.");
   }
 
   const status = await gitStatus(root);
-  if (status && !existsSync(worktreePath)) {
+  if (status && !worktreeExists && !insideExpectedWorktree) {
     await createContextCaptureCommit(ctx, root, status);
-  } else if (status && existsSync(worktreePath)) {
+  } else if (status && worktreeExists && !insideExpectedWorktree) {
     ctx.ui.notify("The original checkout is dirty; those changes are not part of the existing Ralph branch and will not be ported automatically.", "warning");
   }
 
-  const currentBranch = await git(["branch", "--show-current"], root);
   const createdFrom = await git(["rev-parse", "HEAD"], root);
   const reviewBase = parsed.reviewBase || currentBranch || createdFrom;
 
   await mkdir(dirname(worktreePath), { recursive: true });
-  if (!existsSync(worktreePath)) {
+  if (!worktreeExists) {
     if (await branchExists(root, branch)) {
       await git(["worktree", "add", worktreePath, branch], root, 120_000);
     } else {
@@ -380,13 +390,13 @@ async function ensureWorktree(ctx: ExtensionCommandContext, parsed: ParsedArgs, 
     }
   }
 
-  if (!(await isIgnored(root, ".worktrees")) && ctx.hasUI) {
+  if (!(await isIgnored(baseRoot, ".worktrees")) && ctx.hasUI) {
     ctx.ui.notify("Ralph worktrees live under .worktrees, but .worktrees is not ignored by this repo.", "warning");
   }
 
   const state: RalphState = {
     version: STATE_VERSION,
-    repoRoot: root,
+    repoRoot: baseRoot,
     specPath: specKey,
     canonicalSpecPath: specKey,
     specSlug: slug,
@@ -405,7 +415,7 @@ function isInside(parent: string, child: string): boolean {
   return rel === "" || (!!rel && !rel.startsWith("..") && !isAbsolute(rel));
 }
 
-function formatRalphInvocation(specPath: string, parsed: ParsedArgs, includeNoHandoff = false): string {
+export function formatRalphInvocation(specPath: string, parsed: ParsedArgs, includeNoHandoff = false): string {
   const tokens = [specPath];
   if (parsed.taskNumber !== undefined) tokens.push(String(parsed.taskNumber));
   if (parsed.mode === "all") tokens.push("--all");
@@ -576,7 +586,7 @@ async function commandHandler(args: string, ctx: ExtensionCommandContext, pi: Ex
   }
   if (!isInside(state.worktreePath, ctx.cwd)) {
     const worktreeSpec = join(state.worktreePath, relativeTo(root, absoluteSpec));
-    const ralphInvocation = formatRalphInvocation(relativeTo(state.worktreePath, worktreeSpec), parsed);
+    const ralphInvocation = formatRalphInvocation(relativeTo(state.worktreePath, worktreeSpec), parsed, true);
     ctx.ui.notify(`Ralph worktree ready: ${state.worktreePath}`, "info");
 
     const handoffAlreadyAttempted = process.env.RALPH_HANDOFF === state.worktreePath || process.env.RALPH_HANDOFF === "1";
