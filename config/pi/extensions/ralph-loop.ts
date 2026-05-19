@@ -29,6 +29,7 @@ export type RalphState = {
   createdFrom: string;
   taskCommits: Record<string, string>;
   allMode?: boolean;
+  allModeStopReason?: string;
   finalReviewStatus?: FinalReviewStatus;
   finalReviewSummary?: string;
   pullRequestUrl?: string;
@@ -228,6 +229,7 @@ export function normalizeState(raw: Partial<RalphState>, fallbackSpecPath: strin
     createdFrom: raw.createdFrom || "",
     taskCommits: raw.taskCommits || {},
     allMode: raw.allMode,
+    allModeStopReason: raw.allModeStopReason,
     finalReviewStatus: raw.finalReviewStatus,
     finalReviewSummary: raw.finalReviewSummary,
     pullRequestUrl: raw.pullRequestUrl,
@@ -531,7 +533,8 @@ function validationEvidenceBlock(): string {
 - If no meaningful automated verification exists, stop with the task implemented but unchecked unless the user explicitly authorizes manual verification.
 - After implementation and initial validation, call ralph_start_task_review with the implementation summary, commands run, and validation output so Ralph can start a fresh-session clean-eye review.
 - Do not call ralph_complete_task unless deterministic verification and clean-eye review both pass.
-- When calling ralph_complete_task, include finalValidationCommand so Ralph can rerun validation after the Feature Spec checkbox edit, or finalValidationEvidence when a rerun is unnecessary and explicitly confirmed.`;
+- When calling ralph_complete_task, include finalValidationCommand so Ralph can rerun validation after the Feature Spec checkbox edit, or finalValidationEvidence when a rerun is unnecessary and explicitly confirmed.
+- In all-tasks mode, do not manually start another task after FAIL, BLOCKED, or unavailable deterministic verification; Ralph only continues after ralph_complete_task succeeds for the current task.`;
 }
 
 function extractSection(markdown: string, heading: string): string {
@@ -557,16 +560,21 @@ function relevantSpecSections(markdown: string): string {
   return sections.join("\n\n");
 }
 
+export function nextAllTasksAction(tasks: ParsedTask[]): { action: "run-next"; task: ParsedTask } | { action: "final-review" } {
+  const nextTask = selectTask(tasks);
+  return nextTask ? { action: "run-next", task: nextTask } : { action: "final-review" };
+}
+
 export function taskReviewDecision(verdict: TaskReviewVerdict, reviewAttempt: number, maxFixIterations = 3): TaskReviewDecision {
   const attempt = Math.max(0, Math.floor(reviewAttempt));
   if (verdict === "PASS") {
     return { action: "pass", message: "Review passed. Proceed only after final deterministic verification, then use ralph_complete_task." };
   }
   if (verdict === "BLOCKED") {
-    return { action: "stop-blocked", message: "Review is blocked. Stop without checking the task or creating a success commit." };
+    return { action: "stop-blocked", message: "Review is blocked. Stop all-tasks mode without checking the task or creating a success commit." };
   }
   if (attempt >= maxFixIterations) {
-    return { action: "stop-failed", message: `Review remains failing after ${maxFixIterations} fix/retest iterations. Stop without checking the task or creating a success commit.` };
+    return { action: "stop-failed", message: `Review remains failing after ${maxFixIterations} fix/retest iterations. Stop all-tasks mode without checking the task or creating a success commit.` };
   }
   return { action: "fix", nextAttempt: attempt + 1, message: `Review failed. Run fix/retest iteration ${attempt + 1} of ${maxFixIterations}, fixing only the required issues.` };
 }
@@ -659,13 +667,14 @@ Required loop:
 1. Load the repository context and Feature Spec context listed above before making changes.
 2. Implement only task ${task.number}. Do not broaden scope to other unchecked tasks. Treat the non-checkbox sub-bullets above as guidance for this selected task, not as independently runnable tasks.
 3. If the selected task kind is validation or review, execute it as a first-class Ralph task; if it already passes and produces no code changes, deterministic verification plus the spec checkbox update may be the only commit content.
-4. Apply the TDD policy above: use test-first development only for meaningful feature behavior, and explicitly skip new tests for incidental implementation details.
-5. Run deterministic validation and capture the validation evidence described above.
-6. Create a clean-eye review using only the spec, selected task, final diff, changed files, and validation output. The review verdict must be PASS, FAIL, or BLOCKED.
-7. If review returns FAIL, fix only real required issues and re-test. Do at most 3 fix/retest iterations.
-8. If review returns BLOCKED or deterministic verification is unavailable, stop without marking the task complete.
-9. Only after PASS and final deterministic verification, call the ralph_complete_task tool for task ${task.number}. The tool will check the spec checkbox and create the conventional commit.
-10. After the commit, report the commit SHA and whether more unchecked tasks remain.
+4. In all-tasks mode, still complete this one full Ralph Loop before any later task; do not continue after FAIL, BLOCKED, or unavailable deterministic verification.
+5. Apply the TDD policy above: use test-first development only for meaningful feature behavior, and explicitly skip new tests for incidental implementation details.
+6. Run deterministic validation and capture the validation evidence described above.
+7. Create a clean-eye review using only the spec, selected task, final diff, changed files, and validation output. The review verdict must be PASS, FAIL, or BLOCKED.
+8. If review returns FAIL, fix only real required issues and re-test. Do at most 3 fix/retest iterations.
+9. If review returns BLOCKED or deterministic verification is unavailable, stop without marking the task complete.
+10. Only after PASS and final deterministic verification, call the ralph_complete_task tool for task ${task.number}. The tool will check the spec checkbox and create the conventional commit.
+11. After the commit, report the commit SHA and whether more unchecked tasks remain.
 
 Completion tool guidance:
 - Use a Conventional Commit title like: ${conventionalTitleForTask(task)}
@@ -793,8 +802,9 @@ async function commandHandler(args: string, ctx: ExtensionCommandContext, pi: Ex
   if (!existsSync(absoluteSpec)) throw new Error(`Feature Spec not found: ${absoluteSpec}`);
 
   const state = await ensureWorktree(ctx, parsed, root, absoluteSpec);
-  if (parsed.mode === "all" && !state.allMode) {
+  if (parsed.mode === "all" && (!state.allMode || state.allModeStopReason)) {
     state.allMode = true;
+    state.allModeStopReason = undefined;
     await writeState(statePath(await repoIdentity(root), canonicalSpecKey(root, absoluteSpec)), state);
   }
   if (!isInside(state.worktreePath, ctx.cwd)) {
@@ -940,12 +950,13 @@ export default function (pi: ExtensionAPI) {
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx: ExtensionContext) {
       const decision = taskReviewDecision(params.verdict, params.reviewAttempt);
+      const root = await repoRoot(ctx.cwd);
+      const spec = resolveInRepo(root, params.specPath.replace(/^@/, ""));
+      const { tasks } = await loadTasks(spec);
+      const task = tasks.find((candidate) => candidate.number === params.taskNumber);
+      if (!task) throw new Error(`Task ${params.taskNumber} was not found in ${spec}`);
+
       if (decision.action === "fix") {
-        const root = await repoRoot(ctx.cwd);
-        const spec = resolveInRepo(root, params.specPath.replace(/^@/, ""));
-        const { tasks } = await loadTasks(spec);
-        const task = tasks.find((candidate) => candidate.number === params.taskNumber);
-        if (!task) throw new Error(`Task ${params.taskNumber} was not found in ${spec}`);
         const packet: TaskReviewPacket = {
           specPath: relativeTo(root, spec),
           task,
@@ -957,6 +968,14 @@ export default function (pi: ExtensionAPI) {
           reviewAttempt: params.reviewAttempt,
         };
         pi.sendUserMessage(buildFixRetestPrompt(packet, params.requiredFixes || "(No required fixes were provided.)", params.reviewSummary, decision.nextAttempt), { deliverAs: "followUp" });
+      } else if (decision.action === "stop-blocked" || decision.action === "stop-failed") {
+        const specKey = canonicalSpecKey(root, spec);
+        const cachePath = statePath(await repoIdentity(root), specKey);
+        const state = await readState(cachePath, specKey);
+        if (state?.allMode) {
+          state.allModeStopReason = decision.action === "stop-blocked" ? params.blockingIssues || params.reviewSummary : params.requiredFixes || params.reviewSummary;
+          await writeState(cachePath, state);
+        }
       }
       const detailText = decision.action === "stop-blocked" && params.blockingIssues ? `${decision.message}\n\nBlocking issues:\n${params.blockingIssues}` : decision.action === "stop-failed" && params.requiredFixes ? `${decision.message}\n\nRemaining required fixes:\n${params.requiredFixes}` : decision.message;
       return {
@@ -1012,10 +1031,10 @@ export default function (pi: ExtensionAPI) {
 
         if (state.allMode) {
           const { tasks } = await loadTasks(spec);
-          const nextTask = selectTask(tasks);
-          if (nextTask) {
-            followUp = ` Continuing all-tasks mode with task ${nextTask.number}.`;
-            pi.sendUserMessage(buildTaskPrompt(state, relativeTo(root, spec), nextTask, "all"), { deliverAs: "followUp" });
+          const action = nextAllTasksAction(tasks);
+          if (action.action === "run-next") {
+            followUp = ` Continuing all-tasks mode with task ${action.task.number}.`;
+            pi.sendUserMessage(buildTaskPrompt(state, relativeTo(root, spec), action.task, "all"), { deliverAs: "followUp" });
           } else {
             followUp = " All tasks are complete; queued final branch review.";
             pi.sendUserMessage(`${buildFinalReviewPrompt(state, relativeTo(root, spec))}\n\n${prBodyTemplate(state, relativeTo(root, spec))}`, { deliverAs: "followUp" });

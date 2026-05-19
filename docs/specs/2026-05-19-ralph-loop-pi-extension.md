@@ -531,7 +531,7 @@ The Ralph Loop Pi Extension SHALL use a bounded fix loop for Remote Check Gate f
   - Covers: Requirement: Bounded fix and retest flow
 - [x] 8. Implement verified task completion: update the spec checkbox, rerun or confirm final validation after the checkbox edit, create one conventional commit for the task, and record the commit in metadata.
   - Covers: Requirement: Conventional commit per verified task; Requirement: Feature Spec task ledger
-- [ ] 9. Implement all-tasks mode so it repeats one complete Ralph Loop per task and stops for failures, blocked reviews, or unavailable deterministic verification.
+- [x] 9. Implement all-tasks mode so it repeats one complete Ralph Loop per task and stops for failures, blocked reviews, or unavailable deterministic verification.
   - Covers: Requirement: Ralph command entrypoint; Requirement: Deterministic verification gate
 - [ ] 10. Implement final branch review when all tasks are complete, using a fresh context and a two-axis Standards and Spec review over the diff between Review Base and branch head.
   - Covers: Requirement: Final branch review
