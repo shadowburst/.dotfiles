@@ -224,25 +224,25 @@ The MCP Bridge SHALL register an inspect-only `/mcp` command that reports config
 
 ## Implementation Tasks
 
-- [ ] 1. Create the `config/pi/extensions/mcp-bridge/` extension skeleton with `index.ts`, supporting modules, `package.json`, and `servers.example.json`.
+- [x] 1. Create the `config/pi/extensions/mcp-bridge/` extension skeleton with `index.ts`, supporting modules, `package.json`, and `servers.example.json`.
   - Covers: Requirement: Local extension placement; Requirement: Local server configuration
-- [ ] 2. Define and validate the `servers.json` configuration model, including default-enabled servers, disabled servers, command/args, env interpolation, and allow/deny filters.
+- [x] 2. Define and validate the `servers.json` configuration model, including default-enabled servers, disabled servers, command/args, env interpolation, and allow/deny filters.
   - Covers: Requirement: Local server configuration; Requirement: Environment interpolation; Requirement: Tool filtering
-- [ ] 3. Integrate the MCP SDK for stdio server startup, eager tool discovery, per-server state tracking, and session shutdown cleanup.
+- [x] 3. Integrate the MCP SDK for stdio server startup, eager tool discovery, per-server state tracking, and session shutdown cleanup.
   - Covers: Requirement: Stdio MCP server lifecycle; Requirement: Isolated failures
-- [ ] 4. Implement deterministic server/tool name sanitization, collision detection, and Pi tool-name construction.
+- [x] 4. Implement deterministic server/tool name sanitization, collision detection, and Pi tool-name construction.
   - Covers: Requirement: Deterministic Pi tool names
-- [ ] 5. Implement best-effort MCP JSON Schema to Pi tool parameter schema conversion with generic fallback and per-tool failure reporting.
+- [x] 5. Implement best-effort MCP JSON Schema to Pi tool parameter schema conversion with generic fallback and per-tool failure reporting.
   - Covers: Requirement: Schema conversion; Requirement: Isolated failures
-- [ ] 6. Register discovered MCP tools as Pi custom tools and proxy tool calls to the originating MCP server.
+- [x] 6. Register discovered MCP tools as Pi custom tools and proxy tool calls to the originating MCP server.
   - Covers: Requirement: Tool-only MCP exposure; Requirement: MCP tool execution
-- [ ] 7. Normalize MCP tool results into text-first Pi tool results with raw MCP responses in result details and errors marked as errors.
+- [x] 7. Normalize MCP tool results into text-first Pi tool results with raw MCP responses in result details and errors marked as errors.
   - Covers: Requirement: MCP tool execution
-- [ ] 8. Implement the inspect-only `/mcp` command, including missing-config guidance, server status output, and `/mcp tools <server>` output.
+- [x] 8. Implement the inspect-only `/mcp` command, including missing-config guidance, server status output, and `/mcp tools <server>` output.
   - Covers: Requirement: MCP inspection command; Requirement: Local server configuration
-- [ ] 9. Add focused tests or executable validation fixtures for config parsing, env interpolation, name sanitization, schema conversion fallback, and result normalization.
+- [x] 9. Add focused tests or executable validation fixtures for config parsing, env interpolation, name sanitization, schema conversion fallback, and result normalization.
   - Covers: Requirement: Local server configuration; Requirement: Environment interpolation; Requirement: Deterministic Pi tool names; Requirement: Schema conversion; Requirement: MCP tool execution
-- [ ] 10. Validate repository integration by checking that `servers.json` remains untracked, Pi can load/reload the extension, and the repository still passes `nix flake check` when Nix validation is available; record the reason if that check is skipped.
+- [x] 10. Validate repository integration by checking that `servers.json` remains untracked, Pi can load/reload the extension, and the repository still passes `nix flake check` when Nix validation is available; record the reason if that check is skipped.
   - Covers: Requirement: Local extension placement; Requirement: Local server configuration
 
 ## Out of Scope
