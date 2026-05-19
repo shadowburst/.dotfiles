@@ -4,13 +4,13 @@
 
 Provide a Pi Extension that orchestrates a Ralph Loop from a durable Feature Spec. The extension helps an implementation agent complete exactly one spec task at a time by isolating work in a git worktree, driving implementation, deterministic validation, clean-context review, bounded fixes, final verification, spec checkbox updates, and conventional commits.
 
-The loop is intended to make task execution auditable and low-conflict: the Feature Spec remains the durable task ledger, each verified task becomes one commit, and a completed feature branch receives a final two-axis review against a Review Base.
+The loop is intended to make task execution auditable and low-conflict: the Feature Spec remains the durable task ledger, each verified task becomes one commit, and a completed feature branch receives a final two-axis review against a Review Base. A Pull Request is not considered done merely because local checks passed; when hosted Pull Request checks are available, Ralph must use a Remote Check Gate before declaring the Pull Request ready.
 
 ## Requirements
 
 ### Requirement: Ralph command entrypoint
 
-The Ralph Loop Pi Extension SHALL provide a slash-command entrypoint that accepts a Feature Spec path, optional mode or task selection arguments, and a handoff opt-out flag.
+The Ralph Loop Pi Extension SHALL provide a slash-command entrypoint that accepts a Feature Spec path, optional mode or task selection arguments, Pull Request and remote-check modes, and a handoff opt-out flag.
 
 #### Scenario: Running one task from a spec
 
@@ -29,6 +29,12 @@ The Ralph Loop Pi Extension SHALL provide a slash-command entrypoint that accept
 - **WHEN** the user supplies a task number
 - **THEN** the extension selects that unchecked top-level task under `## Implementation Tasks`
 - **AND** it does not run unrelated unchecked tasks unless all-tasks mode is explicitly enabled.
+
+#### Scenario: Remote check mode
+
+- **WHEN** the user invokes `/ralph docs/specs/example.md --remote-checks`
+- **THEN** Ralph resumes the Remote Check Gate for an existing Ralph Pull Request
+- **AND** it does not create a new Pull Request when none exists.
 
 #### Scenario: Disabling Automatic Handoff
 
@@ -107,6 +113,12 @@ The Ralph Loop Pi Extension SHALL instruct the implementation agent to use TDD o
 ### Requirement: Deterministic verification gate
 
 The Ralph Loop Pi Extension SHALL require deterministic verification evidence before marking a task complete or creating a success commit.
+
+#### Scenario: Repository validation contract exists
+
+- **WHEN** the repository contains `docs/agents/specs.md` with validation guidance
+- **THEN** Ralph treats that repository-level validation contract as the baseline for merge readiness
+- **AND** a Feature Spec may tighten but not weaken that contract unless the user explicitly approves an exception.
 
 #### Scenario: Project checks exist
 
@@ -243,6 +255,11 @@ The Ralph Loop Pi Extension SHALL store durable run metadata in Pi cache rather 
 - **WHEN** Ralph persists run metadata
 - **THEN** the metadata includes the repository root, canonical Feature Spec path, worktree path, branch name, Review Base, created-from commit, task commit map, and final review status when known.
 
+#### Scenario: Pull Request and remote check metadata
+
+- **WHEN** Ralph creates or resumes a Pull Request flow
+- **THEN** the metadata includes Pull Request URL or number when known, draft or ready state when known, Remote Check Gate verdict when known, failed or pending check summaries when known, and remote-fix attempt count.
+
 ### Requirement: Fresh-session clean-eye review
 
 The Ralph Loop Pi Extension SHALL perform review from a fresh Pi session seeded only with review-relevant artifacts.
@@ -362,7 +379,7 @@ The Ralph Loop Pi Extension SHALL perform a final clean-context branch review wh
 
 ### Requirement: Pull Request creation
 
-The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all tasks are complete, final branch review passes, and the user explicitly approves Pull Request creation.
+The Ralph Loop Pi Extension SHALL create a detailed draft Pull Request only after all tasks are complete, final branch review passes, and the user explicitly approves Pull Request creation.
 
 #### Scenario: Final review passes
 
@@ -375,7 +392,7 @@ The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all 
 
 - **WHEN** final review has passed
 - **AND** the user explicitly approves Pull Request creation through a Pi confirmation, a clear natural-language approval after Ralph asks, or an explicit `/ralph <spec> --pr` invocation
-- **THEN** Ralph creates a Pull Request for the Ralph feature branch
+- **THEN** Ralph creates a draft Pull Request for the Ralph feature branch
 - **AND** the Pull Request title uses Conventional Commit format.
 
 #### Scenario: User declines Pull Request creation after final review
@@ -385,12 +402,12 @@ The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all 
 - **THEN** Ralph stops without creating a Pull Request
 - **AND** it tells the user that they can run `/ralph <spec> --pr` later.
 
-#### Scenario: Explicit Pull Request mode
+#### Scenario: Explicit Pull Request mode creates or resumes
 
 - **WHEN** the user invokes `/ralph <spec> --pr`
 - **AND** final review status is recorded as PASS
-- **THEN** Ralph treats that invocation as explicit approval to create the Pull Request
-- **AND** it does not ask for an additional confirmation.
+- **THEN** Ralph treats that invocation as explicit approval to create a draft Pull Request when none is recorded
+- **AND** Ralph resumes the Remote Check Gate when a Pull Request is already recorded.
 
 #### Scenario: Pull Request body content
 
@@ -406,7 +423,76 @@ The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all 
 #### Scenario: GitHub CLI is available
 
 - **WHEN** the repository supports GitHub Pull Requests and `gh` is available
-- **THEN** Ralph creates the Pull Request with `gh pr create`.
+- **THEN** Ralph creates the draft Pull Request with `gh pr create --draft`.
+
+### Requirement: Remote Check Gate
+
+The Ralph Loop Pi Extension SHALL watch hosted Pull Request checks after draft Pull Request creation and SHALL treat those checks as the final gate before declaring the Pull Request ready.
+
+#### Scenario: Hosted checks pass
+
+- **WHEN** a draft Pull Request exists
+- **AND** all relevant hosted Pull Request checks for the current head commit succeed or are marked neutral/skipped by the host
+- **THEN** Ralph records the Remote Check Gate as `PASS`
+- **AND** Ralph marks the draft Pull Request ready for review by default.
+
+#### Scenario: Hosted checks fail
+
+- **WHEN** any relevant hosted Pull Request check fails
+- **THEN** Ralph records the Remote Check Gate as `FAIL`
+- **AND** it treats the failure as deterministic validation evidence for a bounded remote-fix loop.
+
+#### Scenario: Hosted checks remain pending
+
+- **WHEN** hosted Pull Request checks remain pending beyond the configured watch timeout
+- **THEN** Ralph records the Remote Check Gate as `BLOCKED`
+- **AND** it reports the pending checks and the command to resume the gate later.
+
+#### Scenario: Hosted check support unavailable
+
+- **WHEN** the repository host, CLI, authentication, or permissions do not support hosted check watching
+- **THEN** Ralph records the Remote Check Gate as `BLOCKED`
+- **AND** it does not mark the Pull Request ready automatically.
+
+#### Scenario: Non-code hosted check fails
+
+- **WHEN** a hosted check for Pull Request metadata such as title, labels, release policy, or dependency review fails
+- **THEN** Ralph includes that check in the Remote Check Gate by default
+- **AND** it fixes the metadata when safe or reports `BLOCKED` when it cannot.
+
+#### Scenario: Policy narrows hosted checks
+
+- **WHEN** repository documentation such as `docs/agents/specs.md` explicitly narrows or names the hosted checks that count for merge readiness
+- **THEN** Ralph follows that policy
+- **AND** it otherwise defaults to requiring all hosted Pull Request checks to pass.
+
+### Requirement: Remote check fix loop
+
+The Ralph Loop Pi Extension SHALL use a bounded fix loop for Remote Check Gate failures and SHALL create additional conventional commits for fixes rather than rewriting prior task commits.
+
+#### Scenario: Reproducible remote failure
+
+- **WHEN** a failing hosted check maps to a local validation command
+- **THEN** Ralph runs the mapped local validation before pushing a fix
+- **AND** it includes the command result in the Remote Check Gate evidence.
+
+#### Scenario: Remote-only failure
+
+- **WHEN** a failing hosted check cannot be reproduced locally
+- **THEN** Ralph states why the remote check is the verifier
+- **AND** it makes only a narrowly targeted fix before re-running the Remote Check Gate.
+
+#### Scenario: Remote fix succeeds
+
+- **WHEN** Ralph fixes a Remote Check Gate failure
+- **THEN** it pushes an additional conventional commit
+- **AND** it watches the hosted checks for the new head commit.
+
+#### Scenario: Remote fix limit exhausted
+
+- **WHEN** Ralph has attempted three remote-fix iterations and the Remote Check Gate still does not pass
+- **THEN** Ralph stops and reports `BLOCKED`
+- **AND** it leaves the Pull Request in draft state.
 
 ## Implementation Constraints
 
@@ -419,10 +505,13 @@ The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all 
 - The extension should prefer existing repository validation mechanisms. In this repository, `flake.nix` is the visible root validation source.
 - Fresh review phases should use new Pi sessions or equivalent session replacement rather than ordinary continuation of the implementation conversation.
 - Review verdicts must be machine-readable enough for the extension to distinguish `PASS`, `FAIL`, and `BLOCKED`.
-- Pull Request creation should use `gh pr create` when the repository supports GitHub Pull Requests and the GitHub CLI is available.
+- Remote Check Gate verdicts must be machine-readable enough for the extension to distinguish `PASS`, `FAIL`, and `BLOCKED`.
+- Pull Request creation should use `gh pr create --draft` when the repository supports GitHub Pull Requests and the GitHub CLI is available.
+- Hosted Pull Request check watching should use GitHub tooling first when the repository supports GitHub Pull Requests, while keeping the Remote Check Gate concept host-neutral.
 - Automatic Handoff is a best-effort process handoff rather than an in-process cwd mutation; see `docs/adr/0003-ralph-automatic-handoff.md`.
 - Manual Handoff must remain available as the fallback when Automatic Handoff is disabled, unavailable, already attempted, or fails.
 - Pull Request creation must not happen automatically after final review PASS unless the user explicitly approves it or invokes `--pr`.
+- Pull Requests created by Ralph should remain draft until both final review and the Remote Check Gate pass; see `docs/adr/0005-ralph-remote-check-gate.md`.
 
 ## Implementation Tasks
 
@@ -446,12 +535,20 @@ The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all 
   - Covers: Requirement: Ralph command entrypoint; Requirement: Deterministic verification gate
 - [ ] 10. Implement final branch review when all tasks are complete, using a fresh context and a two-axis Standards and Spec review over the diff between Review Base and branch head.
   - Covers: Requirement: Final branch review
-- [ ] 11. Implement Pull Request creation after final branch review passes and the user explicitly approves it, including `/ralph <spec> --pr` as approval, a Conventional Commit style title, and a detailed body derived mostly from the Feature Spec and validation evidence.
+- [ ] 11. Implement draft Pull Request creation after final branch review passes and the user explicitly approves it, including `/ralph <spec> --pr` as approval or resume, a Conventional Commit style title, and a detailed body derived mostly from the Feature Spec and validation evidence.
   - Covers: Requirement: Pull Request creation
-- [ ] 12. Add validation for the extension itself using the smallest safely discoverable checks for this repository, including TypeScript or Pi extension loading checks if available and Nix validation from `flake.nix` where applicable.
+- [ ] 12. Extend Ralph command parsing, prompts, and cache metadata for Remote Check Gate state, including `--remote-checks`, Pull Request URL/number, draft/ready state, remote check verdict, failed or pending check summaries, and remote-fix attempt count.
+  - Covers: Requirement: Ralph command entrypoint; Requirement: Pi cache metadata; Requirement: Remote Check Gate
+- [ ] 13. Implement a deterministic `ralph_watch_remote_checks` tool that watches hosted Pull Request checks, defaults to all hosted checks, returns `PASS`, `FAIL`, or `BLOCKED`, reports failed or pending check names, and times out pending checks with resume guidance.
+  - Covers: Requirement: Remote Check Gate
+- [ ] 14. Implement the bounded remote-check fix loop with at most three remote-fix iterations, mapped local validation when available, remote-only verifier explanations when needed, additional conventional fix commits, pushes, and repeated Remote Check Gate watches.
+  - Covers: Requirement: Remote check fix loop
+- [ ] 15. Implement a `ralph_mark_pull_request_ready` tool that marks a draft Pull Request ready only after final review PASS and Remote Check Gate PASS.
+  - Covers: Requirement: Remote Check Gate; Requirement: Pull Request creation
+- [ ] 16. Add validation for the extension itself using the smallest safely discoverable checks for this repository, including TypeScript or Pi extension loading checks if available and Nix validation from `flake.nix` where applicable.
   - Covers: Requirement: Deterministic verification gate
-- [ ] 13. Perform a manual Ralph-readiness review of this spec and the implemented extension, ensuring review verdicts, cache state, worktree behavior, commit behavior, and Pull Request creation are auditable before marking the feature complete.
-  - Covers: Requirement: Final branch review; Requirement: Conventional commit per verified task; Requirement: Pull Request creation
+- [ ] 17. Perform a manual Ralph-readiness review of this spec and the implemented extension, ensuring review verdicts, Remote Check Gate verdicts, cache state, worktree behavior, commit behavior, draft Pull Request behavior, and mark-ready behavior are auditable before marking the feature complete.
+  - Covers: Requirement: Final branch review; Requirement: Conventional commit per verified task; Requirement: Pull Request creation; Requirement: Remote Check Gate
 
 ## Out of Scope
 
@@ -465,6 +562,8 @@ The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all 
 - Inventing heavyweight test infrastructure solely to satisfy TDD.
 - Creating a Pull Request before final branch review passes.
 - Automatically creating a Pull Request after final review PASS without explicit user approval.
+- Treating a Pull Request as ready when supported hosted checks are failing, pending beyond timeout, or unavailable.
+- Rewriting prior task commits to fix Remote Check Gate failures by default.
 
 ## Source Context
 
@@ -473,6 +572,7 @@ The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all 
 - `docs/specs/2026-05-19-to-spec-skill.md`
 - `docs/adr/0003-ralph-automatic-handoff.md`
 - `docs/adr/0004-ralph-context-capture-commits.md`
+- `docs/adr/0005-ralph-remote-check-gate.md`
 - `modules/terminal/pi.nix`
 - `config/pi/extensions/pi-header.ts`
 - `config/pi/settings.json`
@@ -499,6 +599,12 @@ The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all 
 - [ ] The default Review Base is recorded when the Ralph branch is created and can be overridden by the user.
 - [ ] Final branch review evaluates both Standards and Spec axes against the diff from Review Base to branch head.
 - [ ] Final review fixes are additional conventional commits by default, not rewrites of prior task commits.
-- [ ] A detailed Pull Request is created only after final branch review passes and the user explicitly approves Pull Request creation.
+- [ ] A detailed draft Pull Request is created only after final branch review passes and the user explicitly approves Pull Request creation.
 - [ ] The Pull Request title uses Conventional Commit format.
 - [ ] The Pull Request body is derived mostly from the Feature Spec and includes validation evidence, final review result, Review Base, source/target branches, out-of-scope boundaries, and a human review checklist.
+- [ ] `/ralph <spec> --pr` creates a draft Pull Request when none exists and resumes Remote Check Gate handling when one is already recorded.
+- [ ] `/ralph <spec> --remote-checks` watches hosted checks for an existing Pull Request without creating a new Pull Request.
+- [ ] Remote Check Gate PASS requires all relevant hosted Pull Request checks to pass by default, including non-code metadata checks.
+- [ ] Remote Check Gate FAIL enters a bounded remote-fix loop with additional conventional fix commits and no history rewrite.
+- [ ] Remote Check Gate BLOCKED reports unavailable tooling, authentication, permissions, or pending-check timeout with resume guidance.
+- [ ] Ralph marks a draft Pull Request ready only after final review PASS and Remote Check Gate PASS.

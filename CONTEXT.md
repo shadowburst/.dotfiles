@@ -52,6 +52,10 @@ _Avoid_: Manual restart, cd prompt
 A user-approved commit created by Ralph on the original checkout branch before first Ralph worktree creation, so uncommitted planning or spec context is included in the Ralph branch.
 _Avoid_: Auto-commit, stash commit, handoff commit
 
+**Remote Check Gate**:
+A Ralph Loop gate that watches hosted Pull Request checks after Pull Request creation and treats failing checks as deterministic validation failures to be fixed before Ralph declares the branch done.
+_Avoid_: CI polling, post-PR check, GitHub gate
+
 ## Relationships
 
 - A **Feature Module** may link one or more **Config Assets**.
