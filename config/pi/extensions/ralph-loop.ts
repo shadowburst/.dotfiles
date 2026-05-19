@@ -791,33 +791,67 @@ export async function finalValidationAfterCheckbox(root: string, command?: strin
   throw new Error("Ralph task completion requires final validation after the checkbox edit: provide finalValidationCommand or finalValidationEvidence.");
 }
 
-function prBodyTemplate(state: RalphState, specPath: string): string {
-  return `Create a detailed Pull Request body derived mostly from @${specPath}.
+function stripMarkdownHeading(section: string): string {
+  return section.replace(/^##\s+[^\n]+\n?/, "").trim();
+}
 
-Include these sections:
-## Summary
-- Purpose of the Feature Spec
+export function buildPullRequestTitle(state: RalphState): string {
+  return `feat(${state.specSlug}): complete Ralph feature`;
+}
+
+export function buildPullRequestBody(state: RalphState, specPath: string, specMarkdown: string, validationEvidence = ""): string {
+  const purpose = stripMarkdownHeading(extractSection(specMarkdown, "## Purpose"));
+  const requirements = stripMarkdownHeading(extractSection(specMarkdown, "## Requirements"));
+  const constraints = stripMarkdownHeading(extractSection(specMarkdown, "## Implementation Constraints"));
+  const outOfScope = stripMarkdownHeading(extractSection(specMarkdown, "## Out of Scope"));
+  const checklist = stripMarkdownHeading(extractSection(specMarkdown, "## Review Checklist"));
+  return `## Summary
+${purpose || `Implements the Ralph Feature Spec at \`${specPath}\`.`}
+
 - Source branch: ${state.branch}
 - Review Base / target branch: ${state.reviewBase}
 
 ## Requirements Implemented
-- Summarize completed Feature Spec requirements.
+${requirements || "See the Feature Spec requirements."}
 
 ## Implementation Notes
-- Notable constraints and design decisions from the Feature Spec.
+${constraints || "No additional implementation constraints were documented."}
 
 ## Validation Evidence
-- Commands run and results.
+${validationEvidence || state.finalReviewSummary || "Final review PASS was recorded; see Ralph metadata and commit history for validation details."}
 
 ## Final Review
-- Standards axis result.
-- Spec axis result.
+${state.finalReviewSummary || "Final branch review status: PASS"}
 
 ## Out of Scope
-- Boundaries from the Feature Spec.
+${outOfScope || "No explicit out-of-scope items were documented."}
 
 ## Human Review Checklist
-- Checklist derived from the Feature Spec Review Checklist.`;
+${checklist || "- [ ] Review the Feature Spec requirements against this branch."}`;
+}
+
+async function pullRequestPrompt(state: RalphState, specPath: string): Promise<string> {
+  const spec = resolveInRepo(state.worktreePath, specPath.replace(/^@/, ""));
+  const specMarkdown = await readFile(spec, "utf8");
+  const title = buildPullRequestTitle(state);
+  const body = buildPullRequestBody(state, specPath, specMarkdown);
+  return `Create the draft Pull Request for this completed Ralph branch. The user explicitly approved Pull Request creation.
+
+Use ralph_create_pull_request with exactly this Conventional Commit title and body. The Pull Request must be created as a draft.
+
+Title:
+${title}
+
+Body:
+${body}`;
+}
+
+function prBodyTemplate(state: RalphState, specPath: string): string {
+  return `Create a detailed draft Pull Request derived mostly from @${specPath}.
+
+Recommended title: ${buildPullRequestTitle(state)}
+
+The body must include the feature purpose, completed requirements, notable implementation constraints, validation evidence, final review result, out-of-scope boundaries, Review Base, target branch, source branch, and a human review checklist.`;
 }
 
 async function commandHandler(args: string, ctx: ExtensionCommandContext, pi: ExtensionAPI) {
@@ -873,7 +907,7 @@ async function commandHandler(args: string, ctx: ExtensionCommandContext, pi: Ex
       if (ctx.hasUI) {
         const approved = await ctx.ui.confirm("Create Ralph Pull Request?", "Final branch review has passed. Create the Pull Request now?");
         if (approved) {
-          pi.sendUserMessage(`Create the Pull Request for this completed Ralph branch. The user explicitly approved Pull Request creation in the Ralph confirmation dialog.\n\n${prBodyTemplate(state, worktreeSpecRelative)}\n\nUse ralph_create_pull_request after confirming final review status is PASS.`);
+          pi.sendUserMessage(await pullRequestPrompt(state, worktreeSpecRelative));
         } else {
           ctx.ui.notify(`Pull Request creation skipped. Run /ralph ${shellQuote(worktreeSpecRelative)} --pr later to create it.`, "info");
         }
@@ -892,7 +926,11 @@ async function commandHandler(args: string, ctx: ExtensionCommandContext, pi: Ex
       ctx.ui.notify(`Final review status is ${state.finalReviewStatus ?? "unknown"}; run /ralph ${shellQuote(worktreeSpecRelative)} --final-review before creating a Pull Request.`, "error");
       return;
     }
-    pi.sendUserMessage(`Create the Pull Request for this completed Ralph branch. The user explicitly approved Pull Request creation by invoking --pr.\n\n${prBodyTemplate(state, worktreeSpecRelative)}\n\nUse ralph_create_pull_request after confirming final review status is PASS.`);
+    if (state.pullRequestUrl) {
+      ctx.ui.notify(`Ralph Pull Request already recorded: ${state.pullRequestUrl}`, "info");
+      return;
+    }
+    pi.sendUserMessage(await pullRequestPrompt(state, worktreeSpecRelative));
     return;
   }
 
@@ -1131,10 +1169,16 @@ export default function (pi: ExtensionAPI) {
       const state = await readState(cachePath, specKey);
       if (!state) throw new Error(`No Ralph state found for ${spec}`);
       if (state.finalReviewStatus !== "PASS") throw new Error(`Final review status is ${state.finalReviewStatus ?? "unknown"}; refusing to create Pull Request.`);
+      if (state.pullRequestUrl) {
+        return {
+          content: [{ type: "text", text: `Ralph Pull Request already recorded: ${state.pullRequestUrl}` }],
+          details: { url: state.pullRequestUrl, alreadyExists: true },
+        };
+      }
 
       const branch = await git(["branch", "--show-current"], root);
       await git(["push", "-u", "origin", branch], root, 120_000);
-      const { stdout } = await runCombined("gh", ["pr", "create", "--base", state.reviewBase, "--head", branch, "--title", params.title, "--body", params.body], root, 120_000);
+      const { stdout } = await runCombined("gh", ["pr", "create", "--draft", "--base", state.reviewBase, "--head", branch, "--title", params.title, "--body", params.body], root, 120_000);
       state.pullRequestUrl = stdout.trim();
       await writeState(cachePath, state);
       return {
