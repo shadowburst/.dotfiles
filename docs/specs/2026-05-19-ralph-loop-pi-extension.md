@@ -10,7 +10,7 @@ The loop is intended to make task execution auditable and low-conflict: the Feat
 
 ### Requirement: Ralph command entrypoint
 
-The Ralph Loop Pi Extension SHALL provide a slash-command entrypoint that accepts a Feature Spec path and optional mode or task selection arguments.
+The Ralph Loop Pi Extension SHALL provide a slash-command entrypoint that accepts a Feature Spec path, optional mode or task selection arguments, and a handoff opt-out flag.
 
 #### Scenario: Running one task from a spec
 
@@ -29,6 +29,12 @@ The Ralph Loop Pi Extension SHALL provide a slash-command entrypoint that accept
 - **WHEN** the user supplies a task number
 - **THEN** the extension selects that unchecked top-level task under `## Implementation Tasks`
 - **AND** it does not run unrelated unchecked tasks unless all-tasks mode is explicitly enabled.
+
+#### Scenario: Disabling Automatic Handoff
+
+- **WHEN** the user supplies `--no-handoff`
+- **THEN** Ralph does not perform Automatic Handoff for that invocation
+- **AND** it uses Manual Handoff if the command must continue from the Ralph worktree.
 
 ### Requirement: Feature Spec task ledger
 
@@ -142,11 +148,30 @@ The Ralph Loop Pi Extension SHALL isolate implementation work in a dedicated git
 - **THEN** Ralph warns the user
 - **AND** it does not edit `.gitignore` automatically.
 
-#### Scenario: Pi cannot switch cwd safely
+#### Scenario: Automatic Handoff from outside the worktree
 
-- **WHEN** the extension cannot safely continue the active Pi session inside the created worktree
-- **THEN** Ralph stops after creating the worktree and metadata
-- **AND** it instructs the user to start Pi from the worktree and rerun the Ralph command.
+- **WHEN** the user invokes Ralph for any mode from outside the Ralph worktree
+- **THEN** Ralph creates or reuses the feature branch and worktree under `.worktrees/ralph-<spec-slug>`
+- **AND** Ralph performs Automatic Handoff by starting a replacement Pi process rooted in that worktree and rerunning the Ralph command there.
+
+#### Scenario: Automatic Handoff preserves Ralph intent
+
+- **WHEN** Ralph performs Automatic Handoff
+- **THEN** it preserves the user's Ralph semantic arguments, including task number, all-tasks mode, Review Base override, final-review mode, and Pull Request mode
+- **AND** it rewrites the Feature Spec path relative to the worktree
+- **AND** it does not preserve the prior Pi conversation history or arbitrary original Pi CLI flags.
+
+#### Scenario: Automatic Handoff loop prevention
+
+- **WHEN** a replacement Pi process has already attempted Automatic Handoff and still cannot continue inside the Ralph worktree
+- **THEN** Ralph does not attempt another Automatic Handoff
+- **AND** it falls back to Manual Handoff or reports the unsafe state.
+
+#### Scenario: Manual Handoff fallback
+
+- **WHEN** Automatic Handoff is disabled, unavailable, already attempted, or fails
+- **THEN** Ralph stops after creating or reusing the worktree and metadata
+- **AND** it performs Manual Handoff by showing or writing the command needed to start Pi from the worktree and rerun Ralph.
 
 ### Requirement: Pi cache metadata
 
@@ -282,14 +307,35 @@ The Ralph Loop Pi Extension SHALL perform a final clean-context branch review wh
 
 ### Requirement: Pull Request creation
 
-The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all tasks are complete and final branch review passes.
+The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all tasks are complete, final branch review passes, and the user explicitly approves Pull Request creation.
 
 #### Scenario: Final review passes
 
 - **WHEN** all implementation tasks are checked
 - **AND** the final branch review passes both the Standards and Spec axes
+- **THEN** Ralph records the final review PASS
+- **AND** Ralph asks the user whether to create a Pull Request now instead of creating one automatically.
+
+#### Scenario: User approves Pull Request creation after final review
+
+- **WHEN** final review has passed
+- **AND** the user explicitly approves Pull Request creation through a Pi confirmation, a clear natural-language approval after Ralph asks, or an explicit `/ralph <spec> --pr` invocation
 - **THEN** Ralph creates a Pull Request for the Ralph feature branch
 - **AND** the Pull Request title uses Conventional Commit format.
+
+#### Scenario: User declines Pull Request creation after final review
+
+- **WHEN** final review has passed
+- **AND** the user declines Pull Request creation
+- **THEN** Ralph stops without creating a Pull Request
+- **AND** it tells the user that they can run `/ralph <spec> --pr` later.
+
+#### Scenario: Explicit Pull Request mode
+
+- **WHEN** the user invokes `/ralph <spec> --pr`
+- **AND** final review status is recorded as PASS
+- **THEN** Ralph treats that invocation as explicit approval to create the Pull Request
+- **AND** it does not ask for an additional confirmation.
 
 #### Scenario: Pull Request body content
 
@@ -319,16 +365,19 @@ The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all 
 - Fresh review phases should use new Pi sessions or equivalent session replacement rather than ordinary continuation of the implementation conversation.
 - Review verdicts must be machine-readable enough for the extension to distinguish `PASS`, `FAIL`, and `BLOCKED`.
 - Pull Request creation should use `gh pr create` when the repository supports GitHub Pull Requests and the GitHub CLI is available.
+- Automatic Handoff is a best-effort process handoff rather than an in-process cwd mutation; see `docs/adr/0003-ralph-automatic-handoff.md`.
+- Manual Handoff must remain available as the fallback when Automatic Handoff is disabled, unavailable, already attempted, or fails.
+- Pull Request creation must not happen automatically after final review PASS unless the user explicitly approves it or invokes `--pr`.
 
 ## Implementation Tasks
 
-- [ ] 1. Create the Ralph Pi Extension skeleton under `config/pi/extensions` and register a `/ralph` command with spec path, optional task number, optional all-tasks mode, and optional Review Base parsing.
+- [ ] 1. Create the Ralph Pi Extension skeleton under `config/pi/extensions` and register a `/ralph` command with spec path, optional task number, optional all-tasks mode, optional Review Base parsing, optional final-review and Pull Request modes, and a `--no-handoff` flag.
   - Covers: Requirement: Ralph command entrypoint
 - [ ] 2. Implement Feature Spec parsing for `## Implementation Tasks`, including top-level checkbox selection, task-number targeting, all-tasks iteration, validation/review task recognition, and deterministic checkbox updates.
   - Covers: Requirement: Feature Spec task ledger; Requirement: Validation and review tasks
 - [ ] 3. Implement Pi cache metadata storage keyed by repository and Feature Spec, including resume behavior for branch, worktree path, Review Base, created-from commit, task commits, and final review status.
   - Covers: Requirement: Pi cache metadata; Requirement: Review Base selection
-- [ ] 4. Implement git worktree orchestration under `.worktrees`, including first-run creation, existing-worktree reuse, branch naming, Review Base recording, `.worktrees` ignore warning, and manual handoff instructions when cwd switching is unavailable.
+- [ ] 4. Implement git worktree orchestration under `.worktrees`, including first-run creation, existing-worktree reuse, branch naming, Review Base recording, `.worktrees` ignore warning, Automatic Handoff from outside the worktree, loop prevention, `--no-handoff`, and Manual Handoff fallback.
   - Covers: Requirement: Worktree isolation; Requirement: Review Base selection
 - [ ] 5. Implement the task implementation prompt/handoff that loads the Feature Spec context, instructs meaningful TDD only when applicable, avoids tests for mundane implementation details, and asks for deterministic validation evidence.
   - Covers: Requirement: Meaningful test-first behavior; Requirement: Deterministic verification gate
@@ -342,7 +391,7 @@ The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all 
   - Covers: Requirement: Ralph command entrypoint; Requirement: Deterministic verification gate
 - [ ] 10. Implement final branch review when all tasks are complete, using a fresh context and a two-axis Standards and Spec review over the diff between Review Base and branch head.
   - Covers: Requirement: Final branch review
-- [ ] 11. Implement Pull Request creation after final branch review passes, including a Conventional Commit style title and a detailed body derived mostly from the Feature Spec and validation evidence.
+- [ ] 11. Implement Pull Request creation after final branch review passes and the user explicitly approves it, including `/ralph <spec> --pr` as approval, a Conventional Commit style title, and a detailed body derived mostly from the Feature Spec and validation evidence.
   - Covers: Requirement: Pull Request creation
 - [ ] 12. Add validation for the extension itself using the smallest safely discoverable checks for this repository, including TypeScript or Pi extension loading checks if available and Nix validation from `flake.nix` where applicable.
   - Covers: Requirement: Deterministic verification gate
@@ -360,12 +409,14 @@ The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all 
 - Marking tasks complete without deterministic verification unless the user explicitly authorizes manual verification.
 - Inventing heavyweight test infrastructure solely to satisfy TDD.
 - Creating a Pull Request before final branch review passes.
+- Automatically creating a Pull Request after final review PASS without explicit user approval.
 
 ## Source Context
 
 - `CONTEXT.md`
 - `.agents/skills/to-spec/SKILL.md`
 - `docs/specs/2026-05-19-to-spec-skill.md`
+- `docs/adr/0003-ralph-automatic-handoff.md`
 - `modules/terminal/pi.nix`
 - `config/pi/extensions/pi-header.ts`
 - `config/pi/settings.json`
@@ -383,6 +434,8 @@ The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all 
 - [ ] TDD is used only for meaningful feature behavior, not incidental implementation details.
 - [ ] Ralph leaves tasks unchecked when deterministic verification evidence is unavailable unless manual verification is explicitly authorized.
 - [ ] Work is isolated in `.worktrees/ralph-<spec-slug>` and reused across repeated invocations for the same spec.
+- [ ] Ralph performs Automatic Handoff from outside the Ralph worktree unless `--no-handoff` is supplied or Automatic Handoff is unavailable, already attempted, or fails.
+- [ ] Manual Handoff remains available as the fallback path.
 - [ ] Ralph metadata is stored in Pi cache and not in the target repository.
 - [ ] Fresh-session review receives only review-relevant artifacts and returns `PASS`, `FAIL`, or `BLOCKED`.
 - [ ] Fix/retest is capped at three iterations per task.
@@ -390,6 +443,6 @@ The Ralph Loop Pi Extension SHALL create a detailed Pull Request only after all 
 - [ ] The default Review Base is recorded when the Ralph branch is created and can be overridden by the user.
 - [ ] Final branch review evaluates both Standards and Spec axes against the diff from Review Base to branch head.
 - [ ] Final review fixes are additional conventional commits by default, not rewrites of prior task commits.
-- [ ] A detailed Pull Request is created only after final branch review passes.
+- [ ] A detailed Pull Request is created only after final branch review passes and the user explicitly approves Pull Request creation.
 - [ ] The Pull Request title uses Conventional Commit format.
 - [ ] The Pull Request body is derived mostly from the Feature Spec and includes validation evidence, final review result, Review Base, source/target branches, out-of-scope boundaries, and a human review checklist.

@@ -40,6 +40,14 @@ _Avoid_: Autonomous sprint, agent workflow, task runner
 The git ref or commit used as the left side of a Ralph Loop final branch review, defaulting to the closest branch point from which the Ralph feature branch was created unless the user supplies an explicit base.
 _Avoid_: Fixed point, base thing, original HEAD
 
+**Automatic Handoff**:
+A Ralph Loop transfer where Ralph starts a replacement Pi process rooted in the Ralph worktree and reruns the Ralph command without requiring the user to accept or perform a manual prompt.
+_Avoid_: Automatic restart, cwd switch
+
+**Manual Handoff**:
+A Ralph Loop transfer where Ralph shows or writes the worktree startup command for the user to perform because Automatic Handoff is disabled, unavailable, or failed.
+_Avoid_: Manual restart, cd prompt
+
 ## Relationships
 
 - A **Feature Module** may link one or more **Config Assets**.
