@@ -12,9 +12,11 @@ import { execFile as execFileCb, spawn } from "node:child_process";
 const execFile = promisify(execFileCb);
 const STATE_VERSION = 1;
 
-type RalphMode = "one" | "all" | "final-review" | "pr";
+type RalphMode = "one" | "all" | "final-review" | "pr" | "remote-checks";
 
 export type FinalReviewStatus = "PASS" | "FAIL" | "BLOCKED";
+export type RemoteCheckVerdict = "PASS" | "FAIL" | "BLOCKED";
+export type PullRequestDraftState = "draft" | "ready";
 export type TaskReviewVerdict = FinalReviewStatus;
 
 export type RalphState = {
@@ -33,6 +35,12 @@ export type RalphState = {
   finalReviewStatus?: FinalReviewStatus;
   finalReviewSummary?: string;
   pullRequestUrl?: string;
+  pullRequestNumber?: number;
+  pullRequestDraftState?: PullRequestDraftState;
+  remoteCheckVerdict?: RemoteCheckVerdict;
+  failedCheckSummaries?: string[];
+  pendingCheckSummaries?: string[];
+  remoteFixAttemptCount?: number;
 };
 
 type TaskKind = "implementation" | "validation" | "review";
@@ -166,6 +174,8 @@ function parseArgs(input: string): ParsedArgs {
       parsed.mode = "final-review";
     } else if (token === "--pr" || token === "--create-pr") {
       parsed.mode = "pr";
+    } else if (token === "--remote-checks") {
+      parsed.mode = "remote-checks";
     } else if (token === "--no-handoff") {
       parsed.noHandoff = true;
     } else if (token === "--base") {
@@ -233,6 +243,12 @@ export function normalizeState(raw: Partial<RalphState>, fallbackSpecPath: strin
     finalReviewStatus: raw.finalReviewStatus,
     finalReviewSummary: raw.finalReviewSummary,
     pullRequestUrl: raw.pullRequestUrl,
+    pullRequestNumber: raw.pullRequestNumber,
+    pullRequestDraftState: raw.pullRequestDraftState,
+    remoteCheckVerdict: raw.remoteCheckVerdict,
+    failedCheckSummaries: raw.failedCheckSummaries || [],
+    pendingCheckSummaries: raw.pendingCheckSummaries || [],
+    remoteFixAttemptCount: raw.remoteFixAttemptCount || 0,
   };
 
   for (const field of ["repoRoot", "specPath", "canonicalSpecPath", "worktreePath", "branch", "reviewBase", "createdFrom"] as const) {
@@ -387,8 +403,8 @@ async function ensureWorktree(ctx: ExtensionCommandContext, parsed: ParsedArgs, 
   const worktreePath = existsSync(defaultWorktreePath) ? defaultWorktreePath : insideExpectedWorktree ? root : defaultWorktreePath;
   const worktreeExists = existsSync(worktreePath);
 
-  if ((parsed.mode === "final-review" || parsed.mode === "pr") && !worktreeExists) {
-    throw new Error("Ralph final-review and Pull Request modes require an existing Ralph run; no Ralph state or worktree exists for this Feature Spec.");
+  if ((parsed.mode === "final-review" || parsed.mode === "pr" || parsed.mode === "remote-checks") && !worktreeExists) {
+    throw new Error("Ralph final-review, Pull Request, and Remote Check Gate modes require an existing Ralph run; no Ralph state or worktree exists for this Feature Spec.");
   }
 
   const status = await gitStatus(root);
@@ -441,6 +457,7 @@ export function formatRalphInvocation(specPath: string, parsed: ParsedArgs, incl
   if (parsed.mode === "all") tokens.push("--all");
   if (parsed.mode === "final-review") tokens.push("--final-review");
   if (parsed.mode === "pr") tokens.push("--pr");
+  if (parsed.mode === "remote-checks") tokens.push("--remote-checks");
   if (parsed.reviewBase) tokens.push("--base", parsed.reviewBase);
   if (parsed.title) tokens.push("--title", parsed.title);
   if (includeNoHandoff && parsed.noHandoff) tokens.push("--no-handoff");
@@ -795,6 +812,11 @@ function stripMarkdownHeading(section: string): string {
   return section.replace(/^##\s+[^\n]+\n?/, "").trim();
 }
 
+export function pullRequestNumberFromUrl(url: string): number | undefined {
+  const match = url.match(/\/pull\/(\d+)(?:$|[/?#])/);
+  return match ? Number(match[1]) : undefined;
+}
+
 export function buildPullRequestTitle(state: RalphState): string {
   return `feat(${state.specSlug}): complete Ralph feature`;
 }
@@ -846,6 +868,26 @@ Body:
 ${body}`;
 }
 
+export function buildRemoteChecksPrompt(state: RalphState, specPath: string): string {
+  return `Resume the Ralph Remote Check Gate for an existing draft Pull Request.
+
+Feature Spec: @${specPath}
+Pull Request: ${state.pullRequestUrl || state.pullRequestNumber || "(unknown)"}
+Pull Request draft state: ${state.pullRequestDraftState || "draft"}
+Remote Check Gate verdict currently recorded: ${state.remoteCheckVerdict || "unknown"}
+Remote fix attempt count: ${state.remoteFixAttemptCount || 0}
+Failed check summaries:
+${state.failedCheckSummaries?.length ? state.failedCheckSummaries.map((item) => `- ${item}`).join("\n") : "(none recorded)"}
+Pending check summaries:
+${state.pendingCheckSummaries?.length ? state.pendingCheckSummaries.map((item) => `- ${item}`).join("\n") : "(none recorded)"}
+
+Instructions:
+- Resume hosted Pull Request check watching for the existing recorded Pull Request only.
+- Do not create a new Pull Request in --remote-checks mode.
+- Use ralph_record_remote_check_state to update the cached Remote Check Gate verdict and failed or pending check summaries.
+- If no Pull Request URL or number is recorded, report BLOCKED and do not create a Pull Request.`;
+}
+
 function prBodyTemplate(state: RalphState, specPath: string): string {
   return `Create a detailed draft Pull Request derived mostly from @${specPath}.
 
@@ -857,7 +899,7 @@ The body must include the feature purpose, completed requirements, notable imple
 async function commandHandler(args: string, ctx: ExtensionCommandContext, pi: ExtensionAPI) {
   const parsed = parseArgs(args);
   if (!parsed.specPath) {
-    ctx.ui.notify("Usage: /ralph <spec-path> [task-number] [--all] [--base <ref>] [--final-review] [--pr] [--no-handoff]", "error");
+    ctx.ui.notify("Usage: /ralph <spec-path> [task-number] [--all] [--base <ref>] [--final-review] [--pr] [--remote-checks] [--no-handoff]", "error");
     return;
   }
 
@@ -893,6 +935,18 @@ async function commandHandler(args: string, ctx: ExtensionCommandContext, pi: Ex
 
   const unchecked = tasks.filter((task) => !task.checked);
   const worktreeSpecRelative = relativeTo(state.worktreePath, worktreeSpec);
+  if (parsed.mode === "remote-checks") {
+    if (!state.pullRequestUrl && !state.pullRequestNumber) {
+      state.remoteCheckVerdict = "BLOCKED";
+      state.pendingCheckSummaries = ["No Pull Request URL or number is recorded; --remote-checks does not create Pull Requests."];
+      await writeState(statePath(await repoIdentity(root), canonicalSpecKey(root, absoluteSpec)), state);
+      ctx.ui.notify("Remote Check Gate requires an existing recorded Pull Request. Run /ralph <spec> --pr after final review PASS first.", "error");
+      return;
+    }
+    pi.sendUserMessage(buildRemoteChecksPrompt(state, worktreeSpecRelative));
+    return;
+  }
+
   if (parsed.mode === "final-review") {
     if (unchecked.length > 0) {
       ctx.ui.notify(`Final branch review requires all implementation tasks to be complete; ${unchecked.length} unchecked task(s) remain.`, "error");
@@ -1150,6 +1204,45 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.registerTool({
+    name: "ralph_record_remote_check_state",
+    label: "Record Ralph Remote Check State",
+    description: "Record Remote Check Gate state for an existing Ralph Pull Request in Pi cache.",
+    parameters: Type.Object({
+      specPath: Type.String(),
+      verdict: StringEnum(["PASS", "FAIL", "BLOCKED"] as const),
+      failedCheckSummaries: Type.Optional(Type.Array(Type.String())),
+      pendingCheckSummaries: Type.Optional(Type.Array(Type.String())),
+      remoteFixAttemptCount: Type.Optional(Type.Number()),
+      pullRequestUrl: Type.Optional(Type.String()),
+      pullRequestNumber: Type.Optional(Type.Number()),
+      pullRequestDraftState: Type.Optional(StringEnum(["draft", "ready"] as const)),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx: ExtensionContext) {
+      const root = await repoRoot(ctx.cwd);
+      const spec = resolveInRepo(root, params.specPath.replace(/^@/, ""));
+      const specKey = canonicalSpecKey(root, spec);
+      const cachePath = statePath(await repoIdentity(root), specKey);
+      const state = await readState(cachePath, specKey);
+      if (!state) throw new Error(`No Ralph state found for ${spec}`);
+      state.remoteCheckVerdict = params.verdict;
+      state.failedCheckSummaries = params.failedCheckSummaries || [];
+      state.pendingCheckSummaries = params.pendingCheckSummaries || [];
+      state.remoteFixAttemptCount = params.remoteFixAttemptCount ?? state.remoteFixAttemptCount ?? 0;
+      if (params.pullRequestUrl) {
+        state.pullRequestUrl = params.pullRequestUrl;
+        state.pullRequestNumber = pullRequestNumberFromUrl(params.pullRequestUrl) ?? state.pullRequestNumber;
+      }
+      if (params.pullRequestNumber) state.pullRequestNumber = params.pullRequestNumber;
+      if (params.pullRequestDraftState) state.pullRequestDraftState = params.pullRequestDraftState;
+      await writeState(cachePath, state);
+      return {
+        content: [{ type: "text", text: `Recorded Remote Check Gate verdict: ${params.verdict}` }],
+        details: { verdict: params.verdict, failedCheckSummaries: state.failedCheckSummaries, pendingCheckSummaries: state.pendingCheckSummaries, remoteFixAttemptCount: state.remoteFixAttemptCount },
+      };
+    },
+  });
+
+  pi.registerTool({
     name: "ralph_create_pull_request",
     label: "Create Ralph Pull Request",
     description: "Create the final Ralph Pull Request with gh after final review PASS.",
@@ -1180,6 +1273,9 @@ export default function (pi: ExtensionAPI) {
       await git(["push", "-u", "origin", branch], root, 120_000);
       const { stdout } = await runCombined("gh", ["pr", "create", "--draft", "--base", state.reviewBase, "--head", branch, "--title", params.title, "--body", params.body], root, 120_000);
       state.pullRequestUrl = stdout.trim();
+      state.pullRequestNumber = pullRequestNumberFromUrl(state.pullRequestUrl);
+      state.pullRequestDraftState = "draft";
+      state.remoteFixAttemptCount = state.remoteFixAttemptCount || 0;
       await writeState(cachePath, state);
       return {
         content: [{ type: "text", text: `Created Pull Request: ${state.pullRequestUrl}` }],

@@ -537,7 +537,7 @@ The Ralph Loop Pi Extension SHALL use a bounded fix loop for Remote Check Gate f
   - Covers: Requirement: Final branch review
 - [x] 11. Implement draft Pull Request creation after final branch review passes and the user explicitly approves it, including `/ralph <spec> --pr` as approval or resume, a Conventional Commit style title, and a detailed body derived mostly from the Feature Spec and validation evidence.
   - Covers: Requirement: Pull Request creation
-- [ ] 12. Extend Ralph command parsing, prompts, and cache metadata for Remote Check Gate state, including `--remote-checks`, Pull Request URL/number, draft/ready state, remote check verdict, failed or pending check summaries, and remote-fix attempt count.
+- [x] 12. Extend Ralph command parsing, prompts, and cache metadata for Remote Check Gate state, including `--remote-checks`, Pull Request URL/number, draft/ready state, remote check verdict, failed or pending check summaries, and remote-fix attempt count.
   - Covers: Requirement: Ralph command entrypoint; Requirement: Pi cache metadata; Requirement: Remote Check Gate
 - [ ] 13. Implement a deterministic `ralph_watch_remote_checks` tool that watches hosted Pull Request checks, defaults to all hosted checks, returns `PASS`, `FAIL`, or `BLOCKED`, reports failed or pending check names, and times out pending checks with resume guidance.
   - Covers: Requirement: Remote Check Gate
