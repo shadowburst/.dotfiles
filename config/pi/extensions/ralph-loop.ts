@@ -30,12 +30,16 @@ type RalphState = {
   pullRequestUrl?: string;
 };
 
-type ParsedTask = {
+type TaskKind = "implementation" | "validation" | "review";
+
+export type ParsedTask = {
   number: number;
   checked: boolean;
   text: string;
   lineIndex: number;
   raw: string;
+  guidance: string[];
+  kind: TaskKind;
 };
 
 type ParsedArgs = {
@@ -214,7 +218,25 @@ function relativeTo(repo: string, path: string): string {
   return rel && !rel.startsWith("..") ? rel : path;
 }
 
-function parseImplementationTasks(markdown: string): ParsedTask[] {
+function classifyTask(text: string): TaskKind {
+  const normalized = text.toLowerCase();
+  if (/\b(review|readiness review|final review)\b/.test(normalized)) return "review";
+  if (/\b(validate|validation|check|checks|test|tests|ci|flake)\b/.test(normalized)) return "validation";
+  return "implementation";
+}
+
+function collectTaskGuidance(lines: string[], taskLineIndex: number): string[] {
+  const guidance: string[] = [];
+  for (let i = taskLineIndex + 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^##\s+/.test(line) || /^[-*]\s+\[[ xX]\]\s+\d+\.\s+/.test(line)) break;
+    const bullet = line.match(/^\s+[-*]\s+(?!\[[ xX]\]\s+)(.+)$/);
+    if (bullet) guidance.push(bullet[1].trim());
+  }
+  return guidance;
+}
+
+export function parseImplementationTasks(markdown: string): ParsedTask[] {
   const lines = markdown.split(/\r?\n/);
   const headingIndex = lines.findIndex((line) => /^##\s+Implementation Tasks\s*$/.test(line));
   if (headingIndex < 0) return [];
@@ -222,14 +244,17 @@ function parseImplementationTasks(markdown: string): ParsedTask[] {
   for (let i = headingIndex + 1; i < lines.length; i++) {
     const line = lines[i];
     if (/^##\s+/.test(line)) break;
-    const match = line.match(/^- \[([ xX])]\s+(\d+)\.\s+(.+)$/);
+    const match = line.match(/^[-*]\s+\[([ xX])]\s+(\d+)\.\s+(.+)$/);
     if (!match) continue;
+    const text = match[3].trim();
     tasks.push({
       number: Number(match[2]),
       checked: match[1].toLowerCase() === "x",
-      text: match[3],
+      text,
       lineIndex: i,
       raw: line,
+      guidance: collectTaskGuidance(lines, i),
+      kind: classifyTask(text),
     });
   }
   return tasks;
@@ -240,20 +265,27 @@ async function loadTasks(specPath: string): Promise<{ markdown: string; tasks: P
   return { markdown, tasks: parseImplementationTasks(markdown) };
 }
 
-function selectTask(tasks: ParsedTask[], taskNumber?: number): ParsedTask | undefined {
+export function selectTask(tasks: ParsedTask[], taskNumber?: number): ParsedTask | undefined {
   if (taskNumber !== undefined) return tasks.find((task) => task.number === taskNumber && !task.checked);
   return tasks.find((task) => !task.checked);
 }
 
-async function checkTask(specPath: string, taskNumber: number): Promise<void> {
-  const markdown = await readFile(specPath, "utf8");
+export function updateTaskCheckbox(markdown: string, taskNumber: number, checked = true): string {
+  const newline = markdown.includes("\r\n") ? "\r\n" : "\n";
   const lines = markdown.split(/\r?\n/);
   const tasks = parseImplementationTasks(markdown);
   const task = tasks.find((candidate) => candidate.number === taskNumber);
-  if (!task) throw new Error(`Task ${taskNumber} was not found in ${specPath}`);
-  if (task.checked) return;
-  lines[task.lineIndex] = task.raw.replace("- [ ]", "- [x]");
-  await writeFile(specPath, lines.join("\n"), "utf8");
+  if (!task) throw new Error(`Task ${taskNumber} was not found in Feature Spec`);
+  const marker = checked ? "x" : " ";
+  lines[task.lineIndex] = task.raw.replace(/^([-*]\s+\[)([ xX])(]\s+\d+\.\s+)/, `$1${marker}$3`);
+  return lines.join(newline);
+}
+
+async function checkTask(specPath: string, taskNumber: number): Promise<void> {
+  const markdown = await readFile(specPath, "utf8");
+  const nextMarkdown = updateTaskCheckbox(markdown, taskNumber, true);
+  if (nextMarkdown === markdown) return;
+  await writeFile(specPath, nextMarkdown, "utf8");
 }
 
 async function branchExists(repo: string, branch: string): Promise<boolean> {
@@ -407,25 +439,32 @@ function conventionalTitleForTask(task: ParsedTask): string {
   return `feat(ralph): complete task ${task.number} - ${cleaned}`;
 }
 
+function taskGuidanceBlock(task: ParsedTask): string {
+  if (task.guidance.length === 0) return "";
+  return `\nTask guidance from non-checkbox sub-bullets:\n${task.guidance.map((item) => `- ${item}`).join("\n")}`;
+}
+
 function buildTaskPrompt(state: RalphState, specPath: string, task: ParsedTask, mode: RalphMode): string {
   return `Run a Ralph Loop for exactly one Feature Spec task.
 
 Feature Spec: @${specPath}
 Selected task: ${task.number}. ${task.text}
+Selected task kind: ${task.kind}${taskGuidanceBlock(task)}
 Mode: ${mode}
 Review Base: ${state.reviewBase}
 Branch: ${state.branch}
 
 Required loop:
 1. Load repository context and the Feature Spec.
-2. Implement only task ${task.number}. Do not broaden scope to other unchecked tasks.
-3. Use TDD only if a meaningful feature-level automated test is applicable. Do not add tests for mundane implementation details such as merely checking that a CSS class exists on an HTML tag.
-4. Run deterministic validation. Prefer the smallest relevant existing project checks first, then broader CI-quality checks when appropriate.
-5. Create a clean-eye review using only the spec, selected task, final diff, changed files, and validation output. The review verdict must be PASS, FAIL, or BLOCKED.
-6. If review returns FAIL, fix only real required issues and re-test. Do at most 3 fix/retest iterations.
-7. If review returns BLOCKED or deterministic verification is unavailable, stop without marking the task complete.
-8. Only after PASS and final deterministic verification, call the ralph_complete_task tool for task ${task.number}. The tool will check the spec checkbox and create the conventional commit.
-9. After the commit, report the commit SHA and whether more unchecked tasks remain.
+2. Implement only task ${task.number}. Do not broaden scope to other unchecked tasks. Treat the non-checkbox sub-bullets above as guidance for this selected task, not as independently runnable tasks.
+3. If the selected task kind is validation or review, execute it as a first-class Ralph task; if it already passes and produces no code changes, deterministic verification plus the spec checkbox update may be the only commit content.
+4. Use TDD only if a meaningful feature-level automated test is applicable. Do not add tests for mundane implementation details such as merely checking that a CSS class exists on an HTML tag.
+5. Run deterministic validation. Prefer the smallest relevant existing project checks first, then broader CI-quality checks when appropriate.
+6. Create a clean-eye review using only the spec, selected task, final diff, changed files, and validation output. The review verdict must be PASS, FAIL, or BLOCKED.
+7. If review returns FAIL, fix only real required issues and re-test. Do at most 3 fix/retest iterations.
+8. If review returns BLOCKED or deterministic verification is unavailable, stop without marking the task complete.
+9. Only after PASS and final deterministic verification, call the ralph_complete_task tool for task ${task.number}. The tool will check the spec checkbox and create the conventional commit.
+10. After the commit, report the commit SHA and whether more unchecked tasks remain.
 
 Completion tool guidance:
 - Use a Conventional Commit title like: ${conventionalTitleForTask(task)}

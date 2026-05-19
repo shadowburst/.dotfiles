@@ -517,7 +517,7 @@ The Ralph Loop Pi Extension SHALL use a bounded fix loop for Remote Check Gate f
 
 - [x] 1. Create the Ralph Pi Extension skeleton under `config/pi/extensions` and register a `/ralph` command with spec path, optional task number, optional all-tasks mode, optional Review Base parsing, optional final-review and Pull Request modes, and a `--no-handoff` flag.
   - Covers: Requirement: Ralph command entrypoint
-- [ ] 2. Implement Feature Spec parsing for `## Implementation Tasks`, including top-level checkbox selection, task-number targeting, all-tasks iteration, validation/review task recognition, and deterministic checkbox updates.
+- [x] 2. Implement Feature Spec parsing for `## Implementation Tasks`, including top-level checkbox selection, task-number targeting, all-tasks iteration, validation/review task recognition, and deterministic checkbox updates.
   - Covers: Requirement: Feature Spec task ledger; Requirement: Validation and review tasks
 - [ ] 3. Implement Pi cache metadata storage keyed by repository and Feature Spec, including resume behavior for branch, worktree path, Review Base, created-from commit, task commits, and final review status.
   - Covers: Requirement: Pi cache metadata; Requirement: Review Base selection
