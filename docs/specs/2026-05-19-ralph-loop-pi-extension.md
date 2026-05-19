@@ -525,7 +525,7 @@ The Ralph Loop Pi Extension SHALL use a bounded fix loop for Remote Check Gate f
   - Covers: Requirement: Worktree isolation; Requirement: Review Base selection
 - [x] 5. Implement the task implementation prompt/handoff that loads the Feature Spec context, instructs meaningful TDD only when applicable, avoids tests for mundane implementation details, and asks for deterministic validation evidence.
   - Covers: Requirement: Meaningful test-first behavior; Requirement: Deterministic verification gate
-- [ ] 6. Implement fresh-session clean-eye task review that seeds the review with the selected task, relevant spec sections, diff, changed files, commands run, and validation output, and requires a `PASS`, `FAIL`, or `BLOCKED` verdict.
+- [x] 6. Implement fresh-session clean-eye task review that seeds the review with the selected task, relevant spec sections, diff, changed files, commands run, and validation output, and requires a `PASS`, `FAIL`, or `BLOCKED` verdict.
   - Covers: Requirement: Fresh-session clean-eye review
 - [ ] 7. Implement the bounded fix/retest controller with at most three review-driven fix iterations and clear stop behavior for exhausted failures or blocked reviews.
   - Covers: Requirement: Bounded fix and retest flow

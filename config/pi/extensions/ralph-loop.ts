@@ -45,6 +45,16 @@ export type ParsedTask = {
   kind: TaskKind;
 };
 
+export type TaskReviewPacket = {
+  specPath: string;
+  task: ParsedTask;
+  implementationSummary: string;
+  diff: string;
+  changedFiles: string[];
+  commandsRun: string[];
+  validationOutput: string;
+};
+
 export type ParsedArgs = {
   specPath?: string;
   taskNumber?: number;
@@ -511,7 +521,76 @@ function validationEvidenceBlock(): string {
 - Prefer the smallest relevant existing project check first, then broader CI-quality checks when needed.
 - Record each command exactly, its result, and the relevant output summary.
 - If no meaningful automated verification exists, stop with the task implemented but unchecked unless the user explicitly authorizes manual verification.
+- After implementation and initial validation, call ralph_start_task_review with the implementation summary, commands run, and validation output so Ralph can start a fresh-session clean-eye review.
 - Do not call ralph_complete_task unless deterministic verification and clean-eye review both pass.`;
+}
+
+function extractSection(markdown: string, heading: string): string {
+  const lines = markdown.split(/\r?\n/);
+  const start = lines.findIndex((line) => line.trim() === heading);
+  if (start < 0) return "";
+  const level = heading.match(/^#+/)?.[0].length ?? 1;
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    const match = lines[i].match(/^(#+)\s+/);
+    if (match && match[1].length <= level) {
+      end = i;
+      break;
+    }
+  }
+  return lines.slice(start, end).join("\n").trim();
+}
+
+function relevantSpecSections(markdown: string): string {
+  const sections = ["## Purpose", "## Requirements", "## Implementation Constraints", "## Out of Scope", "## Review Checklist"]
+    .map((heading) => extractSection(markdown, heading))
+    .filter(Boolean);
+  return sections.join("\n\n");
+}
+
+export function buildTaskReviewPrompt(packet: TaskReviewPacket, specMarkdown: string): string {
+  return `Run a fresh-session clean-eye review for exactly one Ralph task.
+
+Feature Spec: @${packet.specPath}
+Selected task: ${packet.task.number}. ${packet.task.text}
+Selected task kind: ${packet.task.kind}${taskGuidanceBlock(packet.task)}
+
+Relevant Feature Spec sections:
+${relevantSpecSections(specMarkdown) || "(No relevant sections were extracted; read the Feature Spec path above if needed.)"}
+
+Implementation summary:
+${packet.implementationSummary}
+
+Changed files:
+${packet.changedFiles.length > 0 ? packet.changedFiles.map((file) => `- ${file}`).join("\n") : "(No changed files reported.)"}
+
+Diff to review:
+\`\`\`diff
+${packet.diff || "(No diff reported.)"}
+\`\`\`
+
+Validation commands run:
+${packet.commandsRun.length > 0 ? packet.commandsRun.map((command) => `- ${command}`).join("\n") : "(No validation commands reported.)"}
+
+Validation output:
+\`\`\`
+${packet.validationOutput || "(No validation output reported.)"}
+\`\`\`
+
+Review rules:
+- Use only the artifacts in this fresh session: the Feature Spec path/sections, selected task, implementation summary, changed files, diff, commands run, and validation output.
+- Do not rely on the implementation conversation or unstated intent.
+- Evaluate the selected task against related requirements, Implementation Constraints, Out of Scope, Review Checklist, code quality, maintainability, and validation evidence.
+- Return exactly one machine-readable verdict: PASS, FAIL, or BLOCKED.
+- PASS only when the selected task is implemented, scoped correctly, maintainable, and supported by deterministic validation evidence.
+- FAIL only for real required fixes; list the required fixes and keep them scoped to this selected task.
+- BLOCKED when required information or deterministic verification is missing or unavailable.
+
+Required response format:
+Verdict: PASS|FAIL|BLOCKED
+Summary: <concise review summary>
+Required fixes: <only for FAIL; otherwise "None">
+Blocking issues: <only for BLOCKED; otherwise "None">`;
 }
 
 export function buildTaskPrompt(state: RalphState, specPath: string, task: ParsedTask, mode: RalphMode): string {
@@ -570,6 +649,44 @@ Return a structured verdict: PASS, FAIL, or BLOCKED.
 If PASS, call ralph_record_final_review with verdict PASS and a detailed summary. Do not call ralph_create_pull_request automatically. After recording PASS, ask the user explicitly whether to create the Pull Request now; only call ralph_create_pull_request after the user clearly approves.
 If FAIL, fix real issues with additional conventional commits, re-run validation, and repeat review.
 If BLOCKED, stop and report what is missing.`;
+}
+
+function reviewPacketPath(repoIdentityPath: string, specKey: string, packetId: string): string {
+  return join(dirname(statePath(repoIdentityPath, specKey)), "reviews", `${packetId}.json`);
+}
+
+function reviewPacketId(packet: TaskReviewPacket): string {
+  return createHash("sha256").update(`${Date.now()}-${Math.random()}-${packet.specPath}-${packet.task.number}`).digest("hex").slice(0, 16);
+}
+
+async function writeReviewPacket(root: string, spec: string, packet: TaskReviewPacket): Promise<string> {
+  const specKey = canonicalSpecKey(root, spec);
+  const packetId = reviewPacketId(packet);
+  const packetPath = reviewPacketPath(await repoIdentity(root), specKey, packetId);
+  await mkdir(dirname(packetPath), { recursive: true });
+  await writeFile(packetPath, `${JSON.stringify(packet, null, 2)}\n`, "utf8");
+  return packetPath;
+}
+
+async function commandTaskReview(args: string, ctx: ExtensionCommandContext) {
+  const [packetPath] = tokenize(args);
+  if (!packetPath) {
+    ctx.ui.notify("Usage: /ralph-task-review <review-packet-path>", "error");
+    return;
+  }
+
+  const packet = JSON.parse(await readFile(packetPath, "utf8")) as TaskReviewPacket;
+  const root = await repoRoot(ctx.cwd);
+  const spec = resolveInRepo(root, packet.specPath.replace(/^@/, ""));
+  const specMarkdown = await readFile(spec, "utf8");
+  const reviewPrompt = buildTaskReviewPrompt(packet, specMarkdown);
+  const parentSession = ctx.sessionManager.getSessionFile();
+  await ctx.newSession({
+    parentSession,
+    withSession: async (newCtx) => {
+      await newCtx.sendUserMessage(reviewPrompt);
+    },
+  });
 }
 
 function prBodyTemplate(state: RalphState, specPath: string): string {
@@ -685,6 +802,56 @@ export default function (pi: ExtensionAPI) {
   pi.registerCommand("ralph", {
     description: "Run a Ralph Loop from a Feature Spec, one task at a time by default.",
     handler: async (args, ctx) => commandHandler(args, ctx, pi),
+  });
+
+  pi.registerCommand("ralph-task-review", {
+    description: "Start a fresh-session clean-eye review from a Ralph task review packet.",
+    handler: async (args, ctx) => commandTaskReview(args, ctx),
+  });
+
+  pi.registerTool({
+    name: "ralph_start_task_review",
+    label: "Start Ralph Task Review",
+    description: "Start a fresh-session clean-eye review for one Ralph task using review-relevant artifacts only.",
+    promptSnippet: "Start a fresh-session clean-eye Ralph task review seeded with selected task, diff, changed files, commands run, and validation output.",
+    promptGuidelines: [
+      "Use ralph_start_task_review after implementing one Ralph task and running initial deterministic validation.",
+      "Provide accurate implementation summary, commands run, and validation output so the clean-eye review can return PASS, FAIL, or BLOCKED.",
+    ],
+    parameters: Type.Object({
+      specPath: Type.String({ description: "Feature Spec path, relative to the current Ralph worktree or absolute." }),
+      taskNumber: Type.Number({ description: "The selected Ralph task number to review." }),
+      implementationSummary: Type.String({ description: "Concise implementation summary for the selected task." }),
+      commandsRun: Type.Array(Type.String(), { description: "Validation commands/checks run." }),
+      validationOutput: Type.String({ description: "Validation command results and relevant output summary." }),
+      diff: Type.Optional(Type.String({ description: "Diff to review. Defaults to git diff when omitted." })),
+      changedFiles: Type.Optional(Type.Array(Type.String(), { description: "Changed files. Defaults to git diff --name-only when omitted." })),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx: ExtensionContext) {
+      const root = await repoRoot(ctx.cwd);
+      const spec = resolveInRepo(root, params.specPath.replace(/^@/, ""));
+      const { tasks } = await loadTasks(spec);
+      const task = tasks.find((candidate) => candidate.number === params.taskNumber);
+      if (!task) throw new Error(`Task ${params.taskNumber} was not found in ${spec}`);
+      const diff = params.diff ?? (await git(["diff", "--no-ext-diff"], root, 120_000));
+      const changedFiles = params.changedFiles ?? (await git(["diff", "--name-only"], root, 120_000)).split("\n").filter(Boolean);
+      const packet: TaskReviewPacket = {
+        specPath: relativeTo(root, spec),
+        task,
+        implementationSummary: params.implementationSummary,
+        diff,
+        changedFiles,
+        commandsRun: params.commandsRun,
+        validationOutput: params.validationOutput,
+      };
+      const packetPath = await writeReviewPacket(root, spec, packet);
+      const command = `/ralph-task-review ${shellQuote(packetPath)}`;
+      pi.sendUserMessage(command, { deliverAs: "followUp" });
+      return {
+        content: [{ type: "text", text: `Queued fresh-session Ralph task review for task ${params.taskNumber}. Review packet: ${packetPath}` }],
+        details: { packetPath, command },
+      };
+    },
   });
 
   pi.registerTool({
