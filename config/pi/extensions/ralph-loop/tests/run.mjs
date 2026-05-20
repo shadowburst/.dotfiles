@@ -10,6 +10,7 @@ import {
   cachePaths,
   completeFinalReview,
   completeFeatureSpecTask,
+  buildTaskFixPrompt,
   buildTaskImplementationPrompt,
   buildTaskReviewPrompt,
   discoverValidationOptions,
@@ -29,6 +30,7 @@ import {
   recordTaskReviewVerdict,
   recordValidationEvidence,
   runOrchestrator,
+  runTaskFixReviewLoop,
   runTaskRefactorPhase,
   runTaskReviewPhase,
   selectFirstUncheckedTask,
@@ -331,6 +333,143 @@ const taskReviewState = JSON.parse(await readFile(refactorCachePath, "utf8"));
 assert.equal(taskReviewState.phase, "task-review");
 assert.equal(taskReviewState.reviewVerdicts.at(-1).verdict, "FAIL");
 assert.match(taskReviewState.reviewVerdicts.at(-1).summary, /Require final JSON verdict parsing/);
+
+const fixPrompt = buildTaskFixPrompt({
+  repoRoot: resolve(dir),
+  task: reviewTask,
+  reviewVerdict: { verdict: "FAIL", summary: "needs scope", requiredFixes: ["Fix only the review parser."] },
+  validationPlan: { verified: true, options: [{ command: "npm test", cwd: ".", reason: "repo test" }] },
+  diff: "diff --git a/review-file.mjs b/review-file.mjs\n+bad\n",
+  changedPaths: ["review-file.mjs"],
+  iteration: 1,
+});
+assert.match(fixPrompt, /Fix only required issues from the Ralph task review/);
+assert.match(fixPrompt, /Iteration 1 of 3/);
+assert.match(fixPrompt, /Fix only the review parser/);
+assert.match(fixPrompt, /Do not implement subjective preferences/);
+
+await writeFile(refactorCachePath, JSON.stringify({ ...refactorBaseState, phase: "task-review", currentTask: reviewTask }));
+const fixValidations = [];
+const fixReviewVerdicts = [
+  { verdict: "FAIL", summary: "parser accepts prefixes", requiredFixes: ["Require final-line JSON only."] },
+  { verdict: "PASS", summary: "ready", requiredFixes: [] },
+];
+let fixSessionCount = 0;
+let fixReviewCount = 0;
+let fixRefactorCount = 0;
+const fixedReview = await runTaskFixReviewLoop({
+  cachePath: refactorCachePath,
+  state: { ...refactorBaseState, phase: "task-review", currentTask: reviewTask },
+  repoRoot: resolve(dir),
+  specPath: spec,
+  specText: reviewSpecText,
+  task: reviewTask,
+  validationPlan: { verified: true, options: [{ command: "npm test", cwd: ".", scope: "repo", source: "package.json", reason: "repo test" }] },
+  review: { verdict: fixReviewVerdicts[0], changedPaths: ["review-file.mjs"], diff: "diff --git a/review-file.mjs b/review-file.mjs\n+bad\n" },
+  fixSession: async ({ prompt }) => {
+    fixSessionCount += 1;
+    assert.match(prompt, /Require final-line JSON only/);
+    return { status: "fixed required issue", refactorRecommended: true };
+  },
+  refactorSession: async ({ prompt }) => {
+    fixRefactorCount += 1;
+    assert.match(prompt, /fix area/);
+    return { status: "simplified fix area" };
+  },
+  reviewSession: async () => {
+    fixReviewCount += 1;
+    const verdict = fixReviewVerdicts[fixReviewCount];
+    return { stdout: JSON.stringify(verdict) };
+  },
+  runCommand: async (command, options) => {
+    fixValidations.push({ command, options });
+    return { command, cwd: options.cwd, exitCode: 0, stdout: "pass", stderr: "" };
+  },
+  execGit: fakeGit({ repoRoot: resolve(dir), branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: " M review-file.mjs\n", worktreeDiff: "diff --git a/review-file.mjs b/review-file.mjs\n+fixed\n" }),
+});
+assert.equal(fixedReview.status, "passed");
+assert.equal(fixSessionCount, 1);
+assert.equal(fixReviewCount, 1);
+assert.equal(fixRefactorCount, 1);
+assert.deepEqual(fixValidations.map((entry) => entry.command), ["npm test"]);
+const fixedState = JSON.parse(await readFile(refactorCachePath, "utf8"));
+assert.equal(fixedState.attempts[`task:${reviewTask.lineNumber}:fix-review`], 1);
+assert.equal(fixedState.reviewVerdicts.at(-1).verdict, "PASS");
+
+await writeFile(refactorCachePath, JSON.stringify({ ...refactorBaseState, phase: "task-review", currentTask: reviewTask }));
+const blockedReview = await runTaskFixReviewLoop({
+  cachePath: refactorCachePath,
+  state: { ...refactorBaseState, phase: "task-review", currentTask: reviewTask },
+  repoRoot: resolve(dir),
+  specPath: spec,
+  specText: reviewSpecText,
+  task: reviewTask,
+  validationPlan: { verified: true, options: [] },
+  review: { verdict: { verdict: "BLOCKED", summary: "missing evidence", requiredFixes: [] }, changedPaths: [], diff: "" },
+});
+assert.equal(blockedReview.status, "blocked");
+const blockedState = JSON.parse(await readFile(refactorCachePath, "utf8"));
+assert.match(blockedState.stop.reason, /review blocked/);
+
+await writeFile(refactorCachePath, JSON.stringify({ ...refactorBaseState, phase: "task-review", currentTask: reviewTask }));
+let exhaustedFixes = 0;
+const exhaustedReview = await runTaskFixReviewLoop({
+  cachePath: refactorCachePath,
+  state: { ...refactorBaseState, phase: "task-review", currentTask: reviewTask },
+  repoRoot: resolve(dir),
+  specPath: spec,
+  specText: reviewSpecText,
+  task: reviewTask,
+  validationPlan: { verified: true, options: [{ command: "npm test", cwd: ".", scope: "repo", source: "package.json", reason: "repo test" }] },
+  review: { verdict: { verdict: "FAIL", summary: "still wrong", requiredFixes: ["Fix it."] }, changedPaths: ["review-file.mjs"], diff: "diff --git a/review-file.mjs b/review-file.mjs\n+bad\n" },
+  fixSession: async () => {
+    exhaustedFixes += 1;
+    return { status: "attempted fix" };
+  },
+  reviewSession: async () => ({ stdout: '{"verdict":"FAIL","summary":"still wrong","requiredFixes":["Fix it."]}' }),
+  runCommand: async (command, options) => ({ command, cwd: options.cwd, exitCode: 0, stdout: "pass", stderr: "" }),
+  execGit: fakeGit({ repoRoot: resolve(dir), branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: " M review-file.mjs\n", worktreeDiff: "diff --git a/review-file.mjs b/review-file.mjs\n+still-bad\n" }),
+});
+assert.equal(exhaustedReview.status, "exhausted");
+assert.equal(exhaustedFixes, 3);
+const exhaustedState = JSON.parse(await readFile(refactorCachePath, "utf8"));
+assert.equal(exhaustedState.attempts[`task:${reviewTask.lineNumber}:fix-review`], 3);
+assert.match(exhaustedState.stop.reason, /exhausted/);
+
+await writeFile(refactorCachePath, JSON.stringify({
+  ...refactorBaseState,
+  phase: "task-review",
+  currentTask: reviewTask,
+  attempts: { [`task:${reviewTask.lineNumber}:fix-review`]: 2 },
+}));
+let resumedExhaustedFixes = 0;
+const resumedExhaustedReview = await runTaskFixReviewLoop({
+  cachePath: refactorCachePath,
+  state: {
+    ...refactorBaseState,
+    phase: "task-review",
+    currentTask: reviewTask,
+    attempts: { [`task:${reviewTask.lineNumber}:fix-review`]: 2 },
+  },
+  repoRoot: resolve(dir),
+  specPath: spec,
+  specText: reviewSpecText,
+  task: reviewTask,
+  validationPlan: { verified: true, options: [{ command: "npm test", cwd: ".", scope: "repo", source: "package.json", reason: "repo test" }] },
+  review: { verdict: { verdict: "FAIL", summary: "still wrong", requiredFixes: ["Fix it."] }, changedPaths: ["review-file.mjs"], diff: "diff --git a/review-file.mjs b/review-file.mjs\n+bad\n" },
+  fixSession: async () => {
+    resumedExhaustedFixes += 1;
+    return { status: "attempted resumed fix" };
+  },
+  reviewSession: async () => ({ stdout: '{"verdict":"FAIL","summary":"still wrong","requiredFixes":["Fix it."]}' }),
+  runCommand: async (command, options) => ({ command, cwd: options.cwd, exitCode: 0, stdout: "pass", stderr: "" }),
+  execGit: fakeGit({ repoRoot: resolve(dir), branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: " M review-file.mjs\n", worktreeDiff: "diff --git a/review-file.mjs b/review-file.mjs\n+still-bad\n" }),
+});
+assert.equal(resumedExhaustedReview.status, "exhausted");
+assert.equal(resumedExhaustedFixes, 1);
+const resumedExhaustedState = JSON.parse(await readFile(refactorCachePath, "utf8"));
+assert.equal(resumedExhaustedState.attempts[`task:${reviewTask.lineNumber}:fix-review`], 3);
+assert.match(resumedExhaustedState.stop.reason, /exhausted/);
 
 const launched = [];
 const fakeSpawn = (command, args, options) => {

@@ -21,6 +21,7 @@ const GENERIC_VALIDATION_TOKENS = new Set(["config", "extension", "extensions", 
 const BEHAVIOR_TASK_TOKENS = ["behavior", "implement", "loop", "phase", "command", "parse", "validation", "review", "cache", "state", "prompt", "session", "workflow", "orchestrator"];
 const DECLARATIVE_TASK_TOKENS = ["doc", "docs", "documentation", "adr", "readme", "nix", "settings", "format", "copy", "text"];
 const AUTOMATED_TEST_COMMAND_PATTERN = /(^|\s)(npm test|.*\btest\b|.*\bnode\s+tests\/|.*\bpytest\b|.*\bvitest\b|.*\bjest\b)/i;
+const MAX_TASK_FIX_REVIEW_ITERATIONS = 3;
 
 export function parseOrchestratorArgs(argv) {
   let mode;
@@ -140,6 +141,23 @@ export async function runOrchestrator(argv = process.argv.slice(2), io = process
   });
   io.stdout.write(`reviewPromptBytes: ${Buffer.byteLength(review.prompt, "utf8")}\n`);
   io.stdout.write(`taskReview: ${review.verdict.verdict}\n`);
+  const fixReview = await runTaskFixReviewLoop({
+    cachePath: startup.cachePath,
+    state: review.state,
+    repoRoot: startup.repoRoot,
+    specPath,
+    specText,
+    task: selectedTask,
+    validationPlan: implementation.validationPlan,
+    review,
+    validationEvidence: [...initialValidationEvidence.validationEvidence, ...refactor.validationEvidence],
+    fixSession: deps.fixSession,
+    refactorSession: deps.refactorSession,
+    reviewSession: deps.reviewSession,
+    execGit: deps.execGit,
+    runCommand: deps.runCommand,
+  });
+  if (fixReview.status !== "already-passed") io.stdout.write(`fixReview: ${fixReview.status}\n`);
 }
 
 export function parseFeatureSpecTasks(specText) {
@@ -440,15 +458,8 @@ export async function runTaskImplementationPhase({ cachePath, state, repoRoot, s
 }
 
 export async function runTaskValidationPhase({ cachePath, state, repoRoot, validationPlan, phase = "validation", runCommand = runShellCommand }) {
-  let nextState = await transitionPhase({ cachePath, state, phase, currentTask: state.currentTask ?? null });
-  const validationEvidence = [];
-  for (const option of normalizeTaskValidationPlan(validationPlan).options) {
-    const evidence = await runValidationOption({ repoRoot, option, runCommand, phase });
-    validationEvidence.push(evidence);
-    nextState = await recordValidationEvidence({ cachePath, state: nextState, evidence });
-    if (evidence.exitCode !== 0) break;
-  }
-  return { state: nextState, validationEvidence };
+  const nextState = await transitionPhase({ cachePath, state, phase, currentTask: state.currentTask ?? null });
+  return runValidationPlanOptions({ cachePath, state: nextState, repoRoot, validationPlan, phase, runCommand });
 }
 
 export async function runTaskRefactorPhase({
@@ -475,12 +486,9 @@ export async function runTaskRefactorPhase({
   const validationEvidence = [];
 
   if (changedFiles) {
-    for (const option of normalizedPlan.options) {
-      const evidence = await runValidationOption({ repoRoot, option, runCommand, phase: "post-refactor" });
-      validationEvidence.push(evidence);
-      nextState = await recordValidationEvidence({ cachePath, state: nextState, evidence });
-      if (evidence.exitCode !== 0) break;
-    }
+    const validation = await runValidationPlanOptions({ cachePath, state: nextState, repoRoot, validationPlan: normalizedPlan, phase: "post-refactor", runCommand });
+    nextState = validation.state;
+    validationEvidence.push(...validation.validationEvidence);
   }
 
   return { state: nextState, prompt, result, changedFiles, validationEvidence, scopePaths };
@@ -527,6 +535,111 @@ export async function runTaskReviewPhase({
   return { state: nextState, prompt, result, verdict, diff, changedPaths, changedFiles };
 }
 
+export async function runTaskFixReviewLoop({
+  cachePath,
+  state,
+  repoRoot,
+  specPath,
+  specText,
+  task = state.currentTask ?? null,
+  validationPlan,
+  review,
+  validationEvidence = state.validationEvidence ?? [],
+  fixSession = launchPiTaskFixSession,
+  refactorSession = launchPiRefactorSession,
+  reviewSession = launchPiTaskReviewSession,
+  execGit = git,
+  runCommand = runShellCommand,
+}) {
+  let currentReview = review;
+  let nextState = state;
+  let accumulatedEvidence = [...validationEvidence];
+  const attemptScope = taskFixAttemptScope(task);
+  const usedAttempts = persistedAttemptCount(nextState, attemptScope);
+
+  if (currentReview.verdict.verdict === "PASS") return { status: "already-passed", state: nextState, review: currentReview, iterations: 0 };
+  if (currentReview.verdict.verdict === "BLOCKED") {
+    nextState = await preserveCacheOnStop({ cachePath, state: nextState, reason: `task review blocked: ${currentReview.verdict.summary}`.trim() });
+    return { status: "blocked", state: nextState, review: currentReview, iterations: 0 };
+  }
+  if (usedAttempts >= MAX_TASK_FIX_REVIEW_ITERATIONS) {
+    nextState = await preserveCacheOnStop({ cachePath, state: nextState, reason: `task review exhausted ${MAX_TASK_FIX_REVIEW_ITERATIONS} fix/retest/re-review iterations without PASS` });
+    return { status: "exhausted", state: nextState, review: currentReview, iterations: MAX_TASK_FIX_REVIEW_ITERATIONS };
+  }
+
+  for (let iteration = usedAttempts + 1; iteration <= MAX_TASK_FIX_REVIEW_ITERATIONS; iteration += 1) {
+    nextState = await recordAttempt({ cachePath, state: nextState, scope: attemptScope });
+    nextState = await transitionPhase({ cachePath, state: nextState, phase: "task-fix", currentTask: task });
+    const prompt = buildTaskFixPrompt({
+      repoRoot,
+      task,
+      reviewVerdict: currentReview.verdict,
+      validationPlan,
+      diff: currentReview.diff ?? "",
+      changedPaths: currentReview.changedPaths ?? [],
+      iteration,
+    });
+    const fixResult = normalizeImplementationResult(await fixSession({ cwd: repoRoot, prompt, task, reviewVerdict: currentReview.verdict, iteration }));
+    let fixRefactor = { changedFiles: false, validationEvidence: [], result: { status: "fix-area refactor skipped" } };
+    if (fixAreaRefactorRecommended(fixResult)) {
+      fixRefactor = await runFixAreaRefactorPhase({ cachePath, state: nextState, repoRoot, task, validationPlan, refactorSession, execGit, runCommand });
+      nextState = fixRefactor.state;
+      accumulatedEvidence = [...accumulatedEvidence, ...fixRefactor.validationEvidence];
+      if (fixRefactor.changedFiles && !hasPassingDeterministicValidation(fixRefactor.validationEvidence)) {
+        nextState = await preserveCacheOnStop({ cachePath, state: nextState, reason: `fix-area refactor validation failed during iteration ${iteration}` });
+        return { status: "validation-failed", state: nextState, review: currentReview, iterations: iteration, prompt, fixResult, fixRefactor };
+      }
+    }
+    const validation = await runTaskValidationPhase({ cachePath, state: nextState, repoRoot, validationPlan, phase: "fix-validation", runCommand });
+    nextState = validation.state;
+    accumulatedEvidence = [...accumulatedEvidence, ...validation.validationEvidence];
+    if (!hasPassingDeterministicValidation(validation.validationEvidence)) {
+      nextState = await preserveCacheOnStop({ cachePath, state: nextState, reason: `fix validation failed during iteration ${iteration}` });
+      return { status: "validation-failed", state: nextState, review: currentReview, iterations: iteration, prompt, fixResult, fixRefactor, validationEvidence: validation.validationEvidence };
+    }
+
+    currentReview = await runTaskReviewPhase({
+      cachePath,
+      state: nextState,
+      repoRoot,
+      specPath,
+      specText,
+      task,
+      validationEvidence: accumulatedEvidence,
+      implementationSummary: fixResult.status,
+      refactorSummary: fixRefactor.result.status,
+      reviewSession,
+      execGit,
+    });
+    nextState = currentReview.state;
+    if (currentReview.verdict.verdict === "PASS") return { status: "passed", state: nextState, review: currentReview, iterations: iteration, prompt, fixResult, fixRefactor };
+    if (currentReview.verdict.verdict === "BLOCKED") {
+      nextState = await preserveCacheOnStop({ cachePath, state: nextState, reason: `task review blocked after fix iteration ${iteration}: ${currentReview.verdict.summary}`.trim() });
+      return { status: "blocked", state: nextState, review: currentReview, iterations: iteration, prompt, fixResult, fixRefactor };
+    }
+  }
+
+  nextState = await preserveCacheOnStop({ cachePath, state: nextState, reason: `task review exhausted ${MAX_TASK_FIX_REVIEW_ITERATIONS} fix/retest/re-review iterations without PASS` });
+  return { status: "exhausted", state: nextState, review: currentReview, iterations: MAX_TASK_FIX_REVIEW_ITERATIONS };
+}
+
+async function runFixAreaRefactorPhase({ cachePath, state, repoRoot, task, validationPlan, refactorSession, execGit, runCommand }) {
+  const initialDiff = await taskDiff({ repoRoot, execGit });
+  const initialFingerprint = await taskChangeFingerprint({ repoRoot, execGit, diff: initialDiff });
+  const scopePaths = uniqueStrings(await taskTouchedPaths({ repoRoot, execGit }), "fix-area refactor scope path");
+  let nextState = await transitionPhase({ cachePath, state, phase: "fix-area-refactor", currentTask: task });
+  const prompt = buildFixAreaRefactorPrompt({ repoRoot, task, validationPlan, scopePaths, diff: initialDiff });
+  const result = normalizeImplementationResult(await refactorSession({ cwd: repoRoot, prompt, task, validationPlan, scopePaths, diff: initialDiff }));
+  const changedFiles = (await taskChangeFingerprint({ repoRoot, execGit })) !== initialFingerprint;
+  const validationEvidence = [];
+  if (changedFiles) {
+    const validation = await runValidationPlanOptions({ cachePath, state: nextState, repoRoot, validationPlan, phase: "post-fix-refactor", runCommand });
+    nextState = validation.state;
+    validationEvidence.push(...validation.validationEvidence);
+  }
+  return { state: nextState, prompt, result, changedFiles, validationEvidence, scopePaths };
+}
+
 export function hasPassingDeterministicValidation(validationEvidence) {
   if (!Array.isArray(validationEvidence) || validationEvidence.length === 0) return false;
   return validationEvidence.some((evidence) => evidence.exitCode === 0) && validationEvidence.every((evidence) => evidence.exitCode === 0);
@@ -565,6 +678,18 @@ export function launchPiTaskReviewSession({ cwd, prompt, spawnProcess = spawn, p
     sessionEnv: { PI_RALPH_TASK_REVIEW_SESSION: "1" },
     label: "task review",
     successStatus: "task review session completed",
+  });
+}
+
+export function launchPiTaskFixSession({ cwd, prompt, spawnProcess = spawn, piBin = process.env.PI_RALPH_PI_BIN ?? "pi" }) {
+  return launchPiPromptSession({
+    cwd,
+    prompt,
+    spawnProcess,
+    piBin,
+    sessionEnv: { PI_RALPH_TASK_FIX_SESSION: "1" },
+    label: "task fix",
+    successStatus: "task fix session completed",
   });
 }
 
@@ -713,6 +838,47 @@ export function buildTaskReviewPrompt({
   ].join("\n");
 }
 
+export function buildTaskFixPrompt({ repoRoot, task, reviewVerdict, validationPlan, diff = "", changedPaths = [], iteration }) {
+  if (!task?.text) throw new Error("Ralph task fix prompt requires a selected task.");
+  const normalizedPlan = normalizeTaskValidationPlan(validationPlan);
+  const fixes = normalizeRequiredFixes(reviewVerdict?.requiredFixes);
+  if (fixes.length === 0) throw new Error("Ralph task fix prompt requires review requiredFixes.");
+  const validationLines = formatPromptBullets(
+    normalizedPlan.options,
+    (option) => `(${option.cwd}) ${option.command} — ${option.reason}`,
+    "No deterministic validation selected. Stop and report the task as unverified; do not edit.",
+  );
+  const pathLines = formatPromptBullets(uniqueStrings(changedPaths, "fix changed path"), (path) => path, "No changed paths were provided; inspect the diff and stop if scope is unclear.");
+  const fixLines = formatPromptBullets(fixes, (fix) => fix, "No required fixes were provided.");
+
+  return [
+    "Fix only required issues from the Ralph task review.",
+    `Iteration ${iteration} of ${MAX_TASK_FIX_REVIEW_ITERATIONS}.`,
+    "Do not implement subjective preferences, unrelated improvements, Feature Spec checkbox updates, or commits.",
+    "Keep scope to the review's required fixes. If a requested change is not required for correctness, spec compliance, validation, safety, or introduced maintainability defects, do not make it.",
+    "If your required fixes introduce obvious complexity or duplication, report that a fix-area refactor is recommended; Ralph may run a separate behavior-preserving refactor before revalidation.",
+    "Before editing, restate the deterministic validation you will rerun after the fix.",
+    "",
+    `Repository: ${repoRoot}`,
+    `Selected task (line ${task.lineNumber ?? "unknown"}): ${task.text}`,
+    "",
+    "Required fixes:",
+    fixLines,
+    "",
+    "Review summary:",
+    reviewVerdict?.summary || "(none provided)",
+    "",
+    "Changed paths in scope:",
+    pathLines,
+    "",
+    "Validation to rerun after the fix:",
+    validationLines,
+    "",
+    "Current task diff:",
+    diff.trim() ? diff : "(no current task diff detected)",
+  ].join("\n");
+}
+
 export function parseTaskReviewVerdict(text) {
   const trimmed = String(text ?? "").trim();
   if (!trimmed) throw new Error("Ralph task review returned no machine-readable verdict.");
@@ -754,6 +920,36 @@ export function buildTaskRefactorPrompt({ repoRoot, task, validationPlan, scopeP
     validationLines,
     "",
     "Current task diff for context:",
+    diff.trim() ? diff : "(no current task diff detected)",
+  ].join("\n");
+}
+
+function buildFixAreaRefactorPrompt({ repoRoot, task, validationPlan, scopePaths = [], diff = "" }) {
+  if (!task?.text) throw new Error("Ralph fix-area refactor prompt requires a selected task.");
+  const normalizedPlan = normalizeTaskValidationPlan(validationPlan);
+  const validationLines = formatPromptBullets(
+    normalizedPlan.options,
+    (option) => `(${option.cwd}) ${option.command} — ${option.reason}`,
+    "No deterministic validation selected. Do not refactor without a validation command.",
+  );
+  const scopeLines = formatPromptBullets(uniqueStrings(scopePaths, "fix-area refactor scope path"), (path) => path, "No touched fix-area files were detected; inspect the diff and stop if scope is unclear.");
+
+  return [
+    "Run an optional Ralph fix-area refactor session after required review fixes introduced complexity.",
+    "Use the refactor skill contract: Improve code shape without changing behavior.",
+    "Limit changes to the fix area and touched files; do not add feature behavior, update the Feature Spec checkbox, or commit.",
+    "Prefer no change over speculative churn.",
+    "",
+    `Repository: ${repoRoot}`,
+    `Selected task (line ${task.lineNumber ?? "unknown"}): ${task.text}`,
+    "",
+    "Fix area scope:",
+    scopeLines,
+    "",
+    "Rerun validation if you change files:",
+    validationLines,
+    "",
+    "Current fix-area diff:",
     diff.trim() ? diff : "(no current task diff detected)",
   ].join("\n");
 }
@@ -869,6 +1065,21 @@ function truncateText(text, maxLength) {
 function normalizeImplementationResult(result) {
   const status = typeof result?.status === "string" && result.status.length > 0 ? result.status : "implementation completed";
   return { ...result, status };
+}
+
+function fixAreaRefactorRecommended(result) {
+  if (result?.refactorRecommended === true || result?.fixAreaRefactorRecommended === true) return true;
+  const text = `${result?.stdout ?? ""}\n${result?.stderr ?? ""}\n${result?.summary ?? ""}\n${result?.status ?? ""}`;
+  return /fix-area refactor recommended|refactor recommended/i.test(text);
+}
+
+function taskFixAttemptScope(task) {
+  return `task:${task?.lineNumber ?? "unknown"}:fix-review`;
+}
+
+function persistedAttemptCount(state, scope) {
+  const count = Number(state?.attempts?.[scope] ?? 0);
+  return Number.isInteger(count) && count > 0 ? count : 0;
 }
 
 function formatPromptBullets(values, formatValue, emptyText) {
@@ -1237,6 +1448,18 @@ async function taskTouchedPaths({ repoRoot, execGit }) {
   return parsePorcelainEntries(status).map((entry) => entry.path);
 }
 
+async function runValidationPlanOptions({ cachePath, state, repoRoot, validationPlan, phase, runCommand }) {
+  let nextState = state;
+  const validationEvidence = [];
+  for (const option of normalizeTaskValidationPlan(validationPlan).options) {
+    const evidence = await runValidationOption({ repoRoot, option, runCommand, phase });
+    validationEvidence.push(evidence);
+    nextState = await recordValidationEvidence({ cachePath, state: nextState, evidence });
+    if (evidence.exitCode !== 0) break;
+  }
+  return { state: nextState, validationEvidence };
+}
+
 async function runValidationOption({ repoRoot, option, runCommand, phase }) {
   const cwd = option.cwd === "." ? repoRoot : join(repoRoot, option.cwd);
   const result = await runCommand(option.command, { cwd });
@@ -1285,6 +1508,10 @@ function selectSafeNextPhase(phase) {
     case "implementation":
     case "refactor":
     case "fix-review-failures":
+    case "task-fix":
+    case "fix-area-refactor":
+    case "post-fix-refactor":
+    case "fix-validation":
     case "validation":
     case "task-review":
     case "precommit-validation":

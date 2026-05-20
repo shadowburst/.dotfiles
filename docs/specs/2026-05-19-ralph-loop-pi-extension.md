@@ -340,7 +340,7 @@ Ralph SHALL perform a final clean-context two-axis branch review after all tasks
   - Covers: Requirement: Per-task implementation loop
 - [x] 8. Implement fresh-context Ralph-specific task review with machine-readable `PASS`, `FAIL`, or `BLOCKED` verdicts and review inputs limited to relevant spec, diff, files, summaries, and validation evidence.
   - Covers: Requirement: Clean-eye task review
-- [ ] 9. Implement bounded fix/retest/re-review with at most three iterations, required-fix-only scope, optional fix-area refactor when fixes introduce complexity, and stop behavior for exhausted or blocked reviews.
+- [x] 9. Implement bounded fix/retest/re-review with at most three iterations, required-fix-only scope, optional fix-area refactor when fixes introduce complexity, and stop behavior for exhausted or blocked reviews.
   - Covers: Requirement: Bounded fix and retest
 - [ ] 10. Implement verified task completion, including checkbox update before final validation, expected-file commit safety, cheap-model-assisted Conventional Commit generation with deterministic fallback, and one commit per verified task.
   - Covers: Requirement: Task commits; Requirement: Feature Spec task ledger
