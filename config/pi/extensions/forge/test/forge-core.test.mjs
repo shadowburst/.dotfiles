@@ -114,6 +114,10 @@ test("Forge task chain carries project domain context into every step", () => {
     assert.match(taskText, new RegExp(phrase.replaceAll("/", "\\/")));
   }
 
+  assert.equal(chain.some((step) => step.agent === "planner"), false);
+  assert.equal(chain[1].agent, "worker");
+  assert.match(chain[1].task, /Derive a minimal plan/);
+
   const workerSteps = chain.filter((step) => step.agent === "worker");
   assert.equal(workerSteps.length, 3);
   for (const step of workerSteps) {

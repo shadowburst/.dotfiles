@@ -315,14 +315,8 @@ function buildTaskChain(specPath: string, task: ForgeTask) {
       outputMode: "file-only",
     },
     {
-      agent: "planner",
-      task: `${context}\n\nCreate a concrete implementation plan from {previous}. Include non-goals, expected changed paths, meaningful TDD guidance, and validation expectations. Do not edit files.`,
-      output: "forge/plan.md",
-      outputMode: "file-only",
-    },
-    {
       agent: "worker",
-      task: `${context}\n\nImplement the selected Forge task from {previous}. Treat ${specPath} task checkboxes as read-only; the Forge Driver updates them. Use meaningful TDD only when an automated behavior test is applicable. Run deterministic validation and summarize changed paths and validation evidence.`,
+      task: `${context}\n\nImplement the selected Forge task from {previous}. Treat ${specPath} task checkboxes as read-only; the Forge Driver updates them. Use meaningful TDD only when an automated behavior test is applicable. Derive a minimal plan from the provided context, including non-goals and expected changed paths, before editing. Run deterministic validation and summarize changed paths and validation evidence.`,
       output: "forge/implementation.md",
       outputMode: "file-only",
     },
@@ -439,7 +433,7 @@ async function runForge(pi: ExtensionAPI, ctx: ExtensionCommandContext, rawSpecP
       context: "fresh",
     }, {
       taskLabel: `Task ${taskPosition}/${tasks.length}`,
-      phases: ["Context", "Plan", "Implement", "Refactor", "Review", "Synthesize", "Fix", "Summarize"],
+      phases: ["Context", "Implement", "Refactor", "Review", "Synthesize", "Fix", "Summarize"],
       chain: taskChain,
     });
     const summary = await parseTaskChainSummary(response);

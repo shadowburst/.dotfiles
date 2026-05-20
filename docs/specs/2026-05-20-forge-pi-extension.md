@@ -86,13 +86,13 @@ Forge SHALL implement each selected task with one programmatic pi-subagents chai
 #### Scenario: Task chain steps
 
 - **WHEN** Forge invokes the task chain
-- **THEN** the chain runs `context-builder`, `planner`, implementation `worker`, refactor-guided `worker`, parallel reviewers, review synthesis, fix `worker`, and final summary emission.
+- **THEN** the chain runs `context-builder`, implementation `worker`, refactor-guided `worker`, parallel reviewers, review synthesis, fix `worker`, and final summary emission.
 
-#### Scenario: Context and planning
+#### Scenario: Context and worker planning
 
 - **WHEN** the chain begins
 - **THEN** `context-builder` gathers relevant Feature Spec, selected task, repository, and validation context
-- **AND** `planner` creates a concrete task plan, non-goals, likely changed paths, and validation expectations.
+- **AND** the implementation `worker` derives a minimal task plan, non-goals, likely changed paths, and validation expectations from that context before editing.
 
 #### Scenario: Implementation and refactor
 
@@ -221,7 +221,7 @@ Forge SHALL present clear task and chain progress without fake percentage progre
   - Covers: Requirement: Current-branch workflow
 - [x] 3. Implement Feature Spec task parsing for top-level `## Implementation Tasks` checkboxes and deterministic checkbox updates owned by the Forge Driver.
   - Covers: Requirement: Feature Spec task ledger
-- [x] 4. Implement the programmatic Forge Task Chain with `context-builder`, `planner`, implementation worker, refactor-guided worker, four parallel reviewers, synthesis, fix worker, and final JSON summary emission.
+- [x] 4. Implement the programmatic Forge Task Chain with `context-builder`, implementation worker, refactor-guided worker, four parallel reviewers, synthesis, fix worker, and final JSON summary emission.
   - Covers: Requirement: Forge Task Chain; Requirement: Parallel clean-context review; Requirement: Final chain summary
 - [x] 5. Implement final JSON extraction and validation, accepting only `status: "done"` or `status: "stop"` and requiring validation evidence for `done`.
   - Covers: Requirement: Final chain summary
