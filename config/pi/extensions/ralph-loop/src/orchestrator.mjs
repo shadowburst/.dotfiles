@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { createHash } from "node:crypto";
 import { homedir } from "node:os";
@@ -86,8 +86,76 @@ export async function prepareCurrentBranchStartup({
 }
 
 async function writeStartupCache({ cachePath, action, repoRoot, state }) {
-  await writeCache(cachePath, state);
-  return { action, repoRoot, state, cachePath };
+  const normalizedState = normalizeRunState(state);
+  await writeCache(cachePath, normalizedState);
+  return { action, repoRoot, state: normalizedState, cachePath };
+}
+
+export async function transitionPhase({ cachePath, state, phase, currentTask = state.currentTask ?? null }) {
+  return persistCacheUpdate(cachePath, state, (nextState) => ({
+    ...nextState,
+    phase,
+    currentTask,
+    phaseTransitions: [
+      ...(nextState.phaseTransitions ?? []),
+      { phase, at: nextState.updatedAt },
+    ],
+  }));
+}
+
+export async function recordAttempt({ cachePath, state, scope }) {
+  if (!scope) throw new Error("Ralph attempt scope is required.");
+  return persistCacheUpdate(cachePath, state, (nextState) => ({
+    ...nextState,
+    attempts: { ...nextState.attempts, [scope]: (nextState.attempts?.[scope] ?? 0) + 1 },
+  }));
+}
+
+export async function recordExpectedChangedPaths({ cachePath, state, paths }) {
+  return persistCacheUpdate(cachePath, state, (nextState) => ({
+    ...nextState,
+    expectedChangedPaths: uniqueStrings(paths, "expected changed path"),
+  }));
+}
+
+export async function recordValidationEvidence({ cachePath, state, evidence }) {
+  return persistCacheUpdate(cachePath, state, (nextState) => ({
+    ...nextState,
+    validationEvidence: [...(nextState.validationEvidence ?? []), evidence],
+  }));
+}
+
+export async function recordTaskReviewVerdict({ cachePath, state, verdict, summary = "", task = state.currentTask ?? null }) {
+  assertReviewVerdict(verdict);
+  return persistCacheUpdate(cachePath, state, (nextState) => ({
+    ...nextState,
+    reviewVerdicts: [...(nextState.reviewVerdicts ?? []), { verdict, summary, task, at: nextState.updatedAt }],
+  }));
+}
+
+export async function recordTaskCommit({ cachePath, state, commit, task = state.currentTask ?? null }) {
+  if (!/^[0-9a-f]{40}$/i.test(commit ?? "")) throw new Error("Ralph task commit must be a 40-character git commit hash.");
+  return persistCacheUpdate(cachePath, state, (nextState) => ({
+    ...nextState,
+    taskCommits: [...(nextState.taskCommits ?? []), { commit, task, at: nextState.updatedAt }],
+  }));
+}
+
+export async function preserveCacheOnStop({ cachePath, state, reason }) {
+  const nextState = touchState({ ...normalizeRunState(state), stop: { reason, at: new Date().toISOString() } });
+  await writeCache(cachePath, nextState);
+  return nextState;
+}
+
+export async function completeFinalReview({ cachePath, state, verdict, summary = "" }) {
+  assertReviewVerdict(verdict);
+  const nextState = touchState({ ...normalizeRunState(state), finalReviewStatus: { verdict, summary, at: new Date().toISOString() } });
+  if (verdict === "PASS") {
+    await rm(cachePath, { force: true });
+    return nextState;
+  }
+  await writeCache(cachePath, nextState);
+  return nextState;
 }
 
 export async function reconcileBeforeResume({ state, repoRoot, specPath, status, head, branch, execGit = git, cwd = repoRoot }) {
@@ -103,7 +171,8 @@ export async function reconcileBeforeResume({ state, repoRoot, specPath, status,
     cwd,
     errorMessage: () => "Ralph cache Review Base is not an ancestor of HEAD; cannot reconcile safely.",
   });
-  for (const commit of state.taskCommits ?? []) {
+  for (const entry of state.taskCommits ?? []) {
+    const commit = typeof entry === "string" ? entry : entry.commit;
     await verifyCommitReachableFromHead({
       commit,
       head,
@@ -118,11 +187,13 @@ export async function reconcileBeforeResume({ state, repoRoot, specPath, status,
   const nextPhase = selectSafeNextPhase(state.phase);
   if (!nextPhase) throw new Error(`Ralph cannot select a safe next phase from cached phase '${state.phase ?? "unknown"}'.`);
 
+  const reconciledAt = new Date().toISOString();
   return {
     ...state,
     branch,
     phase: nextPhase,
-    reconciledAt: new Date().toISOString(),
+    phaseTransitions: [...(state.phaseTransitions ?? []), { phase: nextPhase, at: reconciledAt }],
+    reconciledAt,
     reconcile: { head, dirtyStatus: status, dirtyDiff, resumedFromPhase: state.phase },
   };
 }
@@ -141,8 +212,15 @@ function createRunState({ mode, specPath, repoRoot, branch, reviewBase }) {
     specPath,
     branch,
     reviewBase,
+    currentTask: null,
     phase: "startup",
+    phaseTransitions: [{ phase: "startup", at: now }],
+    attempts: {},
+    expectedChangedPaths: [],
+    validationEvidence: [],
+    reviewVerdicts: [],
     taskCommits: [],
+    finalReviewStatus: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -162,8 +240,55 @@ async function readMatchingCache(path, { repoRoot, specPath }) {
 async function writeCache(path, state) {
   await mkdir(dirname(path), { recursive: true });
   const tmp = `${path}.${process.pid}.tmp`;
-  await writeFile(tmp, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+  await writeFile(tmp, `${JSON.stringify(normalizeRunState(state), null, 2)}\n`, "utf8");
   await rename(tmp, path);
+}
+
+function normalizeRunState(state) {
+  const now = new Date().toISOString();
+  return {
+    version: 1,
+    ...state,
+    currentTask: state.currentTask ?? null,
+    phase: state.phase ?? "startup",
+    phaseTransitions: state.phaseTransitions ?? (state.phase ? [{ phase: state.phase, at: state.updatedAt ?? now }] : []),
+    attempts: state.attempts ?? {},
+    expectedChangedPaths: state.expectedChangedPaths ?? [],
+    validationEvidence: state.validationEvidence ?? [],
+    reviewVerdicts: state.reviewVerdicts ?? [],
+    taskCommits: state.taskCommits ?? [],
+    finalReviewStatus: state.finalReviewStatus ?? null,
+    createdAt: state.createdAt ?? now,
+    updatedAt: state.updatedAt ?? now,
+  };
+}
+
+function touchState(state) {
+  return { ...state, updatedAt: new Date().toISOString() };
+}
+
+async function persistCacheUpdate(cachePath, state, update) {
+  const nextState = update(touchState(normalizeRunState(state)));
+  await writeCache(cachePath, nextState);
+  return nextState;
+}
+
+function uniqueStrings(values, label) {
+  if (!Array.isArray(values)) throw new Error(`Ralph ${label}s must be an array.`);
+  const seen = new Set();
+  const result = [];
+  for (const value of values) {
+    if (typeof value !== "string" || value.length === 0) throw new Error(`Ralph ${label} must be a non-empty string.`);
+    if (!seen.has(value)) {
+      seen.add(value);
+      result.push(value);
+    }
+  }
+  return result;
+}
+
+function assertReviewVerdict(verdict) {
+  if (!["PASS", "FAIL", "BLOCKED"].includes(verdict)) throw new Error("Ralph review verdict must be PASS, FAIL, or BLOCKED.");
 }
 
 async function verifyCommitReachableFromHead({ commit, head, execGit, cwd, errorMessage }) {

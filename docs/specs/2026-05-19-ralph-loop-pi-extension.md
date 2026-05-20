@@ -328,7 +328,7 @@ Ralph SHALL perform a final clean-context two-axis branch review after all tasks
   - Covers: Requirement: Ralph command entrypoints; Requirement: Orchestrator subprocess
 - [x] 2. Implement current-branch startup safety, including clean-start Review Base recording, dirty-start prompting, matching-cache detection, and reconcile-before-resume behavior.
   - Covers: Requirement: Current-branch git workflow
-- [ ] 3. Implement Pi cache state for run metadata, current task, phase transitions, attempts, expected changed paths, validation evidence, review verdicts, task commits, final review status, preservation on stop, and deletion after final review PASS.
+- [x] 3. Implement Pi cache state for run metadata, current task, phase transitions, attempts, expected changed paths, validation evidence, review verdicts, task commits, final review status, preservation on stop, and deletion after final review PASS.
   - Covers: Requirement: Pi cache state
 - [ ] 4. Implement Feature Spec task parsing and deterministic checkbox updates for top-level `## Implementation Tasks` checkboxes, including no-unchecked-task behavior with and without active cache.
   - Covers: Requirement: Feature Spec task ledger

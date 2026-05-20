@@ -1,12 +1,25 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { PassThrough } from "node:stream";
 import { createRalphCommand, parseSpecArgument } from "../src/command.mjs";
 import { registerRalphCommands } from "../src/extension.mjs";
-import { cachePaths, parseOrchestratorArgs, prepareCurrentBranchStartup, runOrchestrator } from "../src/orchestrator.mjs";
+import {
+  cachePaths,
+  completeFinalReview,
+  parseOrchestratorArgs,
+  prepareCurrentBranchStartup,
+  preserveCacheOnStop,
+  recordAttempt,
+  recordExpectedChangedPaths,
+  recordTaskCommit,
+  recordTaskReviewVerdict,
+  recordValidationEvidence,
+  runOrchestrator,
+  transitionPhase,
+} from "../src/orchestrator.mjs";
 
 assert.equal(parseSpecArgument("docs/specs/example.md"), "docs/specs/example.md");
 assert.equal(parseSpecArgument('"docs/specs/example spec.md"'), "docs/specs/example spec.md");
@@ -111,6 +124,39 @@ assert.equal(cleanStartup.state.specPath, specPath);
 const cacheFile = cachePaths({ cacheRoot, repoRoot, specPath }).path;
 const cachedCleanState = JSON.parse(await readFile(cacheFile, "utf8"));
 assert.equal(cachedCleanState.reviewBase, head);
+assert.equal(cachedCleanState.phase, "startup");
+assert.deepEqual(cachedCleanState.currentTask, null);
+assert.deepEqual(cachedCleanState.phaseTransitions.map((transition) => transition.phase), ["startup"]);
+assert.deepEqual(cachedCleanState.attempts, {});
+assert.deepEqual(cachedCleanState.expectedChangedPaths, []);
+assert.deepEqual(cachedCleanState.validationEvidence, []);
+assert.deepEqual(cachedCleanState.reviewVerdicts, []);
+assert.deepEqual(cachedCleanState.taskCommits, []);
+assert.equal(cachedCleanState.finalReviewStatus, null);
+
+let stateWithMetadata = await transitionPhase({ cachePath: cacheFile, state: cachedCleanState, phase: "implementation", currentTask: { lineNumber: 5, text: "- [ ] 1. Test task" } });
+stateWithMetadata = await recordAttempt({ cachePath: cacheFile, state: stateWithMetadata, scope: "task:5" });
+stateWithMetadata = await recordExpectedChangedPaths({ cachePath: cacheFile, state: stateWithMetadata, paths: ["feature.md", "src/ralph.mjs", "feature.md"] });
+stateWithMetadata = await recordValidationEvidence({ cachePath: cacheFile, state: stateWithMetadata, evidence: { command: "npm test", exitCode: 0, summary: "passed" } });
+stateWithMetadata = await recordTaskReviewVerdict({ cachePath: cacheFile, state: stateWithMetadata, verdict: "FAIL", summary: "needs fix" });
+stateWithMetadata = await recordTaskCommit({ cachePath: cacheFile, state: stateWithMetadata, commit: "cccccccccccccccccccccccccccccccccccccccc", task: stateWithMetadata.currentTask });
+const persistedMetadata = JSON.parse(await readFile(cacheFile, "utf8"));
+assert.equal(persistedMetadata.phase, "implementation");
+assert.equal(persistedMetadata.currentTask.lineNumber, 5);
+assert.equal(persistedMetadata.attempts["task:5"], 1);
+assert.deepEqual(persistedMetadata.expectedChangedPaths, ["feature.md", "src/ralph.mjs"]);
+assert.deepEqual(persistedMetadata.validationEvidence.at(-1), { command: "npm test", exitCode: 0, summary: "passed" });
+assert.equal(persistedMetadata.reviewVerdicts.at(-1).verdict, "FAIL");
+assert.equal(persistedMetadata.taskCommits.at(-1).commit, "cccccccccccccccccccccccccccccccccccccccc");
+
+const stoppedState = await preserveCacheOnStop({ cachePath: cacheFile, state: persistedMetadata, reason: "/ralph:once declined" });
+assert.equal(stoppedState.stop.reason, "/ralph:once declined");
+await access(cacheFile);
+const failedFinalState = await completeFinalReview({ cachePath: cacheFile, state: stoppedState, verdict: "FAIL", summary: "standards failed" });
+assert.equal(failedFinalState.finalReviewStatus.verdict, "FAIL");
+await access(cacheFile);
+await completeFinalReview({ cachePath: cacheFile, state: failedFinalState, verdict: "PASS", summary: "ready" });
+await assert.rejects(() => access(cacheFile), /ENOENT/);
 
 await assert.rejects(
   () =>
@@ -132,6 +178,10 @@ await writeFile(
     specPath,
     reviewBase: head,
     phase: "implementation",
+    phaseTransitions: [
+      { phase: "startup", at: "2026-05-19T00:00:00.000Z" },
+      { phase: "implementation", at: "2026-05-19T00:01:00.000Z" },
+    ],
     currentTask: { lineNumber: 5, text: "- [ ] 1. Test task" },
     expectedChangedPaths: ["feature.md"],
     taskCommits: [],
@@ -156,6 +206,7 @@ const dirtyStartup = await prepareCurrentBranchStartup({
 });
 assert.equal(dirtyStartup.action, "reconciled-dirty-resume");
 assert.equal(dirtyStartup.state.phase, "validation");
+assert.deepEqual(dirtyStartup.state.phaseTransitions.map((transition) => transition.phase), ["startup", "implementation", "validation"]);
 assert.equal(dirtyStartup.state.reconcile.resumedFromPhase, "implementation");
 assert.equal(dirtyStartup.state.reconcile.dirtyStatus, " M feature.md\n");
 assert.deepEqual(dirtyStartup.state.reconcile.dirtyDiff.paths, ["feature.md"]);
