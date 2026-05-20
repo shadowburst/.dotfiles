@@ -324,35 +324,35 @@ Ralph SHALL perform a final clean-context two-axis branch review after all tasks
 
 ## Implementation Tasks
 
-- [ ] 1. Replace the existing Ralph extension with a thin `/ralph` and `/ralph:once` command surface that accepts only a Feature Spec path and launches the Ralph Orchestrator subprocess.
+- [x] 1. Replace the existing Ralph extension with a thin `/ralph` and `/ralph:once` command surface that accepts only a Feature Spec path and launches the Ralph Orchestrator subprocess.
   - Covers: Requirement: Ralph command entrypoints; Requirement: Orchestrator subprocess
-- [ ] 2. Implement current-branch startup safety, including clean-start Review Base recording, dirty-start prompting, matching-cache detection, and reconcile-before-resume behavior.
+- [x] 2. Implement current-branch startup safety, including clean-start Review Base recording, dirty-start prompting, matching-cache detection, and reconcile-before-resume behavior.
   - Covers: Requirement: Current-branch git workflow
-- [ ] 3. Implement Pi cache state for run metadata, current task, phase transitions, attempts, expected changed paths, validation evidence, review verdicts, task commits, final review status, preservation on stop, and deletion after final review PASS.
+- [x] 3. Implement Pi cache state for run metadata, current task, phase transitions, attempts, expected changed paths, validation evidence, review verdicts, task commits, final review status, preservation on stop, and deletion after final review PASS.
   - Covers: Requirement: Pi cache state
-- [ ] 4. Implement Feature Spec task parsing and deterministic checkbox updates for top-level `## Implementation Tasks` checkboxes, including no-unchecked-task behavior with and without active cache.
+- [x] 4. Implement Feature Spec task parsing and deterministic checkbox updates for top-level `## Implementation Tasks` checkboxes, including no-unchecked-task behavior with and without active cache.
   - Covers: Requirement: Feature Spec task ledger
-- [ ] 5. Implement run-level validation discovery and per-task validation refinement using project docs, agent instructions, Feature Spec guidance, project files, and existing test patterns.
+- [x] 5. Implement run-level validation discovery and per-task validation refinement using project docs, agent instructions, Feature Spec guidance, project files, and existing test patterns.
   - Covers: Requirement: Validation discovery and evidence
-- [ ] 6. Implement the task implementation phase with meaningful TDD guidance, deterministic validation selection before editing, and task-specific implementation prompts.
+- [x] 6. Implement the task implementation phase with meaningful TDD guidance, deterministic validation selection before editing, and task-specific implementation prompts.
   - Covers: Requirement: Meaningful test-first behavior; Requirement: Per-task implementation loop
-- [ ] 7. Implement per-task refactor sessions using the refactor skill after initial validation, scoped to task diff or touched files, with validation rerun when refactor changes files.
+- [x] 7. Implement per-task refactor sessions using the refactor skill after initial validation, scoped to task diff or touched files, with validation rerun when refactor changes files.
   - Covers: Requirement: Per-task implementation loop
-- [ ] 8. Implement fresh-context Ralph-specific task review with machine-readable `PASS`, `FAIL`, or `BLOCKED` verdicts and review inputs limited to relevant spec, diff, files, summaries, and validation evidence.
+- [x] 8. Implement fresh-context Ralph-specific task review with machine-readable `PASS`, `FAIL`, or `BLOCKED` verdicts and review inputs limited to relevant spec, diff, files, summaries, and validation evidence.
   - Covers: Requirement: Clean-eye task review
-- [ ] 9. Implement bounded fix/retest/re-review with at most three iterations, required-fix-only scope, optional fix-area refactor when fixes introduce complexity, and stop behavior for exhausted or blocked reviews.
+- [x] 9. Implement bounded fix/retest/re-review with at most three iterations, required-fix-only scope, optional fix-area refactor when fixes introduce complexity, and stop behavior for exhausted or blocked reviews.
   - Covers: Requirement: Bounded fix and retest
-- [ ] 10. Implement verified task completion, including checkbox update before final validation, expected-file commit safety, cheap-model-assisted Conventional Commit generation with deterministic fallback, and one commit per verified task.
+- [x] 10. Implement verified task completion, including checkbox update before final validation, expected-file commit safety, cheap-model-assisted Conventional Commit generation with deterministic fallback, and one commit per verified task.
   - Covers: Requirement: Task commits; Requirement: Feature Spec task ledger
-- [ ] 11. Implement `/ralph` all-remaining-tasks control flow and `/ralph:once` one-task-then-confirm continuation behavior, including Docker BuildKit-style live task and phase status rows with spinners for active work and deterministic non-interactive fallback output.
+- [x] 11. Implement `/ralph` all-remaining-tasks control flow and `/ralph:once` one-task-then-confirm continuation behavior, including Docker BuildKit-style live task and phase status rows with spinners for active work and deterministic non-interactive fallback output.
   - Covers: Requirement: Ralph command entrypoints; Requirement: Per-task implementation loop; Requirement: Task progress display
-- [ ] 12. Implement whole-feature refactor after all tasks complete, using the refactor skill over the Ralph-produced diff and creating a separate `refactor(...)` commit only when files change.
+- [x] 12. Implement whole-feature refactor after all tasks complete, using the refactor skill over the Ralph-produced diff and creating a separate `refactor(...)` commit only when files change.
   - Covers: Requirement: Whole-feature refactor
-- [ ] 13. Implement final validation and final clean-context two-axis branch review using the existing review skill over `git diff <Review Base>..HEAD`, with cache cleanup only after PASS.
+- [x] 13. Implement final validation and final clean-context two-axis branch review using the existing review skill over `git diff <Review Base>..HEAD`, with cache cleanup only after PASS.
   - Covers: Requirement: Final branch review
-- [ ] 14. Add deterministic validation for Ralph itself, including extension command loading, Orchestrator subprocess behavior, task parsing, cache persistence/cleanup, git safety behavior, phase transitions, and repository-level checks discoverable for this project.
+- [x] 14. Add deterministic validation for Ralph itself, including extension command loading, Orchestrator subprocess behavior, task parsing, cache persistence/cleanup, git safety behavior, phase transitions, and repository-level checks discoverable for this project.
   - Covers: Requirement: Validation discovery and evidence
-- [ ] 15. Perform a Ralph-readiness review of the revised spec and implementation, ensuring obsolete worktree, handoff, Context-Capture Commit, flag, and Pull Request behavior has been removed and the current-branch deterministic loop is auditable.
+- [x] 15. Perform a Ralph-readiness review of the revised spec and implementation, ensuring obsolete worktree, handoff, Context-Capture Commit, flag, and Pull Request behavior has been removed and the current-branch deterministic loop is auditable.
   - Covers: Requirement: Final branch review; Requirement: Task commits
 
 ## Out of Scope
