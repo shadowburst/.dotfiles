@@ -71,7 +71,7 @@ export async function runOrchestrator(argv = process.argv.slice(2), io = process
     const selectedTask = selectFirstUncheckedTask(tasks);
 
     if (!selectedTask) {
-      await handleNoUncheckedTasks({ startup, state, io, completedLoops });
+      await handleNoUncheckedTasks({ startup, state, io, completedLoops, validationOptions, deps });
       return;
     }
 
@@ -95,6 +95,7 @@ export async function runOrchestrator(argv = process.argv.slice(2), io = process
       const remainingTasks = parseFeatureSpecTasks(await readFile(specPath, "utf8")).filter((task) => !task.checked);
       if (remainingTasks.length === 0) {
         io.stdout.write("status: /ralph:once completed the last unchecked task\n");
+        await handleNoUncheckedTasks({ startup, state, io, completedLoops, validationOptions, deps });
         return;
       }
       const accepted = await (deps.promptContinue ?? promptOnceContinuation)(io, "Continue with the next Ralph task? [y/N] ");
@@ -109,13 +110,8 @@ export async function runOrchestrator(argv = process.argv.slice(2), io = process
   }
 }
 
-async function handleNoUncheckedTasks({ startup, state, io, completedLoops }) {
-  if (completedLoops > 0) {
-    io.stdout.write("status: all unchecked task loops complete\n");
-    return;
-  }
-
-  if (startup.action === "started-clean") {
+async function handleNoUncheckedTasks({ startup, state, io, completedLoops, validationOptions = [], deps = {} }) {
+  if (startup.action === "started-clean" && completedLoops === 0) {
     await rm(startup.cachePath, { force: true });
     io.stdout.write("status: no unchecked tasks\n");
     return;
@@ -128,9 +124,32 @@ async function handleNoUncheckedTasks({ startup, state, io, completedLoops }) {
     return;
   }
 
-  await transitionPhase({ cachePath: startup.cachePath, state, phase: "final-refactor", currentTask: null });
-  io.stdout.write("status: no unchecked tasks; active cache found\n");
-  io.stdout.write("next: final refactor, final validation, final branch review\n");
+  io.stdout.write(completedLoops > 0 ? "status: all unchecked task loops complete\n" : "status: no unchecked tasks; active cache found\n");
+  await runAndReportWholeFeatureRefactor({ startup, state, io, validationOptions, deps });
+}
+
+async function runAndReportWholeFeatureRefactor({ startup, state, io, validationOptions, deps }) {
+  const refactor = await runWholeFeatureRefactorPhase({
+    cachePath: startup.cachePath,
+    state,
+    repoRoot: startup.repoRoot,
+    validationOptions,
+    refactorSession: deps.refactorSession,
+    execGit: deps.execGit,
+    runCommand: deps.runCommand,
+  });
+  io.stdout.write(`wholeFeatureRefactorPromptBytes: ${Buffer.byteLength(refactor.prompt, "utf8")}\n`);
+  io.stdout.write(`wholeFeatureRefactor: ${refactor.result.status}${refactor.changedFiles ? `; ${refactor.status}` : "; no changes"}\n`);
+  if (refactor.status === "validation-failed") {
+    io.stdout.write("status: final refactor validation did not pass; final review skipped\n");
+    return;
+  }
+  if (refactor.status === "unexpected-files") {
+    io.stdout.write("status: final refactor touched files outside the Ralph-produced diff; final review skipped\n");
+    return;
+  }
+  if (refactor.status === "committed") io.stdout.write(`finalRefactorCommit: ${refactor.commit}\n`);
+  io.stdout.write("next: final validation and final branch review\n");
 }
 
 async function runOneTaskLoop({ cachePath, state, repoRoot, specPath, specText, task, validationOptions, io, progress, deps }) {
@@ -624,6 +643,14 @@ export async function recordTaskCommit({ cachePath, state, commit, task = state.
   }));
 }
 
+export async function recordFinalRefactorCommit({ cachePath, state, commit, dirtyPaths = [] }) {
+  if (!/^[0-9a-f]{40}$/i.test(commit ?? "")) throw new Error("Ralph final refactor commit must be a 40-character git commit hash.");
+  return persistCacheUpdate(cachePath, state, (nextState) => ({
+    ...nextState,
+    finalRefactorCommit: { commit, dirtyPaths: uniqueStrings(dirtyPaths, "final refactor dirty path"), at: nextState.updatedAt },
+  }));
+}
+
 export async function preserveCacheOnStop({ cachePath, state, reason }) {
   const nextState = touchState({ ...normalizeRunState(state), stop: { reason, at: new Date().toISOString() } });
   await writeCache(cachePath, nextState);
@@ -789,6 +816,61 @@ export async function runTaskRefactorPhase({
   }
 
   return { state: nextState, prompt, result, changedFiles, validationEvidence, scopePaths };
+}
+
+export async function runWholeFeatureRefactorPhase({
+  cachePath,
+  state,
+  repoRoot,
+  validationOptions = state.validationOptions ?? [],
+  refactorSession = launchPiRefactorSession,
+  execGit = git,
+  runCommand = runShellCommand,
+}) {
+  const reviewBase = state.reviewBase;
+  if (!/^[0-9a-f]{40}$/i.test(reviewBase ?? "")) throw new Error("Ralph whole-feature refactor requires a cached Review Base.");
+  const ralphDiff = await ralphProducedDiff({ repoRoot, reviewBase, execGit });
+  const scopePaths = uniqueStrings(pathsFromDiff(ralphDiff), "whole-feature refactor scope path");
+  const validationPlan = normalizeTaskValidationPlan({ verified: validationOptions.length > 0, options: validationOptions });
+  const initialFingerprint = await taskChangeFingerprint({ repoRoot, execGit });
+  let nextState = await transitionPhase({ cachePath, state, phase: "final-refactor", currentTask: null });
+  const prompt = buildWholeFeatureRefactorPrompt({ repoRoot, reviewBase, validationPlan, scopePaths, diff: ralphDiff });
+  const result = normalizeImplementationResult(await refactorSession({ cwd: repoRoot, prompt, validationPlan, scopePaths, diff: ralphDiff }));
+  const changedFiles = (await taskChangeFingerprint({ repoRoot, execGit })) !== initialFingerprint;
+  const validationEvidence = [];
+
+  if (!changedFiles) return { status: "no-changes", state: nextState, prompt, result, changedFiles, validationEvidence, scopePaths };
+
+  const dirtyPaths = await dirtyWorkingTreePaths({ repoRoot, execGit });
+  try {
+    assertDirtyPathsAreExpected({ dirtyPaths, expectedPaths: scopePaths });
+  } catch (error) {
+    nextState = await preserveCacheOnStop({ cachePath, state: nextState, reason: error.message.replace("Ralph task commit", "Ralph final refactor commit") });
+    return { status: "unexpected-files", state: nextState, prompt, result, changedFiles, validationEvidence, scopePaths, dirtyPaths };
+  }
+
+  const validation = await runValidationPlanOptions({ cachePath, state: nextState, repoRoot, validationPlan, phase: "post-final-refactor", runCommand });
+  nextState = validation.state;
+  validationEvidence.push(...validation.validationEvidence);
+  if (!hasPassingDeterministicValidation(validationEvidence)) {
+    nextState = await preserveCacheOnStop({ cachePath, state: nextState, reason: "final refactor validation failed" });
+    return { status: "validation-failed", state: nextState, prompt, result, changedFiles, validationEvidence, scopePaths, dirtyPaths };
+  }
+
+  const commit = await createFinalRefactorCommit({ repoRoot, dirtyPaths, execGit });
+  nextState = await recordFinalRefactorCommit({ cachePath, state: nextState, commit, dirtyPaths });
+  nextState = await transitionPhase({ cachePath, state: nextState, phase: "final-refactor-committed", currentTask: null });
+  return { status: "committed", state: nextState, prompt, result, changedFiles, validationEvidence, scopePaths, dirtyPaths, commit };
+}
+
+async function ralphProducedDiff({ repoRoot, reviewBase, execGit }) {
+  return gitOne(execGit, ["diff", "--binary", `${reviewBase}..HEAD`], { cwd: repoRoot, trim: false });
+}
+
+async function createFinalRefactorCommit({ repoRoot, dirtyPaths, execGit }) {
+  await gitOne(execGit, ["add", "--", ...dirtyPaths], { cwd: repoRoot, trim: false });
+  await gitOne(execGit, ["commit", "-m", "refactor(ralph): simplify completed feature implementation", "-m", "Apply behavior-preserving cleanup after all Ralph Feature Spec tasks completed."], { cwd: repoRoot, trim: false });
+  return gitOne(execGit, ["rev-parse", "HEAD"], { cwd: repoRoot });
 }
 
 export async function runTaskReviewPhase({
@@ -1303,6 +1385,42 @@ export function buildTaskRefactorPrompt({ repoRoot, task, validationPlan, scopeP
     "",
     "Current task diff for context:",
     diff.trim() ? diff : "(no current task diff detected)",
+  ].join("\n");
+}
+
+export function buildWholeFeatureRefactorPrompt({ repoRoot, reviewBase, validationPlan, scopePaths = [], diff = "" }) {
+  const normalizedPlan = normalizeTaskValidationPlan(validationPlan);
+  const validationLines = formatPromptBullets(
+    normalizedPlan.options,
+    (option) => `(${option.cwd}) ${option.command} — ${option.reason}`,
+    "No deterministic validation selected. Do not refactor without a validation command.",
+  );
+  const scopeLines = formatPromptBullets(
+    uniqueStrings(scopePaths, "whole-feature refactor scope path"),
+    (path) => path,
+    "No Ralph-produced changed files were detected; inspect the diff and stop if scope is unclear.",
+  );
+
+  return [
+    "Run a bounded Ralph whole-feature refactor session after all implementation tasks are complete.",
+    "Use the refactor skill contract: Improve code shape without changing behavior.",
+    "Do not implement new feature behavior, update the Feature Spec checkbox, or commit.",
+    "Preserve public contracts, data shape, error behavior, and user-visible output.",
+    "Prefer no change over speculative churn; only simplify code already changed by this Ralph run.",
+    "If you change files, Ralph will run broad relevant validation and create a separate refactor(...) commit.",
+    "If no worthwhile simplification exists, report that no refactor changes were needed.",
+    "",
+    `Repository: ${repoRoot}`,
+    `Review Base: ${reviewBase}`,
+    "",
+    "Refactor scope is limited to files in the Ralph-produced diff:",
+    scopeLines,
+    "",
+    "Validation Ralph will rerun if files change:",
+    validationLines,
+    "",
+    "Ralph-produced diff:",
+    diff.trim() ? diff : "(no Ralph-produced diff detected)",
   ].join("\n");
 }
 
@@ -1828,6 +1946,15 @@ async function untrackedContentFingerprint({ repoRoot, execGit }) {
 async function taskTouchedPaths({ repoRoot, execGit }) {
   const status = await gitOne(execGit, ["status", "--porcelain"], { cwd: repoRoot, trim: false });
   return parsePorcelainEntries(status).map((entry) => entry.path);
+}
+
+function pathsFromDiff(diff) {
+  const paths = [];
+  for (const line of String(diff ?? "").split(/\r?\n/)) {
+    const match = /^diff --git a\/(.+?) b\/(.+)$/.exec(line);
+    if (match) paths.push(match[2]);
+  }
+  return paths;
 }
 
 async function runValidationPlanOptions({ cachePath, state, repoRoot, validationPlan, phase, runCommand }) {

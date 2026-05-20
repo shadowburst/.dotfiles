@@ -33,6 +33,7 @@ import {
   runOrchestrator,
   runTaskFixReviewLoop,
   runTaskRefactorPhase,
+  runWholeFeatureRefactorPhase,
   runVerifiedTaskCompletion,
   runTaskReviewPhase,
   selectFirstUncheckedTask,
@@ -547,10 +548,12 @@ const orchestratorGit = async (args) => {
   if (command === "rev-parse HEAD") return `${orchestratorCommitted ? "8888888888888888888888888888888888888888" : "dddddddddddddddddddddddddddddddddddddddd"}\n`;
   if (command === "status --porcelain") {
     orchestratorStatusCalls += 1;
+    if (orchestratorCommitted) return "";
     return orchestratorStatusCalls === 1 ? "" : " M feature.md\n M config/pi/extensions/ralph-loop/src/orchestrator.mjs\n";
   }
   if (command === "ls-files --others --exclude-standard -z") return "";
-  if (command === "diff --binary") return "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+change\n";
+  if (command === "diff --binary dddddddddddddddddddddddddddddddddddddddd..HEAD") return "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+feature\n";
+  if (command === "diff --binary") return orchestratorCommitted ? "" : "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+change\n";
   if (command === "diff --cached --binary") return "";
   if (args[0] === "add") return "";
   if (args[0] === "commit") {
@@ -606,10 +609,12 @@ await runOrchestrator(["--mode", "all", "--spec", loopSpec], { stdout: loopStdou
     if (command === "rev-parse HEAD") return `${String(loopCommitCount + 1).repeat(40).slice(0, 40)}\n`;
     if (command === "status --porcelain") {
       loopStatusCalls += 1;
+      if (loopCommitCount >= 2) return "";
       return loopStatusCalls === 1 ? "" : " M loop-feature.md\n";
     }
     if (command === "ls-files --others --exclude-standard -z") return "";
-    if (command === "diff --binary") return "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+change\n";
+    if (command === "diff --binary 1111111111111111111111111111111111111111..HEAD") return "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+feature\n";
+    if (command === "diff --binary") return loopCommitCount >= 2 ? "" : "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+change\n";
     if (command === "diff --cached --binary") return "";
     if (args[0] === "add") return "";
     if (args[0] === "commit") {
@@ -694,10 +699,12 @@ await runOrchestrator(["--mode", "once", "--spec", onceContinueSpec], { stdout: 
     if (command === "rev-parse HEAD") return `${String(onceContinueCommitCount + 5).repeat(40).slice(0, 40)}\n`;
     if (command === "status --porcelain") {
       onceContinueStatusCalls += 1;
+      if (onceContinueCommitCount >= 2) return "";
       return onceContinueStatusCalls === 1 ? "" : " M once-continue-feature.md\n";
     }
     if (command === "ls-files --others --exclude-standard -z") return "";
-    if (command === "diff --binary") return "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+change\n";
+    if (command === "diff --binary 5555555555555555555555555555555555555555..HEAD") return "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+feature\n";
+    if (command === "diff --binary") return onceContinueCommitCount >= 2 ? "" : "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+change\n";
     if (command === "diff --cached --binary") return "";
     if (args[0] === "add") return "";
     if (args[0] === "commit") {
@@ -763,18 +770,96 @@ await writeFile(
 );
 const activeNoTaskStdout = new PassThrough();
 let activeNoTaskText = "";
+let activeNoTaskRefactorPrompt = "";
 activeNoTaskStdout.on("data", (chunk) => {
   activeNoTaskText += chunk.toString();
 });
 await runOrchestrator(["--mode", "all", "--spec", noTaskSpec], { stdout: activeNoTaskStdout }, {
   cwd: dir,
   cacheRoot: activeNoTaskCacheRoot,
-  execGit: fakeGit({ repoRoot: dir, branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: "" }),
+  execGit: async (args) => {
+    const command = args.join(" ");
+    if (command === "rev-parse --show-toplevel") return `${dir}\n`;
+    if (command === "branch --show-current") return "feat/test\n";
+    if (command === "rev-parse HEAD") return "dddddddddddddddddddddddddddddddddddddddd\n";
+    if (command === "status --porcelain") return "";
+    if (command === "diff --binary dddddddddddddddddddddddddddddddddddddddd..HEAD") return "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+feature\n";
+    if (command === "diff --binary") return "";
+    if (command === "diff --cached --binary") return "";
+    if (command === "ls-files --others --exclude-standard -z") return "";
+    throw new Error(`unexpected git command: ${command}`);
+  },
+  refactorSession: async ({ prompt }) => {
+    activeNoTaskRefactorPrompt = prompt;
+    return { status: "whole-feature refactor already clean" };
+  },
 });
 assert.match(activeNoTaskText, /status: no unchecked tasks; active cache found/);
-assert.match(activeNoTaskText, /next: final refactor, final validation, final branch review/);
+assert.match(activeNoTaskText, /wholeFeatureRefactorPromptBytes: [1-9][0-9]*/);
+assert.match(activeNoTaskText, /wholeFeatureRefactor: whole-feature refactor already clean; no changes/);
+assert.match(activeNoTaskText, /next: final validation and final branch review/);
+assert.match(activeNoTaskRefactorPrompt, /Run a bounded Ralph whole-feature refactor session/);
+assert.match(activeNoTaskRefactorPrompt, /diff --git/);
 const activeNoTaskState = JSON.parse(await readFile(activeNoTaskCacheFile, "utf8"));
 assert.equal(activeNoTaskState.phase, "final-refactor");
+
+const wholeRefactorCacheRoot = join(dir, "whole-refactor-cache");
+const wholeRefactorCacheFile = cachePaths({ cacheRoot: wholeRefactorCacheRoot, repoRoot: resolve(dir), specPath: resolve(noTaskSpec) }).path;
+await mkdir(wholeRefactorCacheRoot, { recursive: true });
+const wholeRefactorState = {
+  repoRoot: resolve(dir),
+  specPath: resolve(noTaskSpec),
+  reviewBase: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  phase: "task-committed",
+  validationOptions: [{ command: "npm test", cwd: "config/pi/extensions/ralph-loop", scope: "package", source: "package.json", reason: "extension tests" }],
+};
+await writeFile(wholeRefactorCacheFile, JSON.stringify(wholeRefactorState));
+let wholeRefactorCommitted = false;
+let wholeRefactorRan = false;
+let wholeRefactorPrompt = "";
+const wholeRefactorValidationCommands = [];
+const wholeRefactorResult = await runWholeFeatureRefactorPhase({
+  cachePath: wholeRefactorCacheFile,
+  state: wholeRefactorState,
+  repoRoot: resolve(dir),
+  validationOptions: wholeRefactorState.validationOptions,
+  execGit: async (args) => {
+    const command = args.join(" ");
+    if (command === "diff --binary aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..HEAD") return "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+feature\n";
+    if (command === "status --porcelain") return wholeRefactorRan && !wholeRefactorCommitted ? " M config/pi/extensions/ralph-loop/src/orchestrator.mjs\n" : "";
+    if (command === "diff --binary") return wholeRefactorRan && !wholeRefactorCommitted ? "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+refactor\n" : "";
+    if (command === "diff --cached --binary") return "";
+    if (command === "ls-files --others --exclude-standard -z") return "";
+    if (args[0] === "add") return "";
+    if (args[0] === "commit") {
+      assert.equal(args[2], "refactor(ralph): simplify completed feature implementation");
+      wholeRefactorCommitted = true;
+      return "";
+    }
+    if (command === "rev-parse HEAD") return "9999999999999999999999999999999999999999\n";
+    throw new Error(`unexpected git command: ${command}`);
+  },
+  refactorSession: async ({ prompt, scopePaths }) => {
+    wholeRefactorPrompt = prompt;
+    wholeRefactorRan = true;
+    assert.deepEqual(scopePaths, ["config/pi/extensions/ralph-loop/src/orchestrator.mjs"]);
+    return { status: "simplified whole feature" };
+  },
+  runCommand: async (command, options) => {
+    wholeRefactorValidationCommands.push({ command, options });
+    return { exitCode: 0, stdout: "pass", stderr: "" };
+  },
+});
+assert.equal(wholeRefactorResult.status, "committed");
+assert.equal(wholeRefactorResult.commit, "9999999999999999999999999999999999999999");
+assert.match(wholeRefactorPrompt, /Use the refactor skill contract/);
+assert.match(wholeRefactorPrompt, /Do not implement new feature behavior, update the Feature Spec checkbox, or commit/);
+assert.match(wholeRefactorPrompt, /Ralph-produced diff/);
+assert.deepEqual(wholeRefactorValidationCommands.map((entry) => entry.command), ["npm test"]);
+assert.equal(wholeRefactorValidationCommands[0].options.cwd, join(resolve(dir), "config/pi/extensions/ralph-loop"));
+const wholeRefactorPersisted = JSON.parse(await readFile(wholeRefactorCacheFile, "utf8"));
+assert.equal(wholeRefactorPersisted.finalRefactorCommit.commit, "9999999999999999999999999999999999999999");
+assert.equal(wholeRefactorPersisted.validationEvidence.at(-1).phase, "post-final-refactor");
 
 const checkedTaskResumeCacheRoot = join(dir, "checked-task-resume-cache");
 const checkedTaskResumeCacheFile = cachePaths({ cacheRoot: checkedTaskResumeCacheRoot, repoRoot: resolve(dir), specPath: resolve(noTaskSpec) }).path;

@@ -346,7 +346,7 @@ Ralph SHALL perform a final clean-context two-axis branch review after all tasks
   - Covers: Requirement: Task commits; Requirement: Feature Spec task ledger
 - [x] 11. Implement `/ralph` all-remaining-tasks control flow and `/ralph:once` one-task-then-confirm continuation behavior, including Docker BuildKit-style live task and phase status rows with spinners for active work and deterministic non-interactive fallback output.
   - Covers: Requirement: Ralph command entrypoints; Requirement: Per-task implementation loop; Requirement: Task progress display
-- [ ] 12. Implement whole-feature refactor after all tasks complete, using the refactor skill over the Ralph-produced diff and creating a separate `refactor(...)` commit only when files change.
+- [x] 12. Implement whole-feature refactor after all tasks complete, using the refactor skill over the Ralph-produced diff and creating a separate `refactor(...)` commit only when files change.
   - Covers: Requirement: Whole-feature refactor
 - [ ] 13. Implement final validation and final clean-context two-axis branch review using the existing review skill over `git diff <Review Base>..HEAD`, with cache cleanup only after PASS.
   - Covers: Requirement: Final branch review
