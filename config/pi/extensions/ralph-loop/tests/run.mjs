@@ -12,6 +12,7 @@ import {
   completeFeatureSpecTask,
   buildTaskImplementationPrompt,
   discoverValidationOptions,
+  hasPassingDeterministicValidation,
   launchPiImplementationSession,
   parseFeatureSpecTasks,
   parseOrchestratorArgs,
@@ -26,6 +27,7 @@ import {
   recordTaskReviewVerdict,
   recordValidationEvidence,
   runOrchestrator,
+  runTaskRefactorPhase,
   selectFirstUncheckedTask,
   transitionPhase,
 } from "../src/orchestrator.mjs";
@@ -138,6 +140,9 @@ const textOnlyTaskValidation = refineTaskValidation({
 });
 assert.ok(!textOnlyTaskValidation.options.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/mcp-bridge"));
 assert.equal(refineTaskValidation({ task: { text: "Manual doc task" }, options: [], changedPaths: ["README.md"] }).verified, false);
+assert.equal(hasPassingDeterministicValidation([]), false);
+assert.equal(hasPassingDeterministicValidation([{ exitCode: 0 }]), true);
+assert.equal(hasPassingDeterministicValidation([{ exitCode: 0 }, { exitCode: 1 }]), false);
 
 const behaviorPrompt = buildTaskImplementationPrompt({
   repoRoot: dir,
@@ -164,6 +169,98 @@ const declarativePrompt = buildTaskImplementationPrompt({
 assert.match(declarativePrompt, /Do not invent a new test solely for TDD/);
 assert.match(declarativePrompt, /Identify deterministic validation before editing/);
 assert.doesNotMatch(declarativePrompt, /Write or update one failing automated behavior test before implementation/);
+
+const refactorCacheRoot = join(dir, "refactor-cache");
+const refactorCachePath = cachePaths({ cacheRoot: refactorCacheRoot, repoRoot: resolve(dir), specPath: resolve(spec) }).path;
+await mkdir(refactorCacheRoot, { recursive: true });
+const refactorBaseState = {
+  repoRoot: resolve(dir),
+  specPath: resolve(spec),
+  reviewBase: "dddddddddddddddddddddddddddddddddddddddd",
+  phase: "validation",
+  currentTask: { lineNumber: 5, text: "7. Implement per-task refactor sessions using the refactor skill after initial validation" },
+  expectedChangedPaths: ["feature.md", "config/pi/extensions/ralph-loop/src/orchestrator.mjs"],
+};
+await writeFile(refactorCachePath, JSON.stringify(refactorBaseState));
+let refactorPrompt = "";
+const refactorRunCommands = [];
+const refactorResult = await runTaskRefactorPhase({
+  cachePath: refactorCachePath,
+  state: refactorBaseState,
+  repoRoot: resolve(dir),
+  task: refactorBaseState.currentTask,
+  validationPlan: { verified: true, options: [{ command: "npm test", cwd: "config/pi/extensions/ralph-loop", scope: "package", source: "package.json", reason: "extension test" }] },
+  execGit: fakeGit({
+    repoRoot: resolve(dir),
+    branch: "feat/test",
+    head: "dddddddddddddddddddddddddddddddddddddddd",
+    status: " M config/pi/extensions/ralph-loop/src/orchestrator.mjs\n",
+    worktreeDiff: "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+before\n",
+    stagedDiff: "",
+  }),
+  refactorSession: async ({ prompt }) => {
+    refactorPrompt = prompt;
+    return { status: "refactor session completed" };
+  },
+  afterDiff: async () => "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+after\n",
+  runCommand: async (command, options) => {
+    refactorRunCommands.push({ command, options });
+    return { command, cwd: options.cwd, exitCode: 0, stdout: "pass", stderr: "" };
+  },
+});
+assert.equal(refactorResult.changedFiles, true);
+assert.match(refactorPrompt, /Use the refactor skill contract/);
+assert.match(refactorPrompt, /Improve code shape without changing behavior/);
+assert.match(refactorPrompt, /config\/pi\/extensions\/ralph-loop\/src\/orchestrator\.mjs/);
+assert.doesNotMatch(refactorPrompt, /feature\.md/);
+assert.deepEqual(refactorResult.scopePaths, ["config/pi/extensions/ralph-loop/src/orchestrator.mjs"]);
+assert.match(refactorPrompt, /diff --git/);
+assert.deepEqual(refactorRunCommands.map((entry) => entry.command), ["npm test"]);
+assert.equal(refactorRunCommands[0].options.cwd, join(resolve(dir), "config/pi/extensions/ralph-loop"));
+const refactorState = JSON.parse(await readFile(refactorCachePath, "utf8"));
+assert.equal(refactorState.phase, "refactor");
+assert.equal(refactorState.validationEvidence.at(-1).phase, "post-refactor");
+assert.equal(refactorState.validationEvidence.at(-1).command, "npm test");
+
+await writeFile(refactorCachePath, JSON.stringify(refactorBaseState));
+const noChangeCommands = [];
+const noChangeRefactorResult = await runTaskRefactorPhase({
+  cachePath: refactorCachePath,
+  state: refactorBaseState,
+  repoRoot: resolve(dir),
+  task: refactorBaseState.currentTask,
+  validationPlan: { verified: true, options: [{ command: "npm test", cwd: ".", scope: "repo", source: "package.json", reason: "repo test" }] },
+  execGit: fakeGit({ repoRoot: resolve(dir), branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: "", worktreeDiff: "", stagedDiff: "" }),
+  refactorSession: async () => ({ status: "already clean" }),
+  runCommand: async (command) => {
+    noChangeCommands.push(command);
+    return { command, exitCode: 0 };
+  },
+});
+assert.equal(noChangeRefactorResult.changedFiles, false);
+assert.deepEqual(noChangeCommands, []);
+
+await writeFile(refactorCachePath, JSON.stringify(refactorBaseState));
+await writeFile(join(dir, "untracked-task-file.md"), "before\n");
+const untrackedRefactorCommands = [];
+const untrackedRefactorResult = await runTaskRefactorPhase({
+  cachePath: refactorCachePath,
+  state: refactorBaseState,
+  repoRoot: resolve(dir),
+  task: refactorBaseState.currentTask,
+  validationPlan: { verified: true, options: [{ command: "npm test", cwd: ".", scope: "repo", source: "package.json", reason: "repo test" }] },
+  execGit: fakeGit({ repoRoot: resolve(dir), branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: "?? untracked-task-file.md\n" }),
+  refactorSession: async () => {
+    await writeFile(join(dir, "untracked-task-file.md"), "after\n");
+    return { status: "refactored untracked task file" };
+  },
+  runCommand: async (command) => {
+    untrackedRefactorCommands.push(command);
+    return { command, exitCode: 0 };
+  },
+});
+assert.equal(untrackedRefactorResult.changedFiles, true);
+assert.deepEqual(untrackedRefactorCommands, ["npm test"]);
 
 const launched = [];
 const fakeSpawn = (command, args, options) => {
@@ -232,8 +329,10 @@ stdout.on("data", (chunk) => {
 await runOrchestrator(["--mode", "all", "--spec", spec], { stdout }, {
   cwd: dir,
   cacheRoot: join(dir, "run-cache"),
-  execGit: fakeGit({ repoRoot: dir, branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: "" }),
+  execGit: fakeGit({ repoRoot: dir, branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: "", worktreeDiff: "", stagedDiff: "" }),
   implementationSession: async () => ({ status: "implementation session completed" }),
+  refactorSession: async () => ({ status: "refactor session completed" }),
+  runCommand: async (command, options) => ({ command, cwd: options.cwd, exitCode: 0, stdout: "pass", stderr: "" }),
 });
 assert.match(text, /Ralph Orchestrator/);
 assert.match(text, /mode: all/);
@@ -241,10 +340,36 @@ assert.match(text, new RegExp(spec.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 assert.match(text, /status: implementation session completed/);
 assert.match(text, /task: 1\. Test task/);
 assert.match(text, /implementationPromptBytes: [1-9][0-9]*/);
+assert.match(text, /refactorPromptBytes: [1-9][0-9]*/);
+assert.match(text, /refactor: refactor session completed; no changes/);
 const launchedState = JSON.parse(await readFile(cachePaths({ cacheRoot: join(dir, "run-cache"), repoRoot: resolve(dir), specPath: resolve(spec) }).path, "utf8"));
 assert.ok(launchedState.taskValidationPlans.at(-1).options.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/ralph-loop"));
 assert.ok(!launchedState.taskValidationPlans.at(-1).options.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/mcp-bridge"));
 assert.ok(launchedState.expectedChangedPaths.includes("config/pi/extensions/ralph-loop"));
+assert.equal(launchedState.validationEvidence.at(-1).phase, "initial-validation");
+
+const noValidationDir = await mkdtemp(join(tmpdir(), "ralph-loop-no-validation-"));
+const noValidationSpec = join(noValidationDir, "feature.md");
+await writeFile(noValidationSpec, "# Feature\n\n## Implementation Tasks\n\n- [ ] 1. Unverified task\n");
+const noValidationStdout = new PassThrough();
+let noValidationText = "";
+let noValidationRefactorLaunches = 0;
+noValidationStdout.on("data", (chunk) => {
+  noValidationText += chunk.toString();
+});
+await runOrchestrator(["--mode", "once", "--spec", noValidationSpec], { stdout: noValidationStdout }, {
+  cwd: noValidationDir,
+  cacheRoot: join(noValidationDir, "run-cache"),
+  execGit: fakeGit({ repoRoot: noValidationDir, branch: "feat/test", head: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", status: "", worktreeDiff: "", stagedDiff: "" }),
+  implementationSession: async () => ({ status: "implementation session completed" }),
+  refactorSession: async () => {
+    noValidationRefactorLaunches += 1;
+    return { status: "refactor session completed" };
+  },
+});
+assert.equal(noValidationRefactorLaunches, 0);
+assert.match(noValidationText, /validation: unverified/);
+assert.match(noValidationText, /initial validation did not pass; refactor skipped/);
 
 const noTaskSpec = join(dir, "done-feature.md");
 await writeFile(noTaskSpec, "# Feature\n\n## Implementation Tasks\n\n- [x] 1. Done\n");
@@ -658,13 +783,14 @@ await assert.rejects(
   /Review Base is not an ancestor of HEAD/,
 );
 
-function fakeGit({ repoRoot, branch, head, status, mergeBase = head, mergeBases = {}, worktreeDiff = "", stagedDiff = "", untrackedDiffs = {} }) {
+function fakeGit({ repoRoot, branch, head, status, mergeBase = head, mergeBases = {}, worktreeDiff = "", stagedDiff = "", untrackedDiffs = {}, untrackedFiles }) {
   return async (args) => {
     const command = args.join(" ");
     if (command === "rev-parse --show-toplevel") return `${repoRoot}\n`;
     if (command === "branch --show-current") return `${branch}\n`;
     if (command === "rev-parse HEAD") return `${head}\n`;
     if (command === "status --porcelain") return status;
+    if (command === "ls-files --others --exclude-standard -z") return (untrackedFiles ?? parseFakeUntrackedFiles(status)).join("\0");
     if (args[0] === "cat-file" && args[1] === "-e") return "";
     if (args[0] === "merge-base") return `${mergeBases[args[1]] ?? mergeBase}\n`;
     if (command === "diff --binary") return worktreeDiff;
@@ -674,6 +800,14 @@ function fakeGit({ repoRoot, branch, head, status, mergeBase = head, mergeBases 
     }
     throw new Error(`unexpected git command: ${command}`);
   };
+}
+
+function parseFakeUntrackedFiles(status) {
+  return status
+    .trimEnd()
+    .split("\n")
+    .filter((line) => line.startsWith("?? "))
+    .map((line) => line.slice(3));
 }
 
 function quietIo() {

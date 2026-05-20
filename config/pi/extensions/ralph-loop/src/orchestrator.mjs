@@ -93,10 +93,34 @@ export async function runOrchestrator(argv = process.argv.slice(2), io = process
     validationOptions,
     implementationSession: deps.implementationSession,
   });
+  const initialValidationEvidence = await runTaskValidationPhase({
+    cachePath: startup.cachePath,
+    state: implementation.state,
+    repoRoot: startup.repoRoot,
+    validationPlan: implementation.validationPlan,
+    phase: "initial-validation",
+    runCommand: deps.runCommand,
+  });
   io.stdout.write(`task: ${selectedTask.text}\n`);
   io.stdout.write(`validation: ${implementation.validationPlan.verified ? implementation.validationPlan.options.map((option) => option.command).join("; ") : "unverified"}\n`);
   io.stdout.write(`implementationPromptBytes: ${Buffer.byteLength(implementation.prompt, "utf8")}\n`);
   io.stdout.write(`status: ${implementation.result.status}\n`);
+  if (!hasPassingDeterministicValidation(initialValidationEvidence.validationEvidence)) {
+    io.stdout.write("status: initial validation did not pass; refactor skipped\n");
+    return;
+  }
+  const refactor = await runTaskRefactorPhase({
+    cachePath: startup.cachePath,
+    state: initialValidationEvidence.state,
+    repoRoot: startup.repoRoot,
+    task: selectedTask,
+    validationPlan: implementation.validationPlan,
+    refactorSession: deps.refactorSession,
+    execGit: deps.execGit,
+    runCommand: deps.runCommand,
+  });
+  io.stdout.write(`refactorPromptBytes: ${Buffer.byteLength(refactor.prompt, "utf8")}\n`);
+  io.stdout.write(`refactor: ${refactor.result.status}${refactor.changedFiles ? "; validation rerun" : "; no changes"}\n`);
 }
 
 export function parseFeatureSpecTasks(specText) {
@@ -396,11 +420,87 @@ export async function runTaskImplementationPhase({ cachePath, state, repoRoot, s
   return { state: nextState, validationPlan, expectedChangedPaths, prompt, result: normalizeImplementationResult(result) };
 }
 
+export async function runTaskValidationPhase({ cachePath, state, repoRoot, validationPlan, phase = "validation", runCommand = runShellCommand }) {
+  let nextState = await transitionPhase({ cachePath, state, phase, currentTask: state.currentTask ?? null });
+  const validationEvidence = [];
+  for (const option of normalizeTaskValidationPlan(validationPlan).options) {
+    const evidence = await runValidationOption({ repoRoot, option, runCommand, phase });
+    validationEvidence.push(evidence);
+    nextState = await recordValidationEvidence({ cachePath, state: nextState, evidence });
+    if (evidence.exitCode !== 0) break;
+  }
+  return { state: nextState, validationEvidence };
+}
+
+export async function runTaskRefactorPhase({
+  cachePath,
+  state,
+  repoRoot,
+  task = state.currentTask ?? null,
+  validationPlan,
+  refactorSession = launchPiRefactorSession,
+  execGit = git,
+  runCommand = runShellCommand,
+  afterDiff,
+}) {
+  const initialDiff = await taskDiff({ repoRoot, execGit });
+  const initialFingerprint = await taskChangeFingerprint({ repoRoot, execGit, diff: initialDiff });
+  const touchedPaths = await taskTouchedPaths({ repoRoot, execGit });
+  const scopePaths = uniqueStrings(touchedPaths, "refactor scope path");
+  const normalizedPlan = normalizeTaskValidationPlan(validationPlan);
+  let nextState = await transitionPhase({ cachePath, state, phase: "refactor", currentTask: task });
+  const prompt = buildTaskRefactorPrompt({ repoRoot, task, validationPlan: normalizedPlan, scopePaths, diff: initialDiff });
+  const result = normalizeImplementationResult(await refactorSession({ cwd: repoRoot, prompt, task, validationPlan: normalizedPlan, scopePaths, diff: initialDiff }));
+  const finalFingerprint = afterDiff ? await afterDiff() : await taskChangeFingerprint({ repoRoot, execGit });
+  const changedFiles = finalFingerprint !== initialFingerprint;
+  const validationEvidence = [];
+
+  if (changedFiles) {
+    for (const option of normalizedPlan.options) {
+      const evidence = await runValidationOption({ repoRoot, option, runCommand, phase: "post-refactor" });
+      validationEvidence.push(evidence);
+      nextState = await recordValidationEvidence({ cachePath, state: nextState, evidence });
+      if (evidence.exitCode !== 0) break;
+    }
+  }
+
+  return { state: nextState, prompt, result, changedFiles, validationEvidence, scopePaths };
+}
+
+export function hasPassingDeterministicValidation(validationEvidence) {
+  if (!Array.isArray(validationEvidence) || validationEvidence.length === 0) return false;
+  return validationEvidence.some((evidence) => evidence.exitCode === 0) && validationEvidence.every((evidence) => evidence.exitCode === 0);
+}
+
 export function launchPiImplementationSession({ cwd, prompt, spawnProcess = spawn, piBin = process.env.PI_RALPH_PI_BIN ?? "pi" }) {
+  return launchPiPromptSession({
+    cwd,
+    prompt,
+    spawnProcess,
+    piBin,
+    sessionEnv: { PI_RALPH_IMPLEMENTATION_SESSION: "1" },
+    label: "implementation",
+    successStatus: "implementation session completed",
+  });
+}
+
+export function launchPiRefactorSession({ cwd, prompt, spawnProcess = spawn, piBin = process.env.PI_RALPH_PI_BIN ?? "pi" }) {
+  return launchPiPromptSession({
+    cwd,
+    prompt,
+    spawnProcess,
+    piBin,
+    sessionEnv: { PI_RALPH_REFACTOR_SESSION: "1" },
+    label: "refactor",
+    successStatus: "refactor session completed",
+  });
+}
+
+function launchPiPromptSession({ cwd, prompt, spawnProcess, piBin, sessionEnv, label, successStatus }) {
   return new Promise((resolvePromise, reject) => {
     const child = spawnProcess(piBin, ["-p"], {
       cwd,
-      env: { ...process.env, PI_RALPH_IMPLEMENTATION_SESSION: "1" },
+      env: { ...process.env, ...sessionEnv },
       stdio: ["pipe", "pipe", "pipe"],
     });
 
@@ -418,14 +518,14 @@ export function launchPiImplementationSession({ cwd, prompt, spawnProcess = spaw
     child.on("error", reject);
     child.on("close", (exitCode) => {
       if (exitCode !== 0) {
-        const error = new Error(stderr.trim() || `Pi implementation session exited with status ${exitCode}`);
+        const error = new Error(stderr.trim() || `Pi ${label} session exited with status ${exitCode}`);
         error.exitCode = exitCode;
         error.stdout = stdout;
         error.stderr = stderr;
         reject(error);
         return;
       }
-      resolvePromise({ status: "implementation session completed", exitCode, stdout, stderr });
+      resolvePromise({ status: successStatus, exitCode, stdout, stderr });
     });
     child.stdin?.end(prompt);
   });
@@ -477,6 +577,41 @@ export function buildTaskImplementationPrompt({ repoRoot, specPath, task, valida
     "- Keep changes scoped to the selected task; do not update the Feature Spec checkbox and do not commit.",
     "- Follow repository instructions and domain language.",
     "- If validation cannot provide meaningful deterministic evidence, stop and report the task as unverified.",
+  ].join("\n");
+}
+
+export function buildTaskRefactorPrompt({ repoRoot, task, validationPlan, scopePaths = [], diff = "" }) {
+  if (!task?.text) throw new Error("Ralph refactor prompt requires a selected task.");
+  const normalizedPlan = normalizeTaskValidationPlan(validationPlan);
+  const validationLines = formatPromptBullets(
+    normalizedPlan.options,
+    (option) => `(${option.cwd}) ${option.command} — ${option.reason}`,
+    "No deterministic validation selected. Do not refactor without a validation command.",
+  );
+  const scopeLines = formatPromptBullets(
+    uniqueStrings(scopePaths, "refactor scope path"),
+    (path) => path,
+    "No task touched files were detected; inspect the task diff and stop if scope is unclear.",
+  );
+
+  return [
+    "Run a Ralph per-task refactor session after initial validation.",
+    "Use the refactor skill contract: Improve code shape without changing behavior.",
+    "Do not implement new feature behavior, update the Feature Spec checkbox, or commit.",
+    "Preserve public contracts, data shape, error behavior, and user-visible output.",
+    "Skip changes that would make the code merely different rather than simpler.",
+    "",
+    `Repository: ${repoRoot}`,
+    `Selected task (line ${task.lineNumber ?? "unknown"}): ${task.text}`,
+    "",
+    "Refactor scope is limited to the task diff or touched files:",
+    scopeLines,
+    "",
+    "Rerun validation if you change files:",
+    validationLines,
+    "",
+    "Current task diff for context:",
+    diff.trim() ? diff : "(no current task diff detected)",
   ].join("\n");
 }
 
@@ -805,6 +940,61 @@ async function verifyDirtyDiffForResume({ state, status, execGit, cwd }) {
   }
 
   return { paths: dirtyPaths, worktree, staged, untracked: untrackedPaths, untrackedDiffs };
+}
+
+async function taskDiff({ repoRoot, execGit }) {
+  const worktree = await gitOne(execGit, ["diff", "--binary"], { cwd: repoRoot, trim: false });
+  const staged = await gitOne(execGit, ["diff", "--cached", "--binary"], { cwd: repoRoot, trim: false });
+  return `${worktree}${staged}`;
+}
+
+async function taskChangeFingerprint({ repoRoot, execGit, diff }) {
+  const status = await gitOne(execGit, ["status", "--porcelain"], { cwd: repoRoot, trim: false });
+  const currentDiff = typeof diff === "string" ? diff : await taskDiff({ repoRoot, execGit });
+  const untrackedContent = await untrackedContentFingerprint({ repoRoot, execGit });
+  return `${status}\0${currentDiff}\0${untrackedContent}`;
+}
+
+async function untrackedContentFingerprint({ repoRoot, execGit }) {
+  const output = await gitOne(execGit, ["ls-files", "--others", "--exclude-standard", "-z"], { cwd: repoRoot, trim: false });
+  const paths = output.split("\0").filter(Boolean).sort();
+  const fingerprints = [];
+  for (const path of paths) {
+    try {
+      const content = await readFile(join(repoRoot, path));
+      fingerprints.push(`${path}\0${createHash("sha256").update(content).digest("hex")}`);
+    } catch (error) {
+      if (error.code !== "ENOENT" && error.code !== "EISDIR") throw error;
+      fingerprints.push(`${path}\0${error.code}`);
+    }
+  }
+  return fingerprints.join("\0");
+}
+
+async function taskTouchedPaths({ repoRoot, execGit }) {
+  const status = await gitOne(execGit, ["status", "--porcelain"], { cwd: repoRoot, trim: false });
+  return parsePorcelainEntries(status).map((entry) => entry.path);
+}
+
+async function runValidationOption({ repoRoot, option, runCommand, phase }) {
+  const cwd = option.cwd === "." ? repoRoot : join(repoRoot, option.cwd);
+  const result = await runCommand(option.command, { cwd });
+  return {
+    phase,
+    command: option.command,
+    cwd: option.cwd,
+    exitCode: Number.isInteger(result?.exitCode) ? result.exitCode : 0,
+    stdout: typeof result?.stdout === "string" ? result.stdout : "",
+    stderr: typeof result?.stderr === "string" ? result.stderr : "",
+  };
+}
+
+async function runShellCommand(command, { cwd }) {
+  return new Promise((resolvePromise) => {
+    execFile(command, [], { cwd, shell: true }, (error, stdout, stderr) => {
+      resolvePromise({ command, cwd, exitCode: error?.code ?? 0, stdout, stderr });
+    });
+  });
 }
 
 async function gitDiffNoIndex(execGit, args, { cwd }) {

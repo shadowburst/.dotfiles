@@ -336,7 +336,7 @@ Ralph SHALL perform a final clean-context two-axis branch review after all tasks
   - Covers: Requirement: Validation discovery and evidence
 - [x] 6. Implement the task implementation phase with meaningful TDD guidance, deterministic validation selection before editing, and task-specific implementation prompts.
   - Covers: Requirement: Meaningful test-first behavior; Requirement: Per-task implementation loop
-- [ ] 7. Implement per-task refactor sessions using the refactor skill after initial validation, scoped to task diff or touched files, with validation rerun when refactor changes files.
+- [x] 7. Implement per-task refactor sessions using the refactor skill after initial validation, scoped to task diff or touched files, with validation rerun when refactor changes files.
   - Covers: Requirement: Per-task implementation loop
 - [ ] 8. Implement fresh-context Ralph-specific task review with machine-readable `PASS`, `FAIL`, or `BLOCKED` verdicts and review inputs limited to relevant spec, diff, files, summaries, and validation evidence.
   - Covers: Requirement: Clean-eye task review
