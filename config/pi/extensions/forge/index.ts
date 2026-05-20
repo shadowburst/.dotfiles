@@ -5,8 +5,8 @@ import {
   checkTask,
   extractFinalJsonBlock,
   finalTextFromSubagentResponse,
-  firstUncheckedTask,
   parseGitStatusPorcelain,
+  parseImplementationTasks,
   relativeToCwd,
   resolveSpecPath,
   taskCommitTitle,
@@ -51,6 +51,18 @@ interface SlashLiveDetails {
   };
 }
 
+interface ForgeLiveDisplay {
+  taskLabel: string;
+  phases: string[];
+  chain: unknown[];
+}
+
+interface ForgePhaseState {
+  number: number;
+  total: number;
+  label: string;
+}
+
 function requestId(): string {
   return `forge-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -86,12 +98,13 @@ async function ensureCleanStart(pi: ExtensionAPI, cwd: string): Promise<string> 
   return exec(pi, "git", ["rev-parse", "HEAD"], cwd, 30_000);
 }
 
-function buildForgeLiveDetails(id: string, params: Record<string, unknown>): SlashLiveDetails {
+function buildForgeLiveDetails(id: string, params: Record<string, unknown>, display?: ForgeLiveDisplay): SlashLiveDetails {
+  const initialPhase = display ? phaseState(display, []) : undefined;
   const progress = {
     index: 0,
-    agent: "forge",
+    agent: forgeLiveAgentLabel(display, initialPhase),
     status: "running",
-    task: String(params.task ?? "Running Forge Task Chain"),
+    task: forgeLiveTaskLabel(params, initialPhase),
     recentTools: [],
     recentOutput: [],
     toolCount: 0,
@@ -118,20 +131,61 @@ function buildForgeLiveDetails(id: string, params: Record<string, unknown>): Sla
   };
 }
 
-function updateForgeLiveDetails(details: SlashLiveDetails, update: { currentTool?: string; toolCount?: number; progress?: Array<Record<string, unknown>> }): void {
-  const running = update.progress?.find((entry) => entry.status === "running") ?? update.progress?.[0];
+function chainStepWidth(step: unknown): number {
+  if (!step || typeof step !== "object") return 1;
+  const parallel = (step as { parallel?: unknown }).parallel;
+  return Array.isArray(parallel) ? Math.max(1, parallel.length) : 1;
+}
+
+function phaseState(display: ForgeLiveDisplay, progressEntries: Array<Record<string, unknown>>): ForgePhaseState {
+  const runningIndex = progressEntries.findIndex((entry) => entry.status === "running");
+  const flatIndex = runningIndex >= 0 && typeof progressEntries[runningIndex].index === "number"
+    ? Number(progressEntries[runningIndex].index)
+    : Math.max(0, runningIndex);
+  let cursor = 0;
+  for (let i = 0; i < display.phases.length; i++) {
+    const width = chainStepWidth(display.chain[i]);
+    if (flatIndex >= cursor && flatIndex < cursor + width) {
+      return { number: i + 1, total: display.phases.length, label: display.phases[i] };
+    }
+    cursor += width;
+  }
+  return { number: 1, total: display.phases.length, label: display.phases[0] ?? "Running" };
+}
+
+function forgeLiveAgentLabel(display?: ForgeLiveDisplay, phase?: ForgePhaseState): string {
+  if (!display || !phase) return "forge";
+  return `Forge · ${display.taskLabel} · Phase ${phase.number}/${phase.total}`;
+}
+
+function forgeLiveTaskLabel(params: Record<string, unknown>, phase?: ForgePhaseState): string {
+  if (!phase) return String(params.task ?? "Running Forge Task Chain");
+  return `${phase.label}`;
+}
+
+function activeToolLabel(progressEntries: Array<Record<string, unknown>>): string | undefined {
+  const activeToolEntries = progressEntries.filter((entry) => entry.status === "running" && typeof entry.currentTool === "string" && entry.currentTool.length > 0);
+  if (activeToolEntries.length === 0) return undefined;
+  if (activeToolEntries.length === 1) return `1 active · ${String(activeToolEntries[0].currentTool)}`;
+  return `${activeToolEntries.length} active tools`;
+}
+
+function updateForgeLiveDetails(details: SlashLiveDetails, update: { currentTool?: string; toolCount?: number; progress?: Array<Record<string, unknown>> }, display?: ForgeLiveDisplay): void {
+  const progressEntries = update.progress ?? [];
+  const phase = display ? phaseState(display, progressEntries) : undefined;
+  const running = progressEntries.find((entry) => entry.status === "running") ?? progressEntries[0];
   const current = details.result.details.progress[0] ?? {};
   const progress = {
     ...current,
     status: "running",
-    ...(running?.agent ? { agent: `forge/${running.agent}` } : {}),
-    ...(running?.task ? { task: running.task } : {}),
+    agent: forgeLiveAgentLabel(display, phase),
+    task: forgeLiveTaskLabel({ task: running?.task ?? current.task }, phase),
     recentTools: [],
     recentOutput: [],
     ...(running?.tokens ? { tokens: running.tokens } : {}),
     ...(running?.durationMs ? { durationMs: running.durationMs } : {}),
-    ...(update.currentTool ? { currentTool: update.currentTool } : {}),
-    ...(update.toolCount !== undefined ? { toolCount: update.toolCount } : {}),
+    currentTool: activeToolLabel(progressEntries),
+    toolCount: 0,
   };
   details.result.details.progress = [progress];
   details.result.details.results = [{
@@ -158,10 +212,10 @@ function installForgeRenderPump(ctx: ExtensionCommandContext): () => void {
   return () => ctx.ui.setWidget("forge-render-pump", undefined);
 }
 
-function runSubagentChain(pi: ExtensionAPI, ctx: ExtensionCommandContext, params: Record<string, unknown>): Promise<SlashResponse> {
+function runSubagentChain(pi: ExtensionAPI, ctx: ExtensionCommandContext, params: Record<string, unknown>, display?: ForgeLiveDisplay): Promise<SlashResponse> {
   return new Promise((resolve, reject) => {
     const id = requestId();
-    const liveDetails = buildForgeLiveDetails(id, params);
+    const liveDetails = buildForgeLiveDetails(id, params, display);
     const stopRenderPump = installForgeRenderPump(ctx);
     pi.sendMessage({
       customType: "subagent-slash-result",
@@ -227,7 +281,7 @@ function runSubagentChain(pi: ExtensionAPI, ctx: ExtensionCommandContext, params
     const unsubUpdate = pi.events.on("subagent:slash:update", (data: unknown) => {
       if (done || !data || typeof data !== "object" || (data as { requestId?: string }).requestId !== id) return;
       const update = data as { currentTool?: string; toolCount?: number; progress?: Array<Record<string, unknown>> };
-      updateForgeLiveDetails(liveDetails, update);
+      updateForgeLiveDetails(liveDetails, update, display);
       requestRender();
     });
 
@@ -369,17 +423,24 @@ async function runForge(pi: ExtensionAPI, ctx: ExtensionCommandContext, rawSpecP
   const taskCommits: string[] = [];
   while (true) {
     const spec = await fs.readFile(specPath, "utf8");
-    const task = firstUncheckedTask(spec) as ForgeTask | undefined;
+    const tasks = parseImplementationTasks(spec) as ForgeTask[];
+    const task = tasks.find((candidate) => !candidate.checked);
     if (!task) break;
+    const taskPosition = tasks.findIndex((candidate) => candidate.lineIndex === task.lineIndex) + 1;
+    const taskChain = buildTaskChain(specRel, task);
 
     setStatus(ctx, `task ${task.number}: running chain`);
     sendForgeMessage(pi, `Running Forge Task Chain for task ${task.number}: ${task.text}`);
     const response = await runSubagentChain(pi, ctx, {
-      chain: buildTaskChain(specRel, task),
+      chain: taskChain,
       task: taskPromptPayload({ specPath: specRel, task }),
       clarify: false,
       agentScope: "both",
       context: "fresh",
+    }, {
+      taskLabel: `Task ${taskPosition}/${tasks.length}`,
+      phases: ["Context", "Plan", "Implement", "Refactor", "Review", "Synthesize", "Fix", "Summarize"],
+      chain: taskChain,
     });
     const summary = await parseTaskChainSummary(response);
     if (summary.status === "stop") {
@@ -410,12 +471,17 @@ async function runForge(pi: ExtensionAPI, ctx: ExtensionCommandContext, rawSpecP
 
   setStatus(ctx, "final review...");
   sendForgeMessage(pi, "All Feature Spec tasks are checked. Running final review and autofix.");
+  const finalReviewChain = buildFinalReviewChain(specRel, reviewBase);
   const finalReviewResponse = await runSubagentChain(pi, ctx, {
-    chain: buildFinalReviewChain(specRel, reviewBase),
+    chain: finalReviewChain,
     task: `Final review and autofix for ${specRel}`,
     clarify: false,
     agentScope: "both",
     context: "fresh",
+  }, {
+    taskLabel: "Finalization",
+    phases: ["Review", "Synthesize", "Fix", "Summarize"],
+    chain: finalReviewChain,
   });
   const finalReviewSummary = await parseCompletionChainSummary(finalReviewResponse);
   if (finalReviewSummary.status === "stop") {
@@ -428,12 +494,17 @@ async function runForge(pi: ExtensionAPI, ctx: ExtensionCommandContext, rawSpecP
   }
 
   setStatus(ctx, "final refactor...");
+  const finalRefactorChain = buildFinalRefactorChain(specRel, reviewBase);
   const finalRefactorResponse = await runSubagentChain(pi, ctx, {
-    chain: buildFinalRefactorChain(specRel, reviewBase),
+    chain: finalRefactorChain,
     task: `Final simplification refactor for ${specRel}`,
     clarify: false,
     agentScope: "both",
     context: "fresh",
+  }, {
+    taskLabel: "Final refactor",
+    phases: ["Refactor", "Summarize"],
+    chain: finalRefactorChain,
   });
   const finalRefactorSummary = await parseCompletionChainSummary(finalRefactorResponse);
   if (finalRefactorSummary.status === "stop") {

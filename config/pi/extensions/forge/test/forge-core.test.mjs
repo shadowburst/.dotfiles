@@ -6,6 +6,7 @@ import {
   buildForgeTaskChain,
   checkTask,
   extractFinalJsonBlock,
+  finalTextFromSubagentResponse,
   firstUncheckedTask,
   isValidConventionalCommitTitle,
   parseGitStatusPorcelain,
@@ -57,6 +58,23 @@ test("selects and checks first unchecked task only", () => {
 test("extracts the last fenced json block", () => {
   const parsed = extractFinalJsonBlock('noise\n```json\n{"status":"stop","summary":"old"}\n```\n```json\n{"status":"done","summary":"new","changedPaths":["a"],"validation":["ok"],"commitTitle":"feat: x"}\n```');
   assert.equal(parsed.summary, "new");
+});
+
+test("reads final json from the last chain result instead of the chain summary", () => {
+  const text = finalTextFromSubagentResponse({
+    result: {
+      content: [{ type: "text", text: "✅ Chain completed\n\n📁 Artifacts: /tmp/chain" }],
+      details: {
+        mode: "chain",
+        results: [
+          { agent: "worker", finalOutput: "intermediate output" },
+          { agent: "delegate", finalOutput: '```json\n{"status":"done","summary":"ok","changedPaths":["a"],"validation":["test"],"commitTitle":"feat: x"}\n```' },
+        ],
+      },
+    },
+  });
+
+  assert.equal(extractFinalJsonBlock(text).summary, "ok");
 });
 
 test("validates simple done and stop summaries", () => {

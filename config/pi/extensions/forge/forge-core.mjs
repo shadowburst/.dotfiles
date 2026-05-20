@@ -243,12 +243,32 @@ export function buildForgeFinalRefactorChain(specPath, reviewBase) {
   ];
 }
 
-export function finalTextFromSubagentResponse(response) {
-  const content = response?.result?.content ?? response?.content ?? [];
+function textFromContent(content) {
   if (typeof content === "string") return content;
   if (!Array.isArray(content)) return "";
   return content
     .filter((part) => part && part.type === "text" && typeof part.text === "string")
     .map((part) => part.text)
     .join("\n");
+}
+
+function textFromResult(result) {
+  if (!result || typeof result !== "object") return "";
+  if (typeof result.finalOutput === "string") return result.finalOutput;
+  const messages = Array.isArray(result.messages) ? result.messages : [];
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    if (message?.role !== "assistant" || !Array.isArray(message.content)) continue;
+    const text = textFromContent(message.content);
+    if (text) return text;
+  }
+  return "";
+}
+
+export function finalTextFromSubagentResponse(response) {
+  const texts = [textFromContent(response?.result?.content ?? response?.content ?? [])];
+  const details = response?.result?.details ?? response?.details;
+  const results = Array.isArray(details?.results) ? details.results : [];
+  texts.push(...results.map(textFromResult));
+  return texts.filter(Boolean).join("\n");
 }
