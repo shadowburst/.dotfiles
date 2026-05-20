@@ -49,7 +49,7 @@ export function launchRalphOrchestrator({ mode, specPath, orchestratorPath = ORC
     const child = spawnProcess(nodePath, [orchestratorPath, "--mode", mode, "--spec", specPath], {
       cwd,
       env: { ...process.env, PI_RALPH_MODE: mode, PI_RALPH_SPEC: specPath },
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: ["inherit", "pipe", "pipe"],
     });
 
     let stdout = "";
@@ -57,9 +57,11 @@ export function launchRalphOrchestrator({ mode, specPath, orchestratorPath = ORC
 
     child.stdout?.on("data", (chunk) => {
       stdout += chunk.toString();
+      process.stdout.write(chunk);
     });
     child.stderr?.on("data", (chunk) => {
       stderr += chunk.toString();
+      process.stderr.write(chunk);
     });
     child.on("error", reject);
     child.on("close", (exitCode) => resolvePromise({ exitCode, stdout, stderr }));
