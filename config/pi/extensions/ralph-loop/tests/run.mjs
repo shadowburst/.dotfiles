@@ -216,7 +216,7 @@ const refactorResult = await runTaskRefactorPhase({
     branch: "feat/test",
     head: "dddddddddddddddddddddddddddddddddddddddd",
     status: " M config/pi/extensions/ralph-loop/src/orchestrator.mjs\n",
-    worktreeDiff: "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+before\n",
+    unstagedDiff: "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+before\n",
     stagedDiff: "",
   }),
   refactorSession: async ({ prompt }) => {
@@ -251,7 +251,7 @@ const noChangeRefactorResult = await runTaskRefactorPhase({
   repoRoot: resolve(dir),
   task: refactorBaseState.currentTask,
   validationPlan: { verified: true, options: [{ command: "npm test", cwd: ".", scope: "repo", source: "package.json", reason: "repo test" }] },
-  execGit: fakeGit({ repoRoot: resolve(dir), branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: "", worktreeDiff: "", stagedDiff: "" }),
+  execGit: fakeGit({ repoRoot: resolve(dir), branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: "", unstagedDiff: "", stagedDiff: "" }),
   refactorSession: async () => ({ status: "already clean" }),
   runCommand: async (command) => {
     noChangeCommands.push(command);
@@ -332,7 +332,7 @@ const taskReviewResult = await runTaskReviewPhase({
     branch: "feat/test",
     head: "dddddddddddddddddddddddddddddddddddddddd",
     status: " M review-file.mjs\n?? new-review-file.md\n",
-    worktreeDiff: "diff --git a/review-file.mjs b/review-file.mjs\n+export const verdict = 'PASS';\n",
+    unstagedDiff: "diff --git a/review-file.mjs b/review-file.mjs\n+export const verdict = 'PASS';\n",
     untrackedDiffs: { "new-review-file.md": "diff --git a/new-review-file.md b/new-review-file.md\nnew file mode 100644\n--- /dev/null\n+++ b/new-review-file.md\n@@ -0,0 +1 @@\n+new review content\n" },
   }),
   reviewSession: async ({ prompt }) => {
@@ -401,7 +401,7 @@ const fixedReview = await runTaskFixReviewLoop({
     fixValidations.push({ command, options });
     return { command, cwd: options.cwd, exitCode: 0, stdout: "pass", stderr: "" };
   },
-  execGit: fakeGit({ repoRoot: resolve(dir), branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: " M review-file.mjs\n", worktreeDiff: "diff --git a/review-file.mjs b/review-file.mjs\n+fixed\n" }),
+  execGit: fakeGit({ repoRoot: resolve(dir), branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: " M review-file.mjs\n", unstagedDiff: "diff --git a/review-file.mjs b/review-file.mjs\n+fixed\n" }),
 });
 assert.equal(fixedReview.status, "passed");
 assert.equal(fixSessionCount, 1);
@@ -444,7 +444,7 @@ const exhaustedReview = await runTaskFixReviewLoop({
   },
   reviewSession: async () => ({ stdout: '{"verdict":"FAIL","summary":"still wrong","requiredFixes":["Fix it."]}' }),
   runCommand: async (command, options) => ({ command, cwd: options.cwd, exitCode: 0, stdout: "pass", stderr: "" }),
-  execGit: fakeGit({ repoRoot: resolve(dir), branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: " M review-file.mjs\n", worktreeDiff: "diff --git a/review-file.mjs b/review-file.mjs\n+still-bad\n" }),
+  execGit: fakeGit({ repoRoot: resolve(dir), branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: " M review-file.mjs\n", unstagedDiff: "diff --git a/review-file.mjs b/review-file.mjs\n+still-bad\n" }),
 });
 assert.equal(exhaustedReview.status, "exhausted");
 assert.equal(exhaustedFixes, 3);
@@ -479,7 +479,7 @@ const resumedExhaustedReview = await runTaskFixReviewLoop({
   },
   reviewSession: async () => ({ stdout: '{"verdict":"FAIL","summary":"still wrong","requiredFixes":["Fix it."]}' }),
   runCommand: async (command, options) => ({ command, cwd: options.cwd, exitCode: 0, stdout: "pass", stderr: "" }),
-  execGit: fakeGit({ repoRoot: resolve(dir), branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: " M review-file.mjs\n", worktreeDiff: "diff --git a/review-file.mjs b/review-file.mjs\n+still-bad\n" }),
+  execGit: fakeGit({ repoRoot: resolve(dir), branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: " M review-file.mjs\n", unstagedDiff: "diff --git a/review-file.mjs b/review-file.mjs\n+still-bad\n" }),
 });
 assert.equal(resumedExhaustedReview.status, "exhausted");
 assert.equal(resumedExhaustedFixes, 1);
@@ -758,7 +758,7 @@ noValidationStdout.on("data", (chunk) => {
 await runOrchestrator(["--mode", "once", "--spec", noValidationSpec], { stdout: noValidationStdout }, {
   cwd: noValidationDir,
   cacheRoot: join(noValidationDir, "run-cache"),
-  execGit: fakeGit({ repoRoot: noValidationDir, branch: "feat/test", head: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", status: "", worktreeDiff: "", stagedDiff: "" }),
+  execGit: fakeGit({ repoRoot: noValidationDir, branch: "feat/test", head: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", status: "", unstagedDiff: "", stagedDiff: "" }),
   implementationSession: async () => ({ status: "implementation session completed" }),
   refactorSession: async () => {
     noValidationRefactorLaunches += 1;
@@ -988,7 +988,7 @@ await runOrchestrator(["--mode", "all", "--spec", noTaskSpec], { stdout: checked
     head: "dddddddddddddddddddddddddddddddddddddddd",
     status: " M done-feature.md\n",
     mergeBase: "dddddddddddddddddddddddddddddddddddddddd",
-    worktreeDiff: "diff --git a/done-feature.md b/done-feature.md\n",
+    unstagedDiff: "diff --git a/done-feature.md b/done-feature.md\n",
   }),
   prompt: async () => true,
 });
@@ -1212,7 +1212,7 @@ const dirtyStartup = await prepareCurrentBranchStartup({
     head,
     status: " M feature.md\n",
     mergeBase: head,
-    worktreeDiff: "diff --git a/feature.md b/feature.md\nindex 1111111..2222222 100644\n--- a/feature.md\n+++ b/feature.md\n@@ -1 +1 @@\n-old\n+new\n",
+    unstagedDiff: "diff --git a/feature.md b/feature.md\nindex 1111111..2222222 100644\n--- a/feature.md\n+++ b/feature.md\n@@ -1 +1 @@\n-old\n+new\n",
   }),
   io: dirtyIo,
   prompt: async () => true,
@@ -1290,7 +1290,7 @@ await assert.rejects(
       specPath,
       cwd: repoRoot,
       cacheRoot,
-      execGit: fakeGit({ repoRoot, branch, head, status: " M feature.md\n", mergeBase: head, worktreeDiff: "diff --git a/feature.md b/feature.md\n" }),
+      execGit: fakeGit({ repoRoot, branch, head, status: " M feature.md\n", mergeBase: head, unstagedDiff: "diff --git a/feature.md b/feature.md\n" }),
       io: quietIo(),
       prompt: async () => true,
     }),
@@ -1315,7 +1315,7 @@ await assert.rejects(
       specPath,
       cwd: repoRoot,
       cacheRoot,
-      execGit: fakeGit({ repoRoot, branch, head, status: " M unrelated.md\n", mergeBase: head, worktreeDiff: "diff --git a/unrelated.md b/unrelated.md\n" }),
+      execGit: fakeGit({ repoRoot, branch, head, status: " M unrelated.md\n", mergeBase: head, unstagedDiff: "diff --git a/unrelated.md b/unrelated.md\n" }),
       io: quietIo(),
       prompt: async () => true,
     }),
@@ -1365,7 +1365,7 @@ await assert.rejects(
       specPath,
       cwd: repoRoot,
       cacheRoot,
-      execGit: fakeGit({ repoRoot, branch, head, status: " M feature.md\n", mergeBase: head, worktreeDiff: "diff --git a/feature.md b/feature.md\n" }),
+      execGit: fakeGit({ repoRoot, branch, head, status: " M feature.md\n", mergeBase: head, unstagedDiff: "diff --git a/feature.md b/feature.md\n" }),
       io: quietIo(),
       prompt: async () => true,
     }),
@@ -1413,7 +1413,7 @@ await assert.rejects(
         status: " M feature.md\n",
         mergeBase: head,
         mergeBases: { "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee": "ffffffffffffffffffffffffffffffffffffffff" },
-        worktreeDiff: "diff --git a/feature.md b/feature.md\n",
+        unstagedDiff: "diff --git a/feature.md b/feature.md\n",
       }),
       io: quietIo(),
       prompt: async () => true,
@@ -1450,7 +1450,7 @@ assert.ok(projectValidationOptions.some((option) => option.command === "nix flak
 assert.ok(projectValidationOptions.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/ralph-loop"));
 assert.ok(projectValidationOptions.some((option) => option.command === "nix flake check" && option.source === "flake.nix"));
 
-function fakeGit({ repoRoot, branch, head, status, mergeBase = head, mergeBases = {}, worktreeDiff = "", stagedDiff = "", untrackedDiffs = {}, untrackedFiles }) {
+function fakeGit({ repoRoot, branch, head, status, mergeBase = head, mergeBases = {}, unstagedDiff = "", stagedDiff = "", untrackedDiffs = {}, untrackedFiles }) {
   return async (args) => {
     const command = args.join(" ");
     if (command === "rev-parse --show-toplevel") return `${repoRoot}\n`;
@@ -1460,7 +1460,7 @@ function fakeGit({ repoRoot, branch, head, status, mergeBase = head, mergeBases 
     if (command === "ls-files --others --exclude-standard -z") return (untrackedFiles ?? parseFakeUntrackedFiles(status)).join("\0");
     if (args[0] === "cat-file" && args[1] === "-e") return "";
     if (args[0] === "merge-base") return `${mergeBases[args[1]] ?? mergeBase}\n`;
-    if (command === "diff --binary") return worktreeDiff;
+    if (command === "diff --binary") return unstagedDiff;
     if (command === "diff --cached --binary") return stagedDiff;
     if (args[0] === "diff" && args[1] === "--binary" && args[2] === "--no-index" && args[3] === "--" && args[4] === "/dev/null") {
       return untrackedDiffs[args[5]] ?? "";

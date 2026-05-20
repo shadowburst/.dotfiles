@@ -352,7 +352,7 @@ Ralph SHALL perform a final clean-context two-axis branch review after all tasks
   - Covers: Requirement: Final branch review
 - [x] 14. Add deterministic validation for Ralph itself, including extension command loading, Orchestrator subprocess behavior, task parsing, cache persistence/cleanup, git safety behavior, phase transitions, and repository-level checks discoverable for this project.
   - Covers: Requirement: Validation discovery and evidence
-- [ ] 15. Perform a Ralph-readiness review of the revised spec and implementation, ensuring obsolete worktree, handoff, Context-Capture Commit, flag, and Pull Request behavior has been removed and the current-branch deterministic loop is auditable.
+- [x] 15. Perform a Ralph-readiness review of the revised spec and implementation, ensuring obsolete worktree, handoff, Context-Capture Commit, flag, and Pull Request behavior has been removed and the current-branch deterministic loop is auditable.
   - Covers: Requirement: Final branch review; Requirement: Task commits
 
 ## Out of Scope

@@ -2030,7 +2030,7 @@ async function verifyDirtyDiffForResume({ state, status, execGit, cwd }) {
     throw new Error(`Ralph dirty diff touches unexpected paths: ${unexpectedPaths.join(", ")}.`);
   }
 
-  const worktree = await gitOne(execGit, ["diff", "--binary"], { cwd, trim: false });
+  const unstaged = await gitOne(execGit, ["diff", "--binary"], { cwd, trim: false });
   const staged = await gitOne(execGit, ["diff", "--cached", "--binary"], { cwd, trim: false });
   const untrackedPaths = dirtyEntries.filter((entry) => entry.status === "??").map((entry) => entry.path);
   const untrackedDiffs = [];
@@ -2040,22 +2040,22 @@ async function verifyDirtyDiffForResume({ state, status, execGit, cwd }) {
     untrackedDiffs.push({ path, diff });
   }
   const hasTrackedDirtyEntries = dirtyEntries.some((entry) => entry.status !== "??");
-  if (!worktree.trim() && !staged.trim() && hasTrackedDirtyEntries) {
+  if (!unstaged.trim() && !staged.trim() && hasTrackedDirtyEntries) {
     throw new Error("Ralph could not verify dirty diff contents during reconcile.");
   }
 
-  return { paths: dirtyPaths, worktree, staged, untracked: untrackedPaths, untrackedDiffs };
+  return { paths: dirtyPaths, worktree: unstaged, staged, untracked: untrackedPaths, untrackedDiffs };
 }
 
 async function taskDiff({ repoRoot, execGit }) {
-  const worktree = await gitOne(execGit, ["diff", "--binary"], { cwd: repoRoot, trim: false });
+  const unstaged = await gitOne(execGit, ["diff", "--binary"], { cwd: repoRoot, trim: false });
   const staged = await gitOne(execGit, ["diff", "--cached", "--binary"], { cwd: repoRoot, trim: false });
   const untrackedPaths = await taskUntrackedPaths({ repoRoot, execGit });
   const untracked = [];
   for (const path of untrackedPaths) {
     untracked.push(await gitDiffNoIndex(execGit, ["diff", "--binary", "--no-index", "--", "/dev/null", path], { cwd: repoRoot }));
   }
-  return `${worktree}${staged}${untracked.join("")}`;
+  return `${unstaged}${staged}${untracked.join("")}`;
 }
 
 async function taskUntrackedPaths({ repoRoot, execGit }) {
