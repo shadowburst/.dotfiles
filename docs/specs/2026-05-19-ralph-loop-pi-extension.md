@@ -350,7 +350,7 @@ Ralph SHALL perform a final clean-context two-axis branch review after all tasks
   - Covers: Requirement: Whole-feature refactor
 - [x] 13. Implement final validation and final clean-context two-axis branch review using the existing review skill over `git diff <Review Base>..HEAD`, with cache cleanup only after PASS.
   - Covers: Requirement: Final branch review
-- [ ] 14. Add deterministic validation for Ralph itself, including extension command loading, Orchestrator subprocess behavior, task parsing, cache persistence/cleanup, git safety behavior, phase transitions, and repository-level checks discoverable for this project.
+- [x] 14. Add deterministic validation for Ralph itself, including extension command loading, Orchestrator subprocess behavior, task parsing, cache persistence/cleanup, git safety behavior, phase transitions, and repository-level checks discoverable for this project.
   - Covers: Requirement: Validation discovery and evidence
 - [ ] 15. Perform a Ralph-readiness review of the revised spec and implementation, ensuring obsolete worktree, handoff, Context-Capture Commit, flag, and Pull Request behavior has been removed and the current-branch deterministic loop is auditable.
   - Covers: Requirement: Final branch review; Requirement: Task commits

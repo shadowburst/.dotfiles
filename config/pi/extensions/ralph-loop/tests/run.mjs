@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import { access, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
 import { PassThrough } from "node:stream";
 import { createRalphCommand, parseSpecArgument } from "../src/command.mjs";
 import { registerRalphCommands } from "../src/extension.mjs";
@@ -79,6 +80,15 @@ assert.deepEqual(parsedTasks.map((task) => ({ lineNumber: task.lineNumber, check
 ]);
 assert.equal(selectFirstUncheckedTask(parsedTasks).lineNumber, 10);
 assert.equal(selectFirstUncheckedTask(parseFeatureSpecTasks("# Feature\n\n## Implementation Tasks\n\n- [x] Done\n")), null);
+
+const extensionRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const repositoryRoot = resolve(extensionRoot, "../../../..");
+const ralphPackage = JSON.parse(await readFile(join(extensionRoot, "package.json"), "utf8"));
+assert.deepEqual(ralphPackage.pi.extensions, ["./index.ts"]);
+assert.equal(ralphPackage.scripts.test, "node tests/run.mjs");
+const ralphIndexSource = await readFile(join(extensionRoot, "index.ts"), "utf8");
+assert.match(ralphIndexSource, /registerRalphCommands\(pi\)/);
+assert.doesNotMatch(ralphIndexSource, /worktree|pull request|--all|--task|--pr/i);
 
 const registered = [];
 registerRalphCommands({
@@ -1425,6 +1435,20 @@ await assert.rejects(
     }),
   /Review Base is not an ancestor of HEAD/,
 );
+
+const projectValidationDoc = await readFile(join(repositoryRoot, "docs", "agents", "validation.md"), "utf8");
+assert.match(projectValidationDoc, /npm test --prefix config\/pi\/extensions\/ralph-loop/);
+assert.match(projectValidationDoc, /nix flake check/);
+const projectValidationSpec = resolve(repositoryRoot, "docs/specs/2026-05-19-ralph-loop-pi-extension.md");
+const projectValidationOptions = await discoverValidationOptions({
+  repoRoot: repositoryRoot,
+  specPath: projectValidationSpec,
+  specText: await readFile(projectValidationSpec, "utf8"),
+});
+assert.ok(projectValidationOptions.some((option) => option.command === "npm test --prefix config/pi/extensions/ralph-loop" && option.source === "docs/agents/validation.md"));
+assert.ok(projectValidationOptions.some((option) => option.command === "nix flake check" && option.source === "docs/agents/validation.md"));
+assert.ok(projectValidationOptions.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/ralph-loop"));
+assert.ok(projectValidationOptions.some((option) => option.command === "nix flake check" && option.source === "flake.nix"));
 
 function fakeGit({ repoRoot, branch, head, status, mergeBase = head, mergeBases = {}, worktreeDiff = "", stagedDiff = "", untrackedDiffs = {}, untrackedFiles }) {
   return async (args) => {
