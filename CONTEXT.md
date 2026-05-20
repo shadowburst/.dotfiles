@@ -36,20 +36,20 @@ _Avoid_: MCP plugin, MCP package
 An opencode-owned configuration source that declares MCP servers which the MCP Bridge may import for Pi use.
 _Avoid_: Pi MCP config, bridge config
 
-**Ralph Loop**:
-A deterministic implementation loop, invoked from Pi, that consumes one Feature Spec, selects exactly one unchecked implementation task, asks Pi to implement it, validates it with tests or CI-quality checks, hands off to a fresh Pi session seeded only with review-relevant artifacts, performs a clean-eye review, fixes real issues through a bounded fix/retest cycle, verifies, commits the completed task, and then completes that one task before stopping or continuing by explicit loop control.
+**Forge**:
+A Feature Spec fulfillment command, invoked from Pi, that repeatedly selects unchecked implementation tasks, delegates task execution through a subagent chain, requires deterministic validation evidence, reviews completed work from a clean context, applies review-guided fixes once, and records progress one task at a time.
 _Avoid_: Autonomous sprint, agent workflow, task runner
 
-**Ralph Orchestrator**:
-The workflow engine behind a Ralph Loop that coordinates phase-specific Pi sessions, validation gates, review gates, task completion commits, and final review on the current branch.
-_Avoid_: Handoff script, wrapper command, extension logic
+**Forge Driver**:
+The thin deterministic Pi Extension command behind Forge that selects Feature Spec tasks, invokes the task chain, verifies machine-readable verdicts, updates the Feature Spec task ledger, and creates commits.
+_Avoid_: Orchestrator, autonomous agent, workflow engine
 
-**Ralph Agent Session**:
-A fresh Pi agent session created for one Ralph phase, such as task implementation, task review, refactoring, or final branch review.
-_Avoid_: Subagent, nested Pi, continuation
+**Forge Task Chain**:
+The pi-subagents chain executed by Forge for one selected Feature Spec task, responsible for implementation, validation evidence, clean-context review, required fixes, and a machine-readable verdict.
+_Avoid_: Orchestrator, task runner, nested Pi
 
 **Review Base**:
-The git ref or commit used as the left side of a Ralph Loop final branch review, recorded at the start of a Ralph run on the current branch.
+The git ref or commit used as the left side of a Forge final branch review, recorded at the start of a Forge run on the current branch.
 _Avoid_: Fixed point, base thing, original HEAD
 
 ## Relationships
@@ -60,9 +60,9 @@ _Avoid_: Fixed point, base thing, original HEAD
 - A **Nix Module** should remain separate from the **Config Assets** it links.
 - An **MCP Bridge** is a **Pi Extension**.
 - An **Agent Skill** may produce or maintain one or more **Feature Specs**.
-- A **Ralph Loop** consumes a **Feature Spec** and operates on exactly one implementation task at a time.
-- A **Ralph Loop** runs on the current branch and requires a clean working tree before starting.
-- A **Ralph Agent Session** may be guided by an **Agent Skill** for phase-specific behavior such as behavior-preserving refactoring.
+- **Forge** consumes a **Feature Spec** and operates on exactly one implementation task at a time inside each **Forge Task Chain** run.
+- **Forge** runs on the current branch and requires a clean working tree before starting.
+- A **Forge Task Chain** may use an **Agent Skill** for phase-specific behavior such as behavior-preserving refactoring.
 
 ## Example dialogue
 

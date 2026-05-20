@@ -1,0 +1,341 @@
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import {
+  checkTask,
+  extractFinalJsonBlock,
+  finalTextFromSubagentResponse,
+  firstUncheckedTask,
+  parseGitStatusPorcelain,
+  relativeToCwd,
+  resolveSpecPath,
+  taskCommitTitle,
+  taskPromptPayload,
+  unexpectedDirtyPaths,
+  validateCompletionSummary,
+  validateTaskSummary,
+} from "./forge-core.mjs";
+
+const SLASH_SUBAGENT_REQUEST_EVENT = "subagent:slash:request";
+const SLASH_SUBAGENT_STARTED_EVENT = "subagent:slash:started";
+const SLASH_SUBAGENT_RESPONSE_EVENT = "subagent:slash:response";
+const SLASH_SUBAGENT_UPDATE_EVENT = "subagent:slash:update";
+const SLASH_SUBAGENT_CANCEL_EVENT = "subagent:slash:cancel";
+
+interface ForgeTask {
+  lineIndex: number;
+  checked: boolean;
+  number: number;
+  text: string;
+  guidance: string;
+}
+
+interface TaskSummary {
+  status: "done" | "stop";
+  summary: string;
+  changedPaths?: string[];
+  validation?: string[];
+  commitTitle?: string;
+}
+
+interface SlashResponse {
+  requestId: string;
+  result: { content: Array<{ type?: string; text?: string }>; details?: unknown };
+  isError?: boolean;
+  errorText?: string;
+}
+
+function requestId(): string {
+  return `forge-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function sendForgeMessage(pi: ExtensionAPI, content: string, details: Record<string, unknown> = {}): void {
+  pi.sendMessage({ customType: "forge", content, display: true, details });
+}
+
+function setStatus(ctx: ExtensionContext, text: string | undefined): void {
+  if (ctx.hasUI) ctx.ui.setStatus("forge", text);
+}
+
+async function exec(pi: ExtensionAPI, command: string, args: string[], cwd: string, timeout = 120_000) {
+  const result = await pi.exec(command, args, { cwd, timeout });
+  if (result.code !== 0) {
+    const stderr = result.stderr ? `\n${result.stderr}` : "";
+    const stdout = result.stdout ? `\n${result.stdout}` : "";
+    throw new Error(`${command} ${args.join(" ")} failed with exit ${result.code}${stderr}${stdout}`);
+  }
+  return result.stdout.trim();
+}
+
+async function gitStatus(pi: ExtensionAPI, cwd: string): Promise<string[]> {
+  const output = await exec(pi, "git", ["status", "--porcelain"], cwd, 30_000);
+  return parseGitStatusPorcelain(output);
+}
+
+async function ensureCleanStart(pi: ExtensionAPI, cwd: string): Promise<string> {
+  const dirty = await gitStatus(pi, cwd);
+  if (dirty.length > 0) {
+    throw new Error(`Forge requires a clean working tree before start. Dirty paths:\n${dirty.map((p) => `- ${p}`).join("\n")}`);
+  }
+  return exec(pi, "git", ["rev-parse", "HEAD"], cwd, 30_000);
+}
+
+function runSubagentChain(pi: ExtensionAPI, ctx: ExtensionCommandContext, params: Record<string, unknown>): Promise<SlashResponse> {
+  return new Promise((resolve, reject) => {
+    const id = requestId();
+    let done = false;
+    let started = false;
+    const timeout = setTimeout(() => finish(() => reject(new Error("pi-subagents did not respond within 15s. Is pi-subagents installed and loaded?"))), 15_000);
+
+    const finish = (next: () => void) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timeout);
+      unsubStarted();
+      unsubResponse();
+      unsubUpdate();
+      next();
+    };
+
+    const unsubStarted = pi.events.on(SLASH_SUBAGENT_STARTED_EVENT, (data: unknown) => {
+      if (!data || typeof data !== "object" || (data as { requestId?: string }).requestId !== id) return;
+      started = true;
+      if (ctx.hasUI) ctx.ui.setStatus("forge", "subagents running...");
+    });
+    const unsubResponse = pi.events.on(SLASH_SUBAGENT_RESPONSE_EVENT, (data: unknown) => {
+      if (!data || typeof data !== "object" || (data as { requestId?: string }).requestId !== id) return;
+      finish(() => resolve(data as SlashResponse));
+    });
+    const unsubUpdate = pi.events.on(SLASH_SUBAGENT_UPDATE_EVENT, (data: unknown) => {
+      if (!data || typeof data !== "object" || (data as { requestId?: string }).requestId !== id) return;
+      const update = data as { currentTool?: string; toolCount?: number };
+      if (ctx.hasUI) ctx.ui.setStatus("forge", `subagents: ${update.toolCount ?? 0} tools${update.currentTool ? ` ${update.currentTool}` : ""}`);
+    });
+
+    pi.events.emit(SLASH_SUBAGENT_REQUEST_EVENT, { requestId: id, params });
+    if (!started) {
+      pi.events.emit(SLASH_SUBAGENT_CANCEL_EVENT, { requestId: id });
+      finish(() => reject(new Error("No pi-subagents slash bridge responded. Ensure pi-subagents is loaded before Forge.")));
+    }
+  });
+}
+
+function buildTaskChain(specPath: string, task: ForgeTask) {
+  const taskPayload = taskPromptPayload({ specPath, task });
+  const finalJsonContract = `End with exactly one final fenced json block. Use {"status":"done","summary":"...","changedPaths":["..."],"validation":["..."],"commitTitle":"feat(scope): title"} when complete. Use {"status":"stop","summary":"..."} when blocked or unverified.`;
+  return [
+    {
+      agent: "context-builder",
+      task: `Build implementation context for this Forge task. Treat the Feature Spec task ledger as read-only.\n\n${taskPayload}\n\nOutput relevant requirements, likely files, validation strategy, and handoff context.`,
+      output: "forge/context.md",
+      outputMode: "file-only",
+    },
+    {
+      agent: "planner",
+      task: `Create a concrete implementation plan from {previous}. Include non-goals, expected changed paths, meaningful TDD guidance, and validation expectations. Do not edit files.`,
+      output: "forge/plan.md",
+      outputMode: "file-only",
+    },
+    {
+      agent: "worker",
+      task: `Implement the selected Forge task from {previous}. Treat ${specPath} task checkboxes as read-only; the Forge Driver updates them. Use meaningful TDD only when an automated behavior test is applicable. Run deterministic validation and summarize changed paths and validation evidence.`,
+      output: "forge/implementation.md",
+      outputMode: "file-only",
+    },
+    {
+      agent: "worker",
+      skill: "refactor",
+      task: `Perform a bounded behavior-preserving refactor over only the task diff or touched files from {previous}. Prefer no change over speculative churn. Rerun validation if you change files.`,
+      output: "forge/refactor.md",
+      outputMode: "file-only",
+    },
+    {
+      parallel: [
+        { agent: "reviewer", task: `Fresh-context review for SPEC COMPLIANCE. Inspect ${specPath}, the selected task, and the current diff. Does the code answer the required task and avoid out-of-scope behavior? Return required fixes only.\n\n${taskPayload}`, output: false },
+        { agent: "reviewer", task: `Fresh-context review for CORRECTNESS AND REGRESSIONS. Inspect the current diff and changed files. Return required fixes only, with evidence.\n\n${taskPayload}`, output: false },
+        { agent: "reviewer", task: `Fresh-context review for VALIDATION AND TESTS. Check whether validation evidence is meaningful and deterministic. Return required fixes only.\n\n${taskPayload}`, output: false },
+        { agent: "reviewer", task: `Fresh-context review for SIMPLICITY AND MAINTAINABILITY. Flag unnecessary complexity, duplication, and architecture drift. Return required fixes only.\n\n${taskPayload}`, output: false },
+      ],
+      concurrency: 4,
+    },
+    {
+      agent: "delegate",
+      task: `Synthesize the parallel review output from {previous}. Separate required fixes from optional improvements and feedback to ignore. If there are no required fixes, say so clearly.`,
+      output: "forge/review-synthesis.md",
+      outputMode: "file-only",
+    },
+    {
+      agent: "worker",
+      task: `Apply the synthesized required fixes from {previous} once. Do not apply optional improvements. Preserve the approved scope and keep ${specPath} task checkboxes read-only. Rerun focused deterministic validation and summarize changed paths and validation evidence.`,
+      output: "forge/fixes.md",
+      outputMode: "file-only",
+    },
+    {
+      agent: "delegate",
+      task: `Read the chain outputs and inspect git status/diff as needed. Emit the Forge final task summary. ${finalJsonContract}\n\nSelected task:\n${taskPayload}`,
+      output: false,
+    },
+  ];
+}
+
+function buildFinalReviewChain(specPath: string, reviewBase: string) {
+  const finalJsonContract = `End with exactly one final fenced json block. Use {"status":"done","summary":"...","changedPaths":["..."],"validation":["..."]} when final review fixes are complete or no fixes are needed. Use {"status":"stop","summary":"..."} when blocked or unverified.`;
+  return [
+    {
+      parallel: [
+        { agent: "reviewer", task: `Final branch review, STANDARDS axis. Review git diff ${reviewBase}..HEAD for repository standards, maintainability, architecture conventions, and validation quality. Return required fixes only. Feature Spec: ${specPath}`, output: false },
+        { agent: "reviewer", task: `Final branch review, SPEC axis. Review git diff ${reviewBase}..HEAD against the full Feature Spec at ${specPath}. Return required fixes only.`, output: false },
+      ],
+      concurrency: 2,
+    },
+    { agent: "delegate", task: `Synthesize final branch review findings from {previous}. Separate required fixes from optional improvements.`, output: "forge/final-review.md", outputMode: "file-only" },
+    { agent: "worker", task: `Apply required final review fixes from {previous} once. Do not rewrite prior commits. Run deterministic validation and summarize changed paths and validation evidence.`, output: "forge/final-review-fixes.md", outputMode: "file-only" },
+    { agent: "delegate", task: `Inspect the final review/fix outcome from {previous}. ${finalJsonContract}`, output: false },
+  ];
+}
+
+function buildFinalRefactorChain(specPath: string, reviewBase: string) {
+  const finalJsonContract = `End with exactly one final fenced json block. Use {"status":"done","summary":"...","changedPaths":["..."],"validation":["..."]} when the simplification refactor is complete or no refactor was needed. Use {"status":"stop","summary":"..."} when blocked or unverified.`;
+  return [
+    { agent: "worker", skill: "refactor", task: `Perform one behavior-preserving simplification refactor over the Forge-produced diff ${reviewBase}..HEAD for Feature Spec ${specPath}. Prefer no change over speculative churn. Run deterministic validation if files change and summarize the outcome.`, output: "forge/final-refactor.md", outputMode: "file-only" },
+    { agent: "delegate", task: `Inspect the final refactor outcome from {previous}. ${finalJsonContract}`, output: false },
+  ];
+}
+
+async function parseTaskChainSummary(response: SlashResponse): Promise<TaskSummary> {
+  if (response.isError) throw new Error(response.errorText || "Subagent chain failed");
+  const text = finalTextFromSubagentResponse(response);
+  return validateTaskSummary(extractFinalJsonBlock(text)) as TaskSummary;
+}
+
+async function parseCompletionChainSummary(response: SlashResponse): Promise<TaskSummary> {
+  if (response.isError) throw new Error(response.errorText || "Subagent chain failed");
+  const text = finalTextFromSubagentResponse(response);
+  return validateCompletionSummary(extractFinalJsonBlock(text)) as TaskSummary;
+}
+
+async function updateSpecCheckbox(specPath: string, task: ForgeTask): Promise<void> {
+  const current = await fs.readFile(specPath, "utf8");
+  await fs.writeFile(specPath, checkTask(current, task.lineIndex), "utf8");
+}
+
+async function commitPaths(pi: ExtensionAPI, cwd: string, paths: string[], title: string): Promise<void> {
+  await exec(pi, "git", ["add", "--", ...paths], cwd, 30_000);
+  await exec(pi, "git", ["commit", "-m", title], cwd, 120_000);
+}
+
+async function runForge(pi: ExtensionAPI, ctx: ExtensionCommandContext, rawSpecPath: string): Promise<void> {
+  await ctx.waitForIdle();
+  const specPath = resolveSpecPath(ctx.cwd, rawSpecPath);
+  const specRel = relativeToCwd(ctx.cwd, specPath);
+  await fs.access(specPath);
+
+  setStatus(ctx, "checking git...");
+  const reviewBase = await ensureCleanStart(pi, ctx.cwd);
+  sendForgeMessage(pi, `Forge started for \`${specRel}\`\n\nReview Base: \`${reviewBase}\``);
+
+  const taskCommits: string[] = [];
+  while (true) {
+    const spec = await fs.readFile(specPath, "utf8");
+    const task = firstUncheckedTask(spec) as ForgeTask | undefined;
+    if (!task) break;
+
+    setStatus(ctx, `task ${task.number}: running chain`);
+    sendForgeMessage(pi, `Running Forge Task Chain for task ${task.number}: ${task.text}`);
+    const response = await runSubagentChain(pi, ctx, {
+      chain: buildTaskChain(specRel, task),
+      task: taskPromptPayload({ specPath: specRel, task }),
+      clarify: false,
+      agentScope: "both",
+      context: "fresh",
+    });
+    const summary = await parseTaskChainSummary(response);
+    if (summary.status === "stop") {
+      sendForgeMessage(pi, `Forge stopped on task ${task.number}:\n\n${summary.summary}`);
+      return;
+    }
+
+    const dirtyBeforeCheckbox = await gitStatus(pi, ctx.cwd);
+    const expectedBeforeCheckbox = (summary.changedPaths ?? []).map((p) => relativeToCwd(ctx.cwd, p));
+    const unexpectedBeforeCheckbox = unexpectedDirtyPaths(dirtyBeforeCheckbox, expectedBeforeCheckbox);
+    if (unexpectedBeforeCheckbox.length > 0) {
+      throw new Error(`Task chain changed unexpected paths before checkbox update:\n${unexpectedBeforeCheckbox.map((p) => `- ${p}`).join("\n")}`);
+    }
+
+    await updateSpecCheckbox(specPath, task);
+    const dirty = await gitStatus(pi, ctx.cwd);
+    const expected = [...new Set([...expectedBeforeCheckbox, specRel])];
+    const unexpected = unexpectedDirtyPaths(dirty, expected);
+    if (unexpected.length > 0) {
+      throw new Error(`Unexpected dirty paths before task commit:\n${unexpected.map((p) => `- ${p}`).join("\n")}`);
+    }
+
+    const title = taskCommitTitle(task.number, summary.commitTitle);
+    await commitPaths(pi, ctx.cwd, expected, title);
+    taskCommits.push(title);
+    sendForgeMessage(pi, `Committed task ${task.number}: \`${title}\`\n\nValidation:\n${(summary.validation ?? []).map((v) => `- ${v}`).join("\n")}`);
+  }
+
+  setStatus(ctx, "final review...");
+  sendForgeMessage(pi, "All Feature Spec tasks are checked. Running final review and autofix.");
+  const finalReviewResponse = await runSubagentChain(pi, ctx, {
+    chain: buildFinalReviewChain(specRel, reviewBase),
+    task: `Final review and autofix for ${specRel}`,
+    clarify: false,
+    agentScope: "both",
+    context: "fresh",
+  });
+  const finalReviewSummary = await parseCompletionChainSummary(finalReviewResponse);
+  if (finalReviewSummary.status === "stop") {
+    sendForgeMessage(pi, `Forge stopped during final review autofix:\n\n${finalReviewSummary.summary}`);
+    return;
+  }
+  const finalFixDirty = await gitStatus(pi, ctx.cwd);
+  if (finalFixDirty.length > 0) {
+    await commitPaths(pi, ctx.cwd, finalFixDirty, "fix: address final review findings");
+  }
+
+  setStatus(ctx, "final refactor...");
+  const finalRefactorResponse = await runSubagentChain(pi, ctx, {
+    chain: buildFinalRefactorChain(specRel, reviewBase),
+    task: `Final simplification refactor for ${specRel}`,
+    clarify: false,
+    agentScope: "both",
+    context: "fresh",
+  });
+  const finalRefactorSummary = await parseCompletionChainSummary(finalRefactorResponse);
+  if (finalRefactorSummary.status === "stop") {
+    sendForgeMessage(pi, `Forge stopped during final refactor:\n\n${finalRefactorSummary.summary}`);
+    return;
+  }
+  const refactorDirty = await gitStatus(pi, ctx.cwd);
+  if (refactorDirty.length > 0) {
+    await commitPaths(pi, ctx.cwd, refactorDirty, "refactor: simplify forged implementation");
+  }
+
+  sendForgeMessage(pi, [
+    `Forge completed for \`${specRel}\`.`,
+    "",
+    "Task commits:",
+    ...(taskCommits.length ? taskCommits.map((title) => `- ${title}`) : ["- none"]),
+    finalFixDirty.length ? "- Final review fixes committed." : "- No final review fix commit needed.",
+    refactorDirty.length ? "- Final simplification refactor committed." : "- No final refactor commit needed.",
+  ].join("\n"));
+}
+
+export default function forgeExtension(pi: ExtensionAPI) {
+  pi.registerCommand("forge", {
+    description: "Fulfill a Feature Spec with a subagent chain: /forge <spec>",
+    handler: async (args, ctx) => {
+      try {
+        await runForge(pi, ctx, args.trim());
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        sendForgeMessage(pi, `Forge stopped.\n\n${message}`, { error: message });
+        if (ctx.hasUI) ctx.ui.notify(message, "error");
+      } finally {
+        setStatus(ctx, undefined);
+      }
+    },
+  });
+}
