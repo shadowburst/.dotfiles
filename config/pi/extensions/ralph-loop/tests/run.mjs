@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { access, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { PassThrough } from "node:stream";
@@ -9,6 +9,8 @@ import { registerRalphCommands } from "../src/extension.mjs";
 import {
   cachePaths,
   completeFinalReview,
+  completeFeatureSpecTask,
+  parseFeatureSpecTasks,
   parseOrchestratorArgs,
   prepareCurrentBranchStartup,
   preserveCacheOnStop,
@@ -18,6 +20,7 @@ import {
   recordTaskReviewVerdict,
   recordValidationEvidence,
   runOrchestrator,
+  selectFirstUncheckedTask,
   transitionPhase,
 } from "../src/orchestrator.mjs";
 
@@ -32,6 +35,32 @@ assert.deepEqual(parseOrchestratorArgs(["--mode", "all", "--spec", "docs/specs/e
 assert.throws(() => parseOrchestratorArgs(["--mode", "all", "--spec", "--flag"]), /Feature Spec path/);
 assert.throws(() => parseOrchestratorArgs(["--mode", "task", "--spec", "docs/specs/example.md"]), /all\|once/);
 
+const taskLedgerText = `# Feature
+
+- [ ] Outside task
+
+## Implementation Tasks
+
+- [x] 1. Done task
+  - Guidance only
+  - [ ] Nested checkbox guidance
+- [ ] 2. First runnable task
+  - Covers: Requirement: Example
+- [ ] 3. Second runnable task
+
+## Out of Scope
+
+- [ ] Outside later task
+`;
+const parsedTasks = parseFeatureSpecTasks(taskLedgerText);
+assert.deepEqual(parsedTasks.map((task) => ({ lineNumber: task.lineNumber, checked: task.checked, text: task.text })), [
+  { lineNumber: 7, checked: true, text: "1. Done task" },
+  { lineNumber: 10, checked: false, text: "2. First runnable task" },
+  { lineNumber: 12, checked: false, text: "3. Second runnable task" },
+]);
+assert.equal(selectFirstUncheckedTask(parsedTasks).lineNumber, 10);
+assert.equal(selectFirstUncheckedTask(parseFeatureSpecTasks("# Feature\n\n## Implementation Tasks\n\n- [x] Done\n")), null);
+
 const registered = [];
 registerRalphCommands({
   registerCommand(name, options) {
@@ -45,6 +74,14 @@ assert.equal(typeof registered[1].options.handler, "function");
 const dir = await mkdtemp(join(tmpdir(), "ralph-loop-test-"));
 const spec = join(dir, "feature.md");
 await writeFile(spec, "# Feature\n\n## Implementation Tasks\n\n- [ ] 1. Test task\n");
+const checkboxSpec = join(dir, "checkbox-feature.md");
+await writeFile(checkboxSpec, taskLedgerText);
+const completedTask = await completeFeatureSpecTask({ specPath: checkboxSpec, task: parsedTasks[1] });
+assert.equal(completedTask.line, "- [x] 2. First runnable task");
+const checkboxSpecText = await readFile(checkboxSpec, "utf8");
+assert.match(checkboxSpecText, /- \[x\] 2\. First runnable task/);
+assert.match(checkboxSpecText, /  - \[ \] Nested checkbox guidance/);
+await assert.rejects(() => completeFeatureSpecTask({ specPath: checkboxSpec, task: parsedTasks[1] }), /already checked|does not match/);
 
 const launched = [];
 const fakeSpawn = (command, args, options) => {
@@ -90,6 +127,83 @@ assert.match(text, /Ralph Orchestrator/);
 assert.match(text, /mode: all/);
 assert.match(text, new RegExp(spec.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 assert.match(text, /status: launched/);
+assert.match(text, /task: 1\. Test task/);
+
+const noTaskSpec = join(dir, "done-feature.md");
+await writeFile(noTaskSpec, "# Feature\n\n## Implementation Tasks\n\n- [x] 1. Done\n");
+const noTaskCacheRoot = join(dir, "no-task-cache");
+const noTaskStdout = new PassThrough();
+let noTaskText = "";
+noTaskStdout.on("data", (chunk) => {
+  noTaskText += chunk.toString();
+});
+await runOrchestrator(["--mode", "all", "--spec", noTaskSpec], { stdout: noTaskStdout }, {
+  cwd: dir,
+  cacheRoot: noTaskCacheRoot,
+  execGit: fakeGit({ repoRoot: dir, branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: "" }),
+});
+assert.match(noTaskText, /status: no unchecked tasks/);
+await assert.rejects(() => access(cachePaths({ cacheRoot: noTaskCacheRoot, repoRoot: resolve(dir), specPath: resolve(noTaskSpec) }).path), /ENOENT/);
+
+const activeNoTaskCacheRoot = join(dir, "active-no-task-cache");
+const activeNoTaskCacheFile = cachePaths({ cacheRoot: activeNoTaskCacheRoot, repoRoot: resolve(dir), specPath: resolve(noTaskSpec) }).path;
+await mkdir(activeNoTaskCacheRoot, { recursive: true });
+await writeFile(
+  activeNoTaskCacheFile,
+  JSON.stringify({ repoRoot: resolve(dir), specPath: resolve(noTaskSpec), reviewBase: "dddddddddddddddddddddddddddddddddddddddd", phase: "startup" }),
+);
+const activeNoTaskStdout = new PassThrough();
+let activeNoTaskText = "";
+activeNoTaskStdout.on("data", (chunk) => {
+  activeNoTaskText += chunk.toString();
+});
+await runOrchestrator(["--mode", "all", "--spec", noTaskSpec], { stdout: activeNoTaskStdout }, {
+  cwd: dir,
+  cacheRoot: activeNoTaskCacheRoot,
+  execGit: fakeGit({ repoRoot: dir, branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: "" }),
+});
+assert.match(activeNoTaskText, /status: no unchecked tasks; active cache found/);
+assert.match(activeNoTaskText, /next: final refactor, final validation, final branch review/);
+const activeNoTaskState = JSON.parse(await readFile(activeNoTaskCacheFile, "utf8"));
+assert.equal(activeNoTaskState.phase, "final-refactor");
+
+const checkedTaskResumeCacheRoot = join(dir, "checked-task-resume-cache");
+const checkedTaskResumeCacheFile = cachePaths({ cacheRoot: checkedTaskResumeCacheRoot, repoRoot: resolve(dir), specPath: resolve(noTaskSpec) }).path;
+await mkdir(checkedTaskResumeCacheRoot, { recursive: true });
+await writeFile(
+  checkedTaskResumeCacheFile,
+  JSON.stringify({
+    repoRoot: resolve(dir),
+    specPath: resolve(noTaskSpec),
+    reviewBase: "dddddddddddddddddddddddddddddddddddddddd",
+    phase: "precommit-validation",
+    currentTask: { lineNumber: 5, text: "1. Done" },
+    expectedChangedPaths: ["done-feature.md"],
+  }),
+);
+const checkedTaskResumeStdout = new PassThrough();
+let checkedTaskResumeText = "";
+checkedTaskResumeStdout.on("data", (chunk) => {
+  checkedTaskResumeText += chunk.toString();
+});
+await runOrchestrator(["--mode", "all", "--spec", noTaskSpec], { stdout: checkedTaskResumeStdout }, {
+  cwd: dir,
+  cacheRoot: checkedTaskResumeCacheRoot,
+  execGit: fakeGit({
+    repoRoot: resolve(dir),
+    branch: "feat/test",
+    head: "dddddddddddddddddddddddddddddddddddddddd",
+    status: " M done-feature.md\n",
+    mergeBase: "dddddddddddddddddddddddddddddddddddddddd",
+    worktreeDiff: "diff --git a/done-feature.md b/done-feature.md\n",
+  }),
+  prompt: async () => true,
+});
+assert.match(checkedTaskResumeText, /status: no unchecked tasks; resuming in-progress current task/);
+assert.match(checkedTaskResumeText, /next: validation/);
+const checkedTaskResumeState = JSON.parse(await readFile(checkedTaskResumeCacheFile, "utf8"));
+assert.equal(checkedTaskResumeState.phase, "validation");
+assert.equal(checkedTaskResumeState.currentTask.text, "1. Done");
 
 const cacheRoot = join(dir, "cache");
 const repoRoot = resolve(dir);

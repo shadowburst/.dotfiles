@@ -330,7 +330,7 @@ Ralph SHALL perform a final clean-context two-axis branch review after all tasks
   - Covers: Requirement: Current-branch git workflow
 - [x] 3. Implement Pi cache state for run metadata, current task, phase transitions, attempts, expected changed paths, validation evidence, review verdicts, task commits, final review status, preservation on stop, and deletion after final review PASS.
   - Covers: Requirement: Pi cache state
-- [ ] 4. Implement Feature Spec task parsing and deterministic checkbox updates for top-level `## Implementation Tasks` checkboxes, including no-unchecked-task behavior with and without active cache.
+- [x] 4. Implement Feature Spec task parsing and deterministic checkbox updates for top-level `## Implementation Tasks` checkboxes, including no-unchecked-task behavior with and without active cache.
   - Covers: Requirement: Feature Spec task ledger
 - [ ] 5. Implement run-level validation discovery and per-task validation refinement using project docs, agent instructions, Feature Spec guidance, project files, and existing test patterns.
   - Covers: Requirement: Validation discovery and evidence

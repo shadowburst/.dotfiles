@@ -7,6 +7,10 @@ import { dirname, join, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { createInterface } from "node:readline/promises";
 
+const IMPLEMENTATION_TASKS_HEADING_PATTERN = /^##\s+Implementation Tasks\s*$/;
+const NEXT_LEVEL_TWO_HEADING_PATTERN = /^##\s+/;
+const TOP_LEVEL_CHECKBOX_PATTERN = /^- \[([ xX])\]\s+(.*)$/;
+
 export function parseOrchestratorArgs(argv) {
   let mode;
   let spec;
@@ -34,6 +38,9 @@ export async function runOrchestrator(argv = process.argv.slice(2), io = process
   await access(specPath, constants.R_OK);
 
   const startup = await prepareCurrentBranchStartup({ mode, specPath, io, ...deps });
+  const specText = await readFile(specPath, "utf8");
+  const tasks = parseFeatureSpecTasks(specText);
+  const selectedTask = selectFirstUncheckedTask(tasks);
 
   io.stdout.write(`Ralph Orchestrator\n`);
   io.stdout.write(`mode: ${mode}\n`);
@@ -41,7 +48,76 @@ export async function runOrchestrator(argv = process.argv.slice(2), io = process
   io.stdout.write(`repo: ${startup.repoRoot}\n`);
   io.stdout.write(`reviewBase: ${startup.state.reviewBase}\n`);
   io.stdout.write(`startup: ${startup.action}\n`);
+
+  if (!selectedTask) {
+    if (startup.action === "started-clean") {
+      await rm(startup.cachePath, { force: true });
+      io.stdout.write("status: no unchecked tasks\n");
+      return;
+    }
+
+    if (hasInProgressCurrentTask(startup.state)) {
+      io.stdout.write("status: no unchecked tasks; resuming in-progress current task\n");
+      io.stdout.write(`task: ${startup.state.currentTask.text}\n`);
+      io.stdout.write(`next: ${startup.state.phase}\n`);
+      return;
+    }
+
+    await transitionPhase({ cachePath: startup.cachePath, state: startup.state, phase: "final-refactor", currentTask: null });
+    io.stdout.write("status: no unchecked tasks; active cache found\n");
+    io.stdout.write("next: final refactor, final validation, final branch review\n");
+    return;
+  }
+
+  await transitionPhase({ cachePath: startup.cachePath, state: startup.state, phase: "implementation", currentTask: selectedTask });
+  io.stdout.write(`task: ${selectedTask.text}\n`);
   io.stdout.write("status: launched\n");
+}
+
+export function parseFeatureSpecTasks(specText) {
+  const lines = specText.split(/\r?\n/);
+  const headingIndex = lines.findIndex((line) => IMPLEMENTATION_TASKS_HEADING_PATTERN.test(line));
+  if (headingIndex === -1) return [];
+
+  const tasks = [];
+  for (let index = headingIndex + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (NEXT_LEVEL_TWO_HEADING_PATTERN.test(line)) break;
+    const task = parseTopLevelCheckboxTask(line, index + 1);
+    if (task) tasks.push(task);
+  }
+  return tasks;
+}
+
+function parseTopLevelCheckboxTask(line, lineNumber) {
+  const match = TOP_LEVEL_CHECKBOX_PATTERN.exec(line);
+  if (!match) return null;
+  return {
+    lineNumber,
+    checked: match[1].toLowerCase() === "x",
+    text: match[2].trim(),
+    line,
+  };
+}
+
+export function selectFirstUncheckedTask(tasks) {
+  return tasks.find((task) => !task.checked) ?? null;
+}
+
+export async function completeFeatureSpecTask({ specPath, task }) {
+  if (!Number.isInteger(task?.lineNumber) || task.lineNumber < 1) throw new Error("Ralph Feature Spec task line number is required.");
+  const specText = await readFile(specPath, "utf8");
+  const parsedTask = parseFeatureSpecTasks(specText).find((candidate) => candidate.lineNumber === task.lineNumber);
+  if (!parsedTask) throw new Error("Ralph Feature Spec task line no longer points at a top-level Implementation Tasks checkbox.");
+  if (parsedTask.text !== task.text) throw new Error("Ralph Feature Spec task text does not match the selected task.");
+  if (parsedTask.checked) throw new Error("Ralph Feature Spec task is already checked.");
+
+  const newline = specText.includes("\r\n") ? "\r\n" : "\n";
+  const lines = specText.split(/\r?\n/);
+  const lineIndex = task.lineNumber - 1;
+  lines[lineIndex] = parsedTask.line.replace("- [ ]", "- [x]");
+  await writeFile(specPath, lines.join(newline), "utf8");
+  return { ...task, checked: true, line: lines[lineIndex] };
 }
 
 export async function prepareCurrentBranchStartup({
@@ -364,6 +440,10 @@ function selectSafeNextPhase(phase) {
     default:
       return null;
   }
+}
+
+function hasInProgressCurrentTask(state) {
+  return Boolean(state.currentTask && selectSafeNextPhase(state.phase));
 }
 
 function verifyCachedTaskStillMatchesSpec(currentTask, specText) {
