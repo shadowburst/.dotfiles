@@ -150,6 +150,22 @@ async function runAndReportWholeFeatureRefactor({ startup, state, io, validation
   }
   if (refactor.status === "committed") io.stdout.write(`finalRefactorCommit: ${refactor.commit}\n`);
   io.stdout.write("next: final validation and final branch review\n");
+
+  const finalReview = await runFinalBranchReviewPhase({
+    cachePath: startup.cachePath,
+    state: refactor.state,
+    repoRoot: startup.repoRoot,
+    specPath: state.specPath,
+    validationOptions,
+    finalReviewSession: deps.finalReviewSession,
+    execGit: deps.execGit,
+    runCommand: deps.runCommand,
+  });
+  io.stdout.write(`finalValidation: ${finalReview.validationStatus}\n`);
+  if (finalReview.prompt) io.stdout.write(`finalReviewPromptBytes: ${Buffer.byteLength(finalReview.prompt, "utf8")}\n`);
+  io.stdout.write(`finalReview: ${finalReview.verdict.verdict}\n`);
+  if (finalReview.status === "ready") io.stdout.write("status: final branch review passed; current branch reviewed and ready; Ralph cache deleted\n");
+  else io.stdout.write("status: final branch review did not pass; cache preserved\n");
 }
 
 async function runOneTaskLoop({ cachePath, state, repoRoot, specPath, specText, task, validationOptions, io, progress, deps }) {
@@ -1135,6 +1151,18 @@ export function launchPiTaskFixSession({ cwd, prompt, spawnProcess = spawn, piBi
   });
 }
 
+export function launchPiFinalReviewSession({ cwd, prompt, spawnProcess = spawn, piBin = process.env.PI_RALPH_PI_BIN ?? "pi" }) {
+  return launchPiPromptSession({
+    cwd,
+    prompt,
+    spawnProcess,
+    piBin,
+    sessionEnv: { PI_RALPH_FINAL_REVIEW_SESSION: "1" },
+    label: "final review",
+    successStatus: "final review session completed",
+  });
+}
+
 export function launchCheapCommitMessageSession({ task, dirtyPaths = [], fallback, spawnProcess = spawn, piBin = process.env.PI_RALPH_PI_BIN ?? "pi", model = process.env.PI_RALPH_CHEAP_MODEL }) {
   if (!model) return null;
   const prompt = [
@@ -1388,6 +1416,43 @@ export function buildTaskRefactorPrompt({ repoRoot, task, validationPlan, scopeP
   ].join("\n");
 }
 
+export async function runFinalBranchReviewPhase({
+  cachePath,
+  state,
+  repoRoot,
+  specPath = state.specPath,
+  validationOptions = state.validationOptions ?? [],
+  finalReviewSession = launchPiFinalReviewSession,
+  execGit = git,
+  runCommand = runShellCommand,
+}) {
+  const reviewBase = state.reviewBase;
+  if (!/^[0-9a-f]{40}$/i.test(reviewBase ?? "")) throw new Error("Ralph final branch review requires a cached Review Base.");
+  const validationPlan = normalizeTaskValidationPlan({ verified: validationOptions.length > 0, options: validationOptions });
+  let nextState = await transitionPhase({ cachePath, state, phase: "final-validation", currentTask: null });
+
+  if (validationPlan.options.length === 0) {
+    nextState = await preserveCacheOnStop({ cachePath, state: nextState, reason: "final deterministic validation unavailable" });
+    return finalReviewBlockedResult({ validationStatus: "unavailable", state: nextState, summary: "final deterministic validation unavailable" });
+  }
+
+  const validation = await runValidationPlanOptions({ cachePath, state: nextState, repoRoot, validationPlan, phase: "final-validation", runCommand });
+  nextState = validation.state;
+  if (!hasPassingDeterministicValidation(validation.validationEvidence)) {
+    nextState = await preserveCacheOnStop({ cachePath, state: nextState, reason: "final validation failed" });
+    return finalReviewBlockedResult({ validationStatus: "failed", state: nextState, summary: "final validation failed", validationEvidence: validation.validationEvidence });
+  }
+
+  const diff = await ralphProducedDiff({ repoRoot, reviewBase, execGit });
+  const commits = await gitOne(execGit, ["log", `${reviewBase}..HEAD`, "--oneline"], { cwd: repoRoot, trim: false });
+  nextState = await transitionPhase({ cachePath, state: nextState, phase: "final-review", currentTask: null });
+  const prompt = buildFinalBranchReviewPrompt({ repoRoot, specPath, reviewBase, diff, commits, validationEvidence: validation.validationEvidence });
+  const result = await finalReviewSession({ cwd: repoRoot, prompt, reviewBase, diff, commits, validationEvidence: validation.validationEvidence });
+  const verdict = parseFinalReviewVerdict(result?.stdout ?? result?.text ?? result?.summary ?? "");
+  nextState = await completeFinalReview({ cachePath, state: nextState, verdict: verdict.verdict, summary: verdict.summary });
+  return { status: verdict.verdict === "PASS" ? "ready" : "not-ready", validationStatus: "passed", state: nextState, prompt, result, verdict, diff, commits, validationEvidence: validation.validationEvidence };
+}
+
 export function buildWholeFeatureRefactorPrompt({ repoRoot, reviewBase, validationPlan, scopePaths = [], diff = "" }) {
   const normalizedPlan = normalizeTaskValidationPlan(validationPlan);
   const validationLines = formatPromptBullets(
@@ -1422,6 +1487,84 @@ export function buildWholeFeatureRefactorPrompt({ repoRoot, reviewBase, validati
     "Ralph-produced diff:",
     diff.trim() ? diff : "(no Ralph-produced diff detected)",
   ].join("\n");
+}
+
+export function buildFinalBranchReviewPrompt({ repoRoot, specPath, reviewBase, diff = "", commits = "", validationEvidence = [] }) {
+  const evidenceLines = formatPromptBullets(
+    validationEvidence,
+    formatValidationEvidence,
+    "No deterministic final validation evidence was provided; return BLOCKED.",
+  );
+
+  return [
+    "Run the existing review skill as a final clean-context two-axis Ralph branch review.",
+    "Review exactly the Ralph-produced branch diff, using this two-dot command: git diff <Review Base>..HEAD.",
+    "Do not use a merge-base/three-dot comparison for this Ralph final review.",
+    "Evaluate both axes from the review skill:",
+    "- Standards: repository standards, domain language, architecture conventions, maintainability, and CI-quality validation expectations.",
+    "- Spec: whether the Ralph-produced diff faithfully implements the Feature Spec and review checklist.",
+    "Return a machine-readable verdict as JSON on the final line: {\"verdict\":\"PASS|FAIL|BLOCKED\",\"standards\":\"PASS|FAIL|BLOCKED\",\"spec\":\"PASS|FAIL|BLOCKED\",\"summary\":\"...\"}.",
+    "The overall verdict is PASS only when both Standards and Spec pass. Use BLOCKED if required review inputs are insufficient.",
+    "If final review fails or blocks, do not claim the branch is ready; Ralph will preserve cache.",
+    "If final review passes, Ralph will delete the active cache for this Feature Spec immediately after recording PASS.",
+    "",
+    `Repository: ${repoRoot}`,
+    `Feature Spec: ${specPath}`,
+    `Review Base: ${reviewBase}`,
+    `Diff command: git diff ${reviewBase}..HEAD`,
+    "",
+    "Commits under review (git log <Review Base>..HEAD --oneline):",
+    commits.trim() ? commits.trim() : "(no commits reported)",
+    "",
+    "Final validation evidence:",
+    evidenceLines,
+    "",
+    "Ralph-produced diff:",
+    diff.trim() ? diff : "(no Ralph-produced diff detected)",
+  ].join("\n");
+}
+
+export function parseFinalReviewVerdict(text) {
+  const trimmed = String(text ?? "").trim();
+  if (!trimmed) throw new Error("Ralph final review returned no machine-readable verdict.");
+  const jsonLine = trimmed.split(/\r?\n/).reverse().find(isJsonObjectLine);
+  if (!jsonLine) throw new Error("Ralph final review must return JSON with explicit Standards and Spec verdicts.");
+  return normalizeFinalReviewVerdict(parseReviewVerdictJson(jsonLine));
+}
+
+function normalizeFinalReviewVerdict(value) {
+  const standards = explicitFinalReviewAxis(value, "standards");
+  const spec = explicitFinalReviewAxis(value, "spec");
+  assertReviewVerdict(standards);
+  assertReviewVerdict(spec);
+  const requestedVerdict = String(value?.verdict ?? "").trim().toUpperCase();
+  if (requestedVerdict) assertReviewVerdict(requestedVerdict);
+  const verdict = finalReviewVerdictFromAxes({ standards, spec, requestedVerdict });
+  const summary = typeof value?.summary === "string" ? value.summary.trim() : `Standards: ${standards}; Spec: ${spec}`;
+  return { verdict, summary, axes: { standards, spec } };
+}
+
+function explicitFinalReviewAxis(value, axis) {
+  const raw = value?.[axis] ?? value?.axes?.[axis];
+  const verdict = String(raw ?? "").trim().toUpperCase();
+  if (!verdict) throw new Error(`Ralph final review JSON must include an explicit ${axis} verdict.`);
+  return verdict;
+}
+
+function finalReviewBlockedResult({ validationStatus, state, summary, validationEvidence = [] }) {
+  return {
+    status: "blocked",
+    validationStatus,
+    state,
+    verdict: { verdict: "BLOCKED", summary, axes: { standards: "BLOCKED", spec: "BLOCKED" } },
+    validationEvidence,
+  };
+}
+
+function finalReviewVerdictFromAxes({ standards, spec, requestedVerdict }) {
+  if (standards === "PASS" && spec === "PASS" && requestedVerdict !== "FAIL" && requestedVerdict !== "BLOCKED") return "PASS";
+  if (requestedVerdict === "BLOCKED" || standards === "BLOCKED" || spec === "BLOCKED") return "BLOCKED";
+  return "FAIL";
 }
 
 function buildFixAreaRefactorPrompt({ repoRoot, task, validationPlan, scopePaths = [], diff = "" }) {

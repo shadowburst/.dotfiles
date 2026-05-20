@@ -13,11 +13,13 @@ import {
   buildTaskFixPrompt,
   buildTaskImplementationPrompt,
   buildTaskReviewPrompt,
+  buildFinalBranchReviewPrompt,
   discoverValidationOptions,
   generateConventionalCommitMessage,
   hasPassingDeterministicValidation,
   launchPiImplementationSession,
   parseFeatureSpecTasks,
+  parseFinalReviewVerdict,
   parseOrchestratorArgs,
   parseTaskReviewVerdict,
   prepareCurrentBranchStartup,
@@ -30,6 +32,7 @@ import {
   recordTaskCommit,
   recordTaskReviewVerdict,
   recordValidationEvidence,
+  runFinalBranchReviewPhase,
   runOrchestrator,
   runTaskFixReviewLoop,
   runTaskRefactorPhase,
@@ -553,6 +556,7 @@ const orchestratorGit = async (args) => {
   }
   if (command === "ls-files --others --exclude-standard -z") return "";
   if (command === "diff --binary dddddddddddddddddddddddddddddddddddddddd..HEAD") return "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+feature\n";
+  if (command === "log dddddddddddddddddddddddddddddddddddddddd..HEAD --oneline") return "8888888 feat(ralph): test task\n";
   if (command === "diff --binary") return orchestratorCommitted ? "" : "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+change\n";
   if (command === "diff --cached --binary") return "";
   if (args[0] === "add") return "";
@@ -569,6 +573,7 @@ await runOrchestrator(["--mode", "all", "--spec", spec], { stdout }, {
   implementationSession: async () => ({ status: "implementation session completed" }),
   refactorSession: async () => ({ status: "refactor session completed" }),
   reviewSession: async () => ({ stdout: '{"verdict":"PASS","summary":"task is ready","requiredFixes":[]}\n' }),
+  finalReviewSession: async () => ({ stdout: '{"verdict":"BLOCKED","standards":"PASS","spec":"BLOCKED","summary":"preserve for state assertions"}\n' }),
   runCommand: async (command, options) => ({ command, cwd: options.cwd, exitCode: 0, stdout: "pass", stderr: "" }),
 });
 assert.match(text, /Ralph Orchestrator/);
@@ -586,7 +591,8 @@ assert.ok(launchedState.taskValidationPlans.at(-1).options.some((option) => opti
 assert.ok(!launchedState.taskValidationPlans.at(-1).options.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/mcp-bridge"));
 assert.ok(launchedState.expectedChangedPaths.includes("config/pi/extensions/ralph-loop"));
 assert.ok(launchedState.validationEvidence.some((evidence) => evidence.phase === "initial-validation"));
-assert.equal(launchedState.validationEvidence.at(-1).phase, "precommit-validation");
+assert.ok(launchedState.validationEvidence.some((evidence) => evidence.phase === "precommit-validation"));
+assert.equal(launchedState.validationEvidence.at(-1).phase, "final-validation");
 assert.equal(launchedState.taskCommits.at(-1).commit, "8888888888888888888888888888888888888888");
 await writeFile(spec, "# Ralph Loop\n\n## Implementation Tasks\n\n- [ ] 1. Test task\n");
 
@@ -614,6 +620,7 @@ await runOrchestrator(["--mode", "all", "--spec", loopSpec], { stdout: loopStdou
     }
     if (command === "ls-files --others --exclude-standard -z") return "";
     if (command === "diff --binary 1111111111111111111111111111111111111111..HEAD") return "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+feature\n";
+    if (command === "log 1111111111111111111111111111111111111111..HEAD --oneline") return "2222222 feat(ralph): second\n1111111 feat(ralph): first\n";
     if (command === "diff --binary") return loopCommitCount >= 2 ? "" : "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+change\n";
     if (command === "diff --cached --binary") return "";
     if (args[0] === "add") return "";
@@ -626,6 +633,7 @@ await runOrchestrator(["--mode", "all", "--spec", loopSpec], { stdout: loopStdou
   implementationSession: async ({ task }) => ({ status: `implemented ${task.text}` }),
   refactorSession: async () => ({ status: "refactor session completed" }),
   reviewSession: async () => ({ stdout: '{"verdict":"PASS","summary":"task is ready","requiredFixes":[]}\n' }),
+  finalReviewSession: async () => ({ stdout: '{"verdict":"PASS","standards":"PASS","spec":"PASS","summary":"branch ready"}\n' }),
   runCommand: async (command, options) => ({ command, cwd: options.cwd, exitCode: 0, stdout: "pass", stderr: "" }),
 });
 assert.equal(loopCommitCount, 2);
@@ -635,6 +643,8 @@ assert.match(loopText, /\[task line 5\] RUNNING 1\. First loop task/);
 assert.match(loopText, /\[phase implementation\] RUNNING/);
 assert.match(loopText, /\[phase task-completion\] DONE committed/);
 assert.match(loopText, /status: all unchecked task loops complete/);
+assert.match(loopText, /finalReview: PASS/);
+await assert.rejects(() => access(cachePaths({ cacheRoot: join(dir, "loop-cache"), repoRoot: resolve(dir), specPath: resolve(loopSpec) }).path), /ENOENT/);
 
 const onceSpec = join(dir, "once-feature.md");
 await writeFile(onceSpec, "# Ralph Once\n\n## Implementation Tasks\n\n- [ ] 1. Once first task\n- [ ] 2. Once second task\n");
@@ -704,6 +714,7 @@ await runOrchestrator(["--mode", "once", "--spec", onceContinueSpec], { stdout: 
     }
     if (command === "ls-files --others --exclude-standard -z") return "";
     if (command === "diff --binary 5555555555555555555555555555555555555555..HEAD") return "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+feature\n";
+    if (command === "log 5555555555555555555555555555555555555555..HEAD --oneline") return "6666666 feat(ralph): second\n5555555 feat(ralph): first\n";
     if (command === "diff --binary") return onceContinueCommitCount >= 2 ? "" : "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+change\n";
     if (command === "diff --cached --binary") return "";
     if (args[0] === "add") return "";
@@ -716,11 +727,14 @@ await runOrchestrator(["--mode", "once", "--spec", onceContinueSpec], { stdout: 
   implementationSession: async ({ task }) => ({ status: `implemented ${task.text}` }),
   refactorSession: async () => ({ status: "refactor session completed" }),
   reviewSession: async () => ({ stdout: '{"verdict":"PASS","summary":"task is ready","requiredFixes":[]}\n' }),
+  finalReviewSession: async () => ({ stdout: '{"verdict":"PASS","standards":"PASS","spec":"PASS","summary":"branch ready"}\n' }),
   runCommand: async (command, options) => ({ command, cwd: options.cwd, exitCode: 0, stdout: "pass", stderr: "" }),
 });
 assert.equal(onceContinueCommitCount, 2);
 assert.match(await readFile(onceContinueSpec, "utf8"), /- \[x\] 2\. Continue second task/);
 assert.match(onceContinueText, /status: \/ralph:once continuation accepted; continuing like \/ralph/);
+assert.match(onceContinueText, /final branch review passed; current branch reviewed and ready; Ralph cache deleted/);
+await assert.rejects(() => access(cachePaths({ cacheRoot: join(dir, "once-continue-cache"), repoRoot: resolve(dir), specPath: resolve(onceContinueSpec) }).path), /ENOENT/);
 
 const noValidationDir = await mkdtemp(join(tmpdir(), "ralph-loop-no-validation-"));
 const noValidationSpec = join(noValidationDir, "feature.md");
@@ -784,6 +798,7 @@ await runOrchestrator(["--mode", "all", "--spec", noTaskSpec], { stdout: activeN
     if (command === "rev-parse HEAD") return "dddddddddddddddddddddddddddddddddddddddd\n";
     if (command === "status --porcelain") return "";
     if (command === "diff --binary dddddddddddddddddddddddddddddddddddddddd..HEAD") return "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+feature\n";
+    if (command === "log dddddddddddddddddddddddddddddddddddddddd..HEAD --oneline") return "eeeeeee feat(ralph): done\n";
     if (command === "diff --binary") return "";
     if (command === "diff --cached --binary") return "";
     if (command === "ls-files --others --exclude-standard -z") return "";
@@ -793,15 +808,21 @@ await runOrchestrator(["--mode", "all", "--spec", noTaskSpec], { stdout: activeN
     activeNoTaskRefactorPrompt = prompt;
     return { status: "whole-feature refactor already clean" };
   },
+  finalReviewSession: async () => ({ stdout: '{"verdict":"BLOCKED","standards":"PASS","spec":"BLOCKED","summary":"preserve cache"}\n' }),
+  runCommand: async (command, options) => ({ command, cwd: options.cwd, exitCode: 0, stdout: "pass", stderr: "" }),
 });
 assert.match(activeNoTaskText, /status: no unchecked tasks; active cache found/);
 assert.match(activeNoTaskText, /wholeFeatureRefactorPromptBytes: [1-9][0-9]*/);
 assert.match(activeNoTaskText, /wholeFeatureRefactor: whole-feature refactor already clean; no changes/);
 assert.match(activeNoTaskText, /next: final validation and final branch review/);
+assert.match(activeNoTaskText, /finalValidation: passed/);
+assert.match(activeNoTaskText, /finalReview: BLOCKED/);
+assert.match(activeNoTaskText, /cache preserved/);
 assert.match(activeNoTaskRefactorPrompt, /Run a bounded Ralph whole-feature refactor session/);
 assert.match(activeNoTaskRefactorPrompt, /diff --git/);
 const activeNoTaskState = JSON.parse(await readFile(activeNoTaskCacheFile, "utf8"));
-assert.equal(activeNoTaskState.phase, "final-refactor");
+assert.equal(activeNoTaskState.phase, "final-review");
+assert.equal(activeNoTaskState.finalReviewStatus.verdict, "BLOCKED");
 
 const wholeRefactorCacheRoot = join(dir, "whole-refactor-cache");
 const wholeRefactorCacheFile = cachePaths({ cacheRoot: wholeRefactorCacheRoot, repoRoot: resolve(dir), specPath: resolve(noTaskSpec) }).path;
@@ -860,6 +881,74 @@ assert.equal(wholeRefactorValidationCommands[0].options.cwd, join(resolve(dir), 
 const wholeRefactorPersisted = JSON.parse(await readFile(wholeRefactorCacheFile, "utf8"));
 assert.equal(wholeRefactorPersisted.finalRefactorCommit.commit, "9999999999999999999999999999999999999999");
 assert.equal(wholeRefactorPersisted.validationEvidence.at(-1).phase, "post-final-refactor");
+
+const finalReviewCacheRoot = join(dir, "final-review-cache");
+const finalReviewCacheFile = cachePaths({ cacheRoot: finalReviewCacheRoot, repoRoot: resolve(dir), specPath: resolve(noTaskSpec) }).path;
+await mkdir(finalReviewCacheRoot, { recursive: true });
+const finalReviewState = {
+  repoRoot: resolve(dir),
+  specPath: resolve(noTaskSpec),
+  reviewBase: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  phase: "final-refactor",
+  validationOptions: [{ command: "npm test", cwd: "config/pi/extensions/ralph-loop", scope: "package", source: "package.json", reason: "extension tests" }],
+};
+await writeFile(finalReviewCacheFile, JSON.stringify(finalReviewState));
+let finalReviewPrompt = "";
+const finalReviewCommands = [];
+const finalReviewResult = await runFinalBranchReviewPhase({
+  cachePath: finalReviewCacheFile,
+  state: finalReviewState,
+  repoRoot: resolve(dir),
+  specPath: resolve(noTaskSpec),
+  validationOptions: finalReviewState.validationOptions,
+  execGit: async (args) => {
+    const command = args.join(" ");
+    finalReviewCommands.push(command);
+    if (command === "diff --binary bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb..HEAD") return "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+final review\n";
+    if (command === "log bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb..HEAD --oneline") return "ccccccc feat(ralph): final review\n";
+    throw new Error(`unexpected git command: ${command}`);
+  },
+  finalReviewSession: async ({ prompt }) => {
+    finalReviewPrompt = prompt;
+    return { stdout: 'notes\n{"verdict":"PASS","standards":"PASS","spec":"PASS","summary":"ready"}\n' };
+  },
+  runCommand: async (command, options) => ({ command, cwd: options.cwd, exitCode: 0, stdout: "pass", stderr: "" }),
+});
+assert.equal(finalReviewResult.status, "ready");
+assert.equal(finalReviewResult.verdict.verdict, "PASS");
+assert.ok(finalReviewCommands.includes("diff --binary bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb..HEAD"));
+assert.ok(finalReviewCommands.includes("log bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb..HEAD --oneline"));
+assert.match(finalReviewPrompt, /existing review skill/);
+assert.match(finalReviewPrompt, /git diff bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\.\.HEAD/);
+assert.match(finalReviewPrompt, /Do not use a merge-base\/three-dot comparison for this Ralph final review\./);
+await assert.rejects(() => access(finalReviewCacheFile), /ENOENT/);
+assert.deepEqual(parseFinalReviewVerdict('{"verdict":"PASS","standards":"PASS","spec":"FAIL","summary":"missing spec"}'), { verdict: "FAIL", summary: "missing spec", axes: { standards: "PASS", spec: "FAIL" } });
+assert.throws(() => parseFinalReviewVerdict("PASS"), /JSON with explicit Standards and Spec verdicts/);
+assert.throws(() => parseFinalReviewVerdict('{"verdict":"PASS","summary":"missing axes"}'), /explicit standards verdict/);
+const promptPreview = buildFinalBranchReviewPrompt({ repoRoot: resolve(dir), specPath: resolve(noTaskSpec), reviewBase: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", diff: "diff --git", commits: "ccccccc feat" });
+assert.match(promptPreview, /two-axis Ralph branch review/);
+
+const failedFinalReviewCacheFile = cachePaths({ cacheRoot: join(dir, "failed-final-review-cache"), repoRoot: resolve(dir), specPath: resolve(noTaskSpec) }).path;
+await mkdir(join(dir, "failed-final-review-cache"), { recursive: true });
+await writeFile(failedFinalReviewCacheFile, JSON.stringify(finalReviewState));
+const failedFinalReviewResult = await runFinalBranchReviewPhase({
+  cachePath: failedFinalReviewCacheFile,
+  state: finalReviewState,
+  repoRoot: resolve(dir),
+  specPath: resolve(noTaskSpec),
+  validationOptions: finalReviewState.validationOptions,
+  execGit: async () => {
+    throw new Error("git must not run when final validation fails");
+  },
+  finalReviewSession: async () => {
+    throw new Error("final review must not run when final validation fails");
+  },
+  runCommand: async () => ({ exitCode: 1, stdout: "fail", stderr: "" }),
+});
+assert.equal(failedFinalReviewResult.validationStatus, "failed");
+assert.equal(failedFinalReviewResult.verdict.verdict, "BLOCKED");
+const failedFinalReviewState = JSON.parse(await readFile(failedFinalReviewCacheFile, "utf8"));
+assert.match(failedFinalReviewState.stop.reason, /final validation failed/);
 
 const checkedTaskResumeCacheRoot = join(dir, "checked-task-resume-cache");
 const checkedTaskResumeCacheFile = cachePaths({ cacheRoot: checkedTaskResumeCacheRoot, repoRoot: resolve(dir), specPath: resolve(noTaskSpec) }).path;
