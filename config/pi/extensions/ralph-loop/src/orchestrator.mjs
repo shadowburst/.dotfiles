@@ -1,15 +1,23 @@
 #!/usr/bin/env node
-import { access, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { createHash } from "node:crypto";
 import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { createInterface } from "node:readline/promises";
 
 const IMPLEMENTATION_TASKS_HEADING_PATTERN = /^##\s+Implementation Tasks\s*$/;
 const NEXT_LEVEL_TWO_HEADING_PATTERN = /^##\s+/;
 const TOP_LEVEL_CHECKBOX_PATTERN = /^- \[([ xX])\]\s+(.*)$/;
+const REPO_VALIDATION_FILES = [
+  { path: "flake.nix", id: "nix-flake-check", command: "nix flake check", source: "flake.nix", reason: "Root flake.nix exposes repository-level Nix validation." },
+  { path: "Justfile", id: "just-check", command: "just check", source: "Justfile", reason: "Justfile commonly centralizes repository checks." },
+  { path: "Makefile", id: "make-test", command: "make test", source: "Makefile", reason: "Makefile commonly centralizes repository tests." },
+];
+const PACKAGE_VALIDATION_SCRIPT_PRIORITY = ["test", "check", "lint"];
+const IGNORED_WALK_DIRS = new Set([".git", "node_modules", ".direnv", "result"]);
+const GENERIC_VALIDATION_TOKENS = new Set(["config", "extension", "extensions", "package", "json", "test", "tests", "check", "checks", "lint", "npm", "node", "run", "script", "scripts"]);
 
 export function parseOrchestratorArgs(argv) {
   let mode;
@@ -39,6 +47,8 @@ export async function runOrchestrator(argv = process.argv.slice(2), io = process
 
   const startup = await prepareCurrentBranchStartup({ mode, specPath, io, ...deps });
   const specText = await readFile(specPath, "utf8");
+  const validationOptions = await discoverValidationOptions({ repoRoot: startup.repoRoot, specPath, specText });
+  let state = await recordRunValidationOptions({ cachePath: startup.cachePath, state: startup.state, options: validationOptions });
   const tasks = parseFeatureSpecTasks(specText);
   const selectedTask = selectFirstUncheckedTask(tasks);
 
@@ -46,8 +56,9 @@ export async function runOrchestrator(argv = process.argv.slice(2), io = process
   io.stdout.write(`mode: ${mode}\n`);
   io.stdout.write(`spec: ${specPath}\n`);
   io.stdout.write(`repo: ${startup.repoRoot}\n`);
-  io.stdout.write(`reviewBase: ${startup.state.reviewBase}\n`);
+  io.stdout.write(`reviewBase: ${state.reviewBase}\n`);
   io.stdout.write(`startup: ${startup.action}\n`);
+  io.stdout.write(`validationOptions: ${validationOptions.length}\n`);
 
   if (!selectedTask) {
     if (startup.action === "started-clean") {
@@ -56,21 +67,28 @@ export async function runOrchestrator(argv = process.argv.slice(2), io = process
       return;
     }
 
-    if (hasInProgressCurrentTask(startup.state)) {
+    if (hasInProgressCurrentTask(state)) {
       io.stdout.write("status: no unchecked tasks; resuming in-progress current task\n");
-      io.stdout.write(`task: ${startup.state.currentTask.text}\n`);
-      io.stdout.write(`next: ${startup.state.phase}\n`);
+      io.stdout.write(`task: ${state.currentTask.text}\n`);
+      io.stdout.write(`next: ${state.phase}\n`);
       return;
     }
 
-    await transitionPhase({ cachePath: startup.cachePath, state: startup.state, phase: "final-refactor", currentTask: null });
+    await transitionPhase({ cachePath: startup.cachePath, state, phase: "final-refactor", currentTask: null });
     io.stdout.write("status: no unchecked tasks; active cache found\n");
     io.stdout.write("next: final refactor, final validation, final branch review\n");
     return;
   }
 
-  await transitionPhase({ cachePath: startup.cachePath, state: startup.state, phase: "implementation", currentTask: selectedTask });
+  const taskValidation = refineTaskValidation({
+    task: selectedTask,
+    options: validationOptions,
+    expectedChangedPaths: inferTaskValidationPaths({ repoRoot: startup.repoRoot, specPath, specText, task: selectedTask, options: validationOptions }),
+  });
+  state = await recordTaskValidationPlan({ cachePath: startup.cachePath, state, task: selectedTask, plan: taskValidation });
+  await transitionPhase({ cachePath: startup.cachePath, state, phase: "implementation", currentTask: selectedTask });
   io.stdout.write(`task: ${selectedTask.text}\n`);
+  io.stdout.write(`validation: ${taskValidation.verified ? taskValidation.options.map((option) => option.command).join("; ") : "unverified"}\n`);
   io.stdout.write("status: launched\n");
 }
 
@@ -194,6 +212,20 @@ export async function recordExpectedChangedPaths({ cachePath, state, paths }) {
   }));
 }
 
+export async function recordRunValidationOptions({ cachePath, state, options }) {
+  return persistCacheUpdate(cachePath, state, (nextState) => ({
+    ...nextState,
+    validationOptions: normalizeValidationOptions(options),
+  }));
+}
+
+export async function recordTaskValidationPlan({ cachePath, state, task = state.currentTask ?? null, plan }) {
+  return persistCacheUpdate(cachePath, state, (nextState) => ({
+    ...nextState,
+    taskValidationPlans: [...(nextState.taskValidationPlans ?? []), { task, ...normalizeTaskValidationPlan(plan), at: nextState.updatedAt }],
+  }));
+}
+
 export async function recordValidationEvidence({ cachePath, state, evidence }) {
   return persistCacheUpdate(cachePath, state, (nextState) => ({
     ...nextState,
@@ -274,6 +306,68 @@ export async function reconcileBeforeResume({ state, repoRoot, specPath, status,
   };
 }
 
+export async function discoverValidationOptions({ repoRoot, specPath, specText }) {
+  const root = resolve(repoRoot);
+  const options = [];
+  const add = (option) => {
+    const normalized = normalizeValidationOption(option);
+    const key = validationOptionKey(normalized);
+    if (!options.some((candidate) => validationOptionKey(candidate) === key)) options.push(normalized);
+  };
+
+  for (const guidanceSource of await collectValidationGuidanceSources({ root, specPath, specText })) {
+    for (const command of extractValidationGuidance(guidanceSource.text)) {
+      add({ id: commandId(`${guidanceSource.source}-${command}`), command, cwd: ".", scope: "documented", source: guidanceSource.source, reason: "Project docs, agent instructions, or Feature Spec guidance mention this deterministic validation." });
+    }
+  }
+
+  for (const option of REPO_VALIDATION_FILES) {
+    if (await exists(join(root, option.path))) add({ ...option, cwd: ".", scope: "repo" });
+  }
+
+  for (const packagePath of await findNamedFiles(root, "package.json")) {
+    const packageText = await readOptional(packagePath);
+    if (!packageText) continue;
+    let parsed;
+    try {
+      parsed = JSON.parse(packageText);
+    } catch {
+      continue;
+    }
+    const scripts = parsed.scripts ?? {};
+    const preferredScript = PACKAGE_VALIDATION_SCRIPT_PRIORITY.find((script) => typeof scripts[script] === "string");
+    if (preferredScript) {
+      const cwd = relative(root, dirname(packagePath)) || ".";
+      const command = preferredScript === "test" ? "npm test" : `npm run ${preferredScript}`;
+      add({ id: `npm-${preferredScript}-${commandId(cwd)}`, command, cwd, scope: cwd === "." ? "repo" : "package", source: relative(root, packagePath), reason: `package.json defines a ${preferredScript} script matching existing test patterns.` });
+    }
+  }
+
+  for (const workflowPath of await findFilesUnder(join(root, ".github", "workflows"))) {
+    const workflowText = await readOptional(workflowPath);
+    for (const command of extractWorkflowValidationCommands(workflowText)) {
+      add({ id: `ci-${commandId(`${relative(root, workflowPath)}-${command}`)}`, command, cwd: ".", scope: "ci", source: relative(root, workflowPath), reason: "CI workflow defines this deterministic validation command." });
+    }
+  }
+
+  return options;
+}
+
+export function refineTaskValidation({ task, options, expectedChangedPaths = [], changedPaths = [] }) {
+  const paths = uniqueStrings([...expectedChangedPaths, ...changedPaths].filter(Boolean), "validation path");
+  const taskText = task?.text ?? "";
+  const taskNeedle = taskText.toLowerCase();
+  const relevant = options.filter((option) => validationOptionMatchesTask(option, paths, taskNeedle));
+  const selected = relevant.length > 0 ? relevant : options.filter((option) => option.scope === "repo");
+  const normalized = normalizeValidationOptions(selected);
+  return {
+    verified: normalized.length > 0,
+    options: normalized,
+    requiresBroaderChecks: normalized.some((option) => option.scope === "repo"),
+    rationale: normalized.length > 0 ? "Smallest discovered deterministic checks relevant to the selected task and expected paths." : "No meaningful deterministic validation was discovered; Ralph must stop rather than complete the task as verified.",
+  };
+}
+
 export function cachePaths({ cacheRoot = defaultCacheRoot(), repoRoot, specPath }) {
   const key = createHash("sha256").update(`${repoRoot}\0${specPath}`).digest("hex").slice(0, 32);
   return { key, path: join(cacheRoot, `${key}.json`) };
@@ -330,6 +424,8 @@ function normalizeRunState(state) {
     phaseTransitions: state.phaseTransitions ?? (state.phase ? [{ phase: state.phase, at: state.updatedAt ?? now }] : []),
     attempts: state.attempts ?? {},
     expectedChangedPaths: state.expectedChangedPaths ?? [],
+    validationOptions: normalizeValidationOptions(state.validationOptions ?? []),
+    taskValidationPlans: state.taskValidationPlans ?? [],
     validationEvidence: state.validationEvidence ?? [],
     reviewVerdicts: state.reviewVerdicts ?? [],
     taskCommits: state.taskCommits ?? [],
@@ -337,6 +433,51 @@ function normalizeRunState(state) {
     createdAt: state.createdAt ?? now,
     updatedAt: state.updatedAt ?? now,
   };
+}
+
+function normalizeValidationOptions(options) {
+  if (!Array.isArray(options)) throw new Error("Ralph validation options must be an array.");
+  const seen = new Set();
+  const normalized = [];
+  for (const option of options) {
+    const value = normalizeValidationOption(option);
+    const key = validationOptionKey(value);
+    if (!seen.has(key)) {
+      seen.add(key);
+      normalized.push(value);
+    }
+  }
+  return normalized;
+}
+
+function validationOptionKey(option) {
+  return `${option.cwd}\0${option.command}\0${option.source}`;
+}
+
+function normalizeValidationOption(option) {
+  if (!option || typeof option !== "object") throw new Error("Ralph validation option must be an object.");
+  if (typeof option.command !== "string" || option.command.trim().length === 0) throw new Error("Ralph validation command must be a non-empty string.");
+  const command = option.command.trim();
+  const cwd = typeof option.cwd === "string" && option.cwd.length > 0 ? option.cwd : ".";
+  return {
+    id: typeof option.id === "string" && option.id.length > 0 ? option.id : commandId(`${cwd}:${command}`),
+    command,
+    cwd,
+    scope: typeof option.scope === "string" && option.scope.length > 0 ? option.scope : "task",
+    source: typeof option.source === "string" ? option.source : "discovered",
+    reason: typeof option.reason === "string" ? option.reason : "Discovered deterministic validation option.",
+  };
+}
+
+function normalizeTaskValidationPlan(plan) {
+  const normalized = {
+    verified: Boolean(plan?.verified),
+    options: normalizeValidationOptions(plan?.options ?? []),
+    requiresBroaderChecks: Boolean(plan?.requiresBroaderChecks),
+    rationale: typeof plan?.rationale === "string" ? plan.rationale : "",
+  };
+  if (!normalized.verified && normalized.options.length > 0) normalized.verified = true;
+  return normalized;
 }
 
 function touchState(state) {
@@ -347,6 +488,136 @@ async function persistCacheUpdate(cachePath, state, update) {
   const nextState = update(touchState(normalizeRunState(state)));
   await writeCache(cachePath, nextState);
   return nextState;
+}
+
+async function collectValidationGuidanceSources({ root, specPath, specText }) {
+  const sources = [{ source: "docs/spec guidance", text: specText }];
+  const sourcePaths = [join(root, "CONTEXT.md"), ...(await findNamedFiles(root, "AGENTS.md")), ...(await findFilesUnder(join(root, "docs")))];
+  const seen = new Set([resolve(specPath)]);
+
+  for (const path of sourcePaths) {
+    const resolved = resolve(path);
+    if (seen.has(resolved)) continue;
+    seen.add(resolved);
+    if (!path.endsWith(".md")) continue;
+    const text = await readOptional(path);
+    if (text) sources.push({ source: relative(root, path) || ".", text });
+  }
+
+  return sources;
+}
+
+async function readOptional(path) {
+  try {
+    return await readFile(path, "utf8");
+  } catch (error) {
+    if (error.code === "ENOENT" || error.code === "EISDIR") return "";
+    throw error;
+  }
+}
+
+async function exists(path) {
+  try {
+    await access(path, constants.F_OK);
+    return true;
+  } catch (error) {
+    if (error.code === "ENOENT") return false;
+    throw error;
+  }
+}
+
+async function findNamedFiles(root, name, limit = 50) {
+  const results = [];
+  await walk(root, async (path, entry) => {
+    if (entry.isFile() && entry.name === name) results.push(path);
+    return results.length < limit;
+  });
+  return results;
+}
+
+async function findFilesUnder(root, limit = 50) {
+  if (!(await exists(root))) return [];
+  const results = [];
+  await walk(root, async (path, entry) => {
+    if (entry.isFile()) results.push(path);
+    return results.length < limit;
+  });
+  return results;
+}
+
+async function walk(root, visit) {
+  let entries;
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === "ENOENT" || error.code === "ENOTDIR" || error.code === "EACCES") return true;
+    throw error;
+  }
+  for (const entry of entries) {
+    if (IGNORED_WALK_DIRS.has(entry.name)) continue;
+    const path = join(root, entry.name);
+    if (!(await visit(path, entry))) return false;
+    if (entry.isDirectory()) {
+      const keepGoing = await walk(path, visit);
+      if (!keepGoing) return false;
+    }
+  }
+  return true;
+}
+
+function extractValidationGuidance(text) {
+  const commands = [];
+  const commandPattern = /(?:validation|validate|test|check)[^`\n]*`([^`]+)`/gi;
+  for (const match of text.matchAll(commandPattern)) {
+    const command = match[1].trim();
+    if (isValidationCommand(command)) commands.push(command);
+  }
+  return commands;
+}
+
+function extractWorkflowValidationCommands(text) {
+  const commands = [];
+  for (const line of text.split(/\r?\n/)) {
+    const match = /^\s*-?\s*run:\s*(.+?)\s*$/.exec(line);
+    if (!match) continue;
+    const command = match[1].replace(/^['"]|['"]$/g, "").trim();
+    if (isValidationCommand(command)) commands.push(command);
+  }
+  return commands;
+}
+
+function isValidationCommand(command) {
+  return /^(npm|pnpm|yarn|node|nix|just|make|cargo|go|pytest|ruff|stylua)\b/.test(command);
+}
+
+function inferTaskValidationPaths({ repoRoot, specPath, specText, task, options }) {
+  const paths = [relative(repoRoot, specPath)];
+  const specNeedle = `${specText}\n${task?.text ?? ""}`.toLowerCase();
+  for (const option of options) {
+    if (option.scope !== "package" || option.cwd === ".") continue;
+    const tokens = validationOptionSpecificTokens(option);
+    if (tokens.length > 0 && tokens.every((token) => specNeedle.includes(token))) paths.push(option.cwd);
+  }
+  return uniqueStrings(paths, "validation path");
+}
+
+function validationOptionMatchesTask(option, paths, taskNeedle) {
+  if (option.scope === "repo" || option.scope === "documented") return true;
+  const cwd = option.cwd === "." ? "" : `${option.cwd.replace(/\/$/, "")}/`;
+  if (paths.some((path) => path === option.cwd || (cwd && path.startsWith(cwd)))) return true;
+  return validationOptionSpecificTokens(option).some((token) => taskNeedle.includes(token));
+}
+
+function validationOptionSpecificTokens(option) {
+  const pathText = `${option.cwd} ${option.source}`.toLowerCase();
+  return pathText
+    .split(/[^a-z0-9]+/)
+    .filter((token) => token.length > 3 && !GENERIC_VALIDATION_TOKENS.has(token));
+}
+
+function commandId(value) {
+  const id = value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return id || "validation";
 }
 
 function uniqueStrings(values, label) {

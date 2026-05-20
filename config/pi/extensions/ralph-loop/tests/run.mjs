@@ -10,12 +10,16 @@ import {
   cachePaths,
   completeFinalReview,
   completeFeatureSpecTask,
+  discoverValidationOptions,
   parseFeatureSpecTasks,
   parseOrchestratorArgs,
   prepareCurrentBranchStartup,
+  refineTaskValidation,
   preserveCacheOnStop,
   recordAttempt,
   recordExpectedChangedPaths,
+  recordRunValidationOptions,
+  recordTaskValidationPlan,
   recordTaskCommit,
   recordTaskReviewVerdict,
   recordValidationEvidence,
@@ -73,7 +77,7 @@ assert.equal(typeof registered[1].options.handler, "function");
 
 const dir = await mkdtemp(join(tmpdir(), "ralph-loop-test-"));
 const spec = join(dir, "feature.md");
-await writeFile(spec, "# Feature\n\n## Implementation Tasks\n\n- [ ] 1. Test task\n");
+await writeFile(spec, "# Ralph Loop\n\n## Implementation Tasks\n\n- [ ] 1. Test task\n");
 const checkboxSpec = join(dir, "checkbox-feature.md");
 await writeFile(checkboxSpec, taskLedgerText);
 const completedTask = await completeFeatureSpecTask({ specPath: checkboxSpec, task: parsedTasks[1] });
@@ -82,6 +86,56 @@ const checkboxSpecText = await readFile(checkboxSpec, "utf8");
 assert.match(checkboxSpecText, /- \[x\] 2\. First runnable task/);
 assert.match(checkboxSpecText, /  - \[ \] Nested checkbox guidance/);
 await assert.rejects(() => completeFeatureSpecTask({ specPath: checkboxSpec, task: parsedTasks[1] }), /already checked|does not match/);
+
+await writeFile(join(dir, "flake.nix"), "{ outputs = _: {}; }\n");
+await writeFile(join(dir, "AGENTS.md"), "Validation: run `nix flake check` before claiming repository readiness.\n");
+await mkdir(join(dir, "docs", "agents"), { recursive: true });
+await writeFile(join(dir, "docs", "agents", "validation.md"), "Testing: run `node docs/check.mjs` for documented validation evidence.\n");
+await mkdir(join(dir, "config", "pi", "extensions"), { recursive: true });
+await writeFile(join(dir, "config", "pi", "extensions", "AGENTS.md"), "Validation: run `node nested-agent-check.mjs` for extension instructions.\n");
+await mkdir(join(dir, "config", "pi", "extensions", "ralph-loop"), { recursive: true });
+await writeFile(
+  join(dir, "config", "pi", "extensions", "ralph-loop", "package.json"),
+  JSON.stringify({ type: "module", scripts: { test: "node tests/run.mjs" } }),
+);
+await mkdir(join(dir, "config", "pi", "extensions", "mcp-bridge"), { recursive: true });
+await writeFile(
+  join(dir, "config", "pi", "extensions", "mcp-bridge", "package.json"),
+  JSON.stringify({ type: "module", scripts: { test: "node tests/run.mjs" } }),
+);
+await mkdir(join(dir, ".github", "workflows"), { recursive: true });
+await writeFile(join(dir, ".github", "workflows", "ci.yml"), "name: CI\njobs:\n  test:\n    steps:\n      - run: npm test\n");
+await writeFile(join(dir, ".github", "workflows", "manual.yml"), "name: Manual\njobs:\n  review:\n    steps:\n      - uses: actions/checkout@v4\n");
+const validationOptions = await discoverValidationOptions({ repoRoot: dir, specPath: spec, specText: "Guidance: validate with `npm run test` when changing the extension.\n" });
+assert.ok(validationOptions.some((option) => option.command === "nix flake check" && option.source === "AGENTS.md"));
+assert.ok(validationOptions.some((option) => option.command === "npm run test" && option.source === "docs/spec guidance"));
+assert.ok(validationOptions.some((option) => option.command === "node docs/check.mjs" && option.source === "docs/agents/validation.md"));
+assert.ok(validationOptions.some((option) => option.command === "node nested-agent-check.mjs" && option.source === "config/pi/extensions/AGENTS.md"));
+assert.ok(validationOptions.some((option) => option.command === "nix flake check" && option.source === "flake.nix"));
+assert.ok(validationOptions.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/ralph-loop"));
+assert.ok(validationOptions.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/mcp-bridge"));
+assert.ok(validationOptions.some((option) => option.command === "npm test" && option.source === ".github/workflows/ci.yml"));
+assert.ok(!validationOptions.some((option) => option.command === "review CI workflow"));
+const taskValidation = refineTaskValidation({
+  task: { text: "Implement run-level validation discovery and per-task validation refinement" },
+  options: validationOptions,
+  changedPaths: ["config/pi/extensions/ralph-loop/src/orchestrator.mjs", "config/pi/extensions/ralph-loop/tests/run.mjs"],
+});
+assert.equal(taskValidation.verified, true);
+assert.ok(taskValidation.options.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/ralph-loop"));
+assert.ok(!taskValidation.options.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/mcp-bridge"));
+const parentPathTaskValidation = refineTaskValidation({
+  task: { text: "Implement validation discovery" },
+  options: validationOptions,
+  changedPaths: ["config/pi/extensions"],
+});
+assert.ok(!parentPathTaskValidation.options.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/mcp-bridge"));
+const textOnlyTaskValidation = refineTaskValidation({
+  task: { text: "Implement run-level validation discovery and per-task validation refinement using project docs, agent instructions, Feature Spec guidance, project files, and existing test patterns." },
+  options: validationOptions,
+});
+assert.ok(!textOnlyTaskValidation.options.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/mcp-bridge"));
+assert.equal(refineTaskValidation({ task: { text: "Manual doc task" }, options: [], changedPaths: ["README.md"] }).verified, false);
 
 const launched = [];
 const fakeSpawn = (command, args, options) => {
@@ -128,6 +182,9 @@ assert.match(text, /mode: all/);
 assert.match(text, new RegExp(spec.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 assert.match(text, /status: launched/);
 assert.match(text, /task: 1\. Test task/);
+const launchedState = JSON.parse(await readFile(cachePaths({ cacheRoot: join(dir, "run-cache"), repoRoot: resolve(dir), specPath: resolve(spec) }).path, "utf8"));
+assert.ok(launchedState.taskValidationPlans.at(-1).options.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/ralph-loop"));
+assert.ok(!launchedState.taskValidationPlans.at(-1).options.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/mcp-bridge"));
 
 const noTaskSpec = join(dir, "done-feature.md");
 await writeFile(noTaskSpec, "# Feature\n\n## Implementation Tasks\n\n- [x] 1. Done\n");
@@ -251,6 +308,8 @@ assert.equal(cachedCleanState.finalReviewStatus, null);
 let stateWithMetadata = await transitionPhase({ cachePath: cacheFile, state: cachedCleanState, phase: "implementation", currentTask: { lineNumber: 5, text: "- [ ] 1. Test task" } });
 stateWithMetadata = await recordAttempt({ cachePath: cacheFile, state: stateWithMetadata, scope: "task:5" });
 stateWithMetadata = await recordExpectedChangedPaths({ cachePath: cacheFile, state: stateWithMetadata, paths: ["feature.md", "src/ralph.mjs", "feature.md"] });
+stateWithMetadata = await recordRunValidationOptions({ cachePath: cacheFile, state: stateWithMetadata, options: validationOptions });
+stateWithMetadata = await recordTaskValidationPlan({ cachePath: cacheFile, state: stateWithMetadata, plan: taskValidation });
 stateWithMetadata = await recordValidationEvidence({ cachePath: cacheFile, state: stateWithMetadata, evidence: { command: "npm test", exitCode: 0, summary: "passed" } });
 stateWithMetadata = await recordTaskReviewVerdict({ cachePath: cacheFile, state: stateWithMetadata, verdict: "FAIL", summary: "needs fix" });
 stateWithMetadata = await recordTaskCommit({ cachePath: cacheFile, state: stateWithMetadata, commit: "cccccccccccccccccccccccccccccccccccccccc", task: stateWithMetadata.currentTask });
@@ -259,6 +318,8 @@ assert.equal(persistedMetadata.phase, "implementation");
 assert.equal(persistedMetadata.currentTask.lineNumber, 5);
 assert.equal(persistedMetadata.attempts["task:5"], 1);
 assert.deepEqual(persistedMetadata.expectedChangedPaths, ["feature.md", "src/ralph.mjs"]);
+assert.ok(persistedMetadata.validationOptions.some((option) => option.command === "nix flake check"));
+assert.equal(persistedMetadata.taskValidationPlans.at(-1).verified, true);
 assert.deepEqual(persistedMetadata.validationEvidence.at(-1), { command: "npm test", exitCode: 0, summary: "passed" });
 assert.equal(persistedMetadata.reviewVerdicts.at(-1).verdict, "FAIL");
 assert.equal(persistedMetadata.taskCommits.at(-1).commit, "cccccccccccccccccccccccccccccccccccccccc");

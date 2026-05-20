@@ -332,7 +332,7 @@ Ralph SHALL perform a final clean-context two-axis branch review after all tasks
   - Covers: Requirement: Pi cache state
 - [x] 4. Implement Feature Spec task parsing and deterministic checkbox updates for top-level `## Implementation Tasks` checkboxes, including no-unchecked-task behavior with and without active cache.
   - Covers: Requirement: Feature Spec task ledger
-- [ ] 5. Implement run-level validation discovery and per-task validation refinement using project docs, agent instructions, Feature Spec guidance, project files, and existing test patterns.
+- [x] 5. Implement run-level validation discovery and per-task validation refinement using project docs, agent instructions, Feature Spec guidance, project files, and existing test patterns.
   - Covers: Requirement: Validation discovery and evidence
 - [ ] 6. Implement the task implementation phase with meaningful TDD guidance, deterministic validation selection before editing, and task-specific implementation prompts.
   - Covers: Requirement: Meaningful test-first behavior; Requirement: Per-task implementation loop
