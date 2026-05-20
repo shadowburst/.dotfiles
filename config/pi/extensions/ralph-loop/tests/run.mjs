@@ -14,6 +14,7 @@ import {
   buildTaskImplementationPrompt,
   buildTaskReviewPrompt,
   discoverValidationOptions,
+  generateConventionalCommitMessage,
   hasPassingDeterministicValidation,
   launchPiImplementationSession,
   parseFeatureSpecTasks,
@@ -32,6 +33,7 @@ import {
   runOrchestrator,
   runTaskFixReviewLoop,
   runTaskRefactorPhase,
+  runVerifiedTaskCompletion,
   runTaskReviewPhase,
   selectFirstUncheckedTask,
   transitionPhase,
@@ -535,10 +537,31 @@ let text = "";
 stdout.on("data", (chunk) => {
   text += chunk.toString();
 });
+let orchestratorStatusCalls = 0;
+let orchestratorCommitted = false;
+const orchestratorGit = async (args) => {
+  const command = args.join(" ");
+  if (command === "rev-parse --show-toplevel") return `${dir}\n`;
+  if (command === "branch --show-current") return "feat/test\n";
+  if (command === "rev-parse HEAD") return `${orchestratorCommitted ? "8888888888888888888888888888888888888888" : "dddddddddddddddddddddddddddddddddddddddd"}\n`;
+  if (command === "status --porcelain") {
+    orchestratorStatusCalls += 1;
+    return orchestratorStatusCalls === 1 ? "" : " M feature.md\n M config/pi/extensions/ralph-loop/src/orchestrator.mjs\n";
+  }
+  if (command === "ls-files --others --exclude-standard -z") return "";
+  if (command === "diff --binary") return "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+change\n";
+  if (command === "diff --cached --binary") return "";
+  if (args[0] === "add") return "";
+  if (args[0] === "commit") {
+    orchestratorCommitted = true;
+    return "";
+  }
+  throw new Error(`unexpected git command: ${command}`);
+};
 await runOrchestrator(["--mode", "all", "--spec", spec], { stdout }, {
   cwd: dir,
   cacheRoot: join(dir, "run-cache"),
-  execGit: fakeGit({ repoRoot: dir, branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: "", worktreeDiff: "", stagedDiff: "" }),
+  execGit: orchestratorGit,
   implementationSession: async () => ({ status: "implementation session completed" }),
   refactorSession: async () => ({ status: "refactor session completed" }),
   reviewSession: async () => ({ stdout: '{"verdict":"PASS","summary":"task is ready","requiredFixes":[]}\n' }),
@@ -558,7 +581,10 @@ const launchedState = JSON.parse(await readFile(cachePaths({ cacheRoot: join(dir
 assert.ok(launchedState.taskValidationPlans.at(-1).options.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/ralph-loop"));
 assert.ok(!launchedState.taskValidationPlans.at(-1).options.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/mcp-bridge"));
 assert.ok(launchedState.expectedChangedPaths.includes("config/pi/extensions/ralph-loop"));
-assert.equal(launchedState.validationEvidence.at(-1).phase, "initial-validation");
+assert.ok(launchedState.validationEvidence.some((evidence) => evidence.phase === "initial-validation"));
+assert.equal(launchedState.validationEvidence.at(-1).phase, "precommit-validation");
+assert.equal(launchedState.taskCommits.at(-1).commit, "8888888888888888888888888888888888888888");
+await writeFile(spec, "# Ralph Loop\n\n## Implementation Tasks\n\n- [ ] 1. Test task\n");
 
 const noValidationDir = await mkdtemp(join(tmpdir(), "ralph-loop-no-validation-"));
 const noValidationSpec = join(noValidationDir, "feature.md");
@@ -729,6 +755,108 @@ assert.equal(failedFinalState.finalReviewStatus.verdict, "FAIL");
 await access(cacheFile);
 await completeFinalReview({ cachePath: cacheFile, state: failedFinalState, verdict: "PASS", summary: "ready" });
 await assert.rejects(() => access(cacheFile), /ENOENT/);
+
+const commitSpec = join(dir, "commit-feature.md");
+await writeFile(commitSpec, "# Commit Feature\n\n## Implementation Tasks\n\n- [ ] 10. Implement verified task completion\n");
+const commitTask = parseFeatureSpecTasks(await readFile(commitSpec, "utf8"))[0];
+const commitCacheFile = cachePaths({ cacheRoot: join(dir, "commit-cache"), repoRoot, specPath: resolve(commitSpec) }).path;
+await mkdir(join(dir, "commit-cache"), { recursive: true });
+const commitState = {
+  repoRoot,
+  specPath: resolve(commitSpec),
+  reviewBase: head,
+  phase: "task-review",
+  currentTask: commitTask,
+  expectedChangedPaths: ["feature.md", "commit-feature.md"],
+  validationEvidence: [{ phase: "initial-validation", command: "npm test", cwd: ".", exitCode: 0 }],
+  reviewVerdicts: [{ verdict: "PASS", task: commitTask }],
+  taskCommits: [],
+};
+await writeFile(commitCacheFile, JSON.stringify(commitState));
+const gitCommands = [];
+const completion = await runVerifiedTaskCompletion({
+  cachePath: commitCacheFile,
+  state: commitState,
+  repoRoot,
+  specPath: resolve(commitSpec),
+  task: commitTask,
+  validationPlan: { verified: true, options: [{ command: "npm test", cwd: ".", reason: "repo test" }] },
+  reviewVerdict: { verdict: "PASS" },
+  execGit: async (args) => {
+    gitCommands.push(args);
+    const command = args.join(" ");
+    if (command === "status --porcelain") return " M feature.md\n M commit-feature.md\n";
+    if (args[0] === "add") return "";
+    if (args[0] === "commit") return "";
+    if (command === "rev-parse HEAD") return "9999999999999999999999999999999999999999\n";
+    throw new Error(`unexpected git command: ${command}`);
+  },
+  runCommand: async () => ({ exitCode: 0, stdout: "pass", stderr: "" }),
+  commitMessageSession: async () => ({ title: "not conventional", body: "ignored" }),
+});
+assert.equal(completion.status, "committed");
+assert.equal(completion.commit, "9999999999999999999999999999999999999999");
+assert.equal(completion.message.title, "feat(ralph): implement verified task completion");
+assert.ok(gitCommands.some((args) => args[0] === "add" && args.includes("feature.md") && args.includes("commit-feature.md")));
+assert.ok(gitCommands.some((args) => args[0] === "commit" && args.includes("feat(ralph): implement verified task completion")));
+const committedSpecText = await readFile(commitSpec, "utf8");
+assert.match(committedSpecText, /- \[x\] 10\. Implement verified task completion/);
+const committedState = JSON.parse(await readFile(commitCacheFile, "utf8"));
+assert.equal(committedState.taskCommits.at(-1).commit, "9999999999999999999999999999999999999999");
+assert.equal(committedState.phase, "task-committed");
+assert.deepEqual(
+  await generateConventionalCommitMessage({
+    task: commitTask,
+    dirtyPaths: ["feature.md"],
+    commitMessageSession: async () => ({ stdout: '{"title":"test(ralph): cover task commits","body":"Adds deterministic coverage."}\n' }),
+  }),
+  { title: "test(ralph): cover task commits", body: "Adds deterministic coverage." },
+);
+
+const failedPrecommitSpec = join(dir, "failed-precommit-feature.md");
+await writeFile(failedPrecommitSpec, "# Commit Feature\n\n## Implementation Tasks\n\n- [ ] 10. Implement verified task completion\n");
+const failedPrecommitTask = parseFeatureSpecTasks(await readFile(failedPrecommitSpec, "utf8"))[0];
+const failedPrecommitResult = await runVerifiedTaskCompletion({
+  cachePath: commitCacheFile,
+  state: { ...commitState, currentTask: failedPrecommitTask, expectedChangedPaths: ["feature.md"], validationEvidence: [{ exitCode: 0 }] },
+  repoRoot,
+  specPath: resolve(failedPrecommitSpec),
+  task: failedPrecommitTask,
+  validationPlan: { verified: true, options: [{ command: "npm test", cwd: ".", reason: "repo test" }] },
+  reviewVerdict: { verdict: "PASS" },
+  execGit: async () => {
+    throw new Error("git must not run after failed precommit validation");
+  },
+  runCommand: async () => ({ exitCode: 1, stdout: "fail", stderr: "" }),
+  commitMessageSession: async () => null,
+});
+assert.equal(failedPrecommitResult.status, "validation-failed");
+assert.match(await readFile(failedPrecommitSpec, "utf8"), /- \[ \] 10\. Implement verified task completion/);
+
+const unexpectedCommitSpec = join(dir, "unexpected-commit-feature.md");
+await writeFile(unexpectedCommitSpec, "# Commit Feature\n\n## Implementation Tasks\n\n- [ ] 10. Implement verified task completion\n");
+const unexpectedCommitTask = parseFeatureSpecTasks(await readFile(unexpectedCommitSpec, "utf8"))[0];
+await assert.rejects(
+  () =>
+    runVerifiedTaskCompletion({
+      cachePath: commitCacheFile,
+      state: { ...commitState, currentTask: unexpectedCommitTask, expectedChangedPaths: ["feature.md"], validationEvidence: [{ exitCode: 0 }] },
+      repoRoot,
+      specPath: resolve(unexpectedCommitSpec),
+      task: unexpectedCommitTask,
+      validationPlan: { verified: true, options: [{ command: "npm test", cwd: ".", reason: "repo test" }] },
+      reviewVerdict: { verdict: "PASS" },
+      execGit: async (args) => {
+        const command = args.join(" ");
+        if (command === "status --porcelain") return " M feature.md\n M unrelated.md\n";
+        throw new Error(`unexpected git command: ${command}`);
+      },
+      runCommand: async () => ({ exitCode: 0 }),
+      commitMessageSession: async () => null,
+    }),
+  /unexpected dirty files: unrelated\.md/,
+);
+assert.match(await readFile(unexpectedCommitSpec, "utf8"), /- \[ \] 10\. Implement verified task completion/);
 
 await assert.rejects(
   () =>

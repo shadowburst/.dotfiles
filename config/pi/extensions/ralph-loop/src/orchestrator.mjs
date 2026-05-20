@@ -158,6 +158,22 @@ export async function runOrchestrator(argv = process.argv.slice(2), io = process
     runCommand: deps.runCommand,
   });
   if (fixReview.status !== "already-passed") io.stdout.write(`fixReview: ${fixReview.status}\n`);
+  if (fixReview.status === "already-passed" || fixReview.status === "passed") {
+    const completion = await runVerifiedTaskCompletion({
+      cachePath: startup.cachePath,
+      state: fixReview.state,
+      repoRoot: startup.repoRoot,
+      specPath,
+      task: selectedTask,
+      validationPlan: implementation.validationPlan,
+      reviewVerdict: fixReview.review.verdict,
+      execGit: deps.execGit,
+      runCommand: deps.runCommand,
+      commitMessageSession: deps.commitMessageSession,
+    });
+    if (completion.status === "committed") io.stdout.write(`taskCommit: ${completion.commit}\n`);
+    else io.stdout.write(`taskCompletion: ${completion.status}\n`);
+  }
 }
 
 export function parseFeatureSpecTasks(specText) {
@@ -214,6 +230,106 @@ export async function completeFeatureSpecTask({ specPath, task }) {
   lines[lineIndex] = parsedTask.line.replace("- [ ]", "- [x]");
   await writeFile(specPath, lines.join(newline), "utf8");
   return { ...task, checked: true, line: lines[lineIndex] };
+}
+
+export async function runVerifiedTaskCompletion({
+  cachePath,
+  state,
+  repoRoot,
+  specPath,
+  task = state.currentTask ?? null,
+  validationPlan,
+  reviewVerdict,
+  execGit = git,
+  runCommand = runShellCommand,
+  commitMessageSession = launchCheapCommitMessageSession,
+}) {
+  assertTaskCompletionReady({ task, reviewVerdict, validationEvidence: state.validationEvidence });
+
+  let nextState = await transitionPhase({ cachePath, state, phase: "checkbox-update", currentTask: task });
+  const checkedTask = await completeFeatureSpecTask({ specPath, task });
+  let taskCommitCreated = false;
+  try {
+    const precommitValidation = await runPrecommitValidationAfterCheckbox({ cachePath, state: nextState, repoRoot, validationPlan, runCommand });
+    nextState = precommitValidation.state;
+    if (precommitValidation.status === "failed") {
+      await revertFeatureSpecTaskCompletion({ specPath, task: checkedTask });
+      return { status: "validation-failed", state: nextState, checkedTask, validationEvidence: precommitValidation.validationEvidence };
+    }
+
+    const taskCommit = await createVerifiedTaskCommit({ cachePath, repoRoot, specPath, state: nextState, task: checkedTask, execGit, commitMessageSession });
+    taskCommitCreated = true;
+    nextState = await recordTaskCommit({ cachePath, state: nextState, commit: taskCommit.commit, task: checkedTask });
+    nextState = await transitionPhase({ cachePath, state: nextState, phase: "task-committed", currentTask: null });
+    return { status: "committed", state: nextState, checkedTask, ...taskCommit };
+  } catch (error) {
+    if (!taskCommitCreated) await revertFeatureSpecTaskCompletion({ specPath, task: checkedTask });
+    throw error;
+  }
+}
+
+function assertTaskCompletionReady({ task, reviewVerdict, validationEvidence }) {
+  if (!task?.text) throw new Error("Ralph verified task completion requires a selected task.");
+  if (reviewVerdict?.verdict !== "PASS") throw new Error("Ralph cannot complete a task before task review PASS.");
+  if (!hasPassingDeterministicValidation(validationEvidence)) throw new Error("Ralph cannot complete a task without prior passing deterministic validation evidence.");
+}
+
+async function revertFeatureSpecTaskCompletion({ specPath, task }) {
+  if (!Number.isInteger(task?.lineNumber) || task.lineNumber < 1) throw new Error("Ralph Feature Spec task line number is required.");
+  const specText = await readFile(specPath, "utf8");
+  const parsedTask = parseFeatureSpecTasks(specText).find((candidate) => candidate.lineNumber === task.lineNumber);
+  if (!parsedTask) throw new Error("Ralph Feature Spec task line no longer points at a top-level Implementation Tasks checkbox.");
+  if (parsedTask.text !== task.text) throw new Error("Ralph Feature Spec task text does not match the selected task.");
+  if (!parsedTask.checked) return { ...task, checked: false, line: parsedTask.line };
+
+  const newline = specText.includes("\r\n") ? "\r\n" : "\n";
+  const lines = specText.split(/\r?\n/);
+  const lineIndex = task.lineNumber - 1;
+  lines[lineIndex] = parsedTask.line.replace("- [x]", "- [ ]");
+  await writeFile(specPath, lines.join(newline), "utf8");
+  return { ...task, checked: false, line: lines[lineIndex] };
+}
+
+async function runPrecommitValidationAfterCheckbox({ cachePath, state, repoRoot, validationPlan, runCommand }) {
+  const validation = await runTaskValidationPhase({ cachePath, state, repoRoot, validationPlan, phase: "precommit-validation", runCommand });
+  if (hasPassingDeterministicValidation(validation.validationEvidence)) return { status: "passed", ...validation };
+  return {
+    status: "failed",
+    state: await preserveCacheOnStop({ cachePath, state: validation.state, reason: "precommit validation failed after Feature Spec checkbox update" }),
+    validationEvidence: validation.validationEvidence,
+  };
+}
+
+async function createVerifiedTaskCommit({ cachePath, repoRoot, specPath, state, task, execGit, commitMessageSession }) {
+  const expectedPaths = expectedCommitPaths({ repoRoot, specPath, state });
+  const dirtyPaths = await dirtyWorkingTreePaths({ repoRoot, execGit });
+  await assertExpectedDirtyPathsForCommit({ cachePath, state, dirtyPaths, expectedPaths });
+  const message = await generateConventionalCommitMessage({ task, dirtyPaths, commitMessageSession });
+
+  await gitOne(execGit, ["add", "--", ...dirtyPaths], { cwd: repoRoot, trim: false });
+  await gitOne(execGit, ["commit", "-m", message.title, "-m", message.body], { cwd: repoRoot, trim: false });
+  const commit = await gitOne(execGit, ["rev-parse", "HEAD"], { cwd: repoRoot });
+  return { commit, message, dirtyPaths };
+}
+
+async function assertExpectedDirtyPathsForCommit({ cachePath, state, dirtyPaths, expectedPaths }) {
+  try {
+    assertDirtyPathsAreExpected({ dirtyPaths, expectedPaths });
+  } catch (error) {
+    await preserveCacheOnStop({ cachePath, state, reason: error.message });
+    throw error;
+  }
+}
+
+export async function generateConventionalCommitMessage({ task, dirtyPaths = [], commitMessageSession = launchCheapCommitMessageSession }) {
+  const fallback = deterministicTaskCommitMessage({ task, dirtyPaths });
+  let proposed = null;
+  try {
+    proposed = await commitMessageSession({ task, dirtyPaths, fallback });
+  } catch {
+    proposed = null;
+  }
+  return validateConventionalCommitMessage(proposed) ?? fallback;
 }
 
 export async function prepareCurrentBranchStartup({
@@ -645,6 +761,69 @@ export function hasPassingDeterministicValidation(validationEvidence) {
   return validationEvidence.some((evidence) => evidence.exitCode === 0) && validationEvidence.every((evidence) => evidence.exitCode === 0);
 }
 
+function expectedCommitPaths({ repoRoot, specPath, state }) {
+  return uniqueStrings([...(state.expectedChangedPaths ?? []), relative(repoRoot, specPath) || specPath], "expected commit path");
+}
+
+async function dirtyWorkingTreePaths({ repoRoot, execGit }) {
+  const status = await gitOne(execGit, ["status", "--porcelain"], { cwd: repoRoot, trim: false });
+  return uniqueStrings(parsePorcelainEntries(status).map((entry) => entry.path).sort(), "dirty path");
+}
+
+function assertDirtyPathsAreExpected({ dirtyPaths, expectedPaths }) {
+  if (dirtyPaths.length === 0) throw new Error("Ralph cannot create a task commit because no dirty files are present.");
+  const unexpected = dirtyPaths.filter((path) => !expectedPaths.some((expected) => path === expected || path.startsWith(`${expected.replace(/\/$/, "")}/`)));
+  if (unexpected.length > 0) throw new Error(`Ralph task commit contains unexpected dirty files: ${unexpected.join(", ")}.`);
+}
+
+function deterministicTaskCommitMessage({ task, dirtyPaths = [] }) {
+  const summary = taskSummaryForCommit(task?.text ?? "verified task");
+  const body = [
+    `Complete Ralph Feature Spec task${Number.isInteger(task?.lineNumber) ? ` from line ${task.lineNumber}` : ""}.`,
+    "Includes the verified implementation changes, validation evidence, and Feature Spec checkbox update.",
+    dirtyPaths.length > 0 ? `Changed paths: ${dirtyPaths.join(", ")}` : "Changed paths: none recorded",
+  ].join("\n");
+  return { title: `feat(ralph): ${summary}`, body };
+}
+
+function taskSummaryForCommit(text) {
+  const stripped = String(text).replace(/^\s*\d+\.\s*/, "").replace(/[`*_]/g, "").trim().toLowerCase();
+  const words = stripped.split(/\s+/).filter(Boolean).slice(0, 7).join(" ");
+  const summary = words || "complete verified task";
+  return summary.length <= 52 ? summary : summary.slice(0, 52).replace(/\s+\S*$/, "");
+}
+
+function validateConventionalCommitMessage(value) {
+  const parsed = normalizeCommitMessageCandidate(value);
+  if (!parsed) return null;
+  if (!/^(feat|fix|refactor|test|docs|chore|build|ci|perf|style)(\([a-z0-9._-]+\))?: .{1,72}$/.test(parsed.title)) return null;
+  if (parsed.title.length > 100) return null;
+  return parsed;
+}
+
+function normalizeCommitMessageCandidate(value) {
+  let candidate = value;
+  if (typeof value?.stdout === "string") {
+    const line = value.stdout.trim().split(/\r?\n/).reverse().find(isJsonObjectLine);
+    if (line) {
+      try {
+        candidate = JSON.parse(line);
+      } catch {
+        return null;
+      }
+    }
+  }
+  if (typeof candidate === "string") {
+    const lines = candidate.trim().split(/\r?\n/);
+    candidate = { title: lines[0], body: lines.slice(1).join("\n").trim() };
+  }
+  if (!candidate || typeof candidate !== "object") return null;
+  const title = typeof candidate.title === "string" ? candidate.title.trim() : "";
+  const body = typeof candidate.body === "string" && candidate.body.trim() ? candidate.body.trim() : "Verified Ralph Feature Spec task completion.";
+  if (!title) return null;
+  return { title, body };
+}
+
 export function launchPiImplementationSession({ cwd, prompt, spawnProcess = spawn, piBin = process.env.PI_RALPH_PI_BIN ?? "pi" }) {
   return launchPiPromptSession({
     cwd,
@@ -693,9 +872,31 @@ export function launchPiTaskFixSession({ cwd, prompt, spawnProcess = spawn, piBi
   });
 }
 
-function launchPiPromptSession({ cwd, prompt, spawnProcess, piBin, sessionEnv, label, successStatus }) {
+export function launchCheapCommitMessageSession({ task, dirtyPaths = [], fallback, spawnProcess = spawn, piBin = process.env.PI_RALPH_PI_BIN ?? "pi", model = process.env.PI_RALPH_CHEAP_MODEL }) {
+  if (!model) return null;
+  const prompt = [
+    "Propose a Conventional Commit message for one verified Ralph Feature Spec task.",
+    "Return only JSON: {\"title\":\"type(scope): summary\",\"body\":\"...\"}.",
+    "Use a cheap non-thinking response. Do not mention unverified work.",
+    `Task: ${task?.text ?? "unknown"}`,
+    `Changed paths: ${dirtyPaths.join(", ") || "unknown"}`,
+    `Fallback if unsure: ${fallback?.title ?? "feat(ralph): complete verified task"}`,
+  ].join("\n");
+  return launchPiPromptSession({
+    cwd: process.cwd(),
+    prompt,
+    spawnProcess,
+    piBin,
+    sessionEnv: { PI_RALPH_COMMIT_MESSAGE_SESSION: "1" },
+    label: "commit message",
+    successStatus: "commit message generated",
+    args: ["-p", "--model", model],
+  });
+}
+
+function launchPiPromptSession({ cwd, prompt, spawnProcess, piBin, sessionEnv, label, successStatus, args = ["-p"] }) {
   return new Promise((resolvePromise, reject) => {
-    const child = spawnProcess(piBin, ["-p"], {
+    const child = spawnProcess(piBin, args, {
       cwd,
       env: { ...process.env, ...sessionEnv },
       stdio: ["pipe", "pipe", "pipe"],
