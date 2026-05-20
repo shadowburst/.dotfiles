@@ -48,7 +48,7 @@ export function launchRalphOrchestrator({ mode, specPath, orchestratorPath = ORC
   return new Promise((resolvePromise, reject) => {
     const child = spawnProcess(nodePath, [orchestratorPath, "--mode", mode, "--spec", specPath], {
       cwd,
-      env: { ...process.env, PI_RALPH_MODE: mode, PI_RALPH_SPEC: specPath },
+      env: { ...process.env, PI_RALPH_MODE: mode, PI_RALPH_SPEC: specPath, PI_RALPH_INTERACTIVE: process.stdout.isTTY ? "1" : "0" },
       stdio: ["inherit", "pipe", "pipe"],
     });
 

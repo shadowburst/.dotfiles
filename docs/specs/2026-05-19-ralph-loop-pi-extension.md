@@ -344,7 +344,7 @@ Ralph SHALL perform a final clean-context two-axis branch review after all tasks
   - Covers: Requirement: Bounded fix and retest
 - [x] 10. Implement verified task completion, including checkbox update before final validation, expected-file commit safety, cheap-model-assisted Conventional Commit generation with deterministic fallback, and one commit per verified task.
   - Covers: Requirement: Task commits; Requirement: Feature Spec task ledger
-- [ ] 11. Implement `/ralph` all-remaining-tasks control flow and `/ralph:once` one-task-then-confirm continuation behavior, including Docker BuildKit-style live task and phase status rows with spinners for active work and deterministic non-interactive fallback output.
+- [x] 11. Implement `/ralph` all-remaining-tasks control flow and `/ralph:once` one-task-then-confirm continuation behavior, including Docker BuildKit-style live task and phase status rows with spinners for active work and deterministic non-interactive fallback output.
   - Covers: Requirement: Ralph command entrypoints; Requirement: Per-task implementation loop; Requirement: Task progress display
 - [ ] 12. Implement whole-feature refactor after all tasks complete, using the refactor skill over the Ralph-produced diff and creating a separate `refactor(...)` commit only when files change.
   - Covers: Requirement: Whole-feature refactor

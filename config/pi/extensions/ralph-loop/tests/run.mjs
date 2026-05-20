@@ -501,6 +501,7 @@ assert.deepEqual(launched[0].args, ["/tmp/orchestrator.mjs", "--mode", "once", "
 assert.equal(launched[0].options.cwd, dir);
 assert.equal(launched[0].options.env.PI_RALPH_MODE, "once");
 assert.equal(launched[0].options.env.PI_RALPH_SPEC, spec);
+assert.match(launched[0].options.env.PI_RALPH_INTERACTIVE, /^[01]$/);
 assert.deepEqual(launched[0].options.stdio, ["inherit", "pipe", "pipe"]);
 
 let implementationPrompt = "";
@@ -585,6 +586,134 @@ assert.ok(launchedState.validationEvidence.some((evidence) => evidence.phase ===
 assert.equal(launchedState.validationEvidence.at(-1).phase, "precommit-validation");
 assert.equal(launchedState.taskCommits.at(-1).commit, "8888888888888888888888888888888888888888");
 await writeFile(spec, "# Ralph Loop\n\n## Implementation Tasks\n\n- [ ] 1. Test task\n");
+
+const loopSpec = join(dir, "loop-feature.md");
+await writeFile(loopSpec, "# Ralph Loop\n\n## Implementation Tasks\n\n- [ ] 1. First loop task\n- [ ] 2. Second loop task\n");
+const loopStdout = new PassThrough();
+let loopText = "";
+loopStdout.on("data", (chunk) => {
+  loopText += chunk.toString();
+});
+let loopCommitCount = 0;
+let loopStatusCalls = 0;
+await runOrchestrator(["--mode", "all", "--spec", loopSpec], { stdout: loopStdout, stdin: { isTTY: false } }, {
+  cwd: dir,
+  cacheRoot: join(dir, "loop-cache"),
+  execGit: async (args) => {
+    const command = args.join(" ");
+    if (command === "rev-parse --show-toplevel") return `${dir}\n`;
+    if (command === "branch --show-current") return "feat/test\n";
+    if (command === "rev-parse HEAD") return `${String(loopCommitCount + 1).repeat(40).slice(0, 40)}\n`;
+    if (command === "status --porcelain") {
+      loopStatusCalls += 1;
+      return loopStatusCalls === 1 ? "" : " M loop-feature.md\n";
+    }
+    if (command === "ls-files --others --exclude-standard -z") return "";
+    if (command === "diff --binary") return "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+change\n";
+    if (command === "diff --cached --binary") return "";
+    if (args[0] === "add") return "";
+    if (args[0] === "commit") {
+      loopCommitCount += 1;
+      return "";
+    }
+    throw new Error(`unexpected git command: ${command}`);
+  },
+  implementationSession: async ({ task }) => ({ status: `implemented ${task.text}` }),
+  refactorSession: async () => ({ status: "refactor session completed" }),
+  reviewSession: async () => ({ stdout: '{"verdict":"PASS","summary":"task is ready","requiredFixes":[]}\n' }),
+  runCommand: async (command, options) => ({ command, cwd: options.cwd, exitCode: 0, stdout: "pass", stderr: "" }),
+});
+assert.equal(loopCommitCount, 2);
+assert.match(await readFile(loopSpec, "utf8"), /- \[x\] 1\. First loop task/);
+assert.match(await readFile(loopSpec, "utf8"), /- \[x\] 2\. Second loop task/);
+assert.match(loopText, /\[task line 5\] RUNNING 1\. First loop task/);
+assert.match(loopText, /\[phase implementation\] RUNNING/);
+assert.match(loopText, /\[phase task-completion\] DONE committed/);
+assert.match(loopText, /status: all unchecked task loops complete/);
+
+const onceSpec = join(dir, "once-feature.md");
+await writeFile(onceSpec, "# Ralph Once\n\n## Implementation Tasks\n\n- [ ] 1. Once first task\n- [ ] 2. Once second task\n");
+const onceStdout = new PassThrough();
+let onceText = "";
+onceStdout.on("data", (chunk) => {
+  onceText += chunk.toString();
+});
+let onceCommitCount = 0;
+let onceStatusCalls = 0;
+await runOrchestrator(["--mode", "once", "--spec", onceSpec], { stdout: onceStdout, stdin: { isTTY: false } }, {
+  cwd: dir,
+  cacheRoot: join(dir, "once-cache"),
+  execGit: async (args) => {
+    const command = args.join(" ");
+    if (command === "rev-parse --show-toplevel") return `${dir}\n`;
+    if (command === "branch --show-current") return "feat/test\n";
+    if (command === "rev-parse HEAD") return `${String(onceCommitCount + 3).repeat(40).slice(0, 40)}\n`;
+    if (command === "status --porcelain") {
+      onceStatusCalls += 1;
+      return onceStatusCalls === 1 ? "" : " M once-feature.md\n";
+    }
+    if (command === "ls-files --others --exclude-standard -z") return "";
+    if (command === "diff --binary") return "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+change\n";
+    if (command === "diff --cached --binary") return "";
+    if (args[0] === "add") return "";
+    if (args[0] === "commit") {
+      onceCommitCount += 1;
+      return "";
+    }
+    throw new Error(`unexpected git command: ${command}`);
+  },
+  implementationSession: async ({ task }) => ({ status: `implemented ${task.text}` }),
+  refactorSession: async () => ({ status: "refactor session completed" }),
+  reviewSession: async () => ({ stdout: '{"verdict":"PASS","summary":"task is ready","requiredFixes":[]}\n' }),
+  runCommand: async (command, options) => ({ command, cwd: options.cwd, exitCode: 0, stdout: "pass", stderr: "" }),
+});
+assert.equal(onceCommitCount, 1);
+assert.match(await readFile(onceSpec, "utf8"), /- \[x\] 1\. Once first task/);
+assert.match(await readFile(onceSpec, "utf8"), /- \[ \] 2\. Once second task/);
+assert.match(onceText, /Continue with the next Ralph task\? \[y\/N\]/);
+assert.match(onceText, /status: \/ralph:once continuation declined; cache preserved/);
+await access(cachePaths({ cacheRoot: join(dir, "once-cache"), repoRoot: resolve(dir), specPath: resolve(onceSpec) }).path);
+
+const onceContinueSpec = join(dir, "once-continue-feature.md");
+await writeFile(onceContinueSpec, "# Ralph Once Continue\n\n## Implementation Tasks\n\n- [ ] 1. Continue first task\n- [ ] 2. Continue second task\n");
+const onceContinueStdout = new PassThrough();
+let onceContinueText = "";
+onceContinueStdout.on("data", (chunk) => {
+  onceContinueText += chunk.toString();
+});
+let onceContinueCommitCount = 0;
+let onceContinueStatusCalls = 0;
+await runOrchestrator(["--mode", "once", "--spec", onceContinueSpec], { stdout: onceContinueStdout, stdin: { isTTY: false } }, {
+  cwd: dir,
+  cacheRoot: join(dir, "once-continue-cache"),
+  promptContinue: async () => true,
+  execGit: async (args) => {
+    const command = args.join(" ");
+    if (command === "rev-parse --show-toplevel") return `${dir}\n`;
+    if (command === "branch --show-current") return "feat/test\n";
+    if (command === "rev-parse HEAD") return `${String(onceContinueCommitCount + 5).repeat(40).slice(0, 40)}\n`;
+    if (command === "status --porcelain") {
+      onceContinueStatusCalls += 1;
+      return onceContinueStatusCalls === 1 ? "" : " M once-continue-feature.md\n";
+    }
+    if (command === "ls-files --others --exclude-standard -z") return "";
+    if (command === "diff --binary") return "diff --git a/config/pi/extensions/ralph-loop/src/orchestrator.mjs b/config/pi/extensions/ralph-loop/src/orchestrator.mjs\n+change\n";
+    if (command === "diff --cached --binary") return "";
+    if (args[0] === "add") return "";
+    if (args[0] === "commit") {
+      onceContinueCommitCount += 1;
+      return "";
+    }
+    throw new Error(`unexpected git command: ${command}`);
+  },
+  implementationSession: async ({ task }) => ({ status: `implemented ${task.text}` }),
+  refactorSession: async () => ({ status: "refactor session completed" }),
+  reviewSession: async () => ({ stdout: '{"verdict":"PASS","summary":"task is ready","requiredFixes":[]}\n' }),
+  runCommand: async (command, options) => ({ command, cwd: options.cwd, exitCode: 0, stdout: "pass", stderr: "" }),
+});
+assert.equal(onceContinueCommitCount, 2);
+assert.match(await readFile(onceContinueSpec, "utf8"), /- \[x\] 2\. Continue second task/);
+assert.match(onceContinueText, /status: \/ralph:once continuation accepted; continuing like \/ralph/);
 
 const noValidationDir = await mkdtemp(join(tmpdir(), "ralph-loop-no-validation-"));
 const noValidationSpec = join(noValidationDir, "feature.md");

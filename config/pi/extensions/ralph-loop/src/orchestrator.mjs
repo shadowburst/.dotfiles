@@ -53,8 +53,7 @@ export async function runOrchestrator(argv = process.argv.slice(2), io = process
   const specText = await readFile(specPath, "utf8");
   const validationOptions = await discoverValidationOptions({ repoRoot: startup.repoRoot, specPath, specText });
   let state = await recordRunValidationOptions({ cachePath: startup.cachePath, state: startup.state, options: validationOptions });
-  const tasks = parseFeatureSpecTasks(specText);
-  const selectedTask = selectFirstUncheckedTask(tasks);
+  const progress = createProgressReporter({ io });
 
   io.stdout.write(`Ralph Orchestrator\n`);
   io.stdout.write(`mode: ${mode}\n`);
@@ -64,93 +63,160 @@ export async function runOrchestrator(argv = process.argv.slice(2), io = process
   io.stdout.write(`startup: ${startup.action}\n`);
   io.stdout.write(`validationOptions: ${validationOptions.length}\n`);
 
-  if (!selectedTask) {
-    if (startup.action === "started-clean") {
-      await rm(startup.cachePath, { force: true });
-      io.stdout.write("status: no unchecked tasks\n");
+  let runMode = mode;
+  let completedLoops = 0;
+  while (true) {
+    const currentSpecText = await readFile(specPath, "utf8");
+    const tasks = parseFeatureSpecTasks(currentSpecText);
+    const selectedTask = selectFirstUncheckedTask(tasks);
+
+    if (!selectedTask) {
+      await handleNoUncheckedTasks({ startup, state, io, completedLoops });
       return;
     }
 
-    if (hasInProgressCurrentTask(state)) {
-      io.stdout.write("status: no unchecked tasks; resuming in-progress current task\n");
-      io.stdout.write(`task: ${state.currentTask.text}\n`);
-      io.stdout.write(`next: ${state.phase}\n`);
-      return;
-    }
+    const result = await runOneTaskLoop({
+      cachePath: startup.cachePath,
+      state,
+      repoRoot: startup.repoRoot,
+      specPath,
+      specText: currentSpecText,
+      task: selectedTask,
+      validationOptions,
+      io,
+      progress,
+      deps,
+    });
+    state = result.state ?? state;
+    if (result.stop) return;
+    completedLoops += 1;
 
-    await transitionPhase({ cachePath: startup.cachePath, state, phase: "final-refactor", currentTask: null });
-    io.stdout.write("status: no unchecked tasks; active cache found\n");
-    io.stdout.write("next: final refactor, final validation, final branch review\n");
+    if (runMode === "once") {
+      const remainingTasks = parseFeatureSpecTasks(await readFile(specPath, "utf8")).filter((task) => !task.checked);
+      if (remainingTasks.length === 0) {
+        io.stdout.write("status: /ralph:once completed the last unchecked task\n");
+        return;
+      }
+      const accepted = await (deps.promptContinue ?? promptOnceContinuation)(io, "Continue with the next Ralph task? [y/N] ");
+      if (!accepted) {
+        state = await preserveCacheOnStop({ cachePath: startup.cachePath, state, reason: "/ralph:once continuation declined" });
+        io.stdout.write("status: /ralph:once continuation declined; cache preserved\n");
+        return;
+      }
+      io.stdout.write("status: /ralph:once continuation accepted; continuing like /ralph\n");
+      runMode = "all";
+    }
+  }
+}
+
+async function handleNoUncheckedTasks({ startup, state, io, completedLoops }) {
+  if (completedLoops > 0) {
+    io.stdout.write("status: all unchecked task loops complete\n");
     return;
   }
 
+  if (startup.action === "started-clean") {
+    await rm(startup.cachePath, { force: true });
+    io.stdout.write("status: no unchecked tasks\n");
+    return;
+  }
+
+  if (hasInProgressCurrentTask(state)) {
+    io.stdout.write("status: no unchecked tasks; resuming in-progress current task\n");
+    io.stdout.write(`task: ${state.currentTask.text}\n`);
+    io.stdout.write(`next: ${state.phase}\n`);
+    return;
+  }
+
+  await transitionPhase({ cachePath: startup.cachePath, state, phase: "final-refactor", currentTask: null });
+  io.stdout.write("status: no unchecked tasks; active cache found\n");
+  io.stdout.write("next: final refactor, final validation, final branch review\n");
+}
+
+async function runOneTaskLoop({ cachePath, state, repoRoot, specPath, specText, task, validationOptions, io, progress, deps }) {
+  progress.task(task, "RUNNING");
+  progress.phase("implementation", "RUNNING");
   const implementation = await runTaskImplementationPhase({
-    cachePath: startup.cachePath,
+    cachePath,
     state,
-    repoRoot: startup.repoRoot,
+    repoRoot,
     specPath,
     specText,
-    task: selectedTask,
+    task,
     validationOptions,
     implementationSession: deps.implementationSession,
   });
+  progress.phase("implementation", "DONE", implementation.result.status);
+
+  progress.phase("initial-validation", "RUNNING");
   const initialValidationEvidence = await runTaskValidationPhase({
-    cachePath: startup.cachePath,
+    cachePath,
     state: implementation.state,
-    repoRoot: startup.repoRoot,
+    repoRoot,
     validationPlan: implementation.validationPlan,
     phase: "initial-validation",
     runCommand: deps.runCommand,
   });
-  io.stdout.write(`task: ${selectedTask.text}\n`);
+  progress.phase("initial-validation", hasPassingDeterministicValidation(initialValidationEvidence.validationEvidence) ? "DONE" : "FAILED");
+  io.stdout.write(`task: ${task.text}\n`);
   io.stdout.write(`validation: ${implementation.validationPlan.verified ? implementation.validationPlan.options.map((option) => option.command).join("; ") : "unverified"}\n`);
   io.stdout.write(`implementationPromptBytes: ${Buffer.byteLength(implementation.prompt, "utf8")}\n`);
   io.stdout.write(`status: ${implementation.result.status}\n`);
   if (!hasPassingDeterministicValidation(initialValidationEvidence.validationEvidence)) {
     io.stdout.write("status: initial validation did not pass; refactor skipped\n");
-    return;
+    progress.task(task, "FAILED", "initial validation did not pass");
+    return { state: initialValidationEvidence.state, stop: true };
   }
+
+  progress.phase("refactor", "RUNNING");
   const refactor = await runTaskRefactorPhase({
-    cachePath: startup.cachePath,
+    cachePath,
     state: initialValidationEvidence.state,
-    repoRoot: startup.repoRoot,
-    task: selectedTask,
+    repoRoot,
+    task,
     validationPlan: implementation.validationPlan,
     refactorSession: deps.refactorSession,
     execGit: deps.execGit,
     runCommand: deps.runCommand,
   });
+  progress.phase("refactor", "DONE", refactor.changedFiles ? "validation rerun" : "no changes");
   io.stdout.write(`refactorPromptBytes: ${Buffer.byteLength(refactor.prompt, "utf8")}\n`);
   io.stdout.write(`refactor: ${refactor.result.status}${refactor.changedFiles ? "; validation rerun" : "; no changes"}\n`);
   if (refactor.changedFiles && !hasPassingDeterministicValidation(refactor.validationEvidence)) {
     io.stdout.write("status: post-refactor validation did not pass; task review skipped\n");
-    return;
+    progress.task(task, "FAILED", "post-refactor validation did not pass");
+    return { state: refactor.state, stop: true };
   }
+
+  progress.phase("task-review", "RUNNING");
   const review = await runTaskReviewPhase({
-    cachePath: startup.cachePath,
+    cachePath,
     state: refactor.state,
-    repoRoot: startup.repoRoot,
+    repoRoot,
     specPath,
     specText,
-    task: selectedTask,
-    validationEvidence: [...initialValidationEvidence.validationEvidence, ...refactor.validationEvidence],
+    task,
+    validationEvidence: taskValidationEvidence(initialValidationEvidence, refactor),
     implementationSummary: implementation.result.status,
     refactorSummary: refactor.result.status,
     reviewSession: deps.reviewSession,
     execGit: deps.execGit,
   });
+  progress.phase("task-review", review.verdict.verdict === "PASS" ? "DONE" : review.verdict.verdict);
   io.stdout.write(`reviewPromptBytes: ${Buffer.byteLength(review.prompt, "utf8")}\n`);
   io.stdout.write(`taskReview: ${review.verdict.verdict}\n`);
+
+  progress.phase("fix-review", review.verdict.verdict === "PASS" ? "DONE" : "RUNNING");
   const fixReview = await runTaskFixReviewLoop({
-    cachePath: startup.cachePath,
+    cachePath,
     state: review.state,
-    repoRoot: startup.repoRoot,
+    repoRoot,
     specPath,
     specText,
-    task: selectedTask,
+    task,
     validationPlan: implementation.validationPlan,
     review,
-    validationEvidence: [...initialValidationEvidence.validationEvidence, ...refactor.validationEvidence],
+    validationEvidence: taskValidationEvidence(initialValidationEvidence, refactor),
     fixSession: deps.fixSession,
     refactorSession: deps.refactorSession,
     reviewSession: deps.reviewSession,
@@ -158,22 +224,137 @@ export async function runOrchestrator(argv = process.argv.slice(2), io = process
     runCommand: deps.runCommand,
   });
   if (fixReview.status !== "already-passed") io.stdout.write(`fixReview: ${fixReview.status}\n`);
-  if (fixReview.status === "already-passed" || fixReview.status === "passed") {
-    const completion = await runVerifiedTaskCompletion({
-      cachePath: startup.cachePath,
-      state: fixReview.state,
-      repoRoot: startup.repoRoot,
-      specPath,
-      task: selectedTask,
-      validationPlan: implementation.validationPlan,
-      reviewVerdict: fixReview.review.verdict,
-      execGit: deps.execGit,
-      runCommand: deps.runCommand,
-      commitMessageSession: deps.commitMessageSession,
-    });
-    if (completion.status === "committed") io.stdout.write(`taskCommit: ${completion.commit}\n`);
-    else io.stdout.write(`taskCompletion: ${completion.status}\n`);
+  const reviewPassed = taskReviewPassed(fixReview);
+  const fixReviewStatus = fixReviewProgressStatus(fixReview);
+  progress.phase("fix-review", reviewPassed ? "DONE" : fixReviewStatus, fixReview.status);
+  if (!reviewPassed) {
+    progress.task(task, fixReviewStatus, fixReview.status);
+    return { state: fixReview.state, stop: true };
   }
+
+  progress.phase("task-completion", "RUNNING");
+  const completion = await runVerifiedTaskCompletion({
+    cachePath,
+    state: fixReview.state,
+    repoRoot,
+    specPath,
+    task,
+    validationPlan: implementation.validationPlan,
+    reviewVerdict: fixReview.review.verdict,
+    execGit: deps.execGit,
+    runCommand: deps.runCommand,
+    commitMessageSession: deps.commitMessageSession,
+  });
+  if (completion.status === "committed") io.stdout.write(`taskCommit: ${completion.commit}\n`);
+  else io.stdout.write(`taskCompletion: ${completion.status}\n`);
+  progress.phase("task-completion", completion.status === "committed" ? "DONE" : "FAILED", completion.status);
+  progress.task(task, completion.status === "committed" ? "DONE" : "FAILED", completion.status);
+  return { state: completion.state, stop: completion.status !== "committed" };
+}
+
+function taskValidationEvidence(initialValidationEvidence, refactor) {
+  return [...initialValidationEvidence.validationEvidence, ...refactor.validationEvidence];
+}
+
+function taskReviewPassed(fixReview) {
+  return fixReview.status === "already-passed" || fixReview.status === "passed";
+}
+
+function fixReviewProgressStatus(fixReview) {
+  return fixReview.status === "blocked" ? "BLOCKED" : "FAILED";
+}
+
+function createProgressReporter({ io, interactive = process.env.PI_RALPH_INTERACTIVE === "1" || Boolean(io.stdout?.isTTY && !process.env.CI) } = {}) {
+  const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+
+  if (!interactive) {
+    const write = (scope, status, label, detail = "") => {
+      const suffix = detail ? ` ${detail}` : "";
+      io.stdout.write(`[${scope} ${label}] ${status}${suffix}\n`);
+    };
+    return {
+      task(task, status, detail = "") {
+        write("task", status, `line ${task.lineNumber ?? "unknown"}`, `${task.text}${detail ? ` — ${detail}` : ""}`);
+      },
+      phase(name, status, detail = "") {
+        write("phase", status, name, detail);
+      },
+    };
+  }
+
+  const rows = new Map();
+  let frame = 0;
+  let renderedRows = 0;
+  let interval = null;
+  let writingProgress = false;
+  const originalWrite = io.stdout.write.bind(io.stdout);
+
+  const writeRaw = (text) => {
+    writingProgress = true;
+    try {
+      originalWrite(text);
+    } finally {
+      writingProgress = false;
+    }
+  };
+  const moveToProgressStart = () => {
+    if (renderedRows > 0) writeRaw(`\u001b[${renderedRows}A`);
+  };
+  const clearRenderedProgress = () => {
+    if (renderedRows === 0) return;
+    moveToProgressStart();
+    writeRaw("\u001b[J");
+    renderedRows = 0;
+  };
+  const render = () => {
+    clearRenderedProgress();
+    const lines = [...rows.values()].map(({ scope, label, status, detail }) => {
+      const spinner = status === "RUNNING" ? `${frames[frame % frames.length]} ` : "";
+      const suffix = detail ? ` ${detail}` : "";
+      return `${spinner}[${scope} ${label}] ${status}${suffix}`;
+    });
+    if (lines.length === 0) return;
+    writeRaw(`${lines.join("\n")}\n`);
+    renderedRows = lines.length;
+  };
+  const hasActiveRows = () => [...rows.values()].some((row) => row.status === "RUNNING");
+  const updateTimer = () => {
+    if (hasActiveRows()) {
+      if (interval) return;
+      interval = setInterval(() => {
+        frame = (frame + 1) % frames.length;
+        render();
+      }, 80);
+      interval.unref?.();
+      return;
+    }
+    if (interval) {
+      clearInterval(interval);
+      interval = null;
+    }
+  };
+
+  io.stdout.write = (chunk, encoding, callback) => {
+    if (writingProgress) return originalWrite(chunk, encoding, callback);
+    clearRenderedProgress();
+    const result = originalWrite(chunk, encoding, callback);
+    if (rows.size > 0) render();
+    return result;
+  };
+
+  const write = (key, scope, status, label, detail = "") => {
+    rows.set(key, { scope, label, status, detail });
+    render();
+    updateTimer();
+  };
+  return {
+    task(task, status, detail = "") {
+      write("task", "task", status, `line ${task.lineNumber ?? "unknown"}`, `${task.text}${detail ? ` — ${detail}` : ""}`);
+    },
+    phase(name, status, detail = "") {
+      write(`phase:${name}`, "phase", status, name, detail);
+    },
+  };
 }
 
 export function parseFeatureSpecTasks(specText) {
@@ -1753,7 +1934,21 @@ function writeDirtyStatus(io, status) {
 async function promptYesNo(io, question) {
   if (process.env.PI_RALPH_RESUME_DIRTY === "yes") return true;
   if (process.env.PI_RALPH_RESUME_DIRTY === "no") return false;
-  if (!io.stdin?.isTTY) return false;
+  return promptYesNoWithDefaultNo(io, question);
+}
+
+async function promptOnceContinuation(io, question) {
+  if (process.env.PI_RALPH_ONCE_CONTINUE === "yes") return true;
+  if (process.env.PI_RALPH_ONCE_CONTINUE === "no") return false;
+  return promptYesNoWithDefaultNo(io, question);
+}
+
+async function promptYesNoWithDefaultNo(io, question) {
+  if (!io.stdin?.isTTY) {
+    io.stdout.write(question);
+    io.stdout.write("no\n");
+    return false;
+  }
   const rl = createInterface({ input: io.stdin, output: io.stdout });
   try {
     const answer = await rl.question(question);
