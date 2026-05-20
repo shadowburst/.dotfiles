@@ -148,6 +148,101 @@ export function taskPromptPayload({ specPath, task }) {
   ].join("\n\n");
 }
 
+export function projectContextContract() {
+  return [
+    "Project context contract:",
+    "- Before acting, inspect repository domain documentation when present: root CONTEXT.md or CONTEXT-MAP.md, docs/agents/domain.md, and ADRs under docs/adr/ relevant to the files or decision area.",
+    "- Use canonical glossary terms from CONTEXT.md and surface any ADR conflict instead of silently overriding it.",
+    "- If these files do not exist, proceed silently; do not invent or create domain docs during Forge.",
+    "- Preserve Feature Spec vocabulary and constraints in every handoff, plan, implementation summary, review, and final JSON.",
+  ].join("\n");
+}
+
+export function buildForgeTaskChain(specPath, task) {
+  const taskPayload = taskPromptPayload({ specPath, task });
+  const context = projectContextContract();
+  const finalJsonContract = `End with exactly one final fenced json block. Use {"status":"done","summary":"...","changedPaths":["..."],"validation":["..."],"commitTitle":"feat(scope): title"} when complete. Use {"status":"stop","summary":"..."} when blocked or unverified.`;
+  return [
+    {
+      agent: "context-builder",
+      task: `${context}\n\nBuild implementation context for this Forge task. Treat the Feature Spec task ledger as read-only. Include relevant requirements, canonical domain terms, ADR constraints, likely files, validation strategy, and handoff context.\n\n${taskPayload}`,
+      output: "forge/context.md",
+      outputMode: "file-only",
+    },
+    {
+      agent: "planner",
+      task: `${context}\n\nCreate a concrete implementation plan from {previous}. Include non-goals, expected changed paths, meaningful TDD guidance, and validation expectations. Do not edit files.`,
+      output: "forge/plan.md",
+      outputMode: "file-only",
+    },
+    {
+      agent: "worker",
+      task: `${context}\n\nImplement the selected Forge task from {previous}. Treat ${specPath} task checkboxes as read-only; the Forge Driver updates them. Use meaningful TDD only when an automated behavior test is applicable. Run deterministic validation and summarize changed paths and validation evidence.`,
+      output: "forge/implementation.md",
+      outputMode: "file-only",
+    },
+    {
+      agent: "worker",
+      skill: "refactor",
+      task: `${context}\n\nPerform a bounded behavior-preserving refactor over only the task diff or touched files from {previous}. Prefer no change over speculative churn. Rerun validation if you change files.`,
+      output: "forge/refactor.md",
+      outputMode: "file-only",
+    },
+    {
+      parallel: [
+        { agent: "reviewer", task: `${context}\n\nFresh-context review for SPEC COMPLIANCE. Inspect ${specPath}, the selected task, current diff, and relevant domain docs/ADRs. Does the code answer the required task, use canonical vocabulary, obey ADR constraints, and avoid out-of-scope behavior? Return required fixes only.\n\n${taskPayload}`, output: false },
+        { agent: "reviewer", task: `${context}\n\nFresh-context review for CORRECTNESS AND REGRESSIONS. Inspect the current diff, changed files, and relevant domain docs/ADRs. Return required fixes only, with evidence.\n\n${taskPayload}`, output: false },
+        { agent: "reviewer", task: `${context}\n\nFresh-context review for VALIDATION AND TESTS. Check whether validation evidence is meaningful and deterministic for the Feature Spec and project context. Return required fixes only.\n\n${taskPayload}`, output: false },
+        { agent: "reviewer", task: `${context}\n\nFresh-context review for SIMPLICITY AND MAINTAINABILITY. Flag unnecessary complexity, duplication, architecture drift, glossary drift, and ADR conflicts. Return required fixes only.\n\n${taskPayload}`, output: false },
+      ],
+      concurrency: 4,
+    },
+    {
+      agent: "delegate",
+      task: `${context}\n\nSynthesize the parallel review output from {previous}. Separate required fixes from optional improvements and feedback to ignore. If there are no required fixes, say so clearly.`,
+      output: "forge/review-synthesis.md",
+      outputMode: "file-only",
+    },
+    {
+      agent: "worker",
+      task: `${context}\n\nApply the synthesized required fixes from {previous} once. Do not apply optional improvements. Preserve the approved scope and keep ${specPath} task checkboxes read-only. Rerun focused deterministic validation and summarize changed paths and validation evidence.`,
+      output: "forge/fixes.md",
+      outputMode: "file-only",
+    },
+    {
+      agent: "delegate",
+      task: `${context}\n\nRead the chain outputs and inspect git status/diff as needed. Emit the Forge final task summary. ${finalJsonContract}\n\nSelected task:\n${taskPayload}`,
+      output: false,
+    },
+  ];
+}
+
+export function buildForgeFinalReviewChain(specPath, reviewBase) {
+  const context = projectContextContract();
+  const finalJsonContract = `End with exactly one final fenced json block. Use {"status":"done","summary":"...","changedPaths":["..."],"validation":["..."]} when final review fixes are complete or no fixes are needed. Use {"status":"stop","summary":"..."} when blocked or unverified.`;
+  return [
+    {
+      parallel: [
+        { agent: "reviewer", task: `${context}\n\nFinal branch review, STANDARDS axis. Review git diff ${reviewBase}..HEAD for repository standards, maintainability, architecture conventions, canonical vocabulary, ADR constraints, and validation quality. Return required fixes only. Feature Spec: ${specPath}`, output: false },
+        { agent: "reviewer", task: `${context}\n\nFinal branch review, SPEC axis. Review git diff ${reviewBase}..HEAD against the full Feature Spec at ${specPath} and relevant domain docs/ADRs. Return required fixes only.`, output: false },
+      ],
+      concurrency: 2,
+    },
+    { agent: "delegate", task: `${context}\n\nSynthesize final branch review findings from {previous}. Separate required fixes from optional improvements.`, output: "forge/final-review.md", outputMode: "file-only" },
+    { agent: "worker", task: `${context}\n\nApply required final review fixes from {previous} once. Do not rewrite prior commits. Run deterministic validation and summarize changed paths and validation evidence.`, output: "forge/final-review-fixes.md", outputMode: "file-only" },
+    { agent: "delegate", task: `${context}\n\nInspect the final review/fix outcome from {previous}. ${finalJsonContract}`, output: false },
+  ];
+}
+
+export function buildForgeFinalRefactorChain(specPath, reviewBase) {
+  const context = projectContextContract();
+  const finalJsonContract = `End with exactly one final fenced json block. Use {"status":"done","summary":"...","changedPaths":["..."],"validation":["..."]} when the simplification refactor is complete or no refactor was needed. Use {"status":"stop","summary":"..."} when blocked or unverified.`;
+  return [
+    { agent: "worker", skill: "refactor", task: `${context}\n\nPerform one behavior-preserving simplification refactor over the Forge-produced diff ${reviewBase}..HEAD for Feature Spec ${specPath}. Prefer no change over speculative churn. Run deterministic validation if files change and summarize the outcome.`, output: "forge/final-refactor.md", outputMode: "file-only" },
+    { agent: "delegate", task: `${context}\n\nInspect the final refactor outcome from {previous}. ${finalJsonContract}`, output: false },
+  ];
+}
+
 export function finalTextFromSubagentResponse(response) {
   const content = response?.result?.content ?? response?.content ?? [];
   if (typeof content === "string") return content;
@@ -156,56 +251,4 @@ export function finalTextFromSubagentResponse(response) {
     .filter((part) => part && part.type === "text" && typeof part.text === "string")
     .map((part) => part.text)
     .join("\n");
-}
-
-export function runSlashSubagentRequest({
-  events,
-  requestId,
-  params,
-  onStarted,
-  onUpdate,
-  startTimeoutMs = 15_000,
-  requestEvent = "subagent:slash:request",
-  startedEvent = "subagent:slash:started",
-  responseEvent = "subagent:slash:response",
-  updateEvent = "subagent:slash:update",
-}) {
-  return new Promise((resolve, reject) => {
-    let done = false;
-    let started = false;
-    const startTimeout = setTimeout(() => {
-      finish(() => reject(new Error("pi-subagents did not start within 15s. Is pi-subagents installed and loaded?")));
-    }, startTimeoutMs);
-
-    const finish = (next) => {
-      if (done) return;
-      done = true;
-      clearTimeout(startTimeout);
-      unsubStarted();
-      unsubResponse();
-      unsubUpdate();
-      next();
-    };
-
-    const unsubStarted = events.on(startedEvent, (data) => {
-      if (done || !data || typeof data !== "object" || data.requestId !== requestId) return;
-      started = true;
-      clearTimeout(startTimeout);
-      onStarted?.();
-    });
-    const unsubResponse = events.on(responseEvent, (data) => {
-      if (done || !data || typeof data !== "object" || data.requestId !== requestId) return;
-      finish(() => resolve(data));
-    });
-    const unsubUpdate = events.on(updateEvent, (data) => {
-      if (done || !data || typeof data !== "object" || data.requestId !== requestId) return;
-      onUpdate?.(data);
-    });
-
-    events.emit(requestEvent, { requestId, params });
-    if (!started && done) return;
-    if (!started) {
-      finish(() => reject(new Error("No pi-subagents slash bridge responded. Ensure pi-subagents is loaded before Forge.")));
-    }
-  });
 }

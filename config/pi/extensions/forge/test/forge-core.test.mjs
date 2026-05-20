@@ -1,13 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildForgeFinalRefactorChain,
+  buildForgeFinalReviewChain,
+  buildForgeTaskChain,
   checkTask,
   extractFinalJsonBlock,
   firstUncheckedTask,
   isValidConventionalCommitTitle,
   parseGitStatusPorcelain,
   parseImplementationTasks,
-  runSlashSubagentRequest,
   taskCommitTitle,
   unexpectedDirtyPaths,
   validateTaskSummary,
@@ -76,47 +78,36 @@ test("validates and falls back conventional commit titles", () => {
   assert.equal(taskCommitTitle(4, "bad"), "feat: complete spec task 4");
 });
 
-function fakeEvents() {
-  const handlers = new Map();
-  return {
-    on(event, handler) {
-      const eventHandlers = handlers.get(event) ?? new Set();
-      eventHandlers.add(handler);
-      handlers.set(event, eventHandlers);
-      return () => eventHandlers.delete(handler);
-    },
-    emit(event, data) {
-      for (const handler of handlers.get(event) ?? []) handler(data);
-    },
-  };
-}
+test("Forge task chain carries project domain context into every step", () => {
+  const chain = buildForgeTaskChain("docs/specs/example.md", firstUncheckedTask(spec));
+  const taskText = JSON.stringify(chain);
 
-test("waits for slash subagent completion after the bridge has started", async () => {
-  const events = fakeEvents();
-  events.on("subagent:slash:request", ({ requestId }) => {
-    events.emit("subagent:slash:started", { requestId });
-    setTimeout(() => {
-      events.emit("subagent:slash:response", {
-        requestId,
-        result: { content: [{ type: "text", text: "done" }] },
-        isError: false,
-      });
-    }, 20);
-  });
+  assert.match(chain[0].task, /CONTEXT\.md or CONTEXT-MAP\.md/);
+  assert.match(chain[0].task, /ADRs under docs\/adr/);
+  assert.match(chain[0].task, /canonical domain terms/);
 
-  const response = await runSlashSubagentRequest({
-    events,
-    requestId: "req-1",
-    params: {},
-    startTimeoutMs: 5,
-  });
+  for (const phrase of [
+    "Project context contract",
+    "CONTEXT.md or CONTEXT-MAP.md",
+    "docs/agents/domain.md",
+    "ADRs under docs/adr",
+    "canonical glossary terms",
+  ]) {
+    assert.match(taskText, new RegExp(phrase.replaceAll("/", "\\/")));
+  }
 
-  assert.equal(response.requestId, "req-1");
+  const workerSteps = chain.filter((step) => step.agent === "worker");
+  assert.equal(workerSteps.length, 3);
+  for (const step of workerSteps) {
+    assert.match(step.task, /Project context contract/);
+  }
 });
 
-test("fails fast when no slash subagent bridge receives the request", async () => {
-  await assert.rejects(
-    runSlashSubagentRequest({ events: fakeEvents(), requestId: "req-2", params: {}, startTimeoutMs: 5 }),
-    /No pi-subagents slash bridge responded/,
-  );
+test("Forge finalization chains carry project domain context", () => {
+  const reviewChain = buildForgeFinalReviewChain("docs/specs/example.md", "HEAD~1");
+  const refactorChain = buildForgeFinalRefactorChain("docs/specs/example.md", "HEAD~1");
+
+  assert.match(JSON.stringify(reviewChain), /CONTEXT\.md or CONTEXT-MAP\.md/);
+  assert.match(JSON.stringify(reviewChain), /ADR constraints/);
+  assert.match(JSON.stringify(refactorChain), /Project context contract/);
 });

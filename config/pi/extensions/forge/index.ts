@@ -44,12 +44,9 @@ interface SlashLiveDetails {
   result: {
     content: Array<{ type: "text"; text: string }>;
     details: {
-      mode: "chain";
+      mode: "single";
       results: Array<Record<string, unknown>>;
       progress: Array<Record<string, unknown>>;
-      chainAgents: string[];
-      totalSteps: number;
-      currentStepIndex?: number;
     };
   };
 }
@@ -89,83 +86,110 @@ async function ensureCleanStart(pi: ExtensionAPI, cwd: string): Promise<string> 
   return exec(pi, "git", ["rev-parse", "HEAD"], cwd, 30_000);
 }
 
-function chainStepAgents(step: unknown): string[] {
-  if (!step || typeof step !== "object") return ["subagent"];
-  const s = step as { agent?: unknown; parallel?: Array<{ agent?: unknown }> };
-  if (Array.isArray(s.parallel)) return s.parallel.map((entry) => String(entry.agent ?? "subagent"));
-  return [String(s.agent ?? "subagent")];
-}
-
-function chainStepLabel(step: unknown): string {
-  const agents = chainStepAgents(step);
-  return agents.length > 1 ? `[${agents.join("+")}]` : agents[0];
-}
-
 function buildForgeLiveDetails(id: string, params: Record<string, unknown>): SlashLiveDetails {
-  const chain = Array.isArray(params.chain) ? params.chain : [];
-  const progress: Array<Record<string, unknown>> = [];
-  for (const step of chain) {
-    for (const agent of chainStepAgents(step)) {
-      const index = progress.length;
-      progress.push({
-        index,
-        agent,
-        status: index === 0 ? "running" : "pending",
-        task: typeof (step as { task?: unknown })?.task === "string" ? (step as { task: string }).task : String(params.task ?? ""),
-        recentTools: [],
-        recentOutput: [],
-        toolCount: 0,
-        tokens: 0,
-        durationMs: 0,
-      });
-    }
-  }
-  const results = progress.map((entry) => ({
-    agent: entry.agent,
-    task: entry.task,
-    exitCode: 0,
-    messages: [],
-    usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, turns: 0 },
-    progress: entry,
-  }));
+  const progress = {
+    index: 0,
+    agent: "forge",
+    status: "running",
+    task: String(params.task ?? "Running Forge Task Chain"),
+    recentTools: [],
+    recentOutput: [],
+    toolCount: 0,
+    tokens: 0,
+    durationMs: 0,
+  };
   return {
     requestId: id,
     result: {
-      content: [{ type: "text", text: progress.map((entry, index) => `Step ${index + 1}: ${entry.agent}\n${entry.task}`).join("\n\n") || "Running Forge Task Chain..." }],
+      content: [{ type: "text", text: progress.task }],
       details: {
-        mode: "chain",
-        results,
-        progress,
-        chainAgents: chain.map(chainStepLabel),
-        totalSteps: chain.length,
-        currentStepIndex: 0,
+        mode: "single",
+        progress: [progress],
+        results: [{
+          agent: progress.agent,
+          task: progress.task,
+          exitCode: 0,
+          messages: [],
+          usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, turns: 0 },
+          progress,
+        }],
       },
     },
   };
 }
 
-function updateForgeLiveDetails(ctx: ExtensionCommandContext, details: SlashLiveDetails, update: { progress?: Array<Record<string, unknown>> }): void {
-  if (!Array.isArray(update.progress)) return;
-  details.result.details.progress = update.progress;
-  details.result.details.results = details.result.details.results.map((result, index) => ({
-    ...result,
-    progress: update.progress?.find((entry) => entry.index === index) ?? update.progress?.[index] ?? result.progress,
-  }));
-  const runningIndex = update.progress.findIndex((entry) => entry.status === "running");
-  if (runningIndex >= 0) details.result.details.currentStepIndex = runningIndex;
-  if (ctx.hasUI) (ctx.ui as { requestRender?: () => void }).requestRender?.();
+function updateForgeLiveDetails(details: SlashLiveDetails, update: { currentTool?: string; toolCount?: number; progress?: Array<Record<string, unknown>> }): void {
+  const running = update.progress?.find((entry) => entry.status === "running") ?? update.progress?.[0];
+  const current = details.result.details.progress[0] ?? {};
+  const progress = {
+    ...current,
+    status: "running",
+    ...(running?.agent ? { agent: `forge/${running.agent}` } : {}),
+    ...(running?.task ? { task: running.task } : {}),
+    recentTools: [],
+    recentOutput: [],
+    ...(running?.tokens ? { tokens: running.tokens } : {}),
+    ...(running?.durationMs ? { durationMs: running.durationMs } : {}),
+    ...(update.currentTool ? { currentTool: update.currentTool } : {}),
+    ...(update.toolCount !== undefined ? { toolCount: update.toolCount } : {}),
+  };
+  details.result.details.progress = [progress];
+  details.result.details.results = [{
+    ...details.result.details.results[0],
+    agent: progress.agent,
+    task: progress.task,
+    progress,
+  }];
+}
+
+function installForgeRenderPump(ctx: ExtensionCommandContext): () => void {
+  if (!ctx.hasUI) return () => undefined;
+  ctx.ui.setWidget(
+    "forge-render-pump",
+    (tui: { requestRender(): void }) => {
+      const interval = setInterval(() => tui.requestRender(), 100);
+      return {
+        render: () => [],
+        dispose: () => clearInterval(interval),
+      };
+    },
+    { placement: "belowEditor" },
+  );
+  return () => ctx.ui.setWidget("forge-render-pump", undefined);
 }
 
 function runSubagentChain(pi: ExtensionAPI, ctx: ExtensionCommandContext, params: Record<string, unknown>): Promise<SlashResponse> {
   return new Promise((resolve, reject) => {
     const id = requestId();
     const liveDetails = buildForgeLiveDetails(id, params);
+    const stopRenderPump = installForgeRenderPump(ctx);
     pi.sendMessage({
       customType: "subagent-slash-result",
-      content: "Forge Task Chain running...",
+      content: liveDetails.result.content.map((part) => part.text).join("\n"),
       display: true,
       details: liveDetails,
     });
+
+    let pendingRender: ReturnType<typeof setTimeout> | undefined;
+    let lastRenderAt = 0;
+    const requestRender = () => {
+      if (!ctx.hasUI) return;
+      const render = (ctx.ui as { requestRender?: () => void }).requestRender;
+      if (!render) return;
+      const now = Date.now();
+      const delay = Math.max(0, 100 - (now - lastRenderAt));
+      if (delay === 0) {
+        lastRenderAt = now;
+        render.call(ctx.ui);
+        return;
+      }
+      if (pendingRender) return;
+      pendingRender = setTimeout(() => {
+        pendingRender = undefined;
+        lastRenderAt = Date.now();
+        render.call(ctx.ui);
+      }, delay);
+    };
 
     let done = false;
     let started = false;
@@ -180,6 +204,9 @@ function runSubagentChain(pi: ExtensionAPI, ctx: ExtensionCommandContext, params
       unsubStarted();
       unsubResponse();
       unsubUpdate();
+      if (pendingRender) clearTimeout(pendingRender);
+      pendingRender = undefined;
+      stopRenderPump();
       next();
     };
 
@@ -187,20 +214,21 @@ function runSubagentChain(pi: ExtensionAPI, ctx: ExtensionCommandContext, params
       if (done || !data || typeof data !== "object" || (data as { requestId?: string }).requestId !== id) return;
       started = true;
       clearTimeout(startTimeout);
-      if (ctx.hasUI) ctx.ui.setStatus("forge", "subagents running...");
+      // Keep the bottom bar focused on the current Forge phase; live subagent
+      // details are rendered in the Forge message instead of status text.
     });
     const unsubResponse = pi.events.on("subagent:slash:response", (data: unknown) => {
       if (done || !data || typeof data !== "object" || (data as { requestId?: string }).requestId !== id) return;
       const response = data as SlashResponse;
       if (response.result?.details) liveDetails.result = response.result as SlashLiveDetails["result"];
-      if (ctx.hasUI) (ctx.ui as { requestRender?: () => void }).requestRender?.();
+      requestRender();
       finish(() => resolve(response));
     });
     const unsubUpdate = pi.events.on("subagent:slash:update", (data: unknown) => {
       if (done || !data || typeof data !== "object" || (data as { requestId?: string }).requestId !== id) return;
       const update = data as { currentTool?: string; toolCount?: number; progress?: Array<Record<string, unknown>> };
-      updateForgeLiveDetails(ctx, liveDetails, update);
-      if (ctx.hasUI) ctx.ui.setStatus("forge", `subagents: ${update.toolCount ?? 0} tools${update.currentTool ? ` ${update.currentTool}` : ""} | Ctrl+O live detail`);
+      updateForgeLiveDetails(liveDetails, update);
+      requestRender();
     });
 
     pi.events.emit("subagent:slash:request", { requestId: id, params });
@@ -211,85 +239,98 @@ function runSubagentChain(pi: ExtensionAPI, ctx: ExtensionCommandContext, params
   });
 }
 
+function projectContextContract(): string {
+  return [
+    "Project context contract:",
+    "- Before acting, inspect repository domain documentation when present: root CONTEXT.md or CONTEXT-MAP.md, docs/agents/domain.md, and ADRs under docs/adr/ relevant to the files or decision area.",
+    "- Use canonical glossary terms from CONTEXT.md and surface any ADR conflict instead of silently overriding it.",
+    "- If these files do not exist, proceed silently; do not invent or create domain docs during Forge.",
+    "- Preserve Feature Spec vocabulary and constraints in every handoff, plan, implementation summary, review, and final JSON.",
+  ].join("\n");
+}
+
 function buildTaskChain(specPath: string, task: ForgeTask) {
   const taskPayload = taskPromptPayload({ specPath, task });
+  const context = projectContextContract();
   const finalJsonContract = `End with exactly one final fenced json block. Use {"status":"done","summary":"...","changedPaths":["..."],"validation":["..."],"commitTitle":"feat(scope): title"} when complete. Use {"status":"stop","summary":"..."} when blocked or unverified.`;
   return [
     {
       agent: "context-builder",
-      task: `Build implementation context for this Forge task. Treat the Feature Spec task ledger as read-only.\n\n${taskPayload}\n\nOutput relevant requirements, likely files, validation strategy, and handoff context.`,
+      task: `${context}\n\nBuild implementation context for this Forge task. Treat the Feature Spec task ledger as read-only. Include relevant requirements, canonical domain terms, ADR constraints, likely files, validation strategy, and handoff context.\n\n${taskPayload}`,
       output: "forge/context.md",
       outputMode: "file-only",
     },
     {
       agent: "planner",
-      task: `Create a concrete implementation plan from {previous}. Include non-goals, expected changed paths, meaningful TDD guidance, and validation expectations. Do not edit files.`,
+      task: `${context}\n\nCreate a concrete implementation plan from {previous}. Include non-goals, expected changed paths, meaningful TDD guidance, and validation expectations. Do not edit files.`,
       output: "forge/plan.md",
       outputMode: "file-only",
     },
     {
       agent: "worker",
-      task: `Implement the selected Forge task from {previous}. Treat ${specPath} task checkboxes as read-only; the Forge Driver updates them. Use meaningful TDD only when an automated behavior test is applicable. Run deterministic validation and summarize changed paths and validation evidence.`,
+      task: `${context}\n\nImplement the selected Forge task from {previous}. Treat ${specPath} task checkboxes as read-only; the Forge Driver updates them. Use meaningful TDD only when an automated behavior test is applicable. Run deterministic validation and summarize changed paths and validation evidence.`,
       output: "forge/implementation.md",
       outputMode: "file-only",
     },
     {
       agent: "worker",
       skill: "refactor",
-      task: `Perform a bounded behavior-preserving refactor over only the task diff or touched files from {previous}. Prefer no change over speculative churn. Rerun validation if you change files.`,
+      task: `${context}\n\nPerform a bounded behavior-preserving refactor over only the task diff or touched files from {previous}. Prefer no change over speculative churn. Rerun validation if you change files.`,
       output: "forge/refactor.md",
       outputMode: "file-only",
     },
     {
       parallel: [
-        { agent: "reviewer", task: `Fresh-context review for SPEC COMPLIANCE. Inspect ${specPath}, the selected task, and the current diff. Does the code answer the required task and avoid out-of-scope behavior? Return required fixes only.\n\n${taskPayload}`, output: false },
-        { agent: "reviewer", task: `Fresh-context review for CORRECTNESS AND REGRESSIONS. Inspect the current diff and changed files. Return required fixes only, with evidence.\n\n${taskPayload}`, output: false },
-        { agent: "reviewer", task: `Fresh-context review for VALIDATION AND TESTS. Check whether validation evidence is meaningful and deterministic. Return required fixes only.\n\n${taskPayload}`, output: false },
-        { agent: "reviewer", task: `Fresh-context review for SIMPLICITY AND MAINTAINABILITY. Flag unnecessary complexity, duplication, and architecture drift. Return required fixes only.\n\n${taskPayload}`, output: false },
+        { agent: "reviewer", task: `${context}\n\nFresh-context review for SPEC COMPLIANCE. Inspect ${specPath}, the selected task, current diff, and relevant domain docs/ADRs. Does the code answer the required task, use canonical vocabulary, obey ADR constraints, and avoid out-of-scope behavior? Return required fixes only.\n\n${taskPayload}`, output: false },
+        { agent: "reviewer", task: `${context}\n\nFresh-context review for CORRECTNESS AND REGRESSIONS. Inspect the current diff, changed files, and relevant domain docs/ADRs. Return required fixes only, with evidence.\n\n${taskPayload}`, output: false },
+        { agent: "reviewer", task: `${context}\n\nFresh-context review for VALIDATION AND TESTS. Check whether validation evidence is meaningful and deterministic for the Feature Spec and project context. Return required fixes only.\n\n${taskPayload}`, output: false },
+        { agent: "reviewer", task: `${context}\n\nFresh-context review for SIMPLICITY AND MAINTAINABILITY. Flag unnecessary complexity, duplication, architecture drift, glossary drift, and ADR conflicts. Return required fixes only.\n\n${taskPayload}`, output: false },
       ],
       concurrency: 4,
     },
     {
       agent: "delegate",
-      task: `Synthesize the parallel review output from {previous}. Separate required fixes from optional improvements and feedback to ignore. If there are no required fixes, say so clearly.`,
+      task: `${context}\n\nSynthesize the parallel review output from {previous}. Separate required fixes from optional improvements and feedback to ignore. If there are no required fixes, say so clearly.`,
       output: "forge/review-synthesis.md",
       outputMode: "file-only",
     },
     {
       agent: "worker",
-      task: `Apply the synthesized required fixes from {previous} once. Do not apply optional improvements. Preserve the approved scope and keep ${specPath} task checkboxes read-only. Rerun focused deterministic validation and summarize changed paths and validation evidence.`,
+      task: `${context}\n\nApply the synthesized required fixes from {previous} once. Do not apply optional improvements. Preserve the approved scope and keep ${specPath} task checkboxes read-only. Rerun focused deterministic validation and summarize changed paths and validation evidence.`,
       output: "forge/fixes.md",
       outputMode: "file-only",
     },
     {
       agent: "delegate",
-      task: `Read the chain outputs and inspect git status/diff as needed. Emit the Forge final task summary. ${finalJsonContract}\n\nSelected task:\n${taskPayload}`,
+      task: `${context}\n\nRead the chain outputs and inspect git status/diff as needed. Emit the Forge final task summary. ${finalJsonContract}\n\nSelected task:\n${taskPayload}`,
       output: false,
     },
   ];
 }
 
 function buildFinalReviewChain(specPath: string, reviewBase: string) {
+  const context = projectContextContract();
   const finalJsonContract = `End with exactly one final fenced json block. Use {"status":"done","summary":"...","changedPaths":["..."],"validation":["..."]} when final review fixes are complete or no fixes are needed. Use {"status":"stop","summary":"..."} when blocked or unverified.`;
   return [
     {
       parallel: [
-        { agent: "reviewer", task: `Final branch review, STANDARDS axis. Review git diff ${reviewBase}..HEAD for repository standards, maintainability, architecture conventions, and validation quality. Return required fixes only. Feature Spec: ${specPath}`, output: false },
-        { agent: "reviewer", task: `Final branch review, SPEC axis. Review git diff ${reviewBase}..HEAD against the full Feature Spec at ${specPath}. Return required fixes only.`, output: false },
+        { agent: "reviewer", task: `${context}\n\nFinal branch review, STANDARDS axis. Review git diff ${reviewBase}..HEAD for repository standards, maintainability, architecture conventions, canonical vocabulary, ADR constraints, and validation quality. Return required fixes only. Feature Spec: ${specPath}`, output: false },
+        { agent: "reviewer", task: `${context}\n\nFinal branch review, SPEC axis. Review git diff ${reviewBase}..HEAD against the full Feature Spec at ${specPath} and relevant domain docs/ADRs. Return required fixes only.`, output: false },
       ],
       concurrency: 2,
     },
-    { agent: "delegate", task: `Synthesize final branch review findings from {previous}. Separate required fixes from optional improvements.`, output: "forge/final-review.md", outputMode: "file-only" },
-    { agent: "worker", task: `Apply required final review fixes from {previous} once. Do not rewrite prior commits. Run deterministic validation and summarize changed paths and validation evidence.`, output: "forge/final-review-fixes.md", outputMode: "file-only" },
-    { agent: "delegate", task: `Inspect the final review/fix outcome from {previous}. ${finalJsonContract}`, output: false },
+    { agent: "delegate", task: `${context}\n\nSynthesize final branch review findings from {previous}. Separate required fixes from optional improvements.`, output: "forge/final-review.md", outputMode: "file-only" },
+    { agent: "worker", task: `${context}\n\nApply required final review fixes from {previous} once. Do not rewrite prior commits. Run deterministic validation and summarize changed paths and validation evidence.`, output: "forge/final-review-fixes.md", outputMode: "file-only" },
+    { agent: "delegate", task: `${context}\n\nInspect the final review/fix outcome from {previous}. ${finalJsonContract}`, output: false },
   ];
 }
 
 function buildFinalRefactorChain(specPath: string, reviewBase: string) {
+  const context = projectContextContract();
   const finalJsonContract = `End with exactly one final fenced json block. Use {"status":"done","summary":"...","changedPaths":["..."],"validation":["..."]} when the simplification refactor is complete or no refactor was needed. Use {"status":"stop","summary":"..."} when blocked or unverified.`;
   return [
-    { agent: "worker", skill: "refactor", task: `Perform one behavior-preserving simplification refactor over the Forge-produced diff ${reviewBase}..HEAD for Feature Spec ${specPath}. Prefer no change over speculative churn. Run deterministic validation if files change and summarize the outcome.`, output: "forge/final-refactor.md", outputMode: "file-only" },
-    { agent: "delegate", task: `Inspect the final refactor outcome from {previous}. ${finalJsonContract}`, output: false },
+    { agent: "worker", skill: "refactor", task: `${context}\n\nPerform one behavior-preserving simplification refactor over the Forge-produced diff ${reviewBase}..HEAD for Feature Spec ${specPath}. Prefer no change over speculative churn. Run deterministic validation if files change and summarize the outcome.`, output: "forge/final-refactor.md", outputMode: "file-only" },
+    { agent: "delegate", task: `${context}\n\nInspect the final refactor outcome from {previous}. ${finalJsonContract}`, output: false },
   ];
 }
 
