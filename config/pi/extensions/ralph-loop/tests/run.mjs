@@ -90,7 +90,7 @@ const ralphPackage = JSON.parse(await readFile(join(extensionRoot, "package.json
 assert.deepEqual(ralphPackage.pi.extensions, ["./index.ts"]);
 assert.equal(ralphPackage.scripts.test, "node tests/run.mjs");
 const ralphIndexSource = await readFile(join(extensionRoot, "index.ts"), "utf8");
-assert.match(ralphIndexSource, /registerRalphCommands\(pi\)/);
+assert.match(ralphIndexSource, /command\.mjs\?reload=/);
 assert.doesNotMatch(ralphIndexSource, /worktree|pull request|--all|--task|--pr/i);
 
 const registered = [];
@@ -512,10 +512,13 @@ const handler = createRalphCommand({
 });
 const message = await handler("feature.md", { ui: { notify() {} } });
 assert.match(message, /status: launched/);
-assert.equal(launched.length, 1);
+const mentionMessage = await handler("@feature.md", { ui: { notify() {} } });
+assert.match(mentionMessage, /status: launched/);
+assert.equal(launched.length, 2);
 assert.equal(launched[0].command, "/usr/bin/node");
 assert.deepEqual(launched[0].args, ["/tmp/orchestrator.mjs", "--mode", "once", "--spec", spec]);
 assert.equal(launched[0].options.cwd, dir);
+assert.deepEqual(launched[1].args, ["/tmp/orchestrator.mjs", "--mode", "once", "--spec", spec]);
 assert.equal(launched[0].options.env.PI_RALPH_MODE, "once");
 assert.equal(launched[0].options.env.PI_RALPH_SPEC, spec);
 assert.match(launched[0].options.env.PI_RALPH_INTERACTIVE, /^[01]$/);

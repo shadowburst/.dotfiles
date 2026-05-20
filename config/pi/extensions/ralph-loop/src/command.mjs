@@ -1,6 +1,6 @@
 import { access } from "node:fs/promises";
 import { constants } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -26,9 +26,7 @@ export function createRalphCommand({ mode, orchestratorPath = ORCHESTRATOR_PATH,
   return async function runRalph(rawArgs, ctx = {}) {
     const specArg = parseSpecArgument(rawArgs);
     const workingDirectory = cwd();
-    const specPath = resolve(workingDirectory, specArg);
-
-    await access(specPath, constants.R_OK);
+    const specPath = await resolveReadableSpecPath(workingDirectory, specArg);
 
     ctx.ui?.notify?.(`Launching Ralph Orchestrator for ${specArg}`, "info");
     const result = await launchRalphOrchestrator({ mode, specPath, orchestratorPath, spawnProcess, cwd: workingDirectory, nodePath });
@@ -70,6 +68,33 @@ export function launchRalphOrchestrator({ mode, specPath, orchestratorPath = ORC
 
 function formatProcessOutput({ stdout, stderr }) {
   return [stdout.trim(), stderr.trim()].filter(Boolean).join("\n");
+}
+
+async function resolveReadableSpecPath(workingDirectory, specArg) {
+  const candidates = specPathCandidates(workingDirectory, specArg);
+  for (const candidate of candidates) {
+    try {
+      await access(candidate, constants.R_OK);
+      return candidate;
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+  }
+
+  await access(candidates[0], constants.R_OK);
+  return candidates[0];
+}
+
+function specPathCandidates(workingDirectory, specArg) {
+  const normalized = normalizeSpecPathToken(specArg);
+  const candidates = [resolve(workingDirectory, normalized)];
+
+  if (specArg !== normalized) candidates.push(resolve(workingDirectory, specArg));
+  const atSegmentNormalized = normalized.replace(/(^|\/)@([^/]+)/, "$1$2");
+  if (atSegmentNormalized !== normalized) candidates.unshift(resolve(workingDirectory, atSegmentNormalized));
+  if (specArg.startsWith("@/") && specArg.length > 2) candidates.unshift(join(workingDirectory, specArg.slice(2)));
+
+  return [...new Set(candidates)];
 }
 
 function normalizeSpecPathToken(token) {
