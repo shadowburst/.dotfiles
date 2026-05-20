@@ -10,7 +10,9 @@ import {
   cachePaths,
   completeFinalReview,
   completeFeatureSpecTask,
+  buildTaskImplementationPrompt,
   discoverValidationOptions,
+  launchPiImplementationSession,
   parseFeatureSpecTasks,
   parseOrchestratorArgs,
   prepareCurrentBranchStartup,
@@ -137,6 +139,32 @@ const textOnlyTaskValidation = refineTaskValidation({
 assert.ok(!textOnlyTaskValidation.options.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/mcp-bridge"));
 assert.equal(refineTaskValidation({ task: { text: "Manual doc task" }, options: [], changedPaths: ["README.md"] }).verified, false);
 
+const behaviorPrompt = buildTaskImplementationPrompt({
+  repoRoot: dir,
+  specPath: spec,
+  task: { lineNumber: 5, text: "6. Implement the task implementation phase with meaningful TDD guidance", guidance: ["Covers: Requirement: Meaningful test-first behavior; Requirement: Per-task implementation loop"] },
+  validationPlan: taskValidation,
+  expectedChangedPaths: ["config/pi/extensions/ralph-loop/src/orchestrator.mjs", "config/pi/extensions/ralph-loop/tests/run.mjs"],
+});
+assert.match(behaviorPrompt, /Selected task \(line 5\): 6\. Implement the task implementation phase/);
+assert.match(behaviorPrompt, /Before editing, state the deterministic validation you will use/);
+assert.match(behaviorPrompt, /Covers: Requirement: Meaningful test-first behavior/);
+assert.match(behaviorPrompt, /Write or update one failing automated behavior test before implementation/);
+assert.match(behaviorPrompt, /npm test/);
+assert.match(behaviorPrompt, /config\/pi\/extensions\/ralph-loop\/src\/orchestrator\.mjs/);
+assert.doesNotMatch(behaviorPrompt, /mcp-bridge/);
+
+const declarativePrompt = buildTaskImplementationPrompt({
+  repoRoot: dir,
+  specPath: spec,
+  task: { lineNumber: 5, text: "Update Nix settings documentation" },
+  validationPlan: { verified: true, options: [{ command: "nix flake check", cwd: ".", scope: "repo", source: "flake.nix", reason: "flake validation" }], rationale: "repo check" },
+  expectedChangedPaths: ["modules/terminal/pi.nix"],
+});
+assert.match(declarativePrompt, /Do not invent a new test solely for TDD/);
+assert.match(declarativePrompt, /Identify deterministic validation before editing/);
+assert.doesNotMatch(declarativePrompt, /Write or update one failing automated behavior test before implementation/);
+
 const launched = [];
 const fakeSpawn = (command, args, options) => {
   launched.push({ command, args, options });
@@ -167,6 +195,35 @@ assert.equal(launched[0].options.env.PI_RALPH_MODE, "once");
 assert.equal(launched[0].options.env.PI_RALPH_SPEC, spec);
 assert.deepEqual(launched[0].options.stdio, ["inherit", "pipe", "pipe"]);
 
+let implementationPrompt = "";
+const implementationResult = await launchPiImplementationSession({
+  cwd: dir,
+  prompt: "Implement task 1",
+  piBin: "/usr/bin/pi",
+  spawnProcess(command, args, options) {
+    const child = new EventEmitter();
+    child.stdout = new PassThrough();
+    child.stderr = new PassThrough();
+    child.stdin = new PassThrough();
+    child.stdin.on("data", (chunk) => {
+      implementationPrompt += chunk.toString();
+    });
+    queueMicrotask(() => {
+      child.stdout.end("done\n");
+      child.emit("close", 0);
+    });
+    assert.equal(command, "/usr/bin/pi");
+    assert.deepEqual(args, ["-p"]);
+    assert.equal(options.cwd, dir);
+    assert.equal(options.env.PI_RALPH_IMPLEMENTATION_SESSION, "1");
+    assert.deepEqual(options.stdio, ["pipe", "pipe", "pipe"]);
+    return child;
+  },
+});
+assert.equal(implementationPrompt, "Implement task 1");
+assert.equal(implementationResult.status, "implementation session completed");
+assert.equal(implementationResult.stdout, "done\n");
+
 const stdout = new PassThrough();
 let text = "";
 stdout.on("data", (chunk) => {
@@ -176,15 +233,18 @@ await runOrchestrator(["--mode", "all", "--spec", spec], { stdout }, {
   cwd: dir,
   cacheRoot: join(dir, "run-cache"),
   execGit: fakeGit({ repoRoot: dir, branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: "" }),
+  implementationSession: async () => ({ status: "implementation session completed" }),
 });
 assert.match(text, /Ralph Orchestrator/);
 assert.match(text, /mode: all/);
 assert.match(text, new RegExp(spec.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-assert.match(text, /status: launched/);
+assert.match(text, /status: implementation session completed/);
 assert.match(text, /task: 1\. Test task/);
+assert.match(text, /implementationPromptBytes: [1-9][0-9]*/);
 const launchedState = JSON.parse(await readFile(cachePaths({ cacheRoot: join(dir, "run-cache"), repoRoot: resolve(dir), specPath: resolve(spec) }).path, "utf8"));
 assert.ok(launchedState.taskValidationPlans.at(-1).options.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/ralph-loop"));
 assert.ok(!launchedState.taskValidationPlans.at(-1).options.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/mcp-bridge"));
+assert.ok(launchedState.expectedChangedPaths.includes("config/pi/extensions/ralph-loop"));
 
 const noTaskSpec = join(dir, "done-feature.md");
 await writeFile(noTaskSpec, "# Feature\n\n## Implementation Tasks\n\n- [x] 1. Done\n");

@@ -4,7 +4,7 @@ import { constants } from "node:fs";
 import { createHash } from "node:crypto";
 import { homedir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { createInterface } from "node:readline/promises";
 
 const IMPLEMENTATION_TASKS_HEADING_PATTERN = /^##\s+Implementation Tasks\s*$/;
@@ -18,6 +18,9 @@ const REPO_VALIDATION_FILES = [
 const PACKAGE_VALIDATION_SCRIPT_PRIORITY = ["test", "check", "lint"];
 const IGNORED_WALK_DIRS = new Set([".git", "node_modules", ".direnv", "result"]);
 const GENERIC_VALIDATION_TOKENS = new Set(["config", "extension", "extensions", "package", "json", "test", "tests", "check", "checks", "lint", "npm", "node", "run", "script", "scripts"]);
+const BEHAVIOR_TASK_TOKENS = ["behavior", "implement", "loop", "phase", "command", "parse", "validation", "review", "cache", "state", "prompt", "session", "workflow", "orchestrator"];
+const DECLARATIVE_TASK_TOKENS = ["doc", "docs", "documentation", "adr", "readme", "nix", "settings", "format", "copy", "text"];
+const AUTOMATED_TEST_COMMAND_PATTERN = /(^|\s)(npm test|.*\btest\b|.*\bnode\s+tests\/|.*\bpytest\b|.*\bvitest\b|.*\bjest\b)/i;
 
 export function parseOrchestratorArgs(argv) {
   let mode;
@@ -80,16 +83,20 @@ export async function runOrchestrator(argv = process.argv.slice(2), io = process
     return;
   }
 
-  const taskValidation = refineTaskValidation({
+  const implementation = await runTaskImplementationPhase({
+    cachePath: startup.cachePath,
+    state,
+    repoRoot: startup.repoRoot,
+    specPath,
+    specText,
     task: selectedTask,
-    options: validationOptions,
-    expectedChangedPaths: inferTaskValidationPaths({ repoRoot: startup.repoRoot, specPath, specText, task: selectedTask, options: validationOptions }),
+    validationOptions,
+    implementationSession: deps.implementationSession,
   });
-  state = await recordTaskValidationPlan({ cachePath: startup.cachePath, state, task: selectedTask, plan: taskValidation });
-  await transitionPhase({ cachePath: startup.cachePath, state, phase: "implementation", currentTask: selectedTask });
   io.stdout.write(`task: ${selectedTask.text}\n`);
-  io.stdout.write(`validation: ${taskValidation.verified ? taskValidation.options.map((option) => option.command).join("; ") : "unverified"}\n`);
-  io.stdout.write("status: launched\n");
+  io.stdout.write(`validation: ${implementation.validationPlan.verified ? implementation.validationPlan.options.map((option) => option.command).join("; ") : "unverified"}\n`);
+  io.stdout.write(`implementationPromptBytes: ${Buffer.byteLength(implementation.prompt, "utf8")}\n`);
+  io.stdout.write(`status: ${implementation.result.status}\n`);
 }
 
 export function parseFeatureSpecTasks(specText) {
@@ -102,7 +109,17 @@ export function parseFeatureSpecTasks(specText) {
     const line = lines[index];
     if (NEXT_LEVEL_TWO_HEADING_PATTERN.test(line)) break;
     const task = parseTopLevelCheckboxTask(line, index + 1);
-    if (task) tasks.push(task);
+    if (!task) continue;
+
+    const guidance = [];
+    let cursor = index + 1;
+    while (cursor < lines.length && !NEXT_LEVEL_TWO_HEADING_PATTERN.test(lines[cursor]) && !TOP_LEVEL_CHECKBOX_PATTERN.test(lines[cursor])) {
+      const trimmed = lines[cursor].trim();
+      if (trimmed) guidance.push(trimmed);
+      cursor += 1;
+    }
+    tasks.push({ ...task, guidance });
+    index = cursor - 1;
   }
   return tasks;
 }
@@ -366,6 +383,120 @@ export function refineTaskValidation({ task, options, expectedChangedPaths = [],
     requiresBroaderChecks: normalized.some((option) => option.scope === "repo"),
     rationale: normalized.length > 0 ? "Smallest discovered deterministic checks relevant to the selected task and expected paths." : "No meaningful deterministic validation was discovered; Ralph must stop rather than complete the task as verified.",
   };
+}
+
+export async function runTaskImplementationPhase({ cachePath, state, repoRoot, specPath, specText, task, validationOptions, implementationSession = launchPiImplementationSession }) {
+  const expectedChangedPaths = inferTaskValidationPaths({ repoRoot, specPath, specText, task, options: validationOptions });
+  const validationPlan = refineTaskValidation({ task, options: validationOptions, expectedChangedPaths });
+  let nextState = await recordExpectedChangedPaths({ cachePath, state, paths: expectedChangedPaths });
+  nextState = await recordTaskValidationPlan({ cachePath, state: nextState, task, plan: validationPlan });
+  nextState = await transitionPhase({ cachePath, state: nextState, phase: "implementation", currentTask: task });
+  const prompt = buildTaskImplementationPrompt({ repoRoot, specPath, task, validationPlan, expectedChangedPaths });
+  const result = await implementationSession({ cwd: repoRoot, prompt, task, validationPlan, expectedChangedPaths });
+  return { state: nextState, validationPlan, expectedChangedPaths, prompt, result: normalizeImplementationResult(result) };
+}
+
+export function launchPiImplementationSession({ cwd, prompt, spawnProcess = spawn, piBin = process.env.PI_RALPH_PI_BIN ?? "pi" }) {
+  return new Promise((resolvePromise, reject) => {
+    const child = spawnProcess(piBin, ["-p"], {
+      cwd,
+      env: { ...process.env, PI_RALPH_IMPLEMENTATION_SESSION: "1" },
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout?.on("data", (chunk) => {
+      stdout += chunk.toString();
+      process.stdout.write(chunk);
+    });
+    child.stderr?.on("data", (chunk) => {
+      stderr += chunk.toString();
+      process.stderr.write(chunk);
+    });
+    child.on("error", reject);
+    child.on("close", (exitCode) => {
+      if (exitCode !== 0) {
+        const error = new Error(stderr.trim() || `Pi implementation session exited with status ${exitCode}`);
+        error.exitCode = exitCode;
+        error.stdout = stdout;
+        error.stderr = stderr;
+        reject(error);
+        return;
+      }
+      resolvePromise({ status: "implementation session completed", exitCode, stdout, stderr });
+    });
+    child.stdin?.end(prompt);
+  });
+}
+
+export function buildTaskImplementationPrompt({ repoRoot, specPath, task, validationPlan, expectedChangedPaths = [] }) {
+  if (!task?.text) throw new Error("Ralph implementation prompt requires a selected task.");
+  const normalizedPlan = normalizeTaskValidationPlan(validationPlan);
+  const paths = uniqueStrings(expectedChangedPaths, "expected changed path");
+  const validationLines = formatPromptBullets(
+    normalizedPlan.options,
+    (option) => `(${option.cwd}) ${option.command} — ${option.reason}`,
+    "No deterministic validation selected. Stop and report the task as unverified; do not edit.",
+  );
+  const pathLines = formatPromptBullets(
+    paths,
+    (path) => path,
+    "Not inferred; state the expected touched files before editing and keep scope to the selected task.",
+  );
+  const guidanceLines = formatPromptBullets(
+    Array.isArray(task.guidance) ? task.guidance : [],
+    (line) => line,
+    "No task-specific sub-guidance was found under this checkbox.",
+  );
+  const tddGuidance = meaningfulAutomatedBehaviorTestApplicable({ task, validationPlan: normalizedPlan })
+    ? "TDD: A meaningful automated behavior test appears applicable. Write or update one failing automated behavior test before implementation, run it to observe the expected failure, then implement the smallest behavior change and rerun the selected deterministic validation. Do not batch unrelated tests."
+    : "TDD: Do not invent a new test solely for TDD. Identify deterministic validation before editing, then make the smallest task-scoped change and run the selected validation.";
+
+  return [
+    "Implement exactly one Ralph Feature Spec task in this repository.",
+    "",
+    `Repository: ${repoRoot}`,
+    `Feature Spec: ${specPath}`,
+    `Selected task (line ${task.lineNumber ?? "unknown"}): ${task.text}`,
+    "",
+    "Task-specific Feature Spec guidance:",
+    guidanceLines,
+    "",
+    "Before editing, state the deterministic validation you will use and why it is sufficient for this task.",
+    tddGuidance,
+    "",
+    "Selected deterministic validation (chosen before editing):",
+    validationLines,
+    "",
+    "Expected task-scoped changed paths:",
+    pathLines,
+    "",
+    "Implementation constraints:",
+    "- Keep changes scoped to the selected task; do not update the Feature Spec checkbox and do not commit.",
+    "- Follow repository instructions and domain language.",
+    "- If validation cannot provide meaningful deterministic evidence, stop and report the task as unverified.",
+  ].join("\n");
+}
+
+function normalizeImplementationResult(result) {
+  const status = typeof result?.status === "string" && result.status.length > 0 ? result.status : "implementation completed";
+  return { ...result, status };
+}
+
+function formatPromptBullets(values, formatValue, emptyText) {
+  if (values.length === 0) return `- ${emptyText}`;
+  return values.map((value) => `- ${formatValue(value)}`).join("\n");
+}
+
+function meaningfulAutomatedBehaviorTestApplicable({ task, validationPlan }) {
+  const taskText = (task?.text ?? "").toLowerCase();
+  const hasAutomatedTest = normalizeTaskValidationPlan(validationPlan).options.some((option) => AUTOMATED_TEST_COMMAND_PATTERN.test(option.command));
+  if (!hasAutomatedTest) return false;
+  const hasBehaviorSignal = BEHAVIOR_TASK_TOKENS.some((token) => taskText.includes(token));
+  const declarativeOnly = DECLARATIVE_TASK_TOKENS.some((token) => taskText.includes(token)) && !hasBehaviorSignal;
+  return hasBehaviorSignal && !declarativeOnly;
 }
 
 export function cachePaths({ cacheRoot = defaultCacheRoot(), repoRoot, specPath }) {
