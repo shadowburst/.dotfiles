@@ -29,7 +29,13 @@ export function createRalphCommand({ mode, orchestratorPath = ORCHESTRATOR_PATH,
     const specPath = await resolveReadableSpecPath(workingDirectory, specArg);
 
     ctx.ui?.notify?.(`Launching Ralph Orchestrator for ${specArg}`, "info");
-    const result = await launchRalphOrchestrator({ mode, specPath, orchestratorPath, spawnProcess, cwd: workingDirectory, nodePath });
+    const hiddenEditor = hideEditorDuringInteractiveOutput(ctx.ui);
+    let result;
+    try {
+      result = await launchRalphOrchestrator({ mode, specPath, orchestratorPath, spawnProcess, cwd: workingDirectory, nodePath });
+    } finally {
+      hiddenEditor?.restore();
+    }
     const output = formatProcessOutput(result);
 
     if (result.exitCode !== 0) {
@@ -42,11 +48,19 @@ export function createRalphCommand({ mode, orchestratorPath = ORCHESTRATOR_PATH,
   };
 }
 
-export function launchRalphOrchestrator({ mode, specPath, orchestratorPath = ORCHESTRATOR_PATH, spawnProcess = spawn, cwd = process.cwd(), nodePath = process.execPath }) {
+export function launchRalphOrchestrator({
+  mode,
+  specPath,
+  orchestratorPath = ORCHESTRATOR_PATH,
+  spawnProcess = spawn,
+  cwd = process.cwd(),
+  nodePath = process.execPath,
+  interactive = process.stdout.isTTY,
+} = {}) {
   return new Promise((resolvePromise, reject) => {
     const child = spawnProcess(nodePath, [orchestratorPath, "--mode", mode, "--spec", specPath], {
       cwd,
-      env: { ...process.env, PI_RALPH_MODE: mode, PI_RALPH_SPEC: specPath, PI_RALPH_INTERACTIVE: process.stdout.isTTY ? "1" : "0" },
+      env: { ...process.env, PI_RALPH_MODE: mode, PI_RALPH_SPEC: specPath, PI_RALPH_INTERACTIVE: interactive ? "1" : "0" },
       stdio: ["inherit", "pipe", "pipe"],
     });
 
@@ -64,6 +78,23 @@ export function launchRalphOrchestrator({ mode, specPath, orchestratorPath = ORC
     child.on("error", reject);
     child.on("close", (exitCode) => resolvePromise({ exitCode, stdout, stderr }));
   });
+}
+
+function hideEditorDuringInteractiveOutput(ui) {
+  if (typeof ui?.setEditorComponent !== "function") return null;
+
+  const previousEditorFactory = typeof ui.getEditorComponent === "function" ? ui.getEditorComponent() : undefined;
+  ui.setEditorComponent(() => ({
+    render: () => [],
+    invalidate() {},
+    getText: () => "",
+    setText() {},
+    handleInput() {},
+  }));
+
+  return {
+    restore: () => ui.setEditorComponent(previousEditorFactory),
+  };
 }
 
 function formatProcessOutput({ stdout, stderr }) {

@@ -512,13 +512,29 @@ const handler = createRalphCommand({
 });
 const message = await handler("feature.md", { ui: { notify() {} } });
 assert.match(message, /status: launched/);
+const editorFactories = [];
+const hiddenEditorMessage = await handler("feature.md", {
+  ui: {
+    notify() {},
+    getEditorComponent: () => "previous-editor",
+    setEditorComponent(factory) {
+      editorFactories.push(factory);
+    },
+  },
+});
+assert.match(hiddenEditorMessage, /status: launched/);
+assert.equal(typeof editorFactories[0], "function");
+assert.deepEqual(editorFactories[0]().render(80), []);
+assert.equal(editorFactories[1], "previous-editor");
 const mentionMessage = await handler("@feature.md", { ui: { notify() {} } });
 assert.match(mentionMessage, /status: launched/);
-assert.equal(launched.length, 2);
+assert.equal(launched.length, 3);
 assert.equal(launched[0].command, "/usr/bin/node");
 assert.deepEqual(launched[0].args, ["/tmp/orchestrator.mjs", "--mode", "once", "--spec", spec]);
 assert.equal(launched[0].options.cwd, dir);
 assert.deepEqual(launched[1].args, ["/tmp/orchestrator.mjs", "--mode", "once", "--spec", spec]);
+assert.match(launched[1].options.env.PI_RALPH_INTERACTIVE, /^[01]$/);
+assert.deepEqual(launched[2].args, ["/tmp/orchestrator.mjs", "--mode", "once", "--spec", spec]);
 assert.equal(launched[0].options.env.PI_RALPH_MODE, "once");
 assert.equal(launched[0].options.env.PI_RALPH_SPEC, spec);
 assert.match(launched[0].options.env.PI_RALPH_INTERACTIVE, /^[01]$/);

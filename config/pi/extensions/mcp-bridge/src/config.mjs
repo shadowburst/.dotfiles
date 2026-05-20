@@ -1,68 +1,114 @@
-import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { execFile } from "node:child_process";
+
+const OPENCODE_CONFIG_COMMAND = "opencode debug config";
+const OPENCODE_CONFIG_TIMEOUT_MS = 3000;
 
 export function interpolateEnv(value, env = process.env) {
   return String(value).replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_match, name) => env[name] ?? "");
 }
 
-function asStringArray(value, field, serverName) {
-  if (value === undefined) return undefined;
-  if (!Array.isArray(value) || !value.every((item) => typeof item === "string")) {
-    throw new Error(`Server ${serverName}: ${field} must be an array of strings`);
-  }
-  return value;
+function defaultRunCommand({ command, args, timeoutMs, cwd }) {
+  return new Promise((resolve, reject) => {
+    execFile(command, args, { cwd, timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+      if (error) {
+        error.stdout = stdout;
+        error.stderr = stderr;
+        reject(error);
+        return;
+      }
+      resolve({ stdout, stderr, statusCode: 0 });
+    });
+  });
 }
 
-function parseServer(name, raw, env) {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error(`Server ${name}: definition must be an object`);
-  const transport = raw.transport ?? "stdio";
-  if (transport !== "stdio") throw new Error(`Server ${name}: only stdio transport is supported`);
-  const enabled = raw.enabled !== false;
-  if (raw.command !== undefined && typeof raw.command !== "string") throw new Error(`Server ${name}: command must be a string`);
-  if (enabled && !raw.command) throw new Error(`Server ${name}: enabled stdio servers require command`);
-  if (raw.args !== undefined && (!Array.isArray(raw.args) || !raw.args.every((arg) => typeof arg === "string"))) {
-    throw new Error(`Server ${name}: args must be an array of strings`);
-  }
-  if (raw.env !== undefined && (!raw.env || typeof raw.env !== "object" || Array.isArray(raw.env))) {
-    throw new Error(`Server ${name}: env must be an object`);
-  }
+function isTimeoutError(error) {
+  return Boolean(error?.timedOut || error?.code === "ETIMEDOUT" || (error?.killed && error?.signal === "SIGTERM") || /timed out/i.test(error?.message ?? ""));
+}
 
-  const serverEnv = {};
-  for (const [key, value] of Object.entries(raw.env ?? {})) {
-    if (typeof value !== "string") throw new Error(`Server ${name}: env.${key} must be a string`);
-    serverEnv[key] = interpolateEnv(value, env);
-  }
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
+}
 
+function isObjectRecord(value) {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function baseConfig(cwd) {
   return {
-    name,
-    enabled,
-    transport,
-    command: raw.command,
-    args: raw.args ?? [],
-    env: serverEnv,
-    allowTools: asStringArray(raw.allowTools, "allowTools", name),
-    denyTools: asStringArray(raw.denyTools, "denyTools", name),
+    found: true,
+    source: OPENCODE_CONFIG_COMMAND,
+    command: "opencode",
+    args: ["debug", "config"],
+    timeoutMs: OPENCODE_CONFIG_TIMEOUT_MS,
+    cwd,
+    status: "pending",
+    elapsedMs: 0,
+    servers: [],
+    errors: [],
   };
 }
 
-export async function loadConfig(extensionDir, env = process.env) {
-  const configPath = join(extensionDir, "servers.json");
-  const examplePath = join(extensionDir, "servers.example.json");
-  if (!existsSync(configPath)) {
-    return { found: false, path: configPath, examplePath, servers: [], errors: [] };
+function complete(config, startedAt, updates) {
+  return { ...config, ...updates, elapsedMs: Date.now() - startedAt };
+}
+
+function timeoutErrorMessage(config) {
+  return `${config.source} timed out after ${config.timeoutMs} ms`;
+}
+
+export async function loadConfig(_extensionDir, _env = process.env, options = {}) {
+  const startedAt = Date.now();
+  const cwd = options.cwd;
+  const config = baseConfig(cwd);
+  const runCommand = options.runCommand ?? defaultRunCommand;
+
+  let result;
+  let timeoutId;
+  try {
+    const commandPromise = runCommand({
+      command: config.command,
+      args: config.args,
+      timeoutMs: config.timeoutMs,
+      cwd: config.cwd,
+    });
+    const timeoutPromise = new Promise((_resolve, reject) => {
+      timeoutId = setTimeout(() => {
+        const error = new Error(timeoutErrorMessage(config));
+        error.timedOut = true;
+        reject(error);
+      }, config.timeoutMs);
+      timeoutId.unref?.();
+    });
+    result = await Promise.race([commandPromise, timeoutPromise]);
+  } catch (error) {
+    if (isTimeoutError(error)) return complete(config, startedAt, { status: "timed_out", errors: [timeoutErrorMessage(config)] });
+    return complete(config, startedAt, { status: "failed", errors: [errorMessage(error)] });
+  } finally {
+    clearTimeout(timeoutId);
   }
 
-  try {
-    const parsed = JSON.parse(await readFile(configPath, "utf8"));
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("root must be an object");
-    const serversObject = parsed.servers ?? {};
-    if (!serversObject || typeof serversObject !== "object" || Array.isArray(serversObject)) throw new Error("servers must be an object");
-    const servers = Object.entries(serversObject).map(([name, raw]) => parseServer(name, raw, env));
-    return { found: true, path: configPath, examplePath, servers, errors: [] };
-  } catch (error) {
-    return { found: true, path: configPath, examplePath, servers: [], errors: [error instanceof Error ? error.message : String(error)] };
+  if (typeof result?.statusCode === "number" && result.statusCode !== 0) {
+    return complete(config, startedAt, { status: "failed", errors: [`${config.source} exited with status ${result.statusCode}`] });
   }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(result?.stdout ?? "");
+  } catch (error) {
+    return complete(config, startedAt, { status: "failed", errors: [`invalid JSON from ${config.source}: ${errorMessage(error)}`] });
+  }
+
+  if (!isObjectRecord(parsed)) {
+    return complete(config, startedAt, { status: "failed", errors: [`invalid JSON from ${config.source}: root must be an object`] });
+  }
+
+  const mcp = parsed.mcp ?? {};
+  if (!isObjectRecord(mcp)) {
+    return complete(config, startedAt, { status: "failed", errors: [`invalid JSON from ${config.source}: mcp must be an object when present`] });
+  }
+
+  const servers = Object.entries(mcp).map(([name, raw]) => ({ name, raw }));
+  return complete(config, startedAt, { status: "success", servers, errors: [] });
 }
 
 export function toolAllowed(server, toolName) {

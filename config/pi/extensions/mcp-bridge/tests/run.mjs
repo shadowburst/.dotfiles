@@ -1,7 +1,4 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { loadConfig, interpolateEnv, toolAllowed } from "../src/config.mjs";
 import { piToolName, sanitizeName } from "../src/names.mjs";
 import { convertMcpInputSchema } from "../src/schema.mjs";
@@ -13,29 +10,30 @@ assert.equal(sanitizeName("123"), "x_123");
 assert.equal(piToolName("github", "search_issues"), "mcp_github_search_issues");
 assert.equal(piToolName("git hub", "search/issues"), "mcp_git_hub_search_issues");
 
-const dir = await mkdtemp(join(tmpdir(), "mcp-bridge-test-"));
-try {
-  let config = await loadConfig(dir, {});
-  assert.equal(config.found, false);
-  assert.deepEqual(config.servers, []);
-
-  await writeFile(join(dir, "servers.json"), JSON.stringify({
-    servers: {
-      disabled: { enabled: false, command: "ignored" },
-      enabled: { command: "cmd", args: ["--x"], env: { TOKEN: "${TOKEN}" }, allowTools: ["a", "b"], denyTools: ["b"] }
-    }
-  }));
-  config = await loadConfig(dir, { TOKEN: "secret" });
-  assert.equal(config.errors.length, 0);
-  assert.equal(config.servers[0].enabled, false);
-  assert.equal(config.servers[1].enabled, true);
-  assert.equal(config.servers[1].env.TOKEN, "secret");
-  assert.equal(toolAllowed(config.servers[1], "a"), true);
-  assert.equal(toolAllowed(config.servers[1], "b"), false);
-  assert.equal(toolAllowed(config.servers[1], "c"), false);
-} finally {
-  await rm(dir, { recursive: true, force: true });
-}
+const config = await loadConfig("/unused-extension-dir", {}, {
+  runCommand: async ({ command, args, timeoutMs }) => {
+    assert.equal(command, "opencode");
+    assert.deepEqual(args, ["debug", "config"]);
+    assert.equal(timeoutMs, 3000);
+    return {
+      stdout: JSON.stringify({
+        mcp: {
+          disabled: { enabled: false, type: "local", command: ["ignored"] },
+          enabled: { type: "local", command: ["cmd", "--x"], environment: { TOKEN: "secret" } },
+        },
+      }),
+      statusCode: 0,
+    };
+  },
+});
+assert.equal(config.source, "opencode debug config");
+assert.equal(config.status, "success");
+assert.equal(config.timeoutMs, 3000);
+assert.equal(config.errors.length, 0);
+assert.deepEqual(config.servers.map((server) => server.name), ["disabled", "enabled"]);
+assert.deepEqual(config.servers[1].raw.command, ["cmd", "--x"]);
+assert.equal(config.servers[1].raw.environment.TOKEN, "secret");
+assert.equal(toolAllowed(config.servers[1], "anything"), true);
 
 const converted = convertMcpInputSchema({
   type: "object",
