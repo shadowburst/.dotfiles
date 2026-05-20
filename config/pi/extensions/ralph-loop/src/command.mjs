@@ -12,7 +12,7 @@ export function parseSpecArgument(rawArgs) {
     throw new Error("Usage: /ralph <feature-spec-path> or /ralph:once <feature-spec-path>");
   }
 
-  const specPath = args[0];
+  const specPath = normalizeSpecPathToken(args[0]);
   if (specPath.startsWith("-")) {
     throw new Error("Ralph commands accept only a Feature Spec path; flags are not supported.");
   }
@@ -70,6 +70,11 @@ export function launchRalphOrchestrator({ mode, specPath, orchestratorPath = ORC
 
 function formatProcessOutput({ stdout, stderr }) {
   return [stdout.trim(), stderr.trim()].filter(Boolean).join("\n");
+}
+
+function normalizeSpecPathToken(token) {
+  if (token.startsWith("@") && token.length > 1) return token.slice(1);
+  return token;
 }
 
 function tokenizeSinglePath(input) {

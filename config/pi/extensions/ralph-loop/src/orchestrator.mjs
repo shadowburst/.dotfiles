@@ -40,9 +40,15 @@ export function parseOrchestratorArgs(argv) {
 
   if (mode !== "all" && mode !== "once") throw new Error("Ralph Orchestrator requires --mode all|once.");
   if (!spec) throw new Error("Ralph Orchestrator requires --spec <feature-spec-path>.");
+  spec = normalizeSpecPathToken(spec);
   if (spec.startsWith("-")) throw new Error("Ralph Orchestrator --spec must be a Feature Spec path.");
 
   return { mode, specPath: resolve(spec) };
+}
+
+function normalizeSpecPathToken(token) {
+  if (token.startsWith("@") && token.length > 1) return token.slice(1);
+  return token;
 }
 
 export async function runOrchestrator(argv = process.argv.slice(2), io = process, deps = {}) {

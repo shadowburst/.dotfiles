@@ -45,6 +45,8 @@ import {
 } from "../src/orchestrator.mjs";
 
 assert.equal(parseSpecArgument("docs/specs/example.md"), "docs/specs/example.md");
+assert.equal(parseSpecArgument("@docs/specs/example.md"), "docs/specs/example.md");
+assert.equal(parseSpecArgument('"@docs/specs/example spec.md"'), "docs/specs/example spec.md");
 assert.equal(parseSpecArgument('"docs/specs/example spec.md"'), "docs/specs/example spec.md");
 assert.throws(() => parseSpecArgument(""), /Usage/);
 assert.throws(() => parseSpecArgument("--all docs/specs/example.md"), /Usage|flags/);
@@ -52,6 +54,7 @@ assert.throws(() => parseSpecArgument("docs/a.md docs/b.md"), /Usage/);
 assert.throws(() => parseSpecArgument("'unterminated"), /Unclosed quote/);
 
 assert.deepEqual(parseOrchestratorArgs(["--mode", "all", "--spec", "docs/specs/example.md"]).mode, "all");
+assert.equal(parseOrchestratorArgs(["--mode", "all", "--spec", "@docs/specs/example.md"]).specPath, resolve("docs/specs/example.md"));
 assert.throws(() => parseOrchestratorArgs(["--mode", "all", "--spec", "--flag"]), /Feature Spec path/);
 assert.throws(() => parseOrchestratorArgs(["--mode", "task", "--spec", "docs/specs/example.md"]), /all\|once/);
 
