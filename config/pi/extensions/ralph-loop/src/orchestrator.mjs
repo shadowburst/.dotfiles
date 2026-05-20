@@ -121,6 +121,25 @@ export async function runOrchestrator(argv = process.argv.slice(2), io = process
   });
   io.stdout.write(`refactorPromptBytes: ${Buffer.byteLength(refactor.prompt, "utf8")}\n`);
   io.stdout.write(`refactor: ${refactor.result.status}${refactor.changedFiles ? "; validation rerun" : "; no changes"}\n`);
+  if (refactor.changedFiles && !hasPassingDeterministicValidation(refactor.validationEvidence)) {
+    io.stdout.write("status: post-refactor validation did not pass; task review skipped\n");
+    return;
+  }
+  const review = await runTaskReviewPhase({
+    cachePath: startup.cachePath,
+    state: refactor.state,
+    repoRoot: startup.repoRoot,
+    specPath,
+    specText,
+    task: selectedTask,
+    validationEvidence: [...initialValidationEvidence.validationEvidence, ...refactor.validationEvidence],
+    implementationSummary: implementation.result.status,
+    refactorSummary: refactor.result.status,
+    reviewSession: deps.reviewSession,
+    execGit: deps.execGit,
+  });
+  io.stdout.write(`reviewPromptBytes: ${Buffer.byteLength(review.prompt, "utf8")}\n`);
+  io.stdout.write(`taskReview: ${review.verdict.verdict}\n`);
 }
 
 export function parseFeatureSpecTasks(specText) {
@@ -467,6 +486,47 @@ export async function runTaskRefactorPhase({
   return { state: nextState, prompt, result, changedFiles, validationEvidence, scopePaths };
 }
 
+export async function runTaskReviewPhase({
+  cachePath,
+  state,
+  repoRoot,
+  specPath,
+  specText,
+  task = state.currentTask ?? null,
+  validationEvidence = state.validationEvidence ?? [],
+  implementationSummary = "",
+  refactorSummary = "",
+  reviewSession = launchPiTaskReviewSession,
+  execGit = git,
+}) {
+  const diff = await taskDiff({ repoRoot, execGit });
+  const changedPaths = await taskTouchedPaths({ repoRoot, execGit });
+  const changedFiles = await collectChangedFileSnapshots({ repoRoot, paths: changedPaths });
+  let nextState = await transitionPhase({ cachePath, state, phase: "task-review", currentTask: task });
+  const prompt = buildTaskReviewPrompt({
+    repoRoot,
+    specPath,
+    specText,
+    task,
+    diff,
+    changedPaths,
+    changedFiles,
+    validationEvidence,
+    implementationSummary,
+    refactorSummary,
+  });
+  const result = await reviewSession({ cwd: repoRoot, prompt, task, diff, changedPaths, validationEvidence });
+  const verdict = parseTaskReviewVerdict(result?.stdout ?? result?.text ?? result?.summary ?? "");
+  nextState = await recordTaskReviewVerdict({
+    cachePath,
+    state: nextState,
+    task,
+    verdict: verdict.verdict,
+    summary: formatReviewSummary(verdict),
+  });
+  return { state: nextState, prompt, result, verdict, diff, changedPaths, changedFiles };
+}
+
 export function hasPassingDeterministicValidation(validationEvidence) {
   if (!Array.isArray(validationEvidence) || validationEvidence.length === 0) return false;
   return validationEvidence.some((evidence) => evidence.exitCode === 0) && validationEvidence.every((evidence) => evidence.exitCode === 0);
@@ -493,6 +553,18 @@ export function launchPiRefactorSession({ cwd, prompt, spawnProcess = spawn, piB
     sessionEnv: { PI_RALPH_REFACTOR_SESSION: "1" },
     label: "refactor",
     successStatus: "refactor session completed",
+  });
+}
+
+export function launchPiTaskReviewSession({ cwd, prompt, spawnProcess = spawn, piBin = process.env.PI_RALPH_PI_BIN ?? "pi" }) {
+  return launchPiPromptSession({
+    cwd,
+    prompt,
+    spawnProcess,
+    piBin,
+    sessionEnv: { PI_RALPH_TASK_REVIEW_SESSION: "1" },
+    label: "task review",
+    successStatus: "task review session completed",
   });
 }
 
@@ -580,6 +652,77 @@ export function buildTaskImplementationPrompt({ repoRoot, specPath, task, valida
   ].join("\n");
 }
 
+export function buildTaskReviewPrompt({
+  repoRoot,
+  specPath,
+  specText,
+  task,
+  diff = "",
+  changedPaths = [],
+  changedFiles = [],
+  validationEvidence = [],
+  implementationSummary = "",
+  refactorSummary = "",
+}) {
+  if (!task?.text) throw new Error("Ralph task review prompt requires a selected task.");
+  const specSections = relevantSpecSections({ specText, task });
+  const changedPathLines = formatPromptBullets(uniqueStrings(changedPaths, "review changed path"), (path) => path, "No changed paths were detected.");
+  const changedFileLines = formatPromptBullets(
+    changedFiles,
+    formatChangedFileSnapshot,
+    "No changed file snapshots were available.",
+  );
+  const evidenceLines = formatPromptBullets(
+    validationEvidence,
+    formatValidationEvidence,
+    "No deterministic validation evidence was provided; return BLOCKED unless the task is explicitly unreviewable without it.",
+  );
+
+  return [
+    "Review exactly one Ralph Feature Spec task from a fresh context.",
+    "Use only the review inputs in this prompt: relevant Feature Spec text, task diff, changed files, implementation/refactor summaries, and validation evidence.",
+    "Do not ask for broad repository context, do not review unrelated files, and do not require subjective preferences as fixes.",
+    "Return a machine-readable verdict as JSON on the final line: {\"verdict\":\"PASS|FAIL|BLOCKED\",\"summary\":\"...\",\"requiredFixes\":[\"...\"]}.",
+    "If verdict is FAIL, requiredFixes must contain only required fixes for correctness, spec compliance, validation, safety, or maintainability defects introduced by this task.",
+    "Use BLOCKED only when the provided inputs are insufficient or validation evidence is missing/invalid.",
+    "",
+    `Repository: ${repoRoot}`,
+    `Feature Spec: ${specPath}`,
+    `Selected task (line ${task.lineNumber ?? "unknown"}): ${task.text}`,
+    "",
+    "Relevant Feature Spec sections:",
+    specSections,
+    "",
+    "Implementation summary:",
+    implementationSummary || "(none provided)",
+    "",
+    "Refactor summary:",
+    refactorSummary || "(none provided)",
+    "",
+    "Changed paths:",
+    changedPathLines,
+    "",
+    "Validation evidence:",
+    evidenceLines,
+    "",
+    "Changed file snapshots:",
+    changedFileLines,
+    "",
+    "Task diff:",
+    diff.trim() ? diff : "(no current task diff detected)",
+  ].join("\n");
+}
+
+export function parseTaskReviewVerdict(text) {
+  const trimmed = String(text ?? "").trim();
+  if (!trimmed) throw new Error("Ralph task review returned no machine-readable verdict.");
+  const jsonLine = trimmed.split(/\r?\n/).reverse().find(isJsonObjectLine);
+  if (jsonLine) return normalizeTaskReviewVerdict(parseReviewVerdictJson(jsonLine));
+  const match = /^(PASS|FAIL|BLOCKED)(?::|\s|-)?\s*([\s\S]*)$/m.exec(trimmed);
+  if (!match) throw new Error("Ralph task review must return PASS, FAIL, or BLOCKED.");
+  return normalizeTaskReviewVerdict({ verdict: match[1], summary: match[2].trim() });
+}
+
 export function buildTaskRefactorPrompt({ repoRoot, task, validationPlan, scopePaths = [], diff = "" }) {
   if (!task?.text) throw new Error("Ralph refactor prompt requires a selected task.");
   const normalizedPlan = normalizeTaskValidationPlan(validationPlan);
@@ -613,6 +756,114 @@ export function buildTaskRefactorPrompt({ repoRoot, task, validationPlan, scopeP
     "Current task diff for context:",
     diff.trim() ? diff : "(no current task diff detected)",
   ].join("\n");
+}
+
+async function collectChangedFileSnapshots({ repoRoot, paths }) {
+  const snapshots = [];
+  for (const path of uniqueStrings(paths, "review changed path")) {
+    const absolutePath = join(repoRoot, path);
+    let content;
+    try {
+      content = await readFile(absolutePath, "utf8");
+    } catch (error) {
+      if (error.code === "ENOENT" || error.code === "EISDIR") continue;
+      throw error;
+    }
+    snapshots.push({ path, language: languageForPath(path), content: truncateText(content, 12000) });
+  }
+  return snapshots;
+}
+
+function relevantSpecSections({ specText, task }) {
+  const sections = [];
+  const requirementNames = requirementNamesForTask(task);
+  const taskBlock = selectedTaskSpecBlock({ specText, task });
+  if (taskBlock) sections.push(taskBlock);
+  for (const name of requirementNames) {
+    const block = requirementBlock(specText, name);
+    if (block) sections.push(block);
+  }
+  return sections.length > 0 ? sections.join("\n\n---\n\n") : `Selected task: ${task.text}`;
+}
+
+function selectedTaskSpecBlock({ specText, task }) {
+  if (!Number.isInteger(task?.lineNumber)) return `Selected task: ${task?.text ?? "unknown"}`;
+  const lines = specText.split(/\r?\n/);
+  const start = task.lineNumber - 1;
+  if (start < 0 || start >= lines.length) return `Selected task: ${task.text}`;
+  let end = start + 1;
+  while (end < lines.length && !NEXT_LEVEL_TWO_HEADING_PATTERN.test(lines[end]) && !TOP_LEVEL_CHECKBOX_PATTERN.test(lines[end])) end += 1;
+  return lines.slice(start, end).join("\n").trim();
+}
+
+function requirementNamesForTask(task) {
+  const text = [task?.text, ...(Array.isArray(task?.guidance) ? task.guidance : [])].join("\n");
+  return [...text.matchAll(/Requirement:\s*([^;\n]+)/g)].map((match) => match[1].trim()).filter(Boolean);
+}
+
+function requirementBlock(specText, requirementName) {
+  const lines = specText.split(/\r?\n/);
+  const heading = `### Requirement: ${requirementName}`.toLowerCase();
+  const start = lines.findIndex((line) => line.trim().toLowerCase() === heading);
+  if (start === -1) return "";
+  let end = start + 1;
+  while (end < lines.length && !/^###\s+Requirement:|^##\s+/.test(lines[end])) end += 1;
+  return lines.slice(start, end).join("\n").trim();
+}
+
+function isJsonObjectLine(line) {
+  const trimmed = line.trim();
+  return trimmed.startsWith("{") && trimmed.endsWith("}");
+}
+
+function parseReviewVerdictJson(jsonLine) {
+  try {
+    return JSON.parse(jsonLine);
+  } catch (error) {
+    throw new Error(`Ralph task review verdict JSON is invalid: ${error.message}`);
+  }
+}
+
+function normalizeTaskReviewVerdict(value) {
+  const verdict = String(value?.verdict ?? "").trim().toUpperCase();
+  assertReviewVerdict(verdict);
+  const requiredFixes = normalizeRequiredFixes(value?.requiredFixes);
+  const summary = typeof value.summary === "string" ? value.summary.trim() : "";
+  if (verdict === "FAIL" && requiredFixes.length === 0) throw new Error("Ralph task review FAIL verdict must include requiredFixes.");
+  return { verdict, summary, requiredFixes };
+}
+
+function normalizeRequiredFixes(requiredFixes) {
+  if (!Array.isArray(requiredFixes)) return [];
+  return requiredFixes.filter((fix) => typeof fix === "string" && fix.trim()).map((fix) => fix.trim());
+}
+
+function formatReviewSummary(verdict) {
+  const fixes = verdict.requiredFixes?.length ? ` Required fixes: ${verdict.requiredFixes.join("; ")}` : "";
+  return `${verdict.summary ?? ""}${fixes}`.trim();
+}
+
+function formatChangedFileSnapshot(file) {
+  return `${file.path}\n\`\`\`${file.language}\n${file.content}\n\`\`\``;
+}
+
+function formatValidationEvidence(evidence) {
+  const stderr = evidence.stderr ? `; stderr: ${truncateText(evidence.stderr, 1000)}` : "";
+  return `${evidence.phase ?? "validation"}: (${evidence.cwd ?? "."}) ${evidence.command ?? "unknown command"} -> exit ${evidence.exitCode}${stderr}`;
+}
+
+function languageForPath(path) {
+  if (path.endsWith(".mjs") || path.endsWith(".js")) return "javascript";
+  if (path.endsWith(".ts")) return "typescript";
+  if (path.endsWith(".md")) return "markdown";
+  if (path.endsWith(".json")) return "json";
+  if (path.endsWith(".nix")) return "nix";
+  return "text";
+}
+
+function truncateText(text, maxLength) {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength)}\n...<truncated ${text.length - maxLength} bytes>`;
 }
 
 function normalizeImplementationResult(result) {
@@ -945,7 +1196,17 @@ async function verifyDirtyDiffForResume({ state, status, execGit, cwd }) {
 async function taskDiff({ repoRoot, execGit }) {
   const worktree = await gitOne(execGit, ["diff", "--binary"], { cwd: repoRoot, trim: false });
   const staged = await gitOne(execGit, ["diff", "--cached", "--binary"], { cwd: repoRoot, trim: false });
-  return `${worktree}${staged}`;
+  const untrackedPaths = await taskUntrackedPaths({ repoRoot, execGit });
+  const untracked = [];
+  for (const path of untrackedPaths) {
+    untracked.push(await gitDiffNoIndex(execGit, ["diff", "--binary", "--no-index", "--", "/dev/null", path], { cwd: repoRoot }));
+  }
+  return `${worktree}${staged}${untracked.join("")}`;
+}
+
+async function taskUntrackedPaths({ repoRoot, execGit }) {
+  const output = await gitOne(execGit, ["ls-files", "--others", "--exclude-standard", "-z"], { cwd: repoRoot, trim: false });
+  return output.split("\0").filter(Boolean).sort();
 }
 
 async function taskChangeFingerprint({ repoRoot, execGit, diff }) {

@@ -11,11 +11,13 @@ import {
   completeFinalReview,
   completeFeatureSpecTask,
   buildTaskImplementationPrompt,
+  buildTaskReviewPrompt,
   discoverValidationOptions,
   hasPassingDeterministicValidation,
   launchPiImplementationSession,
   parseFeatureSpecTasks,
   parseOrchestratorArgs,
+  parseTaskReviewVerdict,
   prepareCurrentBranchStartup,
   refineTaskValidation,
   preserveCacheOnStop,
@@ -28,6 +30,7 @@ import {
   recordValidationEvidence,
   runOrchestrator,
   runTaskRefactorPhase,
+  runTaskReviewPhase,
   selectFirstUncheckedTask,
   transitionPhase,
 } from "../src/orchestrator.mjs";
@@ -262,6 +265,73 @@ const untrackedRefactorResult = await runTaskRefactorPhase({
 assert.equal(untrackedRefactorResult.changedFiles, true);
 assert.deepEqual(untrackedRefactorCommands, ["npm test"]);
 
+assert.deepEqual(parseTaskReviewVerdict('{"verdict":"PASS","summary":"ok","requiredFixes":[]}'), { verdict: "PASS", summary: "ok", requiredFixes: [] });
+assert.deepEqual(parseTaskReviewVerdict('BLOCKED missing validation'), { verdict: "BLOCKED", summary: "missing validation", requiredFixes: [] });
+assert.throws(() => parseTaskReviewVerdict('{"verdict":"FAIL","summary":"bad","requiredFixes":[]}'), /requiredFixes/);
+assert.throws(() => parseTaskReviewVerdict('looks fine'), /PASS, FAIL, or BLOCKED/);
+
+const reviewTask = {
+  lineNumber: 30,
+  text: "8. Implement fresh-context Ralph-specific task review with machine-readable `PASS`, `FAIL`, or `BLOCKED` verdicts and review inputs limited to relevant spec, diff, files, summaries, and validation evidence.",
+  guidance: ["Covers: Requirement: Clean-eye task review"],
+};
+const reviewSpecText = `# Feature\n\n## Requirements\n\n### Requirement: Clean-eye task review\n\nRalph SHALL review each task from a fresh context before completion.\n\n#### Scenario: Task review verdict\n\n- **THEN** it returns machine-readable \`PASS\`, \`FAIL\`, or \`BLOCKED\`.\n\n### Requirement: Unrelated final branch review\n\nThis section must not be sent to the task reviewer.\n\n## Implementation Tasks\n\n- [ ] 8. Implement fresh-context Ralph-specific task review with machine-readable \`PASS\`, \`FAIL\`, or \`BLOCKED\` verdicts and review inputs limited to relevant spec, diff, files, summaries, and validation evidence.\n  - Covers: Requirement: Clean-eye task review\n`;
+await writeFile(join(dir, "review-file.mjs"), "export const verdict = 'PASS';\n");
+const reviewPrompt = buildTaskReviewPrompt({
+  repoRoot: resolve(dir),
+  specPath: spec,
+  specText: reviewSpecText,
+  task: reviewTask,
+  diff: "diff --git a/review-file.mjs b/review-file.mjs\n+export const verdict = 'PASS';\n",
+  changedPaths: ["review-file.mjs"],
+  changedFiles: [{ path: "review-file.mjs", language: "javascript", content: "export const verdict = 'PASS';\n" }],
+  validationEvidence: [{ phase: "initial-validation", command: "npm test", cwd: "config/pi/extensions/ralph-loop", exitCode: 0 }],
+  implementationSummary: "implemented review phase",
+  refactorSummary: "already clean",
+});
+assert.match(reviewPrompt, /fresh context/);
+assert.match(reviewPrompt, /Requirement: Clean-eye task review/);
+assert.doesNotMatch(reviewPrompt, /Unrelated final branch review/);
+assert.match(reviewPrompt, /review-file\.mjs/);
+assert.match(reviewPrompt, /npm test -> exit 0/);
+assert.match(reviewPrompt, /machine-readable verdict as JSON/);
+
+await writeFile(refactorCachePath, JSON.stringify({ ...refactorBaseState, phase: "refactor", currentTask: reviewTask }));
+await writeFile(join(dir, "new-review-file.md"), "new review content\n");
+let taskReviewPrompt = "";
+const taskReviewResult = await runTaskReviewPhase({
+  cachePath: refactorCachePath,
+  state: { ...refactorBaseState, phase: "refactor", currentTask: reviewTask },
+  repoRoot: resolve(dir),
+  specPath: spec,
+  specText: reviewSpecText,
+  task: reviewTask,
+  validationEvidence: [{ phase: "initial-validation", command: "npm test", cwd: ".", exitCode: 0 }],
+  implementationSummary: "implemented review phase",
+  refactorSummary: "already clean",
+  execGit: fakeGit({
+    repoRoot: resolve(dir),
+    branch: "feat/test",
+    head: "dddddddddddddddddddddddddddddddddddddddd",
+    status: " M review-file.mjs\n?? new-review-file.md\n",
+    worktreeDiff: "diff --git a/review-file.mjs b/review-file.mjs\n+export const verdict = 'PASS';\n",
+    untrackedDiffs: { "new-review-file.md": "diff --git a/new-review-file.md b/new-review-file.md\nnew file mode 100644\n--- /dev/null\n+++ b/new-review-file.md\n@@ -0,0 +1 @@\n+new review content\n" },
+  }),
+  reviewSession: async ({ prompt }) => {
+    taskReviewPrompt = prompt;
+    return { stdout: 'notes\n{"verdict":"FAIL","summary":"review parser accepts non-machine text before final JSON","requiredFixes":["Require final JSON verdict parsing."]}\n' };
+  },
+});
+assert.equal(taskReviewResult.verdict.verdict, "FAIL");
+assert.match(taskReviewPrompt, /Use only the review inputs in this prompt/);
+assert.match(taskReviewResult.diff, /new file mode 100644/);
+assert.match(taskReviewPrompt, /new-review-file\.md/);
+assert.deepEqual(taskReviewResult.changedPaths, ["review-file.mjs", "new-review-file.md"]);
+const taskReviewState = JSON.parse(await readFile(refactorCachePath, "utf8"));
+assert.equal(taskReviewState.phase, "task-review");
+assert.equal(taskReviewState.reviewVerdicts.at(-1).verdict, "FAIL");
+assert.match(taskReviewState.reviewVerdicts.at(-1).summary, /Require final JSON verdict parsing/);
+
 const launched = [];
 const fakeSpawn = (command, args, options) => {
   launched.push({ command, args, options });
@@ -332,6 +402,7 @@ await runOrchestrator(["--mode", "all", "--spec", spec], { stdout }, {
   execGit: fakeGit({ repoRoot: dir, branch: "feat/test", head: "dddddddddddddddddddddddddddddddddddddddd", status: "", worktreeDiff: "", stagedDiff: "" }),
   implementationSession: async () => ({ status: "implementation session completed" }),
   refactorSession: async () => ({ status: "refactor session completed" }),
+  reviewSession: async () => ({ stdout: '{"verdict":"PASS","summary":"task is ready","requiredFixes":[]}\n' }),
   runCommand: async (command, options) => ({ command, cwd: options.cwd, exitCode: 0, stdout: "pass", stderr: "" }),
 });
 assert.match(text, /Ralph Orchestrator/);
@@ -342,6 +413,8 @@ assert.match(text, /task: 1\. Test task/);
 assert.match(text, /implementationPromptBytes: [1-9][0-9]*/);
 assert.match(text, /refactorPromptBytes: [1-9][0-9]*/);
 assert.match(text, /refactor: refactor session completed; no changes/);
+assert.match(text, /reviewPromptBytes: [1-9][0-9]*/);
+assert.match(text, /taskReview: PASS/);
 const launchedState = JSON.parse(await readFile(cachePaths({ cacheRoot: join(dir, "run-cache"), repoRoot: resolve(dir), specPath: resolve(spec) }).path, "utf8"));
 assert.ok(launchedState.taskValidationPlans.at(-1).options.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/ralph-loop"));
 assert.ok(!launchedState.taskValidationPlans.at(-1).options.some((option) => option.command === "npm test" && option.cwd === "config/pi/extensions/mcp-bridge"));
