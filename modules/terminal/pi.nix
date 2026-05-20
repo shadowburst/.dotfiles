@@ -1,19 +1,41 @@
 _: {
   flake.homeModules.pi =
-    { config, pkgs, ... }:
     {
-      home.packages = [ pkgs.pi-coding-agent ];
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
+    let
+      dotfilesDir = "${config.home.homeDirectory}/.dotfiles";
+      piNpmPrefix = "${config.xdg.dataHome}/pi/npm";
+      piNpmCache = "${config.xdg.cacheHome}/pi/npm";
+      nodejsLts = pkgs.nodejs;
 
-      home.file.".pi/agent/extensions".source =
-        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/pi/extensions";
+      piWithNpmExtensions = pkgs.symlinkJoin {
+        name = "pi-coding-agent-with-npm-extensions";
+        paths = [ pkgs.pi-coding-agent ];
+        nativeBuildInputs = [ pkgs.makeWrapper ];
 
-      home.file.".pi/agent/themes".source =
-        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/pi/themes";
+        postBuild = ''
+          wrapProgram $out/bin/pi \
+            --set NPM_CONFIG_PREFIX ${lib.escapeShellArg piNpmPrefix} \
+            --set NPM_CONFIG_CACHE ${lib.escapeShellArg piNpmCache} \
+            --prefix PATH : ${lib.escapeShellArg "${lib.makeBinPath [ nodejsLts ]}:${piNpmPrefix}/bin"}
+        '';
+      };
 
-      home.file.".pi/agent/settings.json".source =
-        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/pi/settings.json";
+      mkPiConfigSymlink = path: {
+        source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/${path}";
+      };
+    in
+    {
+      home.packages = [ piWithNpmExtensions ];
 
-      home.file.".pi/agent/keybindings.json".source =
-        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/pi/keybindings.json";
+      home.file = {
+        ".pi/agent/themes" = mkPiConfigSymlink "config/pi/themes";
+        ".pi/agent/settings.json" = mkPiConfigSymlink "config/pi/settings.json";
+        ".pi/agent/keybindings.json" = mkPiConfigSymlink "config/pi/keybindings.json";
+      };
     };
 }
