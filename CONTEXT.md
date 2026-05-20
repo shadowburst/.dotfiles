@@ -32,6 +32,10 @@ _Avoid_: PRD, change proposal, delta spec
 A Pi Extension that exposes Model Context Protocol server capabilities to Pi.
 _Avoid_: MCP plugin, MCP package
 
+**Opencode MCP Config**:
+An opencode-owned configuration source that declares MCP servers which the MCP Bridge may import for Pi use.
+_Avoid_: Pi MCP config, bridge config
+
 **Ralph Loop**:
 A deterministic implementation loop, invoked from Pi, that consumes one Feature Spec, selects exactly one unchecked implementation task, asks Pi to implement it, validates it with tests or CI-quality checks, hands off to a fresh Pi session seeded only with review-relevant artifacts, performs a clean-eye review, fixes real issues through a bounded fix/retest cycle, verifies, commits the completed task, and then completes that one task before stopping or continuing by explicit loop control.
 _Avoid_: Autonomous sprint, agent workflow, task runner
