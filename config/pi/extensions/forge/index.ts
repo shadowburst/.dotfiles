@@ -16,12 +16,6 @@ import {
   validateTaskSummary,
 } from "./forge-core.mjs";
 
-const SLASH_SUBAGENT_REQUEST_EVENT = "subagent:slash:request";
-const SLASH_SUBAGENT_STARTED_EVENT = "subagent:slash:started";
-const SLASH_SUBAGENT_RESPONSE_EVENT = "subagent:slash:response";
-const SLASH_SUBAGENT_UPDATE_EVENT = "subagent:slash:update";
-const SLASH_SUBAGENT_CANCEL_EVENT = "subagent:slash:cancel";
-
 interface ForgeTask {
   lineIndex: number;
   checked: boolean;
@@ -43,6 +37,21 @@ interface SlashResponse {
   result: { content: Array<{ type?: string; text?: string }>; details?: unknown };
   isError?: boolean;
   errorText?: string;
+}
+
+interface SlashLiveDetails {
+  requestId: string;
+  result: {
+    content: Array<{ type: "text"; text: string }>;
+    details: {
+      mode: "chain";
+      results: Array<Record<string, unknown>>;
+      progress: Array<Record<string, unknown>>;
+      chainAgents: string[];
+      totalSteps: number;
+      currentStepIndex?: number;
+    };
+  };
 }
 
 function requestId(): string {
@@ -80,41 +89,123 @@ async function ensureCleanStart(pi: ExtensionAPI, cwd: string): Promise<string> 
   return exec(pi, "git", ["rev-parse", "HEAD"], cwd, 30_000);
 }
 
+function chainStepAgents(step: unknown): string[] {
+  if (!step || typeof step !== "object") return ["subagent"];
+  const s = step as { agent?: unknown; parallel?: Array<{ agent?: unknown }> };
+  if (Array.isArray(s.parallel)) return s.parallel.map((entry) => String(entry.agent ?? "subagent"));
+  return [String(s.agent ?? "subagent")];
+}
+
+function chainStepLabel(step: unknown): string {
+  const agents = chainStepAgents(step);
+  return agents.length > 1 ? `[${agents.join("+")}]` : agents[0];
+}
+
+function buildForgeLiveDetails(id: string, params: Record<string, unknown>): SlashLiveDetails {
+  const chain = Array.isArray(params.chain) ? params.chain : [];
+  const progress: Array<Record<string, unknown>> = [];
+  for (const step of chain) {
+    for (const agent of chainStepAgents(step)) {
+      const index = progress.length;
+      progress.push({
+        index,
+        agent,
+        status: index === 0 ? "running" : "pending",
+        task: typeof (step as { task?: unknown })?.task === "string" ? (step as { task: string }).task : String(params.task ?? ""),
+        recentTools: [],
+        recentOutput: [],
+        toolCount: 0,
+        tokens: 0,
+        durationMs: 0,
+      });
+    }
+  }
+  const results = progress.map((entry) => ({
+    agent: entry.agent,
+    task: entry.task,
+    exitCode: 0,
+    messages: [],
+    usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, turns: 0 },
+    progress: entry,
+  }));
+  return {
+    requestId: id,
+    result: {
+      content: [{ type: "text", text: progress.map((entry, index) => `Step ${index + 1}: ${entry.agent}\n${entry.task}`).join("\n\n") || "Running Forge Task Chain..." }],
+      details: {
+        mode: "chain",
+        results,
+        progress,
+        chainAgents: chain.map(chainStepLabel),
+        totalSteps: chain.length,
+        currentStepIndex: 0,
+      },
+    },
+  };
+}
+
+function updateForgeLiveDetails(ctx: ExtensionCommandContext, details: SlashLiveDetails, update: { progress?: Array<Record<string, unknown>> }): void {
+  if (!Array.isArray(update.progress)) return;
+  details.result.details.progress = update.progress;
+  details.result.details.results = details.result.details.results.map((result, index) => ({
+    ...result,
+    progress: update.progress?.find((entry) => entry.index === index) ?? update.progress?.[index] ?? result.progress,
+  }));
+  const runningIndex = update.progress.findIndex((entry) => entry.status === "running");
+  if (runningIndex >= 0) details.result.details.currentStepIndex = runningIndex;
+  if (ctx.hasUI) (ctx.ui as { requestRender?: () => void }).requestRender?.();
+}
+
 function runSubagentChain(pi: ExtensionAPI, ctx: ExtensionCommandContext, params: Record<string, unknown>): Promise<SlashResponse> {
   return new Promise((resolve, reject) => {
     const id = requestId();
+    const liveDetails = buildForgeLiveDetails(id, params);
+    pi.sendMessage({
+      customType: "subagent-slash-result",
+      content: "Forge Task Chain running...",
+      display: true,
+      details: liveDetails,
+    });
+
     let done = false;
     let started = false;
-    const timeout = setTimeout(() => finish(() => reject(new Error("pi-subagents did not respond within 15s. Is pi-subagents installed and loaded?"))), 15_000);
+    const startTimeout = setTimeout(() => {
+      finish(() => reject(new Error("pi-subagents did not start within 15s. Is pi-subagents installed and loaded?")));
+    }, 15_000);
 
     const finish = (next: () => void) => {
       if (done) return;
       done = true;
-      clearTimeout(timeout);
+      clearTimeout(startTimeout);
       unsubStarted();
       unsubResponse();
       unsubUpdate();
       next();
     };
 
-    const unsubStarted = pi.events.on(SLASH_SUBAGENT_STARTED_EVENT, (data: unknown) => {
-      if (!data || typeof data !== "object" || (data as { requestId?: string }).requestId !== id) return;
+    const unsubStarted = pi.events.on("subagent:slash:started", (data: unknown) => {
+      if (done || !data || typeof data !== "object" || (data as { requestId?: string }).requestId !== id) return;
       started = true;
+      clearTimeout(startTimeout);
       if (ctx.hasUI) ctx.ui.setStatus("forge", "subagents running...");
     });
-    const unsubResponse = pi.events.on(SLASH_SUBAGENT_RESPONSE_EVENT, (data: unknown) => {
-      if (!data || typeof data !== "object" || (data as { requestId?: string }).requestId !== id) return;
-      finish(() => resolve(data as SlashResponse));
+    const unsubResponse = pi.events.on("subagent:slash:response", (data: unknown) => {
+      if (done || !data || typeof data !== "object" || (data as { requestId?: string }).requestId !== id) return;
+      const response = data as SlashResponse;
+      if (response.result?.details) liveDetails.result = response.result as SlashLiveDetails["result"];
+      if (ctx.hasUI) (ctx.ui as { requestRender?: () => void }).requestRender?.();
+      finish(() => resolve(response));
     });
-    const unsubUpdate = pi.events.on(SLASH_SUBAGENT_UPDATE_EVENT, (data: unknown) => {
-      if (!data || typeof data !== "object" || (data as { requestId?: string }).requestId !== id) return;
-      const update = data as { currentTool?: string; toolCount?: number };
-      if (ctx.hasUI) ctx.ui.setStatus("forge", `subagents: ${update.toolCount ?? 0} tools${update.currentTool ? ` ${update.currentTool}` : ""}`);
+    const unsubUpdate = pi.events.on("subagent:slash:update", (data: unknown) => {
+      if (done || !data || typeof data !== "object" || (data as { requestId?: string }).requestId !== id) return;
+      const update = data as { currentTool?: string; toolCount?: number; progress?: Array<Record<string, unknown>> };
+      updateForgeLiveDetails(ctx, liveDetails, update);
+      if (ctx.hasUI) ctx.ui.setStatus("forge", `subagents: ${update.toolCount ?? 0} tools${update.currentTool ? ` ${update.currentTool}` : ""} | Ctrl+O live detail`);
     });
 
-    pi.events.emit(SLASH_SUBAGENT_REQUEST_EVENT, { requestId: id, params });
+    pi.events.emit("subagent:slash:request", { requestId: id, params });
+    if (!started && done) return;
     if (!started) {
-      pi.events.emit(SLASH_SUBAGENT_CANCEL_EVENT, { requestId: id });
       finish(() => reject(new Error("No pi-subagents slash bridge responded. Ensure pi-subagents is loaded before Forge.")));
     }
   });

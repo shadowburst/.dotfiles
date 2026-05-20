@@ -7,6 +7,7 @@ import {
   isValidConventionalCommitTitle,
   parseGitStatusPorcelain,
   parseImplementationTasks,
+  runSlashSubagentRequest,
   taskCommitTitle,
   unexpectedDirtyPaths,
   validateTaskSummary,
@@ -73,4 +74,49 @@ test("validates and falls back conventional commit titles", () => {
   assert.equal(isValidConventionalCommitTitle("feat(pi): add forge"), true);
   assert.equal(isValidConventionalCommitTitle("add forge"), false);
   assert.equal(taskCommitTitle(4, "bad"), "feat: complete spec task 4");
+});
+
+function fakeEvents() {
+  const handlers = new Map();
+  return {
+    on(event, handler) {
+      const eventHandlers = handlers.get(event) ?? new Set();
+      eventHandlers.add(handler);
+      handlers.set(event, eventHandlers);
+      return () => eventHandlers.delete(handler);
+    },
+    emit(event, data) {
+      for (const handler of handlers.get(event) ?? []) handler(data);
+    },
+  };
+}
+
+test("waits for slash subagent completion after the bridge has started", async () => {
+  const events = fakeEvents();
+  events.on("subagent:slash:request", ({ requestId }) => {
+    events.emit("subagent:slash:started", { requestId });
+    setTimeout(() => {
+      events.emit("subagent:slash:response", {
+        requestId,
+        result: { content: [{ type: "text", text: "done" }] },
+        isError: false,
+      });
+    }, 20);
+  });
+
+  const response = await runSlashSubagentRequest({
+    events,
+    requestId: "req-1",
+    params: {},
+    startTimeoutMs: 5,
+  });
+
+  assert.equal(response.requestId, "req-1");
+});
+
+test("fails fast when no slash subagent bridge receives the request", async () => {
+  await assert.rejects(
+    runSlashSubagentRequest({ events: fakeEvents(), requestId: "req-2", params: {}, startTimeoutMs: 5 }),
+    /No pi-subagents slash bridge responded/,
+  );
 });

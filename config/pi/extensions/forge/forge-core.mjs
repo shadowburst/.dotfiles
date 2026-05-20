@@ -157,3 +157,55 @@ export function finalTextFromSubagentResponse(response) {
     .map((part) => part.text)
     .join("\n");
 }
+
+export function runSlashSubagentRequest({
+  events,
+  requestId,
+  params,
+  onStarted,
+  onUpdate,
+  startTimeoutMs = 15_000,
+  requestEvent = "subagent:slash:request",
+  startedEvent = "subagent:slash:started",
+  responseEvent = "subagent:slash:response",
+  updateEvent = "subagent:slash:update",
+}) {
+  return new Promise((resolve, reject) => {
+    let done = false;
+    let started = false;
+    const startTimeout = setTimeout(() => {
+      finish(() => reject(new Error("pi-subagents did not start within 15s. Is pi-subagents installed and loaded?")));
+    }, startTimeoutMs);
+
+    const finish = (next) => {
+      if (done) return;
+      done = true;
+      clearTimeout(startTimeout);
+      unsubStarted();
+      unsubResponse();
+      unsubUpdate();
+      next();
+    };
+
+    const unsubStarted = events.on(startedEvent, (data) => {
+      if (done || !data || typeof data !== "object" || data.requestId !== requestId) return;
+      started = true;
+      clearTimeout(startTimeout);
+      onStarted?.();
+    });
+    const unsubResponse = events.on(responseEvent, (data) => {
+      if (done || !data || typeof data !== "object" || data.requestId !== requestId) return;
+      finish(() => resolve(data));
+    });
+    const unsubUpdate = events.on(updateEvent, (data) => {
+      if (done || !data || typeof data !== "object" || data.requestId !== requestId) return;
+      onUpdate?.(data);
+    });
+
+    events.emit(requestEvent, { requestId, params });
+    if (!started && done) return;
+    if (!started) {
+      finish(() => reject(new Error("No pi-subagents slash bridge responded. Ensure pi-subagents is loaded before Forge.")));
+    }
+  });
+}
