@@ -1224,11 +1224,7 @@ export function buildTaskImplementationPrompt({ repoRoot, specPath, task, valida
   if (!task?.text) throw new Error("Ralph implementation prompt requires a selected task.");
   const normalizedPlan = normalizeTaskValidationPlan(validationPlan);
   const paths = uniqueStrings(expectedChangedPaths, "expected changed path");
-  const validationLines = formatPromptBullets(
-    normalizedPlan.options,
-    (option) => `(${option.cwd}) ${option.command} — ${option.reason}`,
-    "No deterministic validation selected. Stop and report the task as unverified; do not edit.",
-  );
+  const validationLines = formatValidationPlanPromptBullets(normalizedPlan, "No deterministic validation selected. Stop and report the task as unverified; do not edit.");
   const pathLines = formatPromptBullets(
     paths,
     (path) => path,
@@ -1335,11 +1331,7 @@ export function buildTaskFixPrompt({ repoRoot, task, reviewVerdict, validationPl
   const normalizedPlan = normalizeTaskValidationPlan(validationPlan);
   const fixes = normalizeRequiredFixes(reviewVerdict?.requiredFixes);
   if (fixes.length === 0) throw new Error("Ralph task fix prompt requires review requiredFixes.");
-  const validationLines = formatPromptBullets(
-    normalizedPlan.options,
-    (option) => `(${option.cwd}) ${option.command} — ${option.reason}`,
-    "No deterministic validation selected. Stop and report the task as unverified; do not edit.",
-  );
+  const validationLines = formatValidationPlanPromptBullets(normalizedPlan, "No deterministic validation selected. Stop and report the task as unverified; do not edit.");
   const pathLines = formatPromptBullets(uniqueStrings(changedPaths, "fix changed path"), (path) => path, "No changed paths were provided; inspect the diff and stop if scope is unclear.");
   const fixLines = formatPromptBullets(fixes, (fix) => fix, "No required fixes were provided.");
 
@@ -1384,11 +1376,7 @@ export function parseTaskReviewVerdict(text) {
 export function buildTaskRefactorPrompt({ repoRoot, task, validationPlan, scopePaths = [], diff = "" }) {
   if (!task?.text) throw new Error("Ralph refactor prompt requires a selected task.");
   const normalizedPlan = normalizeTaskValidationPlan(validationPlan);
-  const validationLines = formatPromptBullets(
-    normalizedPlan.options,
-    (option) => `(${option.cwd}) ${option.command} — ${option.reason}`,
-    "No deterministic validation selected. Do not refactor without a validation command.",
-  );
+  const validationLines = formatValidationPlanPromptBullets(normalizedPlan, "No deterministic validation selected. Do not refactor without a validation command.");
   const scopeLines = formatPromptBullets(
     uniqueStrings(scopePaths, "refactor scope path"),
     (path) => path,
@@ -1455,11 +1443,7 @@ export async function runFinalBranchReviewPhase({
 
 export function buildWholeFeatureRefactorPrompt({ repoRoot, reviewBase, validationPlan, scopePaths = [], diff = "" }) {
   const normalizedPlan = normalizeTaskValidationPlan(validationPlan);
-  const validationLines = formatPromptBullets(
-    normalizedPlan.options,
-    (option) => `(${option.cwd}) ${option.command} — ${option.reason}`,
-    "No deterministic validation selected. Do not refactor without a validation command.",
-  );
+  const validationLines = formatValidationPlanPromptBullets(normalizedPlan, "No deterministic validation selected. Do not refactor without a validation command.");
   const scopeLines = formatPromptBullets(
     uniqueStrings(scopePaths, "whole-feature refactor scope path"),
     (path) => path,
@@ -1570,11 +1554,7 @@ function finalReviewVerdictFromAxes({ standards, spec, requestedVerdict }) {
 function buildFixAreaRefactorPrompt({ repoRoot, task, validationPlan, scopePaths = [], diff = "" }) {
   if (!task?.text) throw new Error("Ralph fix-area refactor prompt requires a selected task.");
   const normalizedPlan = normalizeTaskValidationPlan(validationPlan);
-  const validationLines = formatPromptBullets(
-    normalizedPlan.options,
-    (option) => `(${option.cwd}) ${option.command} — ${option.reason}`,
-    "No deterministic validation selected. Do not refactor without a validation command.",
-  );
+  const validationLines = formatValidationPlanPromptBullets(normalizedPlan, "No deterministic validation selected. Do not refactor without a validation command.");
   const scopeLines = formatPromptBullets(uniqueStrings(scopePaths, "fix-area refactor scope path"), (path) => path, "No touched fix-area files were detected; inspect the diff and stop if scope is unclear.");
 
   return [
@@ -1728,6 +1708,14 @@ function persistedAttemptCount(state, scope) {
 function formatPromptBullets(values, formatValue, emptyText) {
   if (values.length === 0) return `- ${emptyText}`;
   return values.map((value) => `- ${formatValue(value)}`).join("\n");
+}
+
+function formatValidationPlanPromptBullets(validationPlan, emptyText) {
+  return formatPromptBullets(
+    normalizeTaskValidationPlan(validationPlan).options,
+    (option) => `(${option.cwd}) ${option.command} — ${option.reason}`,
+    emptyText,
+  );
 }
 
 function meaningfulAutomatedBehaviorTestApplicable({ task, validationPlan }) {
