@@ -52,6 +52,7 @@ _: {
 
             # Other
             "ctrl+backspace=text:\\x17" # C-W
+            "ctrl+delete=text:\\x1bd" # M-d
           ];
           custom-shader = [
             "${config.home.homeDirectory}/.dotfiles/config/ghostty/shaders/cursor_smear.glsl"

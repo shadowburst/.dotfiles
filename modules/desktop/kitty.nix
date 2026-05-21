@@ -121,6 +121,7 @@ _: {
           # Other
           "kitty_mod+esc" = "show_scrollback";
           "ctrl+backspace" = "send_key ctrl+w";
+          "ctrl+delete" = "send_key alt+d";
           "ctrl+shift+c" = "copy_to_clipboard";
           "ctrl+shift+v" = "paste_from_clipboard";
         };
