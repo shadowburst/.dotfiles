@@ -10,9 +10,8 @@ _: {
       ];
 
       xdg.configFile."worktrunk/config.toml".source = tomlFormat.generate "worktrunk-config.toml" {
-        # commit.generation.command = "CLAUDECODE= MAX_THINKING_TOKENS=0 claude -p --no-session-persistence --model=haiku --tools='' --disable-slash-commands --setting-sources='' --system-prompt=''";
         commit.generation.command = "pi -p --model openai-codex/gpt-5.4-mini --thinking off";
-        worktree-path = "{{ repo_path }}/../{{ repo }}-{{ branch | sanitize }}";
+        worktree-path = "{{ repo_path }}/.worktrees/{{ branch | sanitize }}";
         post-switch = {
           zoxide = "zoxide add {{ worktree_path }}";
         };
