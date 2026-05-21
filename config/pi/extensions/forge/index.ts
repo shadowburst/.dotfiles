@@ -2,6 +2,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@mariozechner/pi-coding-agent";
 import {
+  boundedLiveProgressTail,
   checkTask,
   extractFinalJsonBlock,
   finalTextFromSubagentResponse,
@@ -180,8 +181,10 @@ function updateForgeLiveDetails(details: SlashLiveDetails, update: { currentTool
     status: "running",
     agent: forgeLiveAgentLabel(display, phase),
     task: forgeLiveTaskLabel({ task: running?.task ?? current.task }, phase),
-    recentTools: [],
-    recentOutput: [],
+    // Keep a bounded live tail so Ctrl+O/details still has something useful
+    // to show, without reintroducing the large-output rendering cost that Forge
+    // avoids by collapsing the nested chain into one stable progress row.
+    ...boundedLiveProgressTail(running, current),
     ...(running?.tokens ? { tokens: running.tokens } : {}),
     ...(running?.durationMs ? { durationMs: running.durationMs } : {}),
     currentTool: activeToolLabel(progressEntries),

@@ -228,6 +228,16 @@ export function buildForgeFinalReviewChain(specPath, reviewBase) {
   ];
 }
 
+export function boundedLiveProgressTail(primary, fallback = {}) {
+  const cappedArray = (value, max) => Array.isArray(value) ? value.slice(-max) : [];
+  return {
+    recentTools: cappedArray(primary?.recentTools ?? fallback?.recentTools, 3),
+    recentOutput: cappedArray(primary?.recentOutput ?? fallback?.recentOutput, 5),
+    ...(primary?.currentToolArgs ? { currentToolArgs: primary.currentToolArgs } : {}),
+    ...(primary?.currentPath ? { currentPath: primary.currentPath } : {}),
+  };
+}
+
 export function buildForgeFinalRefactorChain(specPath, reviewBase) {
   const context = projectContextContract();
   const finalJsonContract = `End with exactly one final fenced json block. Use {"status":"done","summary":"...","changedPaths":["..."],"validation":["..."]} when the simplification refactor is complete or no refactor was needed. Use {"status":"stop","summary":"..."} when blocked or unverified.`;

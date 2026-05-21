@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  boundedLiveProgressTail,
   buildForgeFinalRefactorChain,
   buildForgeFinalReviewChain,
   buildForgeTaskChain,
@@ -88,6 +89,22 @@ test("parses porcelain status and detects unexpected paths", () => {
   const dirty = parseGitStatusPorcelain(' M src/a.ts\n?? docs/spec.md\nR  old.ts -> new.ts\n');
   assert.deepEqual(dirty, ["src/a.ts", "docs/spec.md", "new.ts"]);
   assert.deepEqual(unexpectedDirtyPaths(dirty, ["src/a.ts", "docs/spec.md"]), ["new.ts"]);
+});
+
+test("keeps bounded live progress tail for Forge details view", () => {
+  const tail = boundedLiveProgressTail({
+    recentTools: ["t1", "t2", "t3", "t4"],
+    recentOutput: ["o1", "o2", "o3", "o4", "o5", "o6"],
+    currentToolArgs: "--flag",
+    currentPath: "config/pi/extensions/forge/index.ts",
+  });
+
+  assert.deepEqual(tail.recentTools, ["t2", "t3", "t4"]);
+  assert.deepEqual(tail.recentOutput, ["o2", "o3", "o4", "o5", "o6"]);
+  assert.equal(tail.currentToolArgs, "--flag");
+  assert.equal(tail.currentPath, "config/pi/extensions/forge/index.ts");
+
+  assert.deepEqual(boundedLiveProgressTail({}, { recentOutput: ["fallback"] }).recentOutput, ["fallback"]);
 });
 
 test("validates and falls back conventional commit titles", () => {
