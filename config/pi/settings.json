@@ -6,7 +6,7 @@
   "theme": "catppuccin-mocha",
   "doubleEscapeAction": "fork",
   "quietStartup": true,
-  "hideThinkingBlock": true,
+  "hideThinkingBlock": false,
   "packages": [
     "npm:pi-mcp-adapter",
     "npm:pi-subagents@0.23.1",
