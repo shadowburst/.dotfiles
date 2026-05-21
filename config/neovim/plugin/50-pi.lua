@@ -4,5 +4,5 @@ vim.pack.add({
 
 require("pi").setup()
 
-vim.keymap.set("n", "<leader>ai", ":PiAsk<CR>", { desc = "Ask pi" })
-vim.keymap.set("v", "<leader>ai", ":PiAskSelection<CR>", { desc = "Ask pi (selection)" })
+vim.keymap.set("n", "<leader>a", ":PiAsk<CR>", { desc = "Ask pi" })
+vim.keymap.set("v", "<leader>a", ":PiAskSelection<CR>", { desc = "Ask pi (selection)" })
