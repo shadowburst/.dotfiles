@@ -5,6 +5,7 @@ _: {
       programs.yazi = {
         enable = true;
         initLua = /* lua */ ''
+          require("git"):setup()
           require("starship"):setup()
 
           require("session"):setup({
@@ -13,6 +14,7 @@ _: {
         '';
 
         plugins = with pkgs; {
+          inherit (yaziPlugins) git;
           inherit (yaziPlugins) mount;
           inherit (yaziPlugins) smart-enter;
           inherit (yaziPlugins) starship;
@@ -39,22 +41,24 @@ _: {
               for = "windows";
             }
           ];
-          plugin.preprend_fetchers = [
+          plugin.prepend_fetchers = [
             {
               id = "git";
-              for = "*";
-              name = "git";
+              url = "*";
+              run = "git";
+              group = "git";
             }
             {
               id = "git";
-              for = "*/";
-              name = "git";
+              url = "*/";
+              run = "git";
+              group = "git";
             }
           ];
           preview.image_delay = 100;
           open.prepend_rules = [
             {
-              name = "*.zip";
+              url = "*.zip";
               use = "extract";
             }
           ];
