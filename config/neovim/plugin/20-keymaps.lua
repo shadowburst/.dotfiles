@@ -36,5 +36,5 @@ Snacks.keymap.set(
   "n",
   "<leader>vx",
   function() vim.pack.update(nil, { target = "lockfile" }) end,
-  { desc = "Update plugins" }
+  { desc = "Reset plugins" }
 )
