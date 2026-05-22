@@ -20,7 +20,7 @@
             devices = [ "nodev" ];
             efiSupport = true;
             useOSProber = true;
-            configurationLimit = 5;
+            configurationLimit = 3;
           };
           efi.canTouchEfiVariables = true;
           timeout = 1;
