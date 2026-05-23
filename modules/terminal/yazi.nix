@@ -72,6 +72,12 @@ _: {
               on = [ "q" ];
               desc = "Close the current tab, or quit if it is last tab";
             }
+            {
+              run = ''shell "$SHELL" --block'';
+              on = [ "!" ];
+              for = "unix";
+              desc = "Open $SHELL here";
+            }
             # Operations
             {
               run = "remove --force";
