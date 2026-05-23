@@ -24,6 +24,10 @@ _Avoid_: Plugin, package
 A reusable agent instruction bundle stored as a Config Asset under `.agents/skills`.
 _Avoid_: Command, script, workflow
 
+**Pi Prompt Template**:
+A Pi-owned Config Asset invoked by slash-style prompt name, such as `/plan` or `/implement`, that expands into agent instructions rather than registering deterministic extension code.
+_Avoid_: Command, workflow, extension
+
 **Feature Spec**:
 A durable behavior specification for one feature, stored under `docs/specs` with a date-prefixed filename and OpenSpec-style persisted requirements and scenarios.
 _Avoid_: PRD, change proposal, delta spec
@@ -36,22 +40,6 @@ _Avoid_: MCP plugin, MCP package
 An opencode-owned configuration source that declares MCP servers which the MCP Bridge may import for Pi use.
 _Avoid_: Pi MCP config, bridge config
 
-**Forge**:
-A Feature Spec fulfillment command, invoked from Pi, that repeatedly selects unchecked implementation tasks, delegates task execution through a subagent chain, requires deterministic validation evidence, reviews completed work from a clean context, applies review-guided fixes once, and records progress one task at a time.
-_Avoid_: Autonomous sprint, agent workflow, task runner
-
-**Forge Driver**:
-The thin deterministic Pi Extension command behind Forge that selects Feature Spec tasks, invokes the task chain, verifies machine-readable verdicts, updates the Feature Spec task ledger, and creates commits.
-_Avoid_: Orchestrator, autonomous agent, workflow engine
-
-**Forge Task Chain**:
-The pi-subagents chain executed by Forge for one selected Feature Spec task, responsible for implementation, validation evidence, clean-context review, required fixes, and a machine-readable verdict.
-_Avoid_: Orchestrator, task runner, nested Pi
-
-**Review Base**:
-The git ref or commit used as the left side of a Forge final branch review, recorded at the start of a Forge run on the current branch.
-_Avoid_: Fixed point, base thing, original HEAD
-
 ## Relationships
 
 - A **Feature Module** may link one or more **Config Assets**.
@@ -60,9 +48,7 @@ _Avoid_: Fixed point, base thing, original HEAD
 - A **Nix Module** should remain separate from the **Config Assets** it links.
 - An **MCP Bridge** is a **Pi Extension**.
 - An **Agent Skill** may produce or maintain one or more **Feature Specs**.
-- **Forge** consumes a **Feature Spec** and operates on exactly one implementation task at a time inside each **Forge Task Chain** run.
-- **Forge** runs on the current branch and requires a clean working tree before starting.
-- A **Forge Task Chain** may use an **Agent Skill** for phase-specific behavior such as behavior-preserving refactoring.
+- A **Pi Prompt Template** may invoke or instruct the use of **Agent Skills** and Pi Extensions.
 
 ## Example dialogue
 
