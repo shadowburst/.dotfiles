@@ -8,6 +8,7 @@
   "quietStartup": true,
   "hideThinkingBlock": false,
   "packages": [
+    "npm:pi-boomerang",
     "npm:pi-mcp-adapter",
     "npm:pi-subagents",
     "npm:pi-web-access"
@@ -19,3 +20,4 @@
   },
   "treeFilterMode": "default"
 }
+
