@@ -16,7 +16,7 @@ The migration SHALL update the old-format Feature Specs that currently exist und
 
 - **WHEN** the migration is performed
 - **THEN** it updates the current old-format specs in `docs/specs/`
-- **AND** it treats `docs/specs/2026-05-19-mcp-bridge.md`, `docs/specs/2026-05-19-to-spec-skill.md`, and `docs/specs/2026-05-20-opencode-mcp-config-for-pi-bridge.md` as the migration target set
+- **AND** it treats `docs/specs/2026-05-19-to-spec-skill.md` as the migration target set
 
 #### Scenario: A spec is already lean
 
@@ -125,6 +125,4 @@ The target set is intentionally fixed to the old-format specs present when this 
 ## Source Context
 
 - `CONTEXT.md`
-- `docs/specs/2026-05-19-mcp-bridge.md`
 - `docs/specs/2026-05-19-to-spec-skill.md`
-- `docs/specs/2026-05-20-opencode-mcp-config-for-pi-bridge.md`

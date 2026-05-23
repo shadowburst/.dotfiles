@@ -32,21 +32,12 @@ _Avoid_: Command, workflow, extension
 A durable behavior contract for one feature, stored under `docs/specs` with a date-prefixed filename and OpenSpec-style persisted requirements and scenarios. It captures externally observable behavior plus durable constraints or context, not implementation task ledgers or generic review checklists.
 _Avoid_: PRD, change proposal, delta spec, task list, review checklist
 
-**MCP Bridge**:
-A Pi Extension that exposes Model Context Protocol server capabilities to Pi.
-_Avoid_: MCP plugin, MCP package
-
-**Opencode MCP Config**:
-An opencode-owned configuration source that declares MCP servers which the MCP Bridge may import for Pi use.
-_Avoid_: Pi MCP config, bridge config
-
 ## Relationships
 
 - A **Feature Module** may link one or more **Config Assets**.
 - A **Config Asset** belongs to exactly one **Feature Module**.
 - A **Config Asset** is organised by owning **Feature Module**, not by target filesystem path.
 - A **Nix Module** should remain separate from the **Config Assets** it links.
-- An **MCP Bridge** is a **Pi Extension**.
 - An **Agent Skill** may produce or maintain one or more **Feature Specs**.
 - A **Pi Prompt Template** may invoke or instruct the use of **Agent Skills** and Pi Extensions.
 
