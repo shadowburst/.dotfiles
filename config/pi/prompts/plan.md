@@ -86,6 +86,23 @@ When you believe the plan is spec-ready:
    - no generic validation boilerplate
    - no implementation task ledger
    - no generic review checklist
-7. End with:
-   - `Created/updated: <spec-path>`
-   - `Ready for: /implement <spec-path>`
+7. Identify the planning files changed by this `/plan` session:
+   - always include the Feature Spec that was created or updated
+   - include any `CONTEXT.md`, context-specific glossary, or ADR files changed during this planning session
+   - do not include unrelated dirty files that were not changed by this planning session
+8. Ask whether to commit those planning files. Invite the user to review or amend them first, for example: “Review or amend the files now if desired. Commit these planning files?”
+9. Wait for the user's answer:
+   - If the user wants to inspect or amend first, pause for their next instruction and do not commit until they explicitly confirm.
+   - If the user declines the commit, end with `Created/updated: <spec-path>` and explain that implementation is not ready until the planning changes are committed, stashed, or cleaned. Do not print `Ready for: /implement <spec-path>`.
+   - If the user confirms the commit, create the planning commit directly with git commands for this narrow case. Do not invoke the general `commit` skill.
+10. When creating the planning commit:
+    - stage only the planning files identified in step 7 with `git add -- <planning-files...>`
+    - if the Feature Spec is new, use a Conventional Commit message equivalent to `docs(specs): add <feature-slug> spec`
+    - if the Feature Spec already existed, use a Conventional Commit message equivalent to `docs(specs): update <feature-slug> spec`
+    - do not refuse solely because a touched planning file had pre-existing uncommitted edits; commit the current contents of that touched file if the user confirmed
+    - if `git commit` fails, report the failure and do not print `Ready for: /implement <spec-path>`
+11. After a successful planning commit, run `git status --porcelain`:
+    - if unrelated dirty files remain, warn that `/implement` may refuse to start until those changes are committed, stashed, or cleaned
+12. End only after a successful planning commit with:
+    - `Created/updated: <spec-path>`
+    - `Ready for: /implement <spec-path>`

@@ -1,5 +1,5 @@
 ---
-description: Implement a lean Feature Spec with Boomerang-preferred subagent execution
+description: Implement a lean Feature Spec with bounded autonomous execution
 argument-hint: "[spec-path] [run-specific guidance...]"
 thinking: medium
 ---
@@ -9,14 +9,6 @@ Implement this Feature Spec path if provided: $1
 Run-specific guidance, lower authority than the spec: ${@:2}
 
 You are running the `/implement` Pi Prompt Template. Implement an existing lean Feature Spec using bounded autonomous execution. Do not commit changes.
-
-## Boomerang preference
-
-Prefer Boomerang context compaction without requiring the user to type `/boomerang`.
-
-- If an agent-callable `boomerang` tool is available and this work is not already running inside a Boomerang task, schedule the autonomous implementation through that tool using a plain task string that includes these workflow requirements and explicitly says not to invoke Boomerang again. Then stop the current turn after telling the user Boomerang has been scheduled.
-- If Boomerang is unavailable or disabled, continue directly in the current session and mention that Boomerang compaction was unavailable.
-- Never ask the user to re-run the prompt as `/boomerang /implement`.
 
 ## Preconditions
 
