@@ -29,8 +29,8 @@ A Pi-owned Config Asset invoked by slash-style prompt name, such as `/plan` or `
 _Avoid_: Command, workflow, extension
 
 **Feature Spec**:
-A durable behavior specification for one feature, stored under `docs/specs` with a date-prefixed filename and OpenSpec-style persisted requirements and scenarios.
-_Avoid_: PRD, change proposal, delta spec
+A durable behavior contract for one feature, stored under `docs/specs` with a date-prefixed filename and OpenSpec-style persisted requirements and scenarios. It captures externally observable behavior plus durable constraints or context, not implementation task ledgers or generic review checklists.
+_Avoid_: PRD, change proposal, delta spec, task list, review checklist
 
 **MCP Bridge**:
 A Pi Extension that exposes Model Context Protocol server capabilities to Pi.
