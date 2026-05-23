@@ -222,28 +222,10 @@ The MCP Bridge SHALL register an inspect-only `/mcp` command that reports config
 - v1 does not implement MCP resources, prompts, sampling, remote HTTP/SSE transports, per-call confirmations, dotenv loading, or package publishing.
 - The extension should use a small multi-file structure rather than a single large script.
 
-## Implementation Tasks
+## Validation Expectations
 
-- [x] 1. Create the `config/pi/extensions/mcp-bridge/` extension skeleton with `index.ts`, supporting modules, `package.json`, and `servers.example.json`.
-  - Covers: Requirement: Local extension placement; Requirement: Local server configuration
-- [x] 2. Define and validate the `servers.json` configuration model, including default-enabled servers, disabled servers, command/args, env interpolation, and allow/deny filters.
-  - Covers: Requirement: Local server configuration; Requirement: Environment interpolation; Requirement: Tool filtering
-- [x] 3. Integrate the MCP SDK for stdio server startup, eager tool discovery, per-server state tracking, and session shutdown cleanup.
-  - Covers: Requirement: Stdio MCP server lifecycle; Requirement: Isolated failures
-- [x] 4. Implement deterministic server/tool name sanitization, collision detection, and Pi tool-name construction.
-  - Covers: Requirement: Deterministic Pi tool names
-- [x] 5. Implement best-effort MCP JSON Schema to Pi tool parameter schema conversion with generic fallback and per-tool failure reporting.
-  - Covers: Requirement: Schema conversion; Requirement: Isolated failures
-- [x] 6. Register discovered MCP tools as Pi custom tools and proxy tool calls to the originating MCP server.
-  - Covers: Requirement: Tool-only MCP exposure; Requirement: MCP tool execution
-- [x] 7. Normalize MCP tool results into text-first Pi tool results with raw MCP responses in result details and errors marked as errors.
-  - Covers: Requirement: MCP tool execution
-- [x] 8. Implement the inspect-only `/mcp` command, including missing-config guidance, server status output, and `/mcp tools <server>` output.
-  - Covers: Requirement: MCP inspection command; Requirement: Local server configuration
-- [x] 9. Add focused tests or executable validation fixtures for config parsing, env interpolation, name sanitization, schema conversion fallback, and result normalization.
-  - Covers: Requirement: Local server configuration; Requirement: Environment interpolation; Requirement: Deterministic Pi tool names; Requirement: Schema conversion; Requirement: MCP tool execution
-- [x] 10. Validate repository integration by checking that `servers.json` remains untracked, Pi can load/reload the extension, and the repository still passes `nix flake check` when Nix validation is available; record the reason if that check is skipped.
-  - Covers: Requirement: Local extension placement; Requirement: Local server configuration
+- Use focused tests or executable validation fixtures for config parsing, environment interpolation, name sanitization, schema conversion fallback, and result normalization when the MCP Bridge implementation and test harness are present.
+- Verify repository integration by checking that `servers.json` remains untracked, Pi can load or reload the extension, and `nix flake check` passes when Nix validation is available.
 
 ## Out of Scope
 
@@ -261,28 +243,5 @@ The MCP Bridge SHALL register an inspect-only `/mcp` command that reports config
 
 - `CONTEXT.md`
 - `.gitignore`
-- `flake.nix`
 - `docs/adr/0002-local-pi-mcp-bridge.md`
 - `modules/terminal/pi.nix`
-- `config/pi/settings.json`
-- `config/pi/extensions/pi-header.ts`
-- `/nix/store/jxl3pw46n1mr71h4hfxq3cg89hzg2cb6-pi-coding-agent-0.73.0/lib/node_modules/pi-monorepo/docs/extensions.md`
-- `/nix/store/jxl3pw46n1mr71h4hfxq3cg89hzg2cb6-pi-coding-agent-0.73.0/lib/node_modules/pi-monorepo/docs/sdk.md`
-
-## Review Checklist
-
-- [ ] Implementation satisfies “Requirement: Local extension placement”.
-- [ ] Implementation satisfies “Requirement: Local server configuration”.
-- [ ] Implementation satisfies “Requirement: Stdio MCP server lifecycle”.
-- [ ] Implementation satisfies “Requirement: Environment interpolation”.
-- [ ] Implementation satisfies “Requirement: Tool-only MCP exposure”.
-- [ ] Implementation satisfies “Requirement: Deterministic Pi tool names”.
-- [ ] Implementation satisfies “Requirement: Tool filtering”.
-- [ ] Implementation satisfies “Requirement: Schema conversion”.
-- [ ] Implementation satisfies “Requirement: MCP tool execution”.
-- [ ] Implementation satisfies “Requirement: Isolated failures”.
-- [ ] Implementation satisfies “Requirement: MCP inspection command”.
-- [ ] Scenarios under each requirement are covered by behavior or tests.
-- [ ] Implementation tasks were completed in dependency order.
-- [ ] No out-of-scope behavior was introduced.
-- [ ] Public behavior matches the spec language.

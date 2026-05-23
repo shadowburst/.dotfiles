@@ -154,26 +154,13 @@ The MCP Bridge SHALL report opencode config source details through `/mcp`.
 - The bridge remains tool-only and stdio/local-only for MCP runtime support.
 - Existing deterministic Pi tool naming, schema conversion, tool result normalization, tool registration, and failure isolation behavior should remain unless explicitly superseded by this spec.
 
-## Implementation Tasks
+## Validation Expectations
 
-- [ ] 1. Replace `servers.json` loading with an opencode config loader that runs `opencode debug config`, captures stdout, enforces a 3000 ms timeout, parses JSON, and returns config status metadata for inspection.
-  - Covers: Requirement: Opencode config as server source; Requirement: Opencode-owned config resolution
-- [ ] 2. Resolve and pass the correct working directory for the opencode config command, preferring Pi project context when available and falling back to `process.cwd()`.
-  - Covers: Requirement: Project context for opencode resolution
-- [ ] 3. Map resolved opencode local MCP server definitions into the bridge runtime shape, including command array splitting, enabled state, environment, and invalid-command reporting.
-  - Covers: Requirement: Local opencode MCP server import
-- [ ] 4. Record remote, unknown, missing-type, invalid, and disabled opencode MCP servers in bridge state so they are visible in `/mcp` without blocking supported local servers.
-  - Covers: Requirement: Unsupported opencode MCP servers; Requirement: MCP inspection reflects opencode source
-- [ ] 5. Remove bridge-owned `servers.json`, `servers.example.json`, and `allowTools`/`denyTools` behavior from configuration parsing and tests.
-  - Covers: Requirement: Opencode config as server source; Requirement: Pi-only tool filters removed
-- [ ] 6. Update `/mcp` output to describe opencode as the config source, show command/cwd/load status/elapsed time, and remove instructions about creating `servers.json`.
-  - Covers: Requirement: MCP inspection reflects opencode source
-- [ ] 7. Add or update deterministic tests for successful opencode config import, missing `mcp`, command failure, timeout, invalid JSON, disabled local server, invalid local command, remote skip, unknown-type skip, and removed tool filters.
-  - Covers: all requirements
-- [ ] 8. Run the extension test suite with `npm --prefix config/pi/extensions/mcp-bridge test` and fix regressions in existing naming, schema, and result normalization tests.
-  - Covers: all requirements
-- [ ] 9. Validate repository integration by checking that Pi can load/reload the extension without `servers.json`, `/mcp` reports opencode config status, and no tracked docs or examples still instruct users to create `servers.json` as the active configuration source.
-  - Covers: Requirement: Opencode config as server source; Requirement: MCP inspection reflects opencode source
+- Run `npm --prefix config/pi/extensions/mcp-bridge test` when the extension and test suite are present.
+- Cover successful opencode config import, missing `mcp`, command failure, timeout, invalid JSON, disabled local server, invalid local command, remote skip, unknown-type skip, and removed tool filters in deterministic tests when the extension test harness is present.
+- Manually verify Pi loads and reloads the MCP Bridge without `config/pi/extensions/mcp-bridge/servers.json`.
+- Manually verify `/mcp` reports `opencode debug config` as the config source, including config load status and current working directory.
+- Verify tracked docs and examples no longer instruct users to create `servers.json` as the active MCP Bridge configuration source.
 
 ## Out of Scope
 
@@ -192,22 +179,3 @@ The MCP Bridge SHALL report opencode config source details through `/mcp`.
 - `docs/adr/0002-local-pi-mcp-bridge.md`
 - `docs/adr/0006-opencode-mcp-config-for-pi-bridge.md`
 - `docs/specs/2026-05-19-mcp-bridge.md`
-- `config/pi/extensions/mcp-bridge/index.ts`
-- `config/pi/extensions/mcp-bridge/src/config.mjs`
-- `config/pi/extensions/mcp-bridge/src/bridge.mjs`
-- `config/pi/extensions/mcp-bridge/src/inspect.mjs`
-- `config/pi/extensions/mcp-bridge/package.json`
-
-## Review Checklist
-
-- [ ] Implementation satisfies “Requirement: Opencode config as server source”.
-- [ ] Implementation satisfies “Requirement: Opencode-owned config resolution”.
-- [ ] Implementation satisfies “Requirement: Project context for opencode resolution”.
-- [ ] Implementation satisfies “Requirement: Local opencode MCP server import”.
-- [ ] Implementation satisfies “Requirement: Unsupported opencode MCP servers”.
-- [ ] Implementation satisfies “Requirement: Pi-only tool filters removed”.
-- [ ] Implementation satisfies “Requirement: MCP inspection reflects opencode source”.
-- [ ] Scenarios under each requirement are covered by behavior or tests.
-- [ ] Implementation tasks were completed in dependency order.
-- [ ] No out-of-scope behavior was introduced.
-- [ ] Public behavior matches the spec language.
