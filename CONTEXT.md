@@ -43,7 +43,9 @@ _Avoid_: Inline spec, no-spec spec, throwaway spec
 - A **Config Asset** is organised by owning **Feature Module**, not by target filesystem path.
 - A **Nix Module** should remain separate from the **Config Assets** it links.
 - An **Agent Skill** may produce or maintain one or more **Feature Specs**.
+- An **Agent Skill** should own reusable agent workflows that may be invoked by prompts, other skills, or direct user requests.
 - A **Pi Prompt Template** may invoke or instruct the use of **Agent Skills** and Pi Extensions.
+- A **Pi Prompt Template** should own Pi-specific invocation glue, while delegating reusable workflow behavior to Agent Skills when practical.
 
 ## Example dialogue
 
