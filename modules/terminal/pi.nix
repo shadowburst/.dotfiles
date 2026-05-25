@@ -37,6 +37,7 @@ _: {
         ".pi/agent/settings.json" = mkPiConfigSymlink "config/pi/settings.json";
         ".pi/agent/keybindings.json" = mkPiConfigSymlink "config/pi/keybindings.json";
         ".pi/agent/prompts" = mkPiConfigSymlink "config/pi/prompts";
+        ".pi/agent/extensions" = mkPiConfigSymlink "config/pi/extensions";
       };
     };
 }
