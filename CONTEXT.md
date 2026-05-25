@@ -25,12 +25,16 @@ A reusable agent instruction bundle stored as a Config Asset under `.agents/skil
 _Avoid_: Command, script, workflow
 
 **Pi Prompt Template**:
-A Pi-owned Config Asset invoked by slash-style prompt name, such as `/plan` or `/implement`, that expands into agent instructions rather than registering deterministic extension code.
+A Pi-owned Config Asset invoked by slash-style prompt name, such as `/spec`, `/plan`, or `/implement`, that expands into agent instructions rather than registering deterministic extension code.
 _Avoid_: Command, workflow, extension
 
 **Feature Spec**:
 A durable behavior contract for one feature, stored under `docs/specs` with a date-prefixed filename and OpenSpec-style persisted requirements and scenarios. It captures externally observable behavior plus durable constraints or context, not implementation task ledgers or generic review checklists.
 _Avoid_: PRD, change proposal, delta spec, task list, review checklist
+
+**Session Plan**:
+An ephemeral implementation plan kept in the current Pi session for work that does not warrant a durable Feature Spec. It may be implemented immediately after user confirmation and is not written to `docs/specs`.
+_Avoid_: Inline spec, no-spec spec, throwaway spec
 
 ## Relationships
 
