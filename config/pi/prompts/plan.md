@@ -1,5 +1,5 @@
 ---
-description: Grill an idea, resolve durable decisions, and write a lean Feature Spec
+description: Grill an idea, resolve durable decisions, and produce a Feature Spec or Session Plan
 argument-hint: "<idea-or-spec-path>"
 skill: grill-with-docs
 thinking: medium
@@ -7,14 +7,15 @@ thinking: medium
 
 Plan this feature interactively: $ARGUMENTS
 
-You are running the `/plan` Pi Prompt Template. Your job is to turn the user's idea into a durable lean Feature Spec, but only after an interactive grilling session.
+You are running the `/plan` Pi Prompt Template. Your job is to turn the user's idea into either a durable lean Feature Spec or a bounded chat-only Session Plan, but only after an interactive grilling session.
 
 ## Operating mode
 
 - Use the `grill-with-docs` skill behavior for the grilling session.
 - Ask one question at a time and wait for the user's answer.
 - If a question can be answered by inspecting the repository, inspect the repository instead of asking.
-- Do not implement code.
+- Do not implement while grilling or while writing/updating a Feature Spec.
+- You may implement a Session Plan only after presenting the Session Plan, receiving explicit user confirmation, and passing the clean-tree gate below.
 - Do not use Boomerang by default; this is an interactive planning prompt.
 
 ## Domain documentation
@@ -26,9 +27,27 @@ Follow `grill-with-docs` exactly for domain docs:
 - Create ADRs only when the `grill-with-docs` criteria are met: hard to reverse, surprising without context, and a real trade-off.
 - Do not force ADRs or glossary entries for transient implementation details.
 
-## Spec target
+## Post-grilling decision
 
-After the grilling session is complete and the user confirms, create or update one Feature Spec under `docs/specs/`.
+After the grilling session reaches stable understanding, classify the work and explain your recommendation.
+
+Recommend a Feature Spec when the work changes durable behavior, requirements, constraints, out-of-scope boundaries, domain language, architectural decisions, cross-session decisions, durable behavior contracts, or non-obvious constraints.
+
+Recommend a Session Plan when the work does not introduce or change a durable behavior contract, domain term, cross-session decision, or non-obvious constraint.
+
+Then ask the user to choose:
+
+1. Write/update a Feature Spec.
+2. Implement immediately from a Session Plan.
+
+Override rules:
+
+- If you recommend a Session Plan and the user chooses a Feature Spec, follow the Feature Spec branch.
+- If you recommend a Feature Spec and the user chooses immediate Session Plan implementation, warn what durable context may be lost by skipping the Feature Spec, then ask for explicit confirmation before implementing.
+
+## Feature Spec target
+
+For the Feature Spec branch, after the grilling session is complete and the user confirms, create or update one Feature Spec under `docs/specs/`.
 
 Use the `spec` skill's target-file behavior:
 
@@ -63,7 +82,7 @@ Use `## Implementation Context` only for non-obvious planning context future imp
 
 Use `## Validation Expectations` only for feature-specific validation guidance. If tests are called for, describe behavior to validate and avoid brittle implementation-detail assertions such as incidental CSS classes, HTML tag structure, snapshots, private methods, or collaborator call counts unless those details are the public contract.
 
-## Completion protocol
+## Feature Spec completion protocol
 
 When you believe the plan is spec-ready:
 
@@ -106,3 +125,42 @@ When you believe the plan is spec-ready:
 12. End only after a successful planning commit with:
     - `Created/updated: <spec-path>`
     - `Ready for: /implement <spec-path>`
+
+## Session Plan format
+
+For the Session Plan branch, present a short chat-only block in this shape:
+
+```md
+## Session Plan
+
+No Feature Spec is warranted because: <reason>
+
+Scope:
+- <what will change>
+
+Acceptance:
+- <observable expected result or done condition>
+
+Validation:
+- <commands/checks to run, or why none applies>
+```
+
+Rules:
+
+- A Session Plan is ephemeral and must not be written to `docs/specs` or another planning-file directory.
+- Keep it short; do not include Feature Spec requirements/scenarios sections.
+- If durable domain language or a durable decision is discovered while preparing a Session Plan, update `CONTEXT.md` or offer an ADR according to the normal `grill-with-docs` rules. The Session Plan itself remains chat-only.
+
+## Session Plan immediate implementation
+
+When the user chooses immediate implementation:
+
+1. Present the `## Session Plan` block.
+2. Ask for explicit confirmation to implement it now.
+3. If this planning session changed `CONTEXT.md`, a context-specific glossary, or an ADR, identify those planning files and ask the user to commit, stash, or otherwise clean them before implementation.
+4. Before editing implementation files, run `git status --porcelain`.
+5. If the working tree is dirty, stop before editing and ask the user to commit, stash, or clean first.
+6. If the working tree is clean, implement the Session Plan in the same session.
+7. Do not create a commit for Session Plan implementation changes.
+8. Run relevant validation when available.
+9. End by reporting changed files and validation evidence, leaving the implementation changes uncommitted for the user to inspect.
