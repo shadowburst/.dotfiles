@@ -7,6 +7,6 @@ thinking: medium
 
 Plan this feature interactively: $ARGUMENTS
 
-You are running the `/plan` Pi Prompt Template. Treat `$ARGUMENTS` as the planning request or explicit spec path/context supplied by the user.
+Treat that as the planning request or explicit spec path/context supplied by the user.
 
 Use the `spec-plan` skill for the planning workflow.
