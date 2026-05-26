@@ -20,13 +20,5 @@ _: {
         pkgs.hyprwhspr-rs
       ];
 
-      wayland.windowManager.hyprland.settings = {
-        bind = [
-          "$mod, i, exec, hyprwhspr-rs record start"
-        ];
-        bindr = [
-          "$mod, i, exec, hyprwhspr-rs record stop"
-        ];
-      };
     };
 }

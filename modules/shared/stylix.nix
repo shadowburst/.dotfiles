@@ -55,7 +55,6 @@
         };
 
         targets.gtk.enable = true;
-        targets.hyprland.enable = true;
         targets.qt = {
           enable = true;
           standardDialogs = "xdgdesktopportal";

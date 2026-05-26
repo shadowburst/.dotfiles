@@ -1,0 +1,60 @@
+---@class HyprCatppuccinTheme
+---@field rosewater string
+---@field rosewaterAlpha string
+---@field flamingo string
+---@field flamingoAlpha string
+---@field pink string
+---@field pinkAlpha string
+---@field mauve string
+---@field mauveAlpha string
+---@field red string
+---@field redAlpha string
+---@field maroon string
+---@field maroonAlpha string
+---@field peach string
+---@field peachAlpha string
+---@field yellow string
+---@field yellowAlpha string
+---@field green string
+---@field greenAlpha string
+---@field teal string
+---@field tealAlpha string
+---@field sky string
+---@field skyAlpha string
+---@field sapphire string
+---@field sapphireAlpha string
+---@field blue string
+---@field blueAlpha string
+---@field lavender string
+---@field lavenderAlpha string
+---@field text string
+---@field textAlpha string
+---@field subtext1 string
+---@field subtext1Alpha string
+---@field subtext0 string
+---@field subtext0Alpha string
+---@field overlay2 string
+---@field overlay2Alpha string
+---@field overlay1 string
+---@field overlay1Alpha string
+---@field overlay0 string
+---@field overlay0Alpha string
+---@field surface2 string
+---@field surface2Alpha string
+---@field surface1 string
+---@field surface1Alpha string
+---@field surface0 string
+---@field surface0Alpha string
+---@field base string
+---@field baseAlpha string
+---@field mantle string
+---@field mantleAlpha string
+---@field crust string
+---@field crustAlpha string
+---@field accent string
+---@field accentAlpha string
+
+---@type HyprCatppuccinTheme
+local theme = require("themes.catppuccin")
+
+return theme

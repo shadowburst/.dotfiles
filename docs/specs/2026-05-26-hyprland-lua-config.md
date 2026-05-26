@@ -36,8 +36,8 @@ The migration SHALL preserve the effective Hyprland behavior that exists before 
 #### Scenario: Feature-owned behavior after migration
 
 - **WHEN** Hyprland starts with feature modules such as Noctalia and hyprwhspr-rs available
-- **THEN** the existing Noctalia exec and keybindings remain available from Lua feature fragments
-- **AND** the existing hyprwhspr-rs press/release bindings remain available from Lua feature fragments
+- **THEN** the existing Noctalia exec and keybindings remain available from Lua module fragments
+- **AND** the existing hyprwhspr-rs press/release bindings remain available from Lua module fragments
 - **AND** the corresponding Nix modules retain responsibility for installing or enabling their packages and services
 
 #### Scenario: Host-owned behavior after migration
@@ -52,7 +52,7 @@ The Hyprland Lua Config Asset SHALL be organized so that the main entry point im
 #### Scenario: Feature-specific behavior is maintained
 
 - **WHEN** behavior belongs to a specific feature such as Noctalia or hyprwhspr-rs
-- **THEN** that behavior is placed in a dedicated checked-in Lua fragment for that feature
+- **THEN** that behavior is placed in a dedicated checked-in Lua module fragment for that feature
 - **AND** the main Lua entry point imports that fragment
 
 #### Scenario: Host-specific behavior is maintained
@@ -87,7 +87,7 @@ The configuration SHALL use ignored generated Lua fragments only for values that
 ## Implementation Context
 
 - The current main Hyprland behavior is in `modules/desktop/hypr/hyprland.nix` with `configType = "hyprlang"`.
-- Noctalia and hyprwhspr-rs currently append Hyprland exec/bind settings from their Home Manager modules, but those values are not known to depend on Nix evaluation and should move to Lua feature fragments.
+- Noctalia and hyprwhspr-rs currently append Hyprland exec/bind settings from their Home Manager modules, but those values are not known to depend on Nix evaluation and should move to Lua module fragments under the Hyprland Config Asset.
 - Zephyrus currently contributes `AQ_DRM_DEVICES` through Home Manager Hyprland settings; the chosen plan is to represent this as a checked-in host fragment imported conditionally by hostname rather than as generated Nix output.
 - `TERMINAL` and `BROWSER` are Home Manager session variables, but the Lua config can read them from the runtime environment with `os.getenv` instead of generating Lua from Nix.
 - Catppuccin Hyprland support is currently disabled because the existing Hyprlang renderer cannot consume the Lua-only values it emits. After moving to Lua, shared color integration may be revisited, but only Nix-dependent color values should be generated.
@@ -102,7 +102,7 @@ The configuration SHALL use ignored generated Lua fragments only for values that
 
 - Redesigning the Hyprland keymap, workspace model, visual style, or feature set beyond what is required for the Lua migration.
 - Moving non-Hyprland application configuration into the Hyprland Config Asset.
-- Generating Lua from Nix for values that can be read from the runtime environment or represented as checked-in host or feature fragments.
+- Generating Lua from Nix for values that can be read from the runtime environment or represented as checked-in host or module fragments.
 
 ## Source Context
 

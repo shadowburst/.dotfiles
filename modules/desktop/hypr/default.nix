@@ -35,9 +35,6 @@
         self.homeModules.shikane
       ];
 
-      home.file.".local/bin/launch-default".source =
-        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/hypr/bin/launch-default";
-
       home.sessionPath = [ "$HOME/.local/bin" ];
 
       home.packages = with pkgs; [
