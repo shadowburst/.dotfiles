@@ -8,6 +8,14 @@ hl.monitor({
   scale = 1,
 })
 
+hl.workspace_rule({ workspace = "1", persistent = true })
+hl.workspace_rule({ workspace = "2", persistent = true })
+hl.workspace_rule({ workspace = "3", persistent = true })
+hl.workspace_rule({ workspace = "4", persistent = true })
+hl.workspace_rule({ workspace = "5", persistent = true })
+hl.workspace_rule({ workspace = "6", persistent = true })
+hl.workspace_rule({ workspace = "7", persistent = true })
+
 hl.window_rule({
   name = "calculator-floating",
   match = { class = "org.gnome.Calculator" },
@@ -30,14 +38,6 @@ hl.window_rule({
   float = true,
   center = true,
   size = "1000 600",
-})
-
-hl.layer_rule({
-  name = "noctalia-background-blur",
-  match = { namespace = "noctalia-background-.*$" },
-  ignore_alpha = 0.5,
-  blur = true,
-  blur_popups = true,
 })
 
 hl.layer_rule({

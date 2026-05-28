@@ -6,7 +6,7 @@ _: {
         enable = true;
         settings = {
           general = {
-            lock_cmd = "noctalia-shell ipc call lockScreen lock";
+            lock_cmd = "noctalia msg screen-lock";
             before_sleep_cmd = "loginctl lock-session";
             after_sleep_cmd = ''
               hyprctl dispatch 'hl.dsp.dpms({ action = "on" })'
@@ -17,7 +17,7 @@ _: {
             {
               timeout = 10;
               on-timeout = /* bash */ ''
-                [[ "$(noctalia-shell ipc call state all | jq '.state.lockScreenActive')" == "true" ]] && hyprctl dispatch 'hl.dsp.dpms({ action = "off" })'
+                [[ "$(loginctl show-session "$XDG_SESSION_ID" -p LockedHint --value)" == "yes" ]] && noctalia msg dpms-off
               '';
               on-resume = ''
                 hyprctl dispatch 'hl.dsp.dpms({ action = "on" })'

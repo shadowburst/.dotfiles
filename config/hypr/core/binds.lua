@@ -66,13 +66,6 @@ hl.bind(mod .. " + e", hl.dsp.exec_cmd("uwsm app -- " .. terminal .. " -e yazi")
 hl.bind("CTRL + SHIFT + escape", hl.dsp.exec_cmd("uwsm app -- " .. terminal .. " -e btop"))
 hl.bind("XF86Calculator", hl.dsp.exec_cmd("uwsm app -- gnome-calculator"))
 
--- Screenshots.
-hl.bind("print", hl.dsp.exec_cmd("hyprshot --freeze -m region --clipboard-only"))
-hl.bind("CTRL + print", hl.dsp.exec_cmd("hyprshot --freeze -m window --clipboard-only"))
-hl.bind(mod .. " + SHIFT + S", hl.dsp.exec_cmd("hyprshot --freeze -m region --clipboard-only"))
-hl.bind(mod .. " + CTRL + SHIFT + S", hl.dsp.exec_cmd("hyprshot --freeze -m window --clipboard-only"))
-
 -- Other.
 hl.bind("CTRL + ALT + delete", hl.dsp.exec_cmd("hyprctl kill"))
-hl.bind(mod .. " + Escape", hl.dsp.exec_cmd("loginctl lock-session"))
 hl.bind(mod .. " + p", hl.dsp.exec_cmd("hyprpicker -a"))

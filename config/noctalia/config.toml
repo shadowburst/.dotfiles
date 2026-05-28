@@ -1,0 +1,253 @@
+# Noctalia v5 alpha configuration.
+# This checked-in Config Asset is linked by Home Manager to ~/.config/noctalia/config.toml.
+
+[shell]
+ui_scale = 1.0
+corner_radius_scale = 0.25
+font_family = "Rubik"
+time_format = "{:%H:%M}"
+date_format = "%a, %b %d"
+offline_mode = false
+telemetry_enabled = false
+polkit_agent = true
+password_style = "default"
+settings_show_advanced = false
+middle_click_opens_widget_settings = true
+show_location = true
+clipboard_enabled = true
+clipboard_history_max_entries = 50
+clipboard_auto_paste = "off"
+clipboard_image_action_command = "satty -f -"
+avatar_path = "/home/pbaudry/.face"
+
+[shell.animation]
+enabled = true
+speed = 2.0
+
+[shell.shadow]
+blur = 12
+offset_x = 0
+offset_y = 0
+alpha = 0.55
+
+[shell.panel]
+background_blur = false
+transparency_mode = "solid"
+borders = false
+shadow = true
+launcher_placement = "centered"
+clipboard_placement = "centered"
+control_center_placement = "centered"
+wallpaper_placement = "centered"
+session_placement = "centered"
+open_near_click_control_center = false
+open_near_click_launcher = false
+open_near_click_clipboard = false
+open_near_click_wallpaper = false
+open_near_click_session = false
+
+[shell.mpris]
+blacklist = []
+
+[wallpaper]
+enabled = true
+fill_mode = "crop"
+fill_color = "#000000"
+transition = ["fade"]
+transition_duration = 1000
+edge_smoothness = 0.05
+directory = "/home/pbaudry/Pictures/Wallpapers"
+directory_light = ""
+directory_dark = ""
+
+[wallpaper.default]
+path = ""
+
+[wallpaper.automation]
+enabled = false
+interval_minutes = 5
+order = "random"
+recursive = true
+
+[theme]
+mode = "dark"
+source = "builtin"
+builtin = "Catppuccin"
+
+[theme.templates]
+enable_builtin_templates = true
+builtin_ids = []
+enable_community_templates = true
+community_ids = []
+
+[backdrop]
+enabled = false
+blur_intensity = 0.5
+tint_intensity = 0.2
+
+[notification]
+enable_daemon = true
+layer = "overlay"
+scale = 1.0
+background_opacity = 0.9
+offset_x = 20
+offset_y = 8
+
+[osd]
+position = "top_center"
+orientation = "horizontal"
+scale = 1.0
+background_opacity = 0.9
+offset_x = 20
+offset_y = 8
+lock_keys = true
+keyboard_layout = true
+
+[system.monitor]
+enabled = true
+cpu_poll_seconds = 2.0
+gpu_poll_seconds = 5.0
+memory_poll_seconds = 2.0
+network_poll_seconds = 3.0
+disk_poll_seconds = 10.0
+
+[weather]
+enabled = true
+auto_locate = false
+address = "Mayenne"
+refresh_minutes = 30
+unit = "celsius"
+
+[audio]
+enable_overdrive = false
+enable_sounds = true
+sound_volume = 0.5
+volume_change_sound = ""
+notification_sound = ""
+
+[brightness]
+enable_ddcutil = false
+
+[nightlight]
+enabled = false
+force = false
+use_weather_location = true
+temperature_day = 6500
+temperature_night = 4000
+start_time = "22:00"
+stop_time = "08:00"
+
+[idle]
+pre_action_fade_seconds = 5.0
+
+[idle.behavior.lock]
+timeout = 660
+command = "noctalia:screen-lock"
+enabled = false
+
+[idle.behavior.screen-off]
+timeout = 600
+command = "noctalia:dpms-off"
+resume_command = "noctalia:dpms-on"
+enabled = false
+
+[keybinds]
+validate = ["return", "kp_enter"]
+cancel = ["escape"]
+left = ["left"]
+right = ["right"]
+up = ["up"]
+down = ["down"]
+
+[bar.main]
+position = "left"
+thickness = 34
+background_opacity = 0.93
+radius = 8
+margin_ends = 5
+margin_edge = 5
+padding = 2
+widget_spacing = 6
+scale = 1.0
+shadow = true
+auto_hide = false
+reserve_space = true
+capsule = true
+capsule_fill = "surface_variant"
+capsule_radius = 8.0
+capsule_opacity = 0.9
+start = ["clock", "media"]
+center = ["workspaces"]
+end = ["screen_recorder", "tray", "notifications", "bluetooth", "network", "volume", "battery", "control-center", "session"]
+
+[widget.screen_recorder]
+type = "scripted"
+script = "scripts/screen_recorder.lua"
+scope = "shared"
+directory = ""
+filename_pattern = "recording_%Y%m%d_%H%M%S"
+video_source = "portal"
+video_codec = "h264"
+audio_codec = "opus"
+audio_source = "default_output"
+quality = "very_high"
+frame_rate = 60
+color_range = "limited"
+resolution = "original"
+show_cursor = true
+copy_to_clipboard = false
+restore_portal = false
+replay_enabled = false
+replay_duration = 30
+replay_storage = "ram"
+hide_inactive = true
+
+[dock]
+enabled = false
+position = "bottom"
+icon_size = 48
+padding = 8
+item_spacing = 6
+background_opacity = 1.0
+radius = 16
+radius_top_left = 16
+radius_top_right = 16
+radius_bottom_left = 16
+radius_bottom_right = 16
+margin_ends = 0
+margin_edge = 8
+shadow = true
+show_running = true
+auto_hide = true
+reserve_space = false
+active_scale = 1.0
+inactive_scale = 0.85
+active_opacity = 1.0
+inactive_opacity = 0.6
+show_dots = true
+show_instance_count = true
+launcher_position = "none"
+launcher_icon = ""
+active_monitor_only = true
+pinned = []
+
+[desktop_widgets]
+enabled = false
+
+[[control_center.shortcuts]]
+type = "wifi"
+
+[[control_center.shortcuts]]
+type = "bluetooth"
+
+[[control_center.shortcuts]]
+type = "notification"
+
+[[control_center.shortcuts]]
+type = "wallpaper"
+
+[[control_center.shortcuts]]
+type = "session"
+
+[hooks]
+battery_low_percent_threshold = 0

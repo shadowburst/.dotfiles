@@ -1,42 +1,29 @@
-_: {
-  flake.nixosModules.noctalia =
-    {
-      lib,
-      pkgs,
-      ...
-    }:
-    {
-      programs.gpu-screen-recorder.enable = true;
+{ inputs, ... }:
+{
+  flake.nixosModules.noctalia = { ... }: {
+    programs.gpu-screen-recorder.enable = true;
+
+    nix.settings = {
+      extra-substituters = [ "https://noctalia.cachix.org" ];
+      extra-trusted-public-keys = [
+        "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
+      ];
     };
+  };
 
   flake.homeModules.noctalia =
+    { config, ... }:
     {
-      config,
-      lib,
-      pkgs,
-      ...
-    }:
-    {
-      home.packages = with pkgs; [
-        noctalia-shell
-        gpu-screen-recorder
-      ];
+      imports = [ inputs.noctalia.homeModules.default ];
 
-
-      xdg.configFile = {
-        "noctalia/colors.json".source =
-          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/noctalia/colors.json";
-        "noctalia/settings.json".source =
-          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/noctalia/settings.json";
-
-        "noctalia/plugins.json".source =
-          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/noctalia/plugins.json";
-        "noctalia/plugins/pomodoro/settings.json".source =
-          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/noctalia/plugins/pomodoro.json";
-        "noctalia/plugins/screen-recorder/settings.json".source =
-          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/noctalia/plugins/screen-recorder.json";
+      programs.noctalia = {
+        enable = true;
+        systemd.enable = true;
       };
 
-      home.sessionVariables.QT_AUDIO_BACKEND = "pulseaudio";
+      programs.satty.enable = true;
+
+      xdg.configFile."noctalia/config.toml".source =
+        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/noctalia/config.toml";
     };
 }
