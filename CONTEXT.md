@@ -24,10 +24,6 @@ _Avoid_: Plugin, package
 A reusable agent instruction bundle stored as a Config Asset under `.agents/skills`.
 _Avoid_: Command, script, workflow
 
-**Pi Prompt Template**:
-A Pi-owned Config Asset invoked by slash-style prompt name, such as `/spec`, `/plan`, or `/implement`, that expands into agent instructions rather than registering deterministic extension code.
-_Avoid_: Command, workflow, extension
-
 **Feature Spec**:
 A durable behavior contract for one feature, stored under `docs/specs` with a date-prefixed filename and OpenSpec-style persisted requirements and scenarios. It captures externally observable behavior plus durable constraints or context, not implementation task ledgers or generic review checklists.
 _Avoid_: PRD, change proposal, delta spec, task list, review checklist
@@ -44,8 +40,6 @@ _Avoid_: Inline spec, no-spec spec, throwaway spec
 - A **Nix Module** should remain separate from the **Config Assets** it links.
 - An **Agent Skill** may produce or maintain one or more **Feature Specs**.
 - An **Agent Skill** should own reusable agent workflows that may be invoked by prompts, other skills, or direct user requests.
-- A **Pi Prompt Template** may invoke or instruct the use of **Agent Skills** and Pi Extensions.
-- A **Pi Prompt Template** should own Pi-specific invocation glue, while delegating reusable workflow behavior to Agent Skills when practical.
 
 ## Example dialogue
 
