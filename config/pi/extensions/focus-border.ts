@@ -19,6 +19,10 @@ export default function (pi: ExtensionAPI) {
 	let terminalFocused = true;
 	let currentEditor: FocusAwareEditor | undefined;
 
+	function hideFakeCursor(line: string): string {
+		return line.replace(/\x1b\[7m([\s\S]*?)\x1b\[(?:0|27)m/, "$1");
+	}
+
 	class FocusAwareEditor extends CustomEditor {
 		private inactiveBorder: (text: string) => string;
 		private activeBorder: () => (text: string) => string;
@@ -75,6 +79,7 @@ export default function (pi: ExtensionAPI) {
 		render(width: number): string[] {
 			if (!terminalFocused) {
 				this.borderColor = this.inactiveBorder;
+				return super.render(width).map(hideFakeCursor);
 			}
 			return super.render(width);
 		}
