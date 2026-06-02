@@ -2,14 +2,14 @@ _: {
   flake.homeModules.lerd =
     { lib, pkgs, ... }:
     let
-      version = "1.21.1";
+      version = "1.22.1";
       lerd = pkgs.stdenv.mkDerivation {
         pname = "lerd";
         inherit version;
 
         src = pkgs.fetchurl {
           url = "https://github.com/geodro/lerd/releases/download/v${version}/lerd_${version}_linux_amd64.tar.gz";
-          hash = "sha256-vK6qAW6CWfg56N/wvpJHjUvCLy8HT4GADINQBZHYjTU=";
+          hash = "sha256-82yteOoupv/H+KoP74H77Y0f0zZgvWGnyYmKc6K91do=";
         };
 
         sourceRoot = ".";
