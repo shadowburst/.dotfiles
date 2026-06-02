@@ -6,6 +6,8 @@
       imports = [ inputs.catppuccin.nixosModules.catppuccin ];
 
       catppuccin = {
+        enable = true;
+        autoEnable = false;
         flavor = "mocha";
         accent = "lavender";
 
@@ -23,6 +25,8 @@
       imports = [ inputs.catppuccin.homeModules.catppuccin ];
 
       catppuccin = {
+        enable = true;
+        autoEnable = false;
         flavor = "mocha";
         accent = "lavender";
 

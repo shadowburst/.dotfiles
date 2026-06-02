@@ -44,8 +44,6 @@ _: {
           config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/hypr/lib";
         "hypr/modules".source =
           config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/hypr/modules";
-        "hypr/themes/init.lua".source =
-          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/hypr/themes/init.lua";
       };
 
       home.file.".dotfiles/config/hypr/.luarc.json".text = hyprLuaRc;
