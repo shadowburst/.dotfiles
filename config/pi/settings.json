@@ -9,8 +9,6 @@
   "hideThinkingBlock": false,
   "packages": [
     "npm:pi-mcp-adapter",
-    "npm:pi-review-loop",
-    "npm:pi-subagents",
     "npm:pi-web-access"
   ],
   "editorPaddingX": 1,
@@ -21,4 +19,3 @@
   "treeFilterMode": "default",
   "showHardwareCursor": true
 }
-
