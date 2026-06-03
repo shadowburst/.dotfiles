@@ -128,15 +128,17 @@ local function accept_word(item)
         and col <= #lines[row]
         and row <= #current_lines
         and col <= #current_lines[row]
-        and lines[row][col] == current_lines[row][col]
+        and lines[row]:sub(col, col) == current_lines[row]:sub(col, col)
       do
         col = col + 1
       end
 
-      local word = string.match(lines[row]:sub(col), "%s*%S+")
+      local prefix = row <= #lines and col <= #lines[row] and lines[row]:sub(1, col - 1) or ""
+      local rest = row <= #lines and lines[row]:sub(col) or ""
+      local word = rest:match("^%S+%s*") or rest:match("^%s+") or ""
       item.insert_text = table.concat(vim.list_slice(lines, 1, row - 1), "\n")
         .. (row <= #current_lines and "" or "\n")
-        .. (row <= #lines and col <= #lines[row] and lines[row]:sub(1, col - 1) or "")
+        .. prefix
         .. word
     end
   end
