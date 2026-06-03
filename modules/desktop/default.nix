@@ -25,6 +25,7 @@
         self.homeModules.mpv
         self.homeModules.noctalia
         self.homeModules.transmission
+        self.homeModules.voxtype
       ];
 
       home.packages = with pkgs; [

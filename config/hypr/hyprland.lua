@@ -9,4 +9,4 @@ require("host")
 require("layouts.scrolling")
 
 require("modules.noctalia")
-require("modules.hyprwhspr-rs")
+require("modules.voxtype")
