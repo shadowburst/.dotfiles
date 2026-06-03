@@ -83,7 +83,6 @@ _: {
           tab_bar_filter = "session:~ or session:^$";
           tab_bar_min_tabs = 1;
           url_style = "curly";
-          watcher = "${config.home.homeDirectory}/.dotfiles/config/kitty/pi-focus-watcher.py";
           window_padding_width = "4 0";
         };
         keybindings = {
