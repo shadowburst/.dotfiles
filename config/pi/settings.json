@@ -14,7 +14,7 @@
   "editorPaddingX": 1,
   "enableInstallTelemetry": false,
   "terminal": {
-    "showTerminalProgress": true
+    "showTerminalProgress": false
   },
   "treeFilterMode": "default",
   "showHardwareCursor": true

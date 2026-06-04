@@ -74,12 +74,12 @@
     "syntaxType": "yellow",
     "syntaxOperator": "sky",
     "syntaxPunctuation": "overlay_2",
-    "thinkingOff": "surface_2",
-    "thinkingMinimal": "sapphire",
-    "thinkingLow": "green",
-    "thinkingMedium": "yellow",
-    "thinkingHigh": "peach",
-    "thinkingXhigh": "red",
+    "thinkingOff": "overlay_0",
+    "thinkingMinimal": "subtext_0",
+    "thinkingLow": "blue",
+    "thinkingMedium": "lavender",
+    "thinkingHigh": "mauve",
+    "thinkingXhigh": "pink",
     "bashMode": "peach"
   },
   "export": {
