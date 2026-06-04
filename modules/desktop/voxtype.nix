@@ -6,6 +6,13 @@ _: {
         enable = true;
         package = pkgs.voxtype-vulkan;
         loadModels = [ "base.en" ];
+        wayland.display = "wayland-1";
+        environment.PATH = pkgs.lib.makeBinPath [
+          pkgs.coreutils
+          pkgs.which
+          pkgs.wl-clipboard
+          pkgs.wtype
+        ];
 
         settings = {
           hotkey.enabled = false;
@@ -17,7 +24,9 @@ _: {
           };
 
           output = {
-            mode = "type";
+            # Avoid wtype's per-character synthetic text events being interpreted
+            # through the active AZERTY layout as if they came from QWERTY.
+            mode = "paste";
             wait_for_modifier_release = true;
             append_text = " ";
 
