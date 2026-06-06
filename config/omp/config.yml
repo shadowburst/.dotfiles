@@ -1,0 +1,19 @@
+lastChangelogVersion: 15.9.67
+modelRoles: 
+  default: openai-codex/gpt-5.5
+defaultThinkingLevel: medium
+theme: 
+  dark: dark-catppuccin
+  light: light-catppuccin
+doubleEscapeAction: branch
+treeFilterMode: default
+hideThinkingBlock: false
+showHardwareCursor: true
+memory: 
+  backend: "off"
+memories: 
+  enabled: false
+symbolPreset: unicode
+setupVersion: 1
+statusLine: 
+  preset: compact

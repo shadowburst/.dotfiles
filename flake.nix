@@ -17,6 +17,8 @@
 
     flake-parts.url = "github:hercules-ci/flake-parts";
     import-tree.url = "github:vic/import-tree";
+
+    llm-agents.url = "github:numtide/llm-agents.nix";
   };
 
   outputs =

@@ -24,6 +24,7 @@
         self.homeModules.git
         self.homeModules.nushell
         self.homeModules.neovim
+        self.homeModules.omp
         self.homeModules.opencode
         self.homeModules.pi
         self.homeModules.sesh
