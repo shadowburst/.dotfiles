@@ -63,6 +63,7 @@ _: {
         font.name = config.stylix.fonts.monospace.name;
         settings = {
           allow_remote_control = "socket-only";
+          auto_reload_config = -1;
           background_opacity = "0.9";
           confirm_os_window_close = 0;
           cursor = config.lib.stylix.colors.withHashtag.base07;
