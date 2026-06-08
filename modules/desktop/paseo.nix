@@ -25,13 +25,6 @@
         paseoDesktopWithSpeechLibs
       ];
 
-      programs.mcp = {
-        enable = true;
-        servers.paseo = {
-          url = "http://127.0.0.1:6767/mcp/agents";
-        };
-      };
-
       xdg.configFile."Paseo/desktop-settings.json".source =
         config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/paseo/desktop-settings.json";
     };
