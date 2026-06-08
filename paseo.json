@@ -1,0 +1,7 @@
+{
+  "metadataGeneration": {
+    "commitMessage": {
+      "instructions": "use conventional commits with an optional scope if feature specific"
+    }
+  }
+}
