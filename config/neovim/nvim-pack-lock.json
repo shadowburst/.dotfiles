@@ -15,7 +15,8 @@
     },
     "codediff.nvim": {
       "rev": "5d6aa753797a0ebda14dd769ed03d12a320d689b",
-      "src": "https://github.com/esmuellert/codediff.nvim"
+      "src": "https://github.com/esmuellert/codediff.nvim",
+      "version": "'v2.47.0'"
     },
     "conform.nvim": {
       "rev": "619363c30309d29ffa631e67c8183f2a72caa373",
@@ -138,7 +139,7 @@
       "src": "https://github.com/folke/which-key.nvim"
     },
     "yazi.nvim": {
-      "rev": "c7ffcc9c71ae832d68162a564ee404d8305bc323",
+      "rev": "21e7936f74d03b534bd2e8e6407f6ddfb1a63eb2",
       "src": "https://github.com/mikavilpas/yazi.nvim"
     }
   }
