@@ -12,6 +12,9 @@
 
     catppuccin.url = "github:catppuccin/nix";
 
+    paseo.url = "github:getpaseo/paseo";
+    paseo.inputs.nixpkgs.follows = "nixpkgs";
+
     nix-index-database.url = "github:nix-community/nix-index-database";
     nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
 

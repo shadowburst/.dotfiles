@@ -9,4 +9,5 @@ require("host")
 require("layouts.scrolling")
 
 require("modules.noctalia")
+require("modules.paseo")
 require("modules.voxtype")

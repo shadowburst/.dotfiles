@@ -38,6 +38,9 @@ _: {
         ".pi/agent/prompts" = mkPiConfigSymlink "config/pi/prompts";
         ".pi/agent/settings.json" = mkPiConfigSymlink "config/pi/settings.json";
         ".pi/agent/keybindings.json" = mkPiConfigSymlink "config/pi/keybindings.json";
+        ".pi/agent/mcp.json".source = (pkgs.formats.json { }).generate "pi-mcp.json" {
+          mcpServers = config.programs.mcp.servers;
+        };
         ".pi/agent/extensions" = mkPiConfigSymlink "config/pi/extensions";
       };
     };

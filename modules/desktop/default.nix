@@ -1,7 +1,7 @@
 { self, ... }:
 {
   flake.nixosModules.desktop =
-    { lib, pkgs, ... }:
+    { ... }:
     {
       imports = [
         self.nixosModules.hypr
@@ -15,7 +15,7 @@
     };
 
   flake.homeModules.desktop =
-    { lib, pkgs, ... }:
+    { pkgs, ... }:
     {
       imports = [
         self.homeModules.ghostty
@@ -24,6 +24,7 @@
         self.homeModules.kitty
         self.homeModules.mpv
         self.homeModules.noctalia
+        self.homeModules.paseo
         self.homeModules.transmission
         self.homeModules.voxtype
       ];

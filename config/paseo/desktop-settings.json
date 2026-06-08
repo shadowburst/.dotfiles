@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "settings": {
+    "releaseChannel": "stable",
+    "daemon": {
+      "manageBuiltInDaemon": true,
+      "keepRunningAfterQuit": true
+    }
+  },
+  "migrations": {
+    "legacyRendererSettingsImported": false
+  }
+}

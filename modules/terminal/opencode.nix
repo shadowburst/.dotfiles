@@ -4,6 +4,7 @@ _: {
     {
       programs.opencode = {
         enable = true;
+        enableMcpIntegration = true;
         settings = {
           lsp = false;
           permission = "allow";
