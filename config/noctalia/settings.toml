@@ -1,0 +1,138 @@
+[bar.main]
+end = [ "screen_recorder", "tray", "notifications", "bluetooth", "network", "volume", "battery" ]
+margin_edge = 0.0
+margin_ends = 16
+reserve_space = false
+
+[control_center]
+sidebar = "none"
+sidebar_section = "none"
+
+    [[control_center.shortcuts]]
+    type = "wifi"
+
+    [[control_center.shortcuts]]
+    type = "bluetooth"
+
+    [[control_center.shortcuts]]
+    type = "notification"
+
+    [[control_center.shortcuts]]
+    type = "caffeine"
+
+    [[control_center.shortcuts]]
+    type = "wallpaper"
+
+    [[control_center.shortcuts]]
+    type = "session"
+
+[keybinds]
+down = [ "Down", "Ctrl+n" ]
+up = [ "Up", "Ctrl+p" ]
+
+[lockscreen_widgets]
+enabled = true
+schema_version = 2
+widget_order = [ "lockscreen-login-box@eDP-1", "lockscreen-widget-0000000000000001" ]
+
+    [lockscreen_widgets.grid]
+    cell_size = 24
+    major_interval = 4
+    visible = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@eDP-1"]
+    box_height = 0.0
+    box_width = 0.0
+    cx = 960.0
+    cy = 639.0
+    output = "eDP-1"
+    rotation = 0.0
+    type = "login_box"
+
+    [lockscreen_widgets.widget.lockscreen-widget-0000000000000001]
+    box_height = 160.0
+    box_width = 368.0
+    cx = 960.0
+    cy = 504.0
+    output = "eDP-1"
+    rotation = 0.0
+    type = "clock"
+
+        [lockscreen_widgets.widget.lockscreen-widget-0000000000000001.settings]
+        background = false
+        color = "primary"
+        font_family = "Rubik"
+
+[shell]
+password_style = "random"
+settings_show_advanced = true
+
+    [shell.panel]
+    control_center_placement = "attached"
+    launcher_categories = false
+    open_near_click_control_center = true
+    shadow = false
+    transparency_mode = "soft"
+
+    [shell.screenshot]
+    pipe_command = "satty -f -"
+    pipe_to_command = true
+    save_to_file = false
+
+    [[shell.session.actions]]
+    action = "lock"
+    enabled = true
+    shortcut = "x"
+    variant = "default"
+
+    [[shell.session.actions]]
+    action = "logout"
+    enabled = true
+    shortcut = "l"
+    variant = "default"
+
+    [[shell.session.actions]]
+    action = "reboot"
+    enabled = true
+    shortcut = "r"
+    variant = "default"
+
+    [[shell.session.actions]]
+    action = "shutdown"
+    enabled = true
+    shortcut = "p"
+    variant = "destructive"
+
+    [[shell.session.actions]]
+    action = "suspend"
+    enabled = false
+    shortcut = "3"
+    variant = "default"
+
+[theme]
+community_palette = "Catppuccin Lavender"
+source = "community"
+
+[wallpaper]
+fill_color = "surface"
+
+    [wallpaper.default]
+    path = "/home/pbaudry/Pictures/Wallpapers/1.jpg"
+
+    [wallpaper.last]
+    path = "/home/pbaudry/Pictures/Wallpapers/1.jpg"
+
+[widget.battery]
+display_mode = "graphic"
+show_label = false
+
+[widget.network]
+show_label = false
+
+[widget.volume]
+show_label = false
+
+[widget.workspaces]
+minimal = true
+occupied_color = "tertiary"
+scale = 1.1500000000000001

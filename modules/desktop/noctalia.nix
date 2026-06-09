@@ -25,5 +25,8 @@
 
       xdg.configFile."noctalia/config.toml".source =
         config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/noctalia/config.toml";
+
+      xdg.stateFile."noctalia/settings.toml".source =
+        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/noctalia/settings.toml";
     };
 }
