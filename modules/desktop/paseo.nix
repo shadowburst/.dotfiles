@@ -9,10 +9,10 @@
     }:
     let
       system = pkgs.stdenv.hostPlatform.system;
-      paseoDesktop = inputs.paseo.packages.${system}.desktop;
-      paseoDesktopWithSpeechLibs = pkgs.symlinkJoin {
+      paseoCli = inputs.paseo.packages.${system}.paseo;
+      paseoDesktop = pkgs.symlinkJoin {
         name = "paseo-desktop-with-speech-libs";
-        paths = [ paseoDesktop ];
+        paths = [ inputs.paseo.packages.${system}.desktop ];
         nativeBuildInputs = [ pkgs.makeWrapper ];
         postBuild = ''
           wrapProgram $out/bin/paseo-desktop \
@@ -22,7 +22,8 @@
     in
     {
       home.packages = lib.optionals pkgs.stdenv.hostPlatform.isLinux [
-        paseoDesktopWithSpeechLibs
+        paseoCli
+        paseoDesktop
       ];
 
       xdg.configFile."Paseo/desktop-settings.json".source =
