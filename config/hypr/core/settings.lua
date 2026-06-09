@@ -5,7 +5,7 @@ hl.config({
     col = { active_border = theme.accent },
     border_size = 2,
     gaps_in = 2,
-    gaps_out = { top = 0, right = 40, bottom = 0, left = 40 },
+    gaps_out = { top = 0, right = 34, bottom = 0, left = 0 },
   },
 
   dwindle = { force_split = 2 },

@@ -2,7 +2,6 @@
 end = [ "screen_recorder", "tray", "notifications", "bluetooth", "network", "volume", "battery" ]
 margin_edge = 0.0
 margin_ends = 16
-reserve_space = false
 
 [control_center]
 sidebar = "none"
@@ -30,15 +29,27 @@ sidebar_section = "none"
 down = [ "Down", "Ctrl+n" ]
 up = [ "Up", "Ctrl+p" ]
 
+[lockscreen]
+blurred_desktop = true
+
 [lockscreen_widgets]
 enabled = true
 schema_version = 2
-widget_order = [ "lockscreen-login-box@eDP-1", "lockscreen-widget-0000000000000001" ]
+widget_order = [ "lockscreen-login-box@DP-7", "lockscreen-login-box@eDP-1", "lockscreen-widget-0000000000000001" ]
 
     [lockscreen_widgets.grid]
     cell_size = 24
     major_interval = 4
     visible = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@DP-7"]
+    box_height = 0.0
+    box_width = 0.0
+    cx = 1720.0
+    cy = 1317.0
+    output = "DP-7"
+    rotation = 0.0
+    type = "login_box"
 
     [lockscreen_widgets.widget."lockscreen-login-box@eDP-1"]
     box_height = 0.0
@@ -115,6 +126,8 @@ source = "community"
 
 [wallpaper]
 fill_color = "surface"
+transition = [ "disc" ]
+transition_on_startup = true
 
     [wallpaper.default]
     path = "/home/pbaudry/Pictures/Wallpapers/1.jpg"
@@ -133,6 +146,7 @@ show_label = false
 show_label = false
 
 [widget.workspaces]
-minimal = true
-occupied_color = "tertiary"
+empty_color = "surface"
+focused_color = "tertiary"
+occupied_color = "primary"
 scale = 1.1500000000000001
