@@ -3,7 +3,7 @@ modelRoles:
   default: openai-codex/gpt-5.5
 defaultThinkingLevel: medium
 theme: 
-  dark: dark-catppuccin
+  dark: catppuccin-mocha
   light: light-catppuccin
 doubleEscapeAction: branch
 treeFilterMode: default
@@ -13,7 +13,30 @@ memory:
   backend: "off"
 memories: 
   enabled: false
-symbolPreset: unicode
+symbolPreset: nerd
 setupVersion: 1
 statusLine: 
-  preset: compact
+  preset: minimal
+  separator: slash
+tui: 
+  textSizing: true
+display: 
+  showTokenUsage: false
+  shimmer: classic
+startup: 
+  quiet: true
+  checkUpdate: false
+stt: 
+  enabled: true
+  modelName: base.en
+compaction: 
+  strategy: context-full
+lsp: 
+  formatOnWrite: false
+commands: 
+  enableClaudeUser: false
+  enableClaudeProject: false
+  enableOpencodeUser: false
+  enableOpencodeProject: false
+skills: 
+  enableSkillCommands: true

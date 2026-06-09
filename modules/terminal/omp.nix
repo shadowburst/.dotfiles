@@ -21,6 +21,7 @@
 
       home.file = {
         ".omp/agent/config.yml" = mkOmpConfigSymlink "config/omp/config.yml";
+        ".omp/agent/themes" = mkOmpConfigSymlink "config/omp/themes";
       };
     };
 }
