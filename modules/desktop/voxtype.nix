@@ -27,6 +27,10 @@ _: {
             # Avoid wtype's per-character synthetic text events being interpreted
             # through the active AZERTY layout as if they came from QWERTY.
             mode = "paste";
+            # Use the normal clipboard paste chord. Terminal emulators are
+            # configured to treat Ctrl+V as paste too; Shift+Insert can hit an
+            # older selection instead of the freshly copied transcription.
+            paste_keys = "ctrl+v";
             wait_for_modifier_release = true;
             append_text = " ";
 

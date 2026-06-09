@@ -51,6 +51,7 @@ _: {
             "ctrl+shift+x=text:\\x1bx" # M-x
 
             # Other
+            "ctrl+v=paste_from_clipboard"
             "ctrl+backspace=text:\\x17" # C-W
             "ctrl+delete=text:\\x1bd" # M-d
           ];
