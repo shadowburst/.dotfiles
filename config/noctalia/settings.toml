@@ -35,7 +35,12 @@ blurred_desktop = true
 [lockscreen_widgets]
 enabled = true
 schema_version = 2
-widget_order = [ "lockscreen-login-box@DP-7", "lockscreen-login-box@eDP-1", "lockscreen-widget-0000000000000001" ]
+widget_order = [
+    "lockscreen-login-box@HDMI-A-1",
+    "lockscreen-login-box@DP-7",
+    "lockscreen-login-box@eDP-1",
+    "lockscreen-widget-0000000000000001"
+]
 
     [lockscreen_widgets.grid]
     cell_size = 24
@@ -48,6 +53,15 @@ widget_order = [ "lockscreen-login-box@DP-7", "lockscreen-login-box@eDP-1", "loc
     cx = 1720.0
     cy = 1317.0
     output = "DP-7"
+    rotation = 0.0
+    type = "login_box"
+
+    [lockscreen_widgets.widget."lockscreen-login-box@HDMI-A-1"]
+    box_height = 0.0
+    box_width = 0.0
+    cx = 1720.0
+    cy = 1317.0
+    output = "HDMI-A-1"
     rotation = 0.0
     type = "login_box"
 
