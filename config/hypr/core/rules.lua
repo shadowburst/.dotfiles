@@ -8,14 +8,6 @@ hl.monitor({
   scale = 1,
 })
 
-hl.workspace_rule({ workspace = "1", persistent = true })
-hl.workspace_rule({ workspace = "2", persistent = true })
-hl.workspace_rule({ workspace = "3", persistent = true })
-hl.workspace_rule({ workspace = "4", persistent = true })
-hl.workspace_rule({ workspace = "5", persistent = true })
-hl.workspace_rule({ workspace = "6", persistent = true })
-hl.workspace_rule({ workspace = "7", persistent = true })
-
 hl.window_rule({
   name = "calculator-floating",
   match = { class = "org.gnome.Calculator" },

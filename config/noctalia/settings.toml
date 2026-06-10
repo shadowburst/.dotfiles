@@ -74,6 +74,9 @@ widget_order = [ "lockscreen-login-box@DP-7", "lockscreen-login-box@eDP-1", "loc
         color = "primary"
         font_family = "Rubik"
 
+[notification]
+blacklist = [ "discord" ]
+
 [shell]
 password_style = "random"
 settings_show_advanced = true
