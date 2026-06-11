@@ -28,7 +28,6 @@
     }:
     {
       imports = [
-        self.homeModules.hypridle
         self.homeModules.hyprland
         self.homeModules.shikane
       ];

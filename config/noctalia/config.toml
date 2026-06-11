@@ -138,11 +138,17 @@ start_time = "22:00"
 stop_time = "08:00"
 
 [idle]
-pre_action_fade_seconds = 5.0
+pre_action_fade_seconds = 0.0
+
+[idle.behavior.locked-screen-off]
+timeout = 10
+command = 'test -e "${XDG_RUNTIME_DIR:-/tmp}/noctalia.locked" && noctalia msg dpms-off'
+resume_command = "noctalia:dpms-on"
+enabled = true
 
 [idle.behavior.lock]
 timeout = 660
-command = "noctalia:screen-lock"
+command = "noctalia:session lock"
 enabled = false
 
 [idle.behavior.screen-off]
@@ -251,3 +257,9 @@ type = "session"
 
 [hooks]
 battery_low_percent_threshold = 0
+started = 'rm -f "${XDG_RUNTIME_DIR:-/tmp}/noctalia.locked"'
+session_locked = 'touch "${XDG_RUNTIME_DIR:-/tmp}/noctalia.locked"'
+session_unlocked = [
+  'rm -f "${XDG_RUNTIME_DIR:-/tmp}/noctalia.locked"',
+  "noctalia:dpms-on",
+]
