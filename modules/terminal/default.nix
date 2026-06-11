@@ -15,21 +15,16 @@
       imports = [
         self.homeModules.bash
         self.homeModules.btop
-        self.homeModules.codex
         self.homeModules.comma
+        self.homeModules.dev
         self.homeModules.eza
         self.homeModules.fish
         self.homeModules.fzf
-        self.homeModules.git
         self.homeModules.nushell
-        self.homeModules.neovim
-        self.homeModules.opencode
-        self.homeModules.pi
         self.homeModules.sesh
         self.homeModules.starship
         self.homeModules.television
         self.homeModules.tmux
-        self.homeModules.worktrunk
         self.homeModules.yazi
         self.homeModules.zoxide
       ];
@@ -40,13 +35,9 @@
       programs.direnv.enable = true;
 
       home.packages = with pkgs; [
-        act
         curl
-        devbox
         fd
         ffmpeg
-        gcc
-        gnumake
         jq
         ripgrep
         sqlit-tui

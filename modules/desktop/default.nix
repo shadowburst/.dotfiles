@@ -24,7 +24,6 @@
         self.homeModules.kitty
         self.homeModules.mpv
         self.homeModules.noctalia
-        self.homeModules.paseo
         self.homeModules.transmission
         self.homeModules.voxtype
       ];
