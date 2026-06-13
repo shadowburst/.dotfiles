@@ -25,8 +25,8 @@
       );
 
       greeterConfUpdates = lib.concatStringsSep "\n" (
-        lib.optional (cfg.scale != null) ''upsert_conf scale ${lib.escapeShellArg (toString cfg.scale)}''
-        ++ lib.optional (cfg.output != null) ''upsert_conf output ${lib.escapeShellArg ''"${cfg.output}"''}''
+        lib.optional (cfg.scale != null) "upsert_conf scale ${lib.escapeShellArg (toString cfg.scale)}"
+        ++ lib.optional (cfg.output != null) "upsert_conf output ${lib.escapeShellArg ''"${cfg.output}"''}"
       );
     in
     {
@@ -152,5 +152,14 @@
 
       xdg.stateFile."noctalia/settings.toml".source =
         config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/noctalia/settings.toml";
+    };
+
+  flake.nixosModules.zephyrus =
+    { lib, pkgs, ... }:
+    {
+      programs.noctalia.greeter = {
+        output = "eDP-1";
+        scale = 1.5;
+      };
     };
 }

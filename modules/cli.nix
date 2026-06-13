@@ -15,8 +15,7 @@ _: {
         ".agents/skills" = mkDotfilesSymlink "config/agent-skills";
       };
 
-      xdg.stateFile."skills/.skill-lock.json" =
-        mkDotfilesSymlink "config/agent-skills/.skill-lock.json";
+      xdg.stateFile."skills/.skill-lock.json" = mkDotfilesSymlink "config/agent-skills/.skill-lock.json";
 
       programs.bat.enable = true;
       programs.carapace.enable = true;

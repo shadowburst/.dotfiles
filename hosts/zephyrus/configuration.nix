@@ -35,11 +35,6 @@
 
       networking.hostName = "zephyrus";
 
-      programs.noctalia.greeter = {
-        output = "eDP-1";
-        scale = 1.5;
-      };
-
       systemd.settings.Manager = {
         DefaultTimeoutStopSec = "10s";
       };

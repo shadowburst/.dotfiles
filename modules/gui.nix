@@ -20,9 +20,6 @@ _: {
         video-downloader
       ];
 
-      programs.brave.enable = true;
-
-      home.sessionVariables.BROWSER = "brave";
       home.sessionVariables.TERMINAL = "kitty";
     };
 }

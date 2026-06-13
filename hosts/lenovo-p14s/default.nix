@@ -7,7 +7,6 @@
       self.nixosModules.core
       self.nixosModules.cli
       self.nixosModules.gui
-      self.nixosModules.gaming
       self.nixosModules.laravel
       self.nixosModules.lenovo-p14s
 

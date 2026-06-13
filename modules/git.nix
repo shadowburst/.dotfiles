@@ -58,4 +58,13 @@ _: {
         };
       };
     };
+
+  flake.homeModules.lenovo-p14s =
+    { lib, pkgs, ... }:
+    {
+      programs.git.settings = {
+        user.name = lib.mkForce "pbaudry";
+        user.email = lib.mkForce "p.baudry@lynx-business.com";
+      };
+    };
 }

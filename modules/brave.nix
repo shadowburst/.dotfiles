@@ -1,4 +1,22 @@
 _: {
+  flake.homeModules.gui =
+    { pkgs, ... }:
+    {
+      programs.brave.enable = true;
+
+      home.sessionVariables.BROWSER = "brave";
+    };
+
+  flake.homeModules.zephyrus =
+    { lib, pkgs, ... }:
+    {
+      programs.brave.commandLineArgs = [
+        "--enable-features=AcceleratedVideoDecodeLinuxGL,AcceleratedVideoEncoder,VaapiVideoDecoder,VaapiIgnoreDriverChecks,TouchpadOverscrollHistoryNavigation"
+        "--ozone-platform-hint=auto"
+        "--password-store=gnome-libsecret"
+      ];
+    };
+
   flake.homeModules.lenovo-p14s =
     { lib, pkgs, ... }:
     {
@@ -11,11 +29,6 @@ _: {
           "--ozone-platform-hint=auto"
           "--password-store=gnome-libsecret"
         ];
-      };
-
-      programs.git.settings = {
-        user.name = lib.mkForce "pbaudry";
-        user.email = lib.mkForce "p.baudry@lynx-business.com";
       };
     };
 }
