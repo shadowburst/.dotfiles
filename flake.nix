@@ -22,6 +22,9 @@
     import-tree.url = "github:vic/import-tree";
 
     noctalia.url = "github:noctalia-dev/noctalia-shell";
+
+    noctalia-greeter.url = "github:noctalia-dev/noctalia-greeter";
+    noctalia-greeter.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =

@@ -1,5 +1,5 @@
 [bar.main]
-end = [ "screen_recorder", "tray", "notifications", "bluetooth", "network", "volume", "battery" ]
+end = [ "recorder", "tray", "notifications", "bluetooth", "network", "volume", "battery" ]
 margin_edge = 0.0
 margin_ends = 16
 
@@ -91,6 +91,23 @@ widget_order = [
 [notification]
 blacklist = [ "discord" ]
 
+[plugin_settings."noctalia/screen_recorder"]
+video_codec = "av1"
+
+[plugins]
+enabled = [ "noctalia/screen_recorder", "noctalia/translator" ]
+
+    [[plugins.source]]
+    auto_update = true
+    kind = "git"
+    location = "https://github.com/noctalia-dev/official-plugins"
+    name = "official"
+
+    [[plugins.source]]
+    kind = "git"
+    location = "https://github.com/noctalia-dev/community-plugins"
+    name = "community"
+
 [shell]
 password_style = "random"
 settings_show_advanced = true
@@ -158,6 +175,9 @@ show_label = false
 
 [widget.network]
 show_label = false
+
+[widget.recorder]
+type = "noctalia/screen_recorder:recorder"
 
 [widget.volume]
 show_label = false
