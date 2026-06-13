@@ -28,3 +28,6 @@ The Laravel development stack, including its cohesive CLI, container, payment, a
 
 ### Host scope
 Everything that makes one machine itself: hardware configuration, boot/storage choices, host-specific services, machine-specific overrides, and host Home Manager tweaks.
+
+### Mutable user state
+Personal configuration or data that is intentionally changed by interactive tools during normal use and is not authored as part of the dotfiles source of truth.

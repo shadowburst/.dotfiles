@@ -18,7 +18,6 @@ _: {
         pavucontrol
         socat
         satty
-        wdisplays
         wl-clipboard
       ];
 

@@ -8,6 +8,7 @@ require("host")
 
 require("layouts.scrolling")
 
+require("modules.monique")
 require("modules.noctalia")
 require("modules.paseo")
 require("modules.voxtype")

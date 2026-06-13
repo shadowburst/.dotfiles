@@ -25,6 +25,9 @@
 
     noctalia-greeter.url = "github:noctalia-dev/noctalia-greeter";
     noctalia-greeter.inputs.nixpkgs.follows = "nixpkgs";
+
+    monique.url = "github:ToRvaLDz/monique";
+    monique.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
