@@ -1,5 +1,5 @@
 _: {
-  flake.nixosModules.zephyrus-nvidia =
+  flake.nixosModules.zephyrus =
     {
       config,
       pkgs,

@@ -1,5 +1,5 @@
 _: {
-  flake.nixosModules.zephyrus-hardware =
+  flake.nixosModules.zephyrus =
     {
       config,
       lib,

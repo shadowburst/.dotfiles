@@ -1,5 +1,5 @@
 _: {
-  flake.nixosModules.xps-9305-hardware =
+  flake.nixosModules.xps-9305 =
     {
       config,
       lib,

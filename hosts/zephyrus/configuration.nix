@@ -1,12 +1,10 @@
-{ inputs, self, ... }:
+{ inputs, ... }:
 {
-  flake.nixosModules.zephyrus-configuration =
-    { lib, pkgs, ... }:
+  flake.nixosModules.zephyrus =
+    { pkgs, ... }:
     {
       imports = [
         inputs.nixos-hardware.nixosModules.asus-zephyrus-ga402x-nvidia
-        self.nixosModules.zephyrus-hardware
-        self.nixosModules.zephyrus-nvidia
       ];
 
       boot = {

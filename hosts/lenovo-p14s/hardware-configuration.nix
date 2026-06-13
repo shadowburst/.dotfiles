@@ -1,5 +1,5 @@
 _: {
-  flake.nixosModules.lenovo-p14s-hardware =
+  flake.nixosModules.lenovo-p14s =
     {
       config,
       lib,

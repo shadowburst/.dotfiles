@@ -1,15 +1,13 @@
-{ inputs, self, ... }:
+{ inputs, ... }:
 {
-  flake.nixosModules.lenovo-p14s-configuration =
+  flake.nixosModules.lenovo-p14s =
     {
-      lib,
       pkgs,
       ...
     }:
     {
       imports = [
         inputs.nixos-hardware.nixosModules.lenovo-thinkpad-p14s-amd-gen6
-        self.nixosModules.lenovo-p14s-hardware
       ];
 
       boot = {
