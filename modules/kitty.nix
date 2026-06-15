@@ -34,24 +34,14 @@ _: {
 
         mkdir -p "$session_dir"
 
-        # Generate a session file if it doesn't exist yet
-        if [ ! -f "$session_file" ]; then
-          cat > "$session_file" <<EOF
+        # Keep session definitions up to date: one tab running the editor.
+        cat > "$session_file" <<EOF
         new_tab $tab_title - $EDITOR
         cd $path
         launch $SHELL -c "$EDITOR; exec $SHELL"
 
-        new_tab
-        cd $path
-        launch $SHELL -c "pi; exec $SHELL"
-
-        new_tab
-        cd $path
-        launch
-
         focus_tab 0
         EOF
-        fi
 
         # goto_session focuses the session if already active, otherwise opens the file
         kitten @ action goto_session "$session_file"
