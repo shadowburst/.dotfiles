@@ -1,8 +1,5 @@
 vim.pack.add({
-  {
-    src = "https://github.com/esmuellert/codediff.nvim",
-    version = "v2.47.0",
-  },
+  "https://github.com/esmuellert/codediff.nvim",
 })
 
 require("codediff").setup({

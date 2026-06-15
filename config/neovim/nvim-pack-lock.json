@@ -1,7 +1,7 @@
 {
   "plugins": {
     "SchemaStore.nvim": {
-      "rev": "3dca2d2153cfbc9aab937c1be0441e371101b0b8",
+      "rev": "304d2286752923e3b0eb1ddcb3d4002a69b855ad",
       "src": "https://github.com/b0o/SchemaStore.nvim"
     },
     "blink.cmp": {
@@ -14,9 +14,8 @@
       "src": "https://github.com/catppuccin/nvim"
     },
     "codediff.nvim": {
-      "rev": "fc833c0684c5f5c0e5e976d58c7c43891a2e9ea0",
-      "src": "https://github.com/esmuellert/codediff.nvim",
-      "version": "'v2.47.0'"
+      "rev": "7608f3b436ce1f84a4888f75e53079caa981a2e9",
+      "src": "https://github.com/esmuellert/codediff.nvim"
     },
     "conform.nvim": {
       "rev": "619363c30309d29ffa631e67c8183f2a72caa373",
@@ -55,11 +54,11 @@
       "src": "https://github.com/nvim-lualine/lualine.nvim"
     },
     "mini.nvim": {
-      "rev": "a59a9b7fb0a42cbcf022938ee5f0724320b66f63",
+      "rev": "7ed410c73ebb910754c2938a6dae50c51c3a096a",
       "src": "https://github.com/nvim-mini/mini.nvim"
     },
     "neogit": {
-      "rev": "99326a1310fb2d616b455d2fd16d01bf00682f06",
+      "rev": "5d1b65d6215928e941e1a6a4e76e02fd45ada31f",
       "src": "https://github.com/NeogitOrg/neogit"
     },
     "noice.nvim": {
@@ -107,7 +106,7 @@
       "src": "https://github.com/folke/sidekick.nvim"
     },
     "smart-splits.nvim": {
-      "rev": "501ea73e433246cbd53f0b14bbd205fa44831e4d",
+      "rev": "2aad9808f289f5d65cfa77840a04b8590e5e34e9",
       "src": "https://github.com/mrjones2014/smart-splits.nvim"
     },
     "snacks.nvim": {
