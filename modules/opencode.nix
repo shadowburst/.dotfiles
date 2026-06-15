@@ -6,9 +6,9 @@ _: {
         enable = true;
         enableMcpIntegration = true;
         settings = {
-          lsp = false;
+          # lsp = false;
           permission = "allow";
-          agent.plan.disable = true;
+          # agent.plan.disable = true;
         };
         tui = {
           keybinds = {
