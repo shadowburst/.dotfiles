@@ -7,7 +7,10 @@ _: {
         enableMcpIntegration = true;
         settings = {
           # lsp = false;
-          permission = "allow";
+          permission = {
+            "*" = "allow";
+            question = "deny";
+          };
           # agent.plan.disable = true;
         };
         tui = {
