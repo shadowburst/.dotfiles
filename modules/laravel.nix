@@ -17,14 +17,14 @@
   flake.homeModules.laravel =
     { lib, pkgs, ... }:
     let
-      version = "1.24.0";
+      version = "1.25.0";
       lerd = pkgs.stdenv.mkDerivation {
         pname = "lerd";
         inherit version;
 
         src = pkgs.fetchurl {
           url = "https://github.com/geodro/lerd/releases/download/v${version}/lerd_${version}_linux_amd64.tar.gz";
-          hash = "sha256-oJqKdwmi+V0mnqjPMKqYznK2C01L+9yKzOTpPtj+cAo=";
+          hash = "sha256-xuRYbPlWbGPT9rx5Li6OLhx8DnDibkHadX0sEZ0EXCw=";
         };
 
         sourceRoot = ".";
