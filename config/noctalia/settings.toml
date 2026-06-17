@@ -1,5 +1,5 @@
 [bar.main]
-end = [ "recorder", "tray", "notifications", "bluetooth", "network", "volume", "battery" ]
+end = [ "tray", "recorder", "notifications", "bluetooth", "network", "volume", "battery" ]
 margin_edge = 0.0
 margin_ends = 16
 radius_bottom_left = 0
