@@ -23,7 +23,6 @@ _: {
             input_newline = "shift+enter";
           };
         };
-        web.enable = true;
       };
     };
 }
