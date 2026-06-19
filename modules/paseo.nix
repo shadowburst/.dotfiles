@@ -26,6 +26,9 @@
         paseoDesktop
       ];
 
+      home.file.".paseo/config.json".source =
+        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/paseo/config.json";
+
       xdg.configFile."Paseo/desktop-settings.json".source =
         config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/paseo/desktop-settings.json";
     };

@@ -1,7 +1,8 @@
 {
   "metadataGeneration": {
-    "commitMessage": {
-      "instructions": "use conventional commits with an optional scope if feature specific"
-    }
+    "branchName": {
+      "instructions": "Use the format <type>/<scope>-<short-desc>."
+    },
+    "commitMessage": { "instructions": "Follow Conventional Commits." }
   }
 }
