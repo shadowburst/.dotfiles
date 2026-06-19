@@ -14,7 +14,6 @@ local servers = {
   docker_compose_language_service = {},
   dockerls = {},
   html = {},
-  intelephense = {},
   jsonls = {
     settings = {
       json = {
@@ -33,6 +32,7 @@ local servers = {
   },
   marksman = {},
   nil_ls = {},
+  phpantom_lsp = {},
   tailwindcss = {
     filetypes_exclude = { "markdown", "php" },
   },

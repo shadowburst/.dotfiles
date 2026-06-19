@@ -51,7 +51,7 @@ _: {
           vtsls
 
           # PHP
-          intelephense
+          phpantom-lsp
           php
 
           # QML
