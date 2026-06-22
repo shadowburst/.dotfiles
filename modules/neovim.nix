@@ -2,7 +2,6 @@ _: {
   flake.homeModules.cli =
     {
       config,
-      lib,
       pkgs,
       ...
     }:
@@ -44,7 +43,7 @@ _: {
           # Nix
           nixfmt
           nixfmt-tree
-          nil
+          nixd
 
           # Node
           prettierd

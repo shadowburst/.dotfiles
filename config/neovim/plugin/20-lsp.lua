@@ -31,7 +31,7 @@ local servers = {
     },
   },
   marksman = {},
-  nil_ls = {},
+  nixd = {},
   phpantom_lsp = {},
   tailwindcss = {
     filetypes_exclude = { "markdown", "php" },
