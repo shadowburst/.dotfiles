@@ -1,7 +1,7 @@
 {
   "plugins": {
     "SchemaStore.nvim": {
-      "rev": "c73e2b170a4927d1dc1b48e878bba6cf0ed9b07c",
+      "rev": "322751401046ae2dbbe32eeb31992a5d4fcc8d92",
       "src": "https://github.com/b0o/SchemaStore.nvim"
     },
     "blink.cmp": {
@@ -10,7 +10,7 @@
       "version": "1.0.0 - 2.0.0"
     },
     "catppuccin": {
-      "rev": "49a926655a2f5579e9c276470fc300baaa49e524",
+      "rev": "e068ab5f8261f23f6f71ffd8791ae40315b77b9c",
       "src": "https://github.com/catppuccin/nvim"
     },
     "codediff.nvim": {
@@ -42,7 +42,7 @@
       "src": "https://github.com/cbochs/grapple.nvim"
     },
     "grug-far.nvim": {
-      "rev": "c995bbacf8229dc096ec1c3d60f8531059c86c1b",
+      "rev": "c69859c1d5427ab5fc7ed12380ab521b4e336691",
       "src": "https://github.com/MagicDuck/grug-far.nvim"
     },
     "lazydev.nvim": {
@@ -54,11 +54,11 @@
       "src": "https://github.com/nvim-lualine/lualine.nvim"
     },
     "mini.nvim": {
-      "rev": "ecb05c524a99490c95a8862eb5cb09b1e629ed42",
+      "rev": "c594be5b095204e99473825ec2dee872e7409a4d",
       "src": "https://github.com/nvim-mini/mini.nvim"
     },
     "neogit": {
-      "rev": "828dd073e6ad180fdb5c1603c7ad7f68a384c40b",
+      "rev": "43ea1a0854052e583f647e0b35879f0158a70a78",
       "src": "https://github.com/NeogitOrg/neogit"
     },
     "noice.nvim": {
@@ -74,7 +74,7 @@
       "src": "https://github.com/nvchad/nvim-colorizer.lua"
     },
     "nvim-lint": {
-      "rev": "fd87a7ab27ee0ce1b15b56c1250fc4668fe8ac58",
+      "rev": "01c9842c089069ab497430159312b2c8868a4590",
       "src": "https://github.com/mfussenegger/nvim-lint"
     },
     "nvim-lspconfig": {
@@ -90,7 +90,7 @@
       "src": "https://github.com/nvim-treesitter/nvim-treesitter-context"
     },
     "pi.nvim": {
-      "rev": "4ba6db0dd30406995a2e46e4f1ae39377e66e733",
+      "rev": "4458f7cef8923ba396728e7218d66002fa07426e",
       "src": "https://github.com/pablopunk/pi.nvim"
     },
     "plenary.nvim": {
@@ -106,7 +106,7 @@
       "src": "https://github.com/folke/sidekick.nvim"
     },
     "smart-splits.nvim": {
-      "rev": "d4bda1c9b8d07d9fc642e8f985b3560df8991901",
+      "rev": "c02d70257e5d6065d4154acd596ec8054a725724",
       "src": "https://github.com/mrjones2014/smart-splits.nvim"
     },
     "snacks.nvim": {
@@ -138,7 +138,7 @@
       "src": "https://github.com/folke/which-key.nvim"
     },
     "yazi.nvim": {
-      "rev": "7514be498c56f2a57e5a72faf55c517b9576665b",
+      "rev": "66a818b149f817ec8576021d5a696825a29ebf10",
       "src": "https://github.com/mikavilpas/yazi.nvim"
     }
   }
