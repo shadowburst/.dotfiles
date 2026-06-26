@@ -9,15 +9,18 @@ _: {
       services.voxtype = {
         enable = true;
         package = pkgs.voxtype-vulkan;
-        loadModels = [ "base.en" ];
+        loadModels = [ "base" ];
         wayland.display = "wayland-1";
 
         settings = {
           hotkey.enabled = false;
 
           whisper = {
-            model = "base.en";
-            language = "en";
+            model = "base";
+            language = [
+              "en"
+              "fr"
+            ];
             context_window_optimization = true;
           };
 
