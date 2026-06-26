@@ -1,6 +1,6 @@
 _: {
   flake.homeModules.cli =
-    { lib, pkgs, ... }:
+    { pkgs, ... }:
     {
       programs.yazi = {
         enable = true;
@@ -113,10 +113,18 @@ _: {
               desc = "Goto config";
             }
             {
-              run = "cd ~/Public";
+              run = "cd ~/Projects";
               on = [
                 "g"
                 "p"
+              ];
+              desc = "Goto projects";
+            }
+            {
+              run = "cd ~/Public";
+              on = [
+                "g"
+                "P"
               ];
               desc = "Goto public";
             }
