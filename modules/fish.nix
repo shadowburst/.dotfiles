@@ -1,7 +1,7 @@
 { self, ... }:
 {
   flake.nixosModules.cli =
-    { lib, pkgs, ... }:
+    { pkgs, ... }:
     {
       users.users.${self.username}.shell = pkgs.fish;
 
@@ -9,12 +9,7 @@
     };
 
   flake.homeModules.cli =
-    {
-      config,
-      lib,
-      pkgs,
-      ...
-    }:
+    { ... }:
     {
       home.shell.enableFishIntegration = true;
 
@@ -53,6 +48,7 @@
           '';
         };
         shellAliases = {
+          ide = "$TERMINAL -e $EDITOR";
           cp = "cp -i";
           mv = "mv -i";
           rm = "rm -i";

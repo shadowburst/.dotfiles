@@ -6,7 +6,6 @@ _: {
         enable = true;
         enableMcpIntegration = true;
         settings = {
-          # lsp = false;
           permission = {
             "*" = "allow";
             question = "deny";
@@ -23,7 +22,6 @@ _: {
               template = builtins.readFile ../config/opencode/commands/pr.md;
             };
           };
-          # agent.plan.disable = true;
         };
         tui = {
           keybinds = {

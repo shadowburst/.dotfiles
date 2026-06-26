@@ -1,11 +1,6 @@
 _: {
   flake.homeModules.gui =
-    {
-      config,
-      lib,
-      pkgs,
-      ...
-    }:
+    { config, pkgs, ... }:
 
     let
       session-switch = pkgs.writeShellScriptBin "kitty-session-switch" ''
