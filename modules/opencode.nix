@@ -1,6 +1,6 @@
 _: {
   flake.homeModules.cli =
-    { lib, pkgs, ... }:
+    { ... }:
     {
       programs.opencode = {
         enable = true;
@@ -10,6 +10,18 @@ _: {
           permission = {
             "*" = "allow";
             question = "deny";
+          };
+          command = {
+            commit = {
+              description = "Create a Conventional Commit from current changes";
+              model = "openai/gpt-5.4-mini";
+              template = builtins.readFile ../config/opencode/commands/commit.md;
+            };
+            pr = {
+              description = "Create or update a GitHub pull request";
+              model = "openai/gpt-5.4-mini";
+              template = builtins.readFile ../config/opencode/commands/pr.md;
+            };
           };
           # agent.plan.disable = true;
         };
@@ -24,5 +36,14 @@ _: {
           };
         };
       };
+    };
+
+  flake.homeModules.gui =
+    { config, pkgs, ... }:
+    {
+      home.packages = [ pkgs.opencode-desktop ];
+
+      xdg.configFile."ai.opencode.desktop/opencode.settings".source =
+        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/opencode/opencode.settings";
     };
 }

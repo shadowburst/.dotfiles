@@ -1,12 +1,7 @@
 { inputs, ... }:
 {
   flake.nixosModules.core =
-    {
-      config,
-      lib,
-      pkgs,
-      ...
-    }:
+    { config, pkgs, ... }:
     {
       imports = [ inputs.stylix.nixosModules.stylix ];
 
@@ -42,7 +37,7 @@
     };
 
   flake.homeModules.core =
-    { lib, pkgs, ... }:
+    { pkgs, ... }:
     {
       stylix = {
         enableReleaseChecks = false;
