@@ -16,6 +16,11 @@
       programs.fish = {
         enable = true;
         functions = {
+          ide = /* fish */ ''
+            command $TERMINAL -e $EDITOR >/dev/null 2>&1 &
+            disown $last_pid
+          '';
+
           extract = /* fish */ ''
             if test -f $argv
                 switch $argv
@@ -48,7 +53,6 @@
           '';
         };
         shellAliases = {
-          ide = "$TERMINAL -e $EDITOR";
           cp = "cp -i";
           mv = "mv -i";
           rm = "rm -i";
