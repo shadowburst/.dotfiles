@@ -7,30 +7,16 @@ radius_top_left = 0
 start = [ "clock", "cpu", "ram", "sysmon", "network_rx", "network_tx" ]
 
 [control_center]
+shortcuts = []
 sidebar = "none"
 sidebar_section = "none"
-
-    [[control_center.shortcuts]]
-    type = "wifi"
-
-    [[control_center.shortcuts]]
-    type = "bluetooth"
-
-    [[control_center.shortcuts]]
-    type = "notification"
-
-    [[control_center.shortcuts]]
-    type = "caffeine"
-
-    [[control_center.shortcuts]]
-    type = "wallpaper"
-
-    [[control_center.shortcuts]]
-    type = "session"
 
 [keybinds]
 down = [ "Down", "Ctrl+n" ]
 up = [ "Up", "Ctrl+p" ]
+
+[location]
+auto_locate = true
 
 [lockscreen]
 blurred_desktop = true
@@ -143,9 +129,16 @@ password_style = "random"
 settings_show_advanced = true
 
     [shell.panel]
-    control_center_placement = "attached"
+    clipboard_position = "top_center"
+    control_center_placement = "floating"
+    control_center_position = "top_center"
+    floating_offset = 0
     launcher_categories = false
+    launcher_position = "top_center"
     open_near_click_control_center = true
+    polkit_position = "top_center"
+    session_placement = "floating"
+    session_position = "top_center"
     shadow = false
     transparency_mode = "soft"
 

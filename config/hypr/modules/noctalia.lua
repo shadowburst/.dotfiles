@@ -15,7 +15,7 @@ hl.layer_rule({
 hl.bind(mod .. " + Space", hl.dsp.exec_cmd("noctalia msg panel-toggle launcher"))
 hl.bind(mod .. " + Escape", hl.dsp.exec_cmd("noctalia msg session lock"))
 hl.bind(mod .. " + x", hl.dsp.exec_cmd("noctalia msg panel-toggle session"))
-hl.bind(mod .. " + a", hl.dsp.exec_cmd("noctalia msg panel-toggle control-center calendar"))
+hl.bind(mod .. " + a", hl.dsp.exec_cmd("noctalia msg panel-toggle control-center"))
 hl.bind(mod .. " + v", hl.dsp.exec_cmd("noctalia msg panel-toggle clipboard"))
 
 -- Audio/media.
