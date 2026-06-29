@@ -31,7 +31,12 @@ _: {
             type_delay_ms = 10;
             append_text = " ";
 
-            notification.on_transcription = false;
+            notification = {
+              on_recording_start = true;
+              on_recording_stop = true;
+              on_transcription = false;
+              urgency = "normal";
+            };
           };
 
           osd.enabled = false;
