@@ -128,10 +128,12 @@ enabled = [ "noctalia/screen_recorder", "noctalia/translator" ]
 password_style = "random"
 settings_show_advanced = true
 
+    [shell.launcher]
+    categories = false
+
     [shell.panel]
     clipboard_position = "top_center"
     control_center_placement = "floating"
-    control_center_position = "top_center"
     floating_offset = 0
     launcher_categories = false
     launcher_position = "top_center"
@@ -139,8 +141,9 @@ settings_show_advanced = true
     polkit_position = "top_center"
     session_placement = "floating"
     session_position = "top_center"
-    shadow = false
     transparency_mode = "soft"
+    wallpaper_placement = "floating"
+    wallpaper_position = "top_center"
 
     [shell.screenshot]
     pipe_command = "satty -f -"
