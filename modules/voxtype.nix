@@ -24,6 +24,8 @@ _: {
             context_window_optimization = true;
           };
 
+          audio.max_duration_secs = 300;
+
           output = {
             mode = "type";
             wait_for_modifier_release = true;
