@@ -13,6 +13,7 @@ _: {
         discord
         ente-auth
         gimp3
+        orca
         papers
         pdfarranger
         proton-vpn
