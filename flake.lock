@@ -227,6 +227,26 @@
         "type": "github"
       }
     },
+    "lerd": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1782919168,
+        "narHash": "sha256-9Oysz4kd+Ic8LvLXzeayccQV4Tk1Io6lsak4nFju8zE=",
+        "owner": "lerd-env",
+        "repo": "lerd-nixos",
+        "rev": "00da531cb6022af7f1f4f52b9d884c100c430c0a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "lerd-env",
+        "repo": "lerd-nixos",
+        "type": "github"
+      }
+    },
     "monique": {
       "inputs": {
         "flake-utils": "flake-utils",
@@ -446,6 +466,7 @@
         "flake-parts": "flake-parts",
         "home-manager": "home-manager",
         "import-tree": "import-tree",
+        "lerd": "lerd",
         "monique": "monique",
         "nix-index-database": "nix-index-database",
         "nixos-hardware": "nixos-hardware",

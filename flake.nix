@@ -28,6 +28,9 @@
 
     monique.url = "github:ToRvaLDz/monique";
     monique.inputs.nixpkgs.follows = "nixpkgs";
+
+    lerd.url = "github:lerd-env/lerd-nixos";
+    lerd.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -36,7 +39,6 @@
       inputs.import-tree [
         ./hosts
         ./modules
-        ./pkgs/default.nix
       ]
     );
 }

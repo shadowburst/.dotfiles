@@ -10,8 +10,6 @@
       system.stateVersion = self.stateVersion;
 
       nixpkgs.config.allowUnfree = true;
-      nixpkgs.overlays = [ self.overlays.default ];
-
       environment.pathsToLink = [
         "/share/applications"
         "/share/xdg-desktop-portal"

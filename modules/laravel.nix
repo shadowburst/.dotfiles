@@ -1,4 +1,4 @@
-{ self, ... }:
+{ inputs, self, ... }:
 {
   flake.nixosModules.laravel =
     { ... }:
@@ -16,14 +16,17 @@
 
   flake.homeModules.laravel =
     { lib, pkgs, ... }:
+    let
+      lerd = inputs.lerd.packages.${pkgs.stdenv.hostPlatform.system}.lerd;
+    in
     {
       home.packages = [
-        pkgs.lerd
+        lerd
         pkgs.nssTools
         pkgs.stripe-cli
         pkgs.tableplus
       ];
 
-      home.file.".local/bin/lerd".source = lib.getExe pkgs.lerd;
+      home.file.".local/bin/lerd".source = lib.getExe lerd;
     };
 }
