@@ -12,6 +12,8 @@ _: {
 
         tab_title=$(basename "$path")
 
+        ${pkgs.zoxide}/bin/zoxide add "$path"
+
         # Paths outside $HOME (and $HOME itself) get a plain new tab, no session.
         case "$path" in
           "$HOME"/*)
