@@ -14,11 +14,13 @@ _: {
             commit = {
               description = "Create a Conventional Commit from current changes";
               model = "openai/gpt-5.4-mini";
+              subtask = true;
               template = builtins.readFile ../config/opencode/commands/commit.md;
             };
             pr = {
               description = "Create or update a GitHub pull request";
               model = "openai/gpt-5.4-mini";
+              subtask = true;
               template = builtins.readFile ../config/opencode/commands/pr.md;
             };
           };
