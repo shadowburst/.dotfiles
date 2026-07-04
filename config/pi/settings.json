@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.79.1",
+  "lastChangelogVersion": "0.79.8",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.5",
   "defaultThinkingLevel": "medium",
@@ -7,10 +7,7 @@
   "doubleEscapeAction": "fork",
   "quietStartup": true,
   "hideThinkingBlock": false,
-  "packages": [
-    "npm:pi-mcp-adapter",
-    "npm:pi-web-access"
-  ],
+  "packages": [],
   "editorPaddingX": 1,
   "enableInstallTelemetry": false,
   "terminal": {
