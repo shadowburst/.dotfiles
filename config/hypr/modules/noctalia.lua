@@ -11,11 +11,31 @@ hl.layer_rule({
   blur_popups = true,
 })
 
+-- Main bar
+local show_bar = false
+
+---@param show boolean
+local function toggle_bar(show)
+  if show then
+    hl.exec_cmd("noctalia msg bar-show main")
+    hl.exec_cmd("noctalia msg panel-open control-center")
+    show_bar = true
+  else
+    hl.exec_cmd("noctalia msg bar-hide main")
+    hl.exec_cmd("noctalia msg panel-close control-center")
+    show_bar = false
+  end
+end
+
+hl.on("hyprland.start", function() hl.exec_cmd("sleep 5 && noctalia msg bar-hide main") end)
+hl.on("config.reloaded", function() toggle_bar(false) end)
+
+hl.bind(mod .. " + a", function() toggle_bar(not show_bar) end)
+
 -- Core panels.
 hl.bind(mod .. " + Space", hl.dsp.exec_cmd("noctalia msg panel-toggle launcher"))
 hl.bind(mod .. " + Escape", hl.dsp.exec_cmd("noctalia msg session lock"))
 hl.bind(mod .. " + x", hl.dsp.exec_cmd("noctalia msg panel-toggle session"))
-hl.bind(mod .. " + a", hl.dsp.exec_cmd("noctalia msg panel-toggle control-center"))
 hl.bind(mod .. " + v", hl.dsp.exec_cmd("noctalia msg panel-toggle clipboard"))
 
 -- Audio/media.

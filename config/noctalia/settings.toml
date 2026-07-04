@@ -1,15 +1,55 @@
 [bar.main]
-end = [ "tray", "recorder", "notifications", "bluetooth", "network", "volume", "battery" ]
+end = [ "tray", "notifications", "bluetooth", "network", "volume", "battery" ]
 margin_edge = 0.0
-margin_ends = 16
-radius_bottom_left = 0
+margin_ends = 60
+position = "top"
 radius_top_left = 0
-start = [ "clock", "cpu", "ram", "sysmon", "network_rx", "network_tx" ]
+radius_top_right = 0
+reserve_space = false
+start = [ "clock", "group:g1" ]
+thickness = 40
+
+    [[bar.main.capsule_group]]
+    fill = "surface_variant"
+    id = "g1"
+    members = [ "cpu", "ram", "sysmon", "network_rx", "network_tx" ]
+    opacity = 0.89999997615814209
+    padding = 6.0
+    radius = 8.0
+
+[calendar]
+enabled = true
+
+    [calendar.account.personal_google]
+    name = "Personal"
+    type = "google"
 
 [control_center]
-shortcuts = []
-sidebar = "none"
 sidebar_section = "none"
+
+    [[control_center.shortcuts]]
+    type = "notification"
+
+    [[control_center.shortcuts]]
+    type = "caffeine"
+
+    [[control_center.shortcuts]]
+    type = "noctalia/screen_recorder:toggle"
+
+    [[control_center.shortcuts]]
+    type = "mic_mute"
+
+[desktop_widgets]
+enabled = true
+schema_version = 2
+widget_order = []
+
+    [desktop_widgets.grid]
+    cell_size = 16
+    major_interval = 4
+    visible = true
+
+    [desktop_widgets.widget]
 
 [keybinds]
 down = [ "Down", "Ctrl+n" ]
@@ -195,36 +235,37 @@ transition_on_startup = true
     [wallpaper.last]
     path = "/home/pbaudry/Pictures/Wallpapers/1.jpg"
 
-[widget.battery]
-display_mode = "graphic"
-show_label = false
+[widget.bluetooth]
+show_label = true
+
+[widget.clock]
+format = "{:%H:%M %a %x}"
 
 [widget.cpu]
-show_label = false
-
-[widget.network]
-show_label = false
+display = "text"
 
 [widget.network_rx]
-display = "graph"
-show_label = false
+display = "text"
 
 [widget.network_tx]
-display = "graph"
-show_label = false
+display = "text"
+
+[widget.notifications]
+hide_when_no_unread = true
 
 [widget.ram]
-show_label = false
+display = "text"
+stat = "ram_pct"
 
 [widget.recorder]
 type = "noctalia/screen_recorder:recorder"
 
 [widget.sysmon]
-show_label = false
-stat = "disk_pct"
+display = "text"
+stat = "ram_pct"
 
-[widget.volume]
-show_label = false
+[widget.tray]
+drawer = true
 
 [widget.workspaces]
 empty_color = "surface"
