@@ -5,7 +5,7 @@
   imports = [ inputs.home-manager.flakeModules.home-manager ];
 
   flake.nixosModules.core =
-    { lib, pkgs, ... }:
+    { pkgs, ... }:
     {
       system.stateVersion = self.stateVersion;
 
@@ -54,7 +54,7 @@
     };
 
   flake.homeModules.core =
-    { lib, pkgs, ... }:
+    { ... }:
     {
       home.stateVersion = self.stateVersion;
 
