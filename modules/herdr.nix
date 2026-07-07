@@ -29,7 +29,7 @@ _: {
         keys = {
           detach = "";
           goto = "alt+space";
-          previous_workspace = "alt+tab";
+          next_workspace = "alt+tab";
 
           next_tab = "alt+n";
           previous_tab = "alt+p";

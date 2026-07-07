@@ -22,6 +22,10 @@ _: {
           url_style = "curly";
           window_padding_width = "4 0";
         };
+        keybindings = {
+          "ctrl+backspace" = "send_key ctrl+w";
+          "ctrl+delete" = "send_key alt+d";
+        };
       };
     };
 }
