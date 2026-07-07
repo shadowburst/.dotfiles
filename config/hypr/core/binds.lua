@@ -48,7 +48,7 @@ hl.bind(mod .. " + b", hl.dsp.exec_cmd("uwsm app -- " .. browser))
 hl.bind(mod .. " + d", function()
   local default_workspace_commands = {
     [1] = browser,
-    [2] = terminal .. " -e tv kitty-sessions",
+    [2] = terminal .. " -e herdr",
     [3] = "discord",
     [4] = terminal .. " -e yazi",
     [5] = "steam",
