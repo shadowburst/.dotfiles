@@ -36,12 +36,10 @@ _: {
           new_tab = "alt+t";
           switch_tab = "alt+1..9";
 
-          focus_pane_left = "ctrl+h";
-          focus_pane_down = "ctrl+j";
-          focus_pane_up = "ctrl+k";
-          focus_pane_right = "ctrl+l";
-          cycle_pane_next = "alt+j";
-          cycle_pane_previous = "alt+k";
+          focus_pane_left = "alt+h";
+          focus_pane_down = "alt+j";
+          focus_pane_up = "alt+k";
+          focus_pane_right = "alt+l";
           zoom = "alt+f";
           close_pane = "alt+q";
           split_vertical = "alt+v";
