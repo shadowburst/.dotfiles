@@ -35,7 +35,6 @@ _: {
       home.file = {
         ".pi/agent/APPEND_SYSTEM.md" = mkPiConfigSymlink "config/pi/APPEND_SYSTEM.md";
         ".pi/agent/themes" = mkPiConfigSymlink "config/pi/themes";
-        ".pi/agent/prompts" = mkPiConfigSymlink "config/pi/prompts";
         ".pi/agent/settings.json" = mkPiConfigSymlink "config/pi/settings.json";
         ".pi/agent/keybindings.json" = mkPiConfigSymlink "config/pi/keybindings.json";
         ".pi/agent/extensions" = mkPiConfigSymlink "config/pi/extensions";
