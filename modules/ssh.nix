@@ -5,7 +5,7 @@ _: {
       services.openssh = {
         enable = true;
         allowSFTP = true;
-        openFirewall = true;
+        openFirewall = false;
       };
       services.gnome.gcr-ssh-agent.enable = true;
     };
