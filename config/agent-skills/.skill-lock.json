@@ -21,15 +21,6 @@
       "installedAt": "2026-05-19T12:03:09.735Z",
       "updatedAt": "2026-07-08T19:31:14.318Z"
     },
-    "refactor": {
-      "source": "shadowburst/skills",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/shadowburst/skills.git",
-      "skillPath": "skills/refactor/SKILL.md",
-      "skillFolderHash": "3cb95756f28314210381085a5b3dff6e609d53a6",
-      "installedAt": "2026-05-20T06:24:58.107Z",
-      "updatedAt": "2026-06-05T09:39:39.528Z"
-    },
     "handoff": {
       "source": "mattpocock/skills",
       "sourceType": "github",
@@ -49,78 +40,6 @@
       "pluginName": "mattpocock-skills",
       "installedAt": "2026-05-29T13:24:22.351Z",
       "updatedAt": "2026-07-08T19:31:14.315Z"
-    },
-    "thermo-nuclear-code-quality-review": {
-      "source": "shadowburst/skills",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/shadowburst/skills.git",
-      "skillPath": "skills/thermo-nuclear-code-quality-review/SKILL.md",
-      "skillFolderHash": "d9c8935dd560b3b6f5941247d04a1843f8c7cc35",
-      "installedAt": "2026-05-29T13:24:22.352Z",
-      "updatedAt": "2026-06-05T09:39:39.529Z"
-    },
-    "thermo-nuclear-review": {
-      "source": "shadowburst/skills",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/shadowburst/skills.git",
-      "skillPath": "skills/thermo-nuclear-review/SKILL.md",
-      "skillFolderHash": "b222e50771b6bc6f7d2b926b86da2342f160bb79",
-      "installedAt": "2026-05-29T13:24:22.352Z",
-      "updatedAt": "2026-06-05T09:39:39.529Z"
-    },
-    "thermos": {
-      "source": "shadowburst/skills",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/shadowburst/skills.git",
-      "skillPath": "skills/thermos/SKILL.md",
-      "skillFolderHash": "56e7ab69f83a54852b54512b536c95ea45ecf1e1",
-      "installedAt": "2026-05-29T13:24:22.353Z",
-      "updatedAt": "2026-06-05T09:39:39.529Z"
-    },
-    "paseo": {
-      "source": "getpaseo/paseo",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/getpaseo/paseo.git",
-      "skillPath": "skills/paseo/SKILL.md",
-      "skillFolderHash": "1e740c94ff2d57f2a9fdcfdb2c85ead84405c816",
-      "installedAt": "2026-06-09T09:56:35.920Z",
-      "updatedAt": "2026-07-08T19:31:30.535Z"
-    },
-    "paseo-advisor": {
-      "source": "getpaseo/paseo",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/getpaseo/paseo.git",
-      "skillPath": "skills/paseo-advisor/SKILL.md",
-      "skillFolderHash": "c3c468dbc2878d9817932d5c3d42ec0d10f4d1e6",
-      "installedAt": "2026-06-09T09:56:35.921Z",
-      "updatedAt": "2026-06-09T09:56:35.921Z"
-    },
-    "paseo-committee": {
-      "source": "getpaseo/paseo",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/getpaseo/paseo.git",
-      "skillPath": "skills/paseo-committee/SKILL.md",
-      "skillFolderHash": "30ca497471fbefa4ca5d1283882ad60ac3b2f336",
-      "installedAt": "2026-06-09T09:56:35.929Z",
-      "updatedAt": "2026-06-09T09:56:35.929Z"
-    },
-    "paseo-handoff": {
-      "source": "getpaseo/paseo",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/getpaseo/paseo.git",
-      "skillPath": "skills/paseo-handoff/SKILL.md",
-      "skillFolderHash": "ac0654be3d48224dda7233e2d5db05c8dcfb3618",
-      "installedAt": "2026-06-09T09:56:35.930Z",
-      "updatedAt": "2026-06-24T10:13:20.681Z"
-    },
-    "paseo-loop": {
-      "source": "getpaseo/paseo",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/getpaseo/paseo.git",
-      "skillPath": "skills/paseo-loop/SKILL.md",
-      "skillFolderHash": "289bb509b147a5de4c32479da1c170a46974c9bb",
-      "installedAt": "2026-06-09T09:56:35.931Z",
-      "updatedAt": "2026-06-09T09:56:35.931Z"
     },
     "grill-with-docs": {
       "source": "mattpocock/skills",
