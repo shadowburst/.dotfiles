@@ -14,9 +14,6 @@
         inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.omp
       ];
 
-      home.file = {
-        ".omp/agent/config.yml" = mkOmpConfigSymlink "config/omp/config.yml";
-        ".omp/agent/themes" = mkOmpConfigSymlink "config/omp/themes";
-      };
+      home.file.".omp/agent/config.yml" = mkOmpConfigSymlink "config/omp/config.yml";
     };
 }
