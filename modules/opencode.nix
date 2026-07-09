@@ -15,6 +15,9 @@ _: {
           keybinds = {
             leader = "ctrl+space";
             command_list = "<leader>p";
+            agent_cycle = "none";
+            agent_cycle_reverse = "none";
+            variant_cycle = "shift+tab";
             session_fork = "<leader>f";
             messages_half_page_up = "ctrl+u";
             messages_half_page_down = "ctrl+d";
