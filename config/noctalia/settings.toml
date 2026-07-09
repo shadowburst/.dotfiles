@@ -1,10 +1,11 @@
 [bar.main]
+auto_hide = true
 end = [ "tray", "notifications", "bluetooth", "network", "volume", "battery" ]
 margin_edge = 0.0
 margin_ends = 60
-position = "top"
-radius_top_left = 0
-radius_top_right = 0
+position = "bottom"
+radius_bottom_left = 0
+radius_bottom_right = 0
 reserve_space = false
 start = [ "clock", "group:g1" ]
 thickness = 40
