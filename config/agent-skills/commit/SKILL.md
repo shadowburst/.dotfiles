@@ -7,6 +7,10 @@ description: Inspect current git changes and create Conventional Commit(s) from 
 
 Create conventional commits from the current repository changes in one pass.
 
+Only inspect git state, select files, stage, and commit. Do not run tests,
+linters, formatters, builds, type checks, or package scripts unless explicitly
+asked in `$ARGUMENTS`.
+
 ## Arguments
 
 - `$ARGUMENTS` is one free-form instruction block.
