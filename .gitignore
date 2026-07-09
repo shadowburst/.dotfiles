@@ -1,3 +1,2 @@
 .worktrees
 config/hypr/.luarc.json
-config/agent-skills/**/.paseo-managed-files.json
