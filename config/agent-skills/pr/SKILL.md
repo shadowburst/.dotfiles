@@ -30,10 +30,12 @@ Build a PR for the current branch without confirmation prompts.
    - Verify the configured `origin` remote is GitHub.
    - If not GitHub, do not call GitHub APIs; output a complete PR title/body draft and stop.
 3. **Existing PR and base resolution**
-   - Check for existing PR for current branch via `gh pr view --json url,title,baseRefName`.
+   - Check for PRs associated with the current branch, including closed and merged PRs, via `gh pr list --head <branch> --state all --json url,title,baseRefName,state`.
+   - Only an open PR is eligible for update.
+   - If an associated PR is already merged or closed, always create a new PR and never update the previous PR.
    - Choose base branch (first successfully resolved):
      1. explicit `base` intent
-     2. existing PR base
+     2. open existing PR base
      3. GitHub default branch (`gh repo view --json defaultBranchRef`)
      4. `origin/HEAD`
      5. `main`, then `master`
@@ -74,11 +76,12 @@ Build a PR for the current branch without confirmation prompts.
 ```
 
 7. **Create or update**
-   - If PR exists: `gh pr edit --title <title> --body <body>`
-   - If not: `gh pr create --base <base> --head <branch> --title <title> --body <body>`
+   - If an open PR exists: `gh pr edit --title <title> --body <body>`
+   - If no PR exists, or the associated PR is closed or merged: `gh pr create --base <base> --head <branch> --title <title> --body <body>`
    - Add `--draft` when intent key `draft` is true.
+   - Never call `gh pr edit` on a closed or merged PR.
 8. **Report**
-   - Show resolved base, whether created or updated, PR URL, title, and body draft.
+   - Show resolved base, whether created or updated, PR URL, title, and body draft. If a closed or merged PR was found, note that it was intentionally not updated.
 
 ## Failure mode
 
