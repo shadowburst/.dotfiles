@@ -47,6 +47,21 @@ _: {
           resize_mode = "alt+plus";
 
           edit_scrollback = "alt+esc";
+
+          command = [
+            {
+              key = "prefix+shift+g";
+              type = "plugin_action";
+              command = "pbaudry.worktrunk.open";
+              description = "Worktree: switch / create";
+            }
+            {
+              key = "prefix+shift+d";
+              type = "plugin_action";
+              command = "pbaudry.worktrunk.remove";
+              description = "Worktree: remove";
+            }
+          ];
         };
       };
     };

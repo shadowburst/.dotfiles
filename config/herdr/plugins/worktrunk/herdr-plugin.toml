@@ -1,0 +1,30 @@
+id = "pbaudry.worktrunk"
+name = "Worktrunk"
+version = "0.1.0"
+min_herdr_version = "0.7.0"
+description = "Personal Herdr actions for Worktrunk-managed git worktrees"
+platforms = ["linux"]
+
+[[actions]]
+id = "open"
+title = "Worktree: switch / create"
+contexts = ["workspace"]
+command = ["bash", "-c", "cwd=$(jq -r '.workspace_cwd // .focused_pane_cwd' <<<\"$HERDR_PLUGIN_CONTEXT_JSON\"); exec \"$HERDR_BIN_PATH\" plugin pane open --plugin \"$HERDR_PLUGIN_ID\" --entrypoint picker --placement split --direction down --cwd \"$cwd\" --focus"]
+
+[[actions]]
+id = "remove"
+title = "Worktree: remove"
+contexts = ["workspace"]
+command = ["bash", "-c", "cwd=$(jq -r '.workspace_cwd // .focused_pane_cwd' <<<\"$HERDR_PLUGIN_CONTEXT_JSON\"); exec \"$HERDR_BIN_PATH\" plugin pane open --plugin \"$HERDR_PLUGIN_ID\" --entrypoint remover --placement split --direction down --cwd \"$cwd\" --focus"]
+
+[[panes]]
+id = "picker"
+title = "Worktrunk"
+placement = "split"
+command = ["bash", "-c", "exec bash \"$HERDR_PLUGIN_ROOT/picker.sh\""]
+
+[[panes]]
+id = "remover"
+title = "Worktrunk: remove"
+placement = "split"
+command = ["bash", "-c", "exec bash \"$HERDR_PLUGIN_ROOT/remove.sh\""]
