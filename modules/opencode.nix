@@ -10,6 +10,20 @@ _: {
             "*" = "allow";
             question = "deny";
           };
+          command = {
+            commit = {
+              description = "Create Conventional Commit(s) from current changes";
+              model = "openai/gpt-5.4-mini";
+              subtask = true;
+              template = "Use the `commit` skill with $ARGUMENTS.";
+            };
+            pr = {
+              description = "Create or update a GitHub pull request";
+              model = "openai/gpt-5.4-mini";
+              subtask = true;
+              template = "Use the `pr` skill with $ARGUMENTS.";
+            };
+          };
         };
         tui = {
           keybinds = {
