@@ -22,9 +22,14 @@ _: {
         ui = {
           confirm_close = false;
           prompt_new_tab_name = false;
+          agent_panel_sort = "priority";
         };
 
         advanced.scrollback_limit_bytes = 10485760;
+
+        experimental = {
+          kitty_graphics = true;
+        };
 
         keys = {
           detach = "";
