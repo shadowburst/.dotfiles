@@ -31,7 +31,7 @@
     };
 
   flake.homeModules.gui =
-    { config, ... }:
+    { config, lib, ... }:
     {
       imports = [ inputs.noctalia.homeModules.default ];
 
@@ -40,7 +40,17 @@
         systemd.enable = true;
       };
 
-      programs.satty.enable = true;
+      programs.satty = {
+        enable = true;
+        settings.general = {
+          output-filename = "~/Pictures/Screenshots/Screenshot-%Y-%m-%d_%H-%M-%S.png";
+          actions-on-enter = [ "save-to-file" ];
+        };
+      };
+
+      home.activation.createScreenshotsDirectory = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+        run mkdir -p $VERBOSE_ARG "${config.home.homeDirectory}/Pictures/Screenshots"
+      '';
 
       xdg.configFile."noctalia/config.toml".source =
         config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/noctalia/config.toml";
