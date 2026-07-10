@@ -50,6 +50,7 @@
       inputs.import-tree [
         ./hosts
         ./modules
+        ./pkgs/default.nix
       ]
     );
 }

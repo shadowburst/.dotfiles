@@ -9,6 +9,7 @@
       self.nixosModules.gui
       self.nixosModules.laravel
       self.nixosModules.lenovo-p14s
+      { nixpkgs.overlays = [ self.overlays.default ]; }
 
       inputs.home-manager.nixosModules.home-manager
       {
@@ -19,6 +20,7 @@
           self.homeModules.cli
           self.homeModules.gui
           self.homeModules.laravel
+          self.homeModules.work
           self.homeModules.lenovo-p14s
         ];
       }
