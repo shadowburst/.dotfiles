@@ -265,9 +265,6 @@ type = "noctalia/screen_recorder:recorder"
 display = "text"
 stat = "ram_pct"
 
-[widget.tray]
-drawer = true
-
 [widget.workspaces]
 empty_color = "surface"
 focused_color = "tertiary"
