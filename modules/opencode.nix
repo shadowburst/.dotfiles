@@ -28,6 +28,7 @@ _: {
         tui = {
           keybinds = {
             leader = "ctrl+space";
+            app_exit = "ctrl+q";
             command_list = "<leader>p";
             agent_cycle = "none";
             agent_cycle_reverse = "none";
@@ -36,6 +37,7 @@ _: {
             messages_half_page_up = "ctrl+u";
             messages_half_page_down = "ctrl+d";
             input_newline = "shift+enter";
+            prompt_skills = "$";
           };
         };
       };
