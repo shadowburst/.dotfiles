@@ -210,6 +210,15 @@
       "pluginName": "mattpocock-skills",
       "installedAt": "2026-07-08T19:31:14.324Z",
       "updatedAt": "2026-07-09T10:55:07.522Z"
+    },
+    "clickup": {
+      "source": "krodak/clickup-cli",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/krodak/clickup-cli.git",
+      "skillPath": "skills/clickup-cli/SKILL.md",
+      "skillFolderHash": "4bd260ecf5783dd0368b339baad3413a4482cfc3",
+      "installedAt": "2026-07-13T07:48:39.877Z",
+      "updatedAt": "2026-07-13T07:48:39.877Z"
     }
   },
   "dismissed": {
