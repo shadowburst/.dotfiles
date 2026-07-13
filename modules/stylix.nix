@@ -26,10 +26,6 @@
           emoji.package = pkgs.noto-fonts-emoji;
         };
 
-        cursor.name = "Bibata-Modern-Classic";
-        cursor.package = pkgs.bibata-cursors;
-        cursor.size = 24;
-
         base16Scheme = "${pkgs.base16-schemes}/share/themes/catppuccin-mocha.yaml";
 
         targets.console.enable = true;

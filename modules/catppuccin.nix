@@ -1,7 +1,7 @@
 { inputs, ... }:
 {
   flake.nixosModules.core =
-    { lib, pkgs, ... }:
+    { ... }:
     {
       imports = [ inputs.catppuccin.nixosModules.catppuccin ];
 
@@ -11,6 +11,7 @@
         flavor = "mocha";
         accent = "lavender";
 
+        cache.enable = true;
         grub.enable = true;
         plymouth.enable = true;
         tty.enable = true;
@@ -20,7 +21,7 @@
     };
 
   flake.homeModules.core =
-    { lib, pkgs, ... }:
+    { ... }:
     {
       imports = [ inputs.catppuccin.homeModules.catppuccin ];
 
@@ -34,6 +35,8 @@
         brave.enable = true;
         btop.enable = true;
         cava.enable = true;
+        cursors.enable = true;
+        cursors.accent = "dark";
         delta.enable = true;
         fish.enable = true;
         fzf.enable = true;

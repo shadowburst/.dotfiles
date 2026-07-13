@@ -21,5 +21,7 @@ _: {
       ];
 
       home.sessionVariables.TERMINAL = "kitty";
+
+      home.pointerCursor.enable = true;
     };
 }
