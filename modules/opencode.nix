@@ -5,6 +5,9 @@ _: {
       programs.opencode = {
         enable = true;
         enableMcpIntegration = true;
+        context = ''
+          Only use subagents if explicitly asked to do so.
+        '';
         settings = {
           permission = {
             "*" = "allow";
