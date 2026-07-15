@@ -13,6 +13,9 @@ _: {
             "*" = "allow";
             question = "deny";
           };
+          plugin = [
+            "@dietrichgebert/ponytail"
+          ];
           command = {
             commit = {
               description = "Create Conventional Commit(s) from current changes";
