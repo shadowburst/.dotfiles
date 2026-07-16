@@ -32,8 +32,8 @@ _: {
         keys = {
           detach = "";
           goto = "alt+space";
-          next_workspace = "alt+tab";
-          previous_workspace = "alt+shift+tab";
+          next_agent = "alt+tab";
+          previous_agent = "alt+shift+tab";
 
           next_tab = "alt+n";
           previous_tab = "alt+p";
