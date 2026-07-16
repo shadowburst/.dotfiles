@@ -27,14 +27,13 @@ _: {
 
         advanced.scrollback_limit_bytes = 10485760;
 
-        experimental = {
-          kitty_graphics = true;
-        };
+        experimental.kitty_graphics = true;
 
         keys = {
           detach = "";
           goto = "alt+space";
           next_workspace = "alt+tab";
+          previous_workspace = "alt+shift+tab";
 
           next_tab = "alt+n";
           previous_tab = "alt+p";
