@@ -32,11 +32,9 @@ _: {
         keys = {
           detach = "";
           goto = "alt+space";
-          next_agent = "alt+tab";
-          previous_agent = "alt+shift+tab";
+          next_agent = "alt+n";
+          previous_agent = "alt+p";
 
-          next_tab = "alt+n";
-          previous_tab = "alt+p";
           new_tab = "alt+t";
           switch_tab = "alt+1..9";
 

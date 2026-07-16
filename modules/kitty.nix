@@ -23,6 +23,16 @@ _: {
           window_padding_width = "4 0";
         };
         keybindings = {
+          # Translate AZERTY's top row for Herdr's indexed shortcuts.
+          "alt+&" = "send_key alt+1";
+          "alt+é" = "send_key alt+2";
+          "alt+\"" = "send_key alt+3";
+          "alt+'" = "send_key alt+4";
+          "alt+(" = "send_key alt+5";
+          "alt+-" = "send_key alt+6";
+          "alt+è" = "send_key alt+7";
+          "alt+_" = "send_key alt+8";
+          "alt+ç" = "send_key alt+9";
           "ctrl+backspace" = "send_key ctrl+w";
           "ctrl+delete" = "send_key alt+d";
         };
