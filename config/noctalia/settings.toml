@@ -1,7 +1,6 @@
 config_version = 2
 
 [bar.main]
-auto_hide = true
 end = [ "tray", "notifications", "bluetooth", "network", "volume", "battery" ]
 margin_edge = 0.0
 margin_ends = 60
@@ -9,6 +8,7 @@ position = "bottom"
 radius_bottom_left = 0
 radius_bottom_right = 0
 reserve_space = false
+smart_auto_hide = true
 start = [ "clock", "group:g1" ]
 thickness = 40
 
@@ -45,14 +45,27 @@ sidebar_section = "none"
 [desktop_widgets]
 enabled = true
 schema_version = 2
-widget_order = []
+widget_order = [ "desktop-widget-0000000000000001" ]
 
     [desktop_widgets.grid]
     cell_size = 16
     major_interval = 4
     visible = true
 
-    [desktop_widgets.widget]
+    [desktop_widgets.widget.desktop-widget-0000000000000001]
+    box_height = 144.0
+    box_width = 352.0
+    cx = 1744.0
+    cy = 72.0
+    output = "eDP-1"
+    rotation = 0.0
+    type = "clock"
+
+        [desktop_widgets.widget.desktop-widget-0000000000000001.settings]
+        background = false
+        center_text = true
+        clock_style = "digital"
+        shadow = false
 
 [keybinds]
 down = [ "Down", "Ctrl+n" ]
@@ -187,6 +200,9 @@ settings_show_advanced = true
     transparency_mode = "soft"
     wallpaper_placement = "floating"
     wallpaper_position = "top_center"
+
+    [shell.screen_corners]
+    enabled = true
 
     [shell.screenshot]
     pipe_command = "satty -f -"
