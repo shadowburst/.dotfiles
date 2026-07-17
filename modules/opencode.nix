@@ -19,13 +19,13 @@ _: {
           command = {
             commit = {
               description = "Create Conventional Commit(s) from current changes";
-              model = "openai/gpt-5.4-mini";
+              model = "openai/gpt-5.6-luna";
               subtask = true;
               template = "Use the `commit` skill with $ARGUMENTS.";
             };
             pr = {
               description = "Create or update a GitHub pull request";
-              model = "openai/gpt-5.4-mini";
+              model = "openai/gpt-5.6-luna";
               subtask = true;
               template = "Use the `pr` skill with $ARGUMENTS.";
             };
