@@ -32,11 +32,15 @@ _: {
         keys = {
           detach = "";
           goto = "alt+space";
-          next_agent = "alt+n";
-          previous_agent = "alt+p";
+          toggle_sidebar = "alt+b";
 
+          next_workspace = "alt+tab";
+          previous_workspace = "alt+shift+tab";
+          focus_agent = "alt+1..9";
+
+          next_tab = "alt+n";
+          previous_tab = "alt+p";
           new_tab = "alt+t";
-          switch_tab = "alt+1..9";
 
           focus_pane_left = "alt+h";
           focus_pane_down = "alt+j";
@@ -49,21 +53,6 @@ _: {
           resize_mode = "alt+plus";
 
           edit_scrollback = "alt+esc";
-
-          command = [
-            {
-              key = "prefix+shift+g";
-              type = "plugin_action";
-              command = "pbaudry.worktrunk.open";
-              description = "Worktree: switch / create";
-            }
-            {
-              key = "prefix+shift+d";
-              type = "plugin_action";
-              command = "pbaudry.worktrunk.remove";
-              description = "Worktree: remove";
-            }
-          ];
         };
       };
     };
