@@ -30,7 +30,7 @@ _: {
             mode = "type";
             wait_for_modifier_release = true;
             pre_type_delay_ms = 150;
-            type_delay_ms = 10;
+            type_delay_ms = 3;
             append_text = " ";
 
             notification = {
