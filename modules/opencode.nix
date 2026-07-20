@@ -1,6 +1,6 @@
 _: {
   flake.homeModules.cli =
-    { ... }:
+    { config, ... }:
     {
       programs.opencode = {
         enable = true;
@@ -9,6 +9,16 @@ _: {
           Only use subagents if explicitly asked to do so.
         '';
         settings = {
+          mcp.chrome-devtools = {
+            type = "local";
+            command = [
+              "npx"
+              "-y"
+              "chrome-devtools-mcp@latest"
+              "--isolated"
+              "--executablePath=${config.programs.brave.package}/bin/brave"
+            ];
+          };
           permission = {
             "*" = "allow";
             question = "deny";
