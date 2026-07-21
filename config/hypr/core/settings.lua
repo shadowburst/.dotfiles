@@ -49,6 +49,7 @@ hl.config({
     mouse_move_enables_dpms = true,
     on_focus_under_fullscreen = 1,
     session_lock_xray = true,
+    swallow_exception_regex = "^brave-browser$",
     swallow_regex = "^kitty$",
     vrr = 0,
   },
