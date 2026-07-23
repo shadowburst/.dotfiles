@@ -32,6 +32,12 @@ hl.window_rule({
   size = "1000 600",
 })
 
+hl.window_rule({
+  name = "devtools-mcp-workspace",
+  match = { initial_class = "brave-browser", initial_title = "about:blank - Brave" },
+  workspace = "7 silent",
+})
+
 hl.layer_rule({
   name = "selection-no-animation",
   match = { namespace = "selection" },
