@@ -38,6 +38,3 @@ hl.bind("print", hl.dsp.exec_cmd("noctalia msg screenshot-region"))
 hl.bind("CTRL + print", hl.dsp.exec_cmd("noctalia msg screenshot-fullscreen pick"))
 hl.bind(mod .. " + SHIFT + S", hl.dsp.exec_cmd("noctalia msg screenshot-region"))
 hl.bind(mod .. " + CTRL + SHIFT + S", hl.dsp.exec_cmd("noctalia msg screenshot-fullscreen pick"))
-
--- Screen recording.
-hl.bind(mod .. " + CTRL + r", hl.dsp.exec_cmd("noctalia msg scripted-widget screen_recorder focused toggle"))
