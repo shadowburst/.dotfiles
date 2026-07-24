@@ -13,7 +13,7 @@ hl.window_rule({
   match = { class = "org.gnome.Calculator" },
   float = true,
   center = true,
-  size = "300 500",
+  size = "400 620",
 })
 
 hl.window_rule({
@@ -21,7 +21,7 @@ hl.window_rule({
   match = { initial_class = "brave-(\\w+)-Default" },
   float = true,
   center = true,
-  size = "400 600",
+  size = "560 760",
 })
 
 hl.window_rule({
