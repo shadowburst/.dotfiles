@@ -1,0 +1,22 @@
+{
+  "lastChangelogVersion": "0.80.10",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.6-sol",
+  "defaultThinkingLevel": "high",
+  "theme": "catppuccin-mocha",
+  "doubleEscapeAction": "tree",
+  "quietStartup": true,
+  "hideThinkingBlock": false,
+  "packages": [
+    "npm:pi-mcp-adapter",
+    "npm:pi-web-access",
+    "npm:@dietrichgebert/ponytail"
+  ],
+  "editorPaddingX": 1,
+  "enableInstallTelemetry": false,
+  "terminal": {
+    "showTerminalProgress": false
+  },
+  "treeFilterMode": "user-only",
+  "showHardwareCursor": true
+}
