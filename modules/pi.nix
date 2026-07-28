@@ -37,7 +37,8 @@ _: {
         ".pi/agent/themes" = mkPiConfigSymlink "config/pi/themes";
         ".pi/agent/settings.json" = mkPiConfigSymlink "config/pi/settings.json";
         ".pi/agent/keybindings.json" = mkPiConfigSymlink "config/pi/keybindings.json";
-        ".pi/agent/extensions" = mkPiConfigSymlink "config/pi/extensions";
+        ".pi/agent/extensions/git-commands.ts" = mkPiConfigSymlink "config/pi/extensions/git-commands.ts";
+        ".pi/agent/extensions/pi-kitty.ts" = mkPiConfigSymlink "config/pi/extensions/pi-kitty.ts";
       };
     };
 }

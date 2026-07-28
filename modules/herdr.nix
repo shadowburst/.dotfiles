@@ -1,6 +1,11 @@
 _: {
   flake.homeModules.cli =
-    { pkgs, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       tomlFormat = pkgs.formats.toml { };
     in
@@ -8,6 +13,13 @@ _: {
       home.packages = with pkgs; [
         herdr
       ];
+
+      home.activation.herdrIntegrations = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+        run mkdir -p ${lib.escapeShellArg "${config.home.homeDirectory}/.pi/agent/extensions"}
+        run ${pkgs.herdr}/bin/herdr integration install pi
+        run ${pkgs.herdr}/bin/herdr integration install opencode
+        run ${pkgs.herdr}/bin/herdr integration install claude
+      '';
 
       xdg.configFile."herdr/config.toml".source = tomlFormat.generate "herdr-config.toml" {
         onboarding = false;
