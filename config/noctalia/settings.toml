@@ -92,7 +92,6 @@ auto_locate = true
 blurred_desktop = true
 
 [lockscreen_widgets]
-enabled = true
 schema_version = 2
 widget_order = [
     "lockscreen-login-box@DP-5",
@@ -182,10 +181,10 @@ video_codec = "av1"
 video_source = "focused"
 
 [plugins]
+auto_update = true
 enabled = [ "noctalia/screen_recorder", "noctalia/translator" ]
 
     [[plugins.source]]
-    auto_update = true
     kind = "git"
     location = "https://github.com/noctalia-dev/official-plugins"
     name = "official"
@@ -208,9 +207,9 @@ settings_show_advanced = true
 
     [shell.panel]
     clipboard_position = "top_center"
-    control_center_placement = "floating"
+    control_center_placement = "attached"
+    control_center_position = "top_center"
     floating_offset = 0
-    launcher_categories = false
     launcher_position = "top_center"
     open_near_click_control_center = true
     polkit_position = "top_center"

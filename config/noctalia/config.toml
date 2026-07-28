@@ -1,8 +1,7 @@
-# Noctalia v5 alpha configuration.
-# This checked-in Config Asset is linked by Home Manager to ~/.config/noctalia/config.toml.
+[accessibility]
+ui_scale = 1.0
 
 [shell]
-ui_scale = 1.0
 corner_radius_scale = 0.25
 font_family = "Rubik"
 time_format = "{:%H:%M}"
@@ -12,7 +11,6 @@ telemetry_enabled = false
 polkit_agent = true
 password_style = "default"
 settings_show_advanced = false
-middle_click_opens_widget_settings = true
 show_location = true
 clipboard_enabled = true
 clipboard_history_max_entries = 50
@@ -25,21 +23,22 @@ enabled = true
 speed = 2.0
 
 [shell.shadow]
-blur = 12
-offset_x = 0
-offset_y = 0
 alpha = 0.55
 
 [shell.panel]
-background_blur = false
 transparency_mode = "solid"
 borders = false
 shadow = true
-launcher_placement = "centered"
-clipboard_placement = "centered"
-control_center_placement = "centered"
-wallpaper_placement = "centered"
-session_placement = "centered"
+launcher_placement = "floating"
+clipboard_placement = "floating"
+control_center_placement = "floating"
+wallpaper_placement = "floating"
+session_placement = "floating"
+launcher_position = "center"
+clipboard_position = "center"
+control_center_position = "center"
+wallpaper_position = "center"
+session_position = "center"
 open_near_click_control_center = false
 open_near_click_launcher = false
 open_near_click_clipboard = false
@@ -65,7 +64,7 @@ path = ""
 
 [wallpaper.automation]
 enabled = false
-interval_minutes = 5
+interval_seconds = 300
 order = "random"
 recursive = true
 
@@ -100,6 +99,8 @@ scale = 1.0
 background_opacity = 0.9
 offset_x = 20
 offset_y = 8
+
+[osd.kinds]
 lock_keys = true
 keyboard_layout = true
 
@@ -113,8 +114,6 @@ disk_poll_seconds = 10.0
 
 [weather]
 enabled = true
-auto_locate = false
-address = "Mayenne"
 refresh_minutes = 30
 unit = "celsius"
 
@@ -131,11 +130,12 @@ enable_ddcutil = false
 [nightlight]
 enabled = false
 force = false
-use_weather_location = true
 temperature_day = 6500
 temperature_night = 4000
-start_time = "22:00"
-stop_time = "08:00"
+
+[location]
+auto_locate = false
+address = "Mayenne"
 
 [idle]
 pre_action_fade_seconds = 0.0
@@ -186,33 +186,12 @@ start = ["clock", "media"]
 center = ["workspaces"]
 end = ["screen_recorder", "tray", "notifications", "bluetooth", "network", "volume", "battery", "control-center", "session"]
 
-[widget.screen_recorder]
-type = "scripted"
-script = "scripts/screen_recorder.lua"
-scope = "shared"
-directory = ""
-filename_pattern = "recording_%Y%m%d_%H%M%S"
-video_source = "portal"
-video_codec = "h264"
-audio_codec = "opus"
-audio_source = "default_output"
-quality = "very_high"
-frame_rate = 60
-color_range = "limited"
-resolution = "original"
-show_cursor = true
-copy_to_clipboard = false
-restore_portal = false
-replay_enabled = false
-replay_duration = 30
-replay_storage = "ram"
-hide_inactive = true
-
 [dock]
 enabled = false
 position = "bottom"
 icon_size = 48
-padding = 8
+main_axis_padding = 8
+cross_axis_padding = 8
 item_spacing = 6
 background_opacity = 1.0
 radius = 16
@@ -256,10 +235,12 @@ type = "wallpaper"
 type = "session"
 
 [hooks]
-battery_low_percent_threshold = 0
 started = 'rm -f "${XDG_RUNTIME_DIR:-/tmp}/noctalia.locked"'
 session_locked = 'touch "${XDG_RUNTIME_DIR:-/tmp}/noctalia.locked"'
 session_unlocked = [
   'rm -f "${XDG_RUNTIME_DIR:-/tmp}/noctalia.locked"',
   "noctalia:dpms-on",
 ]
+
+[battery]
+warning_threshold = 0
