@@ -9,6 +9,10 @@ _: {
           Only use subagents if explicitly asked to do so.
         '';
         settings = {
+          lsp.laravel-ls = {
+            command = [ "laravel-ls" ];
+            extensions = [ ".php" ];
+          };
           permission = {
             "*" = "allow";
             question = "deny";

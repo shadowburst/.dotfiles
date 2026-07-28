@@ -1,4 +1,5 @@
-_: {
+{ self, ... }:
+{
   flake.homeModules.cli =
     {
       config,
@@ -50,6 +51,7 @@ _: {
           vtsls
 
           # PHP
+          self.packages.${pkgs.stdenv.hostPlatform.system}.laravel-ls
           phpantom-lsp
           php
 
