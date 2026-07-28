@@ -12,4 +12,8 @@
 
     networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 22 ];
   };
+
+  flake.homeModules.gui = {
+    services.tailscale-systray.enable = true;
+  };
 }

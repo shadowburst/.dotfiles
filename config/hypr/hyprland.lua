@@ -10,5 +10,4 @@ require("layouts.scrolling")
 
 require("modules.monique")
 require("modules.noctalia")
-require("modules.tailscale")
 require("modules.voxtype")

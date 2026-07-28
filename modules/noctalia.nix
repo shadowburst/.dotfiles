@@ -45,6 +45,12 @@
         systemd.enable = true;
       };
 
+      systemd.user.services.noctalia.Service = {
+        Type = "dbus";
+        BusName = "org.kde.StatusNotifierWatcher";
+      };
+      systemd.user.services.noctalia.Install.WantedBy = [ "tray.target" ];
+
       programs.satty = {
         enable = true;
         settings.general = {
