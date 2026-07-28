@@ -177,9 +177,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/mattpocock/skills.git",
       "skillPath": "skills/engineering/to-tickets/SKILL.md",
-      "skillFolderHash": "5467d7a37ef365ed43ebe6eb466d6e952be881b8",
+      "skillFolderHash": "80c1bedbdaa72a4abd524055013accb4fe0ea8c4",
       "installedAt": "2026-07-08T19:31:14.322Z",
-      "updatedAt": "2026-07-15T06:04:58.534Z"
+      "updatedAt": "2026-07-28T11:46:56.228Z"
     },
     "wayfinder": {
       "source": "mattpocock/skills",
@@ -195,18 +195,27 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/krodak/clickup-cli.git",
       "skillPath": "skills/clickup-cli/SKILL.md",
-      "skillFolderHash": "4bd260ecf5783dd0368b339baad3413a4482cfc3",
+      "skillFolderHash": "09cea01575e4179d0f6606c8cd9f50d541351900",
       "installedAt": "2026-07-13T07:48:39.877Z",
-      "updatedAt": "2026-07-13T07:48:39.877Z"
+      "updatedAt": "2026-07-28T11:46:59.206Z"
     },
     "herdr": {
       "source": "ogulcancelik/herdr",
       "sourceType": "github",
       "sourceUrl": "https://github.com/ogulcancelik/herdr.git",
       "skillPath": "SKILL.md",
-      "skillFolderHash": "a0678a38b9426b011f66e1b88ff7aaa9bf877104",
+      "skillFolderHash": "1491b7dd9c992ef0ad2b763f3e450befaf25c47f",
       "installedAt": "2026-07-15T07:26:47.833Z",
-      "updatedAt": "2026-07-15T07:26:47.833Z"
+      "updatedAt": "2026-07-28T11:58:03.037Z"
+    },
+    "batch-grill-me": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mattpocock/skills.git",
+      "skillPath": "skills/in-progress/batch-grill-me/SKILL.md",
+      "skillFolderHash": "f2c0125db05db4d8f905a9423af308c476e2e4d5",
+      "installedAt": "2026-07-28T11:48:35.852Z",
+      "updatedAt": "2026-07-28T11:48:35.852Z"
     }
   },
   "dismissed": {
