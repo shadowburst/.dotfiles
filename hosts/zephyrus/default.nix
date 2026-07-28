@@ -20,7 +20,6 @@
           self.homeModules.cli
           self.homeModules.gui
           self.homeModules.laravel
-          self.homeModules.zephyrus
         ];
       }
     ];
