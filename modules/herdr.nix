@@ -29,7 +29,10 @@ _: {
           shell_mode = "auto";
         };
 
-        theme.name = "catppuccin";
+        theme = {
+          name = "catppuccin";
+          custom.surface_dim = config.catppuccin.palette.colors.mantle.hex;
+        };
 
         ui = {
           confirm_close = false;

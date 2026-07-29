@@ -9,7 +9,7 @@ _: {
           auto_reload_config = -1;
           background_opacity = "0.9";
           confirm_os_window_close = 0;
-          cursor = config.lib.stylix.colors.withHashtag.base07;
+          cursor = config.catppuccin.palette.colors.lavender.hex;
           cursor_shape = "block";
           cursor_text_color = "background";
           cursor_trail = 3;

@@ -62,9 +62,9 @@ _: {
         scriptOpts = {
           modernz = {
             window_controls = false;
-            seekbarfg_color = config.lib.stylix.colors.withHashtag.base07;
-            seekbarbg_color = config.lib.stylix.colors.withHashtag.base00;
-            hover_effect_color = config.lib.stylix.colors.withHashtag.base07;
+            seekbarfg_color = config.catppuccin.palette.colors.lavender.hex;
+            seekbarbg_color = config.catppuccin.palette.colors.base.hex;
+            hover_effect_color = config.catppuccin.palette.colors.lavender.hex;
           };
         };
       };

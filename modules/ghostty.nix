@@ -16,7 +16,7 @@ _: {
           ];
           font-size = 10;
           background-opacity = 0.9;
-          cursor-color = config.lib.stylix.colors.withHashtag.base07;
+          cursor-color = config.catppuccin.palette.colors.lavender.hex;
           notify-on-command-finish = "unfocused";
           notify-on-command-finish-action = "no-bell,notify";
           resize-overlay = "never";

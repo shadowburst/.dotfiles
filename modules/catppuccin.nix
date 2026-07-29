@@ -1,9 +1,23 @@
 { inputs, ... }:
+let
+  paletteModule =
+    { config, lib, ... }:
+    {
+      options.catppuccin.palette = lib.mkOption {
+        type = lib.types.attrs;
+        readOnly = true;
+        default = (builtins.fromJSON (builtins.readFile "${config.catppuccin.sources.palette}/palette.json")).${config.catppuccin.flavor};
+      };
+    };
+in
 {
   flake.nixosModules.core =
     { ... }:
     {
-      imports = [ inputs.catppuccin.nixosModules.catppuccin ];
+      imports = [
+        inputs.catppuccin.nixosModules.catppuccin
+        paletteModule
+      ];
 
       catppuccin = {
         enable = true;
@@ -23,7 +37,10 @@
   flake.homeModules.core =
     { ... }:
     {
-      imports = [ inputs.catppuccin.homeModules.catppuccin ];
+      imports = [
+        inputs.catppuccin.homeModules.catppuccin
+        paletteModule
+      ];
 
       catppuccin = {
         enable = true;
