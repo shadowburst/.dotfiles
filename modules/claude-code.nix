@@ -6,15 +6,17 @@ _: {
         enable = true;
         enableMcpIntegration = true;
 
-        plugins = [
-          (pkgs.fetchFromGitHub {
-            name = "ponytail";
-            owner = "DietrichGebert";
-            repo = "ponytail";
-            rev = "v4.8.4";
-            hash = "sha256-1A9GkjCuiqwd6Wxl18CZUGYekxrbeTLVDapNUua8ihg=";
-          })
-        ];
+        plugins = {
+          "ponytail" = (
+            pkgs.fetchFromGitHub {
+              name = "ponytail";
+              owner = "DietrichGebert";
+              repo = "ponytail";
+              rev = "v4.8.4";
+              hash = "sha256-1A9GkjCuiqwd6Wxl18CZUGYekxrbeTLVDapNUua8ihg=";
+            }
+          );
+        };
 
         commands = {
           commit = ''
