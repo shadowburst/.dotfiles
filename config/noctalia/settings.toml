@@ -302,7 +302,8 @@ display = "text"
 stat = "ram_pct"
 
 [widget.workspaces]
-empty_color = "surface"
 focused_color = "tertiary"
+focused_output_only = true
 occupied_color = "primary"
 scale = 1.1500000000000001
+style = "minimal"
