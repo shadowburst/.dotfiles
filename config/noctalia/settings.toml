@@ -1,4 +1,4 @@
-config_version = 8
+config_version = 10
 
 [bar.main]
 end = [ "tray", "notifications", "bluetooth", "network", "volume", "battery" ]
@@ -298,8 +298,9 @@ stat = "ram_pct"
 type = "noctalia/screen_recorder:recorder"
 
 [widget.sysmon]
-display = "text"
+show_value = true
 stat = "ram_pct"
+visualization = "none"
 
 [widget.workspaces]
 focused_color = "tertiary"
