@@ -1,21 +1,33 @@
-config_version = 10
+config_version = 12
 
 [bar.main]
 end = [ "tray", "notifications", "bluetooth", "network", "volume", "battery" ]
 margin_edge = 0.0
 margin_ends = 60
-position = "bottom"
-radius_bottom_left = 0
-radius_bottom_right = 0
+position = "top"
 reserve_space = false
 smart_auto_hide = true
-start = [ "clock", "group:g1" ]
+start = [ "clock", "group:g1", "group:g2" ]
 thickness = 40
 
     [[bar.main.capsule_group]]
+    accordion = false
+    accordion_direction = "end"
+    enabled = true
     fill = "surface_variant"
     id = "g1"
-    members = [ "cpu", "ram", "sysmon", "network_rx", "network_tx" ]
+    members = [ "cpu", "ram", "sysmon" ]
+    opacity = 0.89999997615814209
+    padding = 6.0
+    radius = 8.0
+
+    [[bar.main.capsule_group]]
+    accordion = false
+    accordion_direction = "end"
+    enabled = true
+    fill = "surface_variant"
+    id = "g2"
+    members = [ "network_rx", "network_tx" ]
     opacity = 0.89999997615814209
     padding = 6.0
     radius = 8.0
@@ -55,8 +67,8 @@ widget_order = [ "desktop-widget-0000000000000001", "desktop-widget-000000000000
     [desktop_widgets.widget.desktop-widget-0000000000000001]
     box_height = 144.0
     box_width = 352.0
-    cx = 1728.0
-    cy = 88.0
+    cx = 1696.0
+    cy = 104.0
     output = "eDP-1"
     rotation = 0.0
     type = "clock"
@@ -175,6 +187,7 @@ widget_order = [
 
 [notification]
 blacklist = [ "discord" ]
+position = "top_center"
 
 [plugin_settings."noctalia/screen_recorder"]
 video_codec = "av1"
@@ -299,7 +312,7 @@ type = "noctalia/screen_recorder:recorder"
 
 [widget.sysmon]
 show_value = true
-stat = "ram_pct"
+stat = "disk_used_pct"
 visualization = "none"
 
 [widget.workspaces]
