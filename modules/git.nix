@@ -1,6 +1,6 @@
 _: {
   flake.homeModules.cli =
-    { lib, pkgs, ... }:
+    { ... }:
     {
       programs.git = {
         enable = true;
@@ -60,7 +60,7 @@ _: {
     };
 
   flake.homeModules.lenovo-p14s =
-    { lib, pkgs, ... }:
+    { lib, ... }:
     {
       programs.git.settings = {
         user.name = lib.mkForce "pbaudry";
