@@ -3,6 +3,61 @@ vim.pack.add({
   "https://github.com/NeogitOrg/neogit",
 })
 
+local function run_pi_git_action(skill)
+  local neogit = require("neogit")
+  local notification_id = "neogit-pi-" .. skill
+  local progress = assert(vim.uv.new_timer())
+  progress:start(0, 80, vim.schedule_wrap(function()
+    Snacks.notify.info("Pi " .. skill .. " running", {
+      id = notification_id,
+      icon = Snacks.util.spinner(),
+      timeout = false,
+      title = "Neogit",
+    })
+  end))
+
+  vim.system({
+    "pi",
+    "--print",
+    "--no-session",
+    "--model",
+    "openai-codex/gpt-5.6-luna",
+    "--thinking",
+    "low",
+    "Use the `" .. skill .. "` skill.",
+  }, { cwd = neogit.status.instance().cwd, text = true }, function(result)
+    vim.schedule(function()
+      progress:stop()
+      progress:close()
+      Snacks.notifier.hide(notification_id)
+      neogit.refresh()
+
+      local output = vim.trim((result.stdout or "") .. "\n" .. (result.stderr or ""))
+      if result.code == 0 then
+        if output ~= "" then
+          Snacks.notifier.hide(Snacks.notify.info(output, { title = "Pi " .. skill .. " report" }))
+        end
+        Snacks.notify.info("Pi " .. skill .. " completed", { title = "Neogit" })
+      else
+        Snacks.notify.error(output ~= "" and output or "Pi exited with code " .. result.code, { title = "Pi " .. skill })
+      end
+    end)
+  end)
+end
+
+local function create_pi_popup()
+  local popup = require("neogit.lib.popup")
+    .builder()
+    :name("NeogitPiPopup")
+    :new_action_group("Pi")
+    :action("c", "Commit", function() run_pi_git_action("commit") end)
+    :action("p", "Pull request", function() run_pi_git_action("pr") end)
+    :build()
+
+  popup:show()
+  return popup
+end
+
 require("neogit").setup({
   process_spinner = true,
   disable_hint = true,
@@ -16,6 +71,11 @@ require("neogit").setup({
   integrations = {
     codediff = true,
     snacks = true,
+  },
+  mappings = {
+    status = {
+      ["a"] = create_pi_popup,
+    },
   },
   signs = {
     -- { CLOSED, OPENED }
