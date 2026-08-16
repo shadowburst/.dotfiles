@@ -1,10 +1,11 @@
-import type { ExtensionAPI, ExtensionContext, Theme } from "@earendil-works/pi-coding-agent";
+import { getMarkdownTheme, type ExtensionAPI, type ExtensionContext, type Theme } from "@earendil-works/pi-coding-agent";
 import {
   Editor,
   type EditorTheme,
   type Focusable,
   Key,
   matchesKey,
+  Markdown,
   Text,
   truncateToWidth,
   type TUI,
@@ -203,6 +204,24 @@ class QuestionComponent implements Focusable {
         lines.push(`${index === 0 ? prefix : " ".repeat(prefixWidth)}${wrapped[index]}`);
       }
     };
+    const addMarkdown = (
+      text: string,
+      color: Parameters<Theme["fg"]>[0],
+      prefix = "",
+    ) => {
+      const prefixWidth = visibleWidth(prefix);
+      const availableWidth = Math.max(1, renderWidth - prefixWidth);
+      const markdown = new Markdown(
+        text,
+        0,
+        0,
+        getMarkdownTheme(),
+        { color: (value) => this.theme.fg(color, value) },
+      );
+      markdown.render(availableWidth).forEach((line, index) => {
+        lines.push(`${index === 0 ? prefix : " ".repeat(prefixWidth)}${line.trimEnd()}`);
+      });
+    };
 
     lines.push(this.theme.fg("accent", "─".repeat(renderWidth)));
     if (!isSingleFlow(this.questions)) {
@@ -229,7 +248,7 @@ class QuestionComponent implements Focusable {
       this.questions.forEach((question, questionIndex) => {
         const labels = this.answerLabels(questionIndex);
         const value = labels.length ? labels.join(", ") : "Unanswered";
-        add(this.theme.fg("text", question.question));
+        addMarkdown(question.question, "text");
         addPrefixed(
           `${this.theme.fg("muted", `${question.header}: `)}`,
           this.theme.fg(labels.length ? "text" : "warning", value),
@@ -247,7 +266,7 @@ class QuestionComponent implements Focusable {
     } else {
       const question = this.questions[this.state.tab];
       if (question) {
-        add(this.theme.fg("text", `${question.question}${question.multiple === true ? " (select all that apply)" : ""}`));
+        addMarkdown(`${question.question}${question.multiple === true ? " (select all that apply)" : ""}`, "text");
         lines.push("");
         for (let optionIndex = 0; optionIndex <= question.options.length; optionIndex++) {
           const custom = optionIndex === question.options.length;
@@ -255,9 +274,12 @@ class QuestionComponent implements Focusable {
           const selected = this.state.answers[this.state.tab]?.includes(optionIndex) ?? false;
           const marker = highlighted ? this.theme.fg("accent", "> ") : "  ";
           const checkbox = question.multiple === true ? `[${selected ? "✓" : " "}] ` : selected ? "✓ " : "";
+          const color = highlighted ? "accent" : selected ? "success" : "text";
           const label = custom ? "Type your own answer" : question.options[optionIndex]!.label;
-          addPrefixed(marker, this.theme.fg(highlighted ? "accent" : selected ? "success" : "text", `${optionIndex + 1}. ${checkbox}${label}`));
-          if (!custom) addPrefixed("    ", this.theme.fg("muted", question.options[optionIndex]!.description));
+          const prefix = marker + this.theme.fg(color, `${optionIndex + 1}. ${checkbox}`);
+          if (custom) addPrefixed(marker, this.theme.fg(color, `${optionIndex + 1}. ${checkbox}${label}`));
+          else addMarkdown(label, color, prefix);
+          if (!custom) addMarkdown(question.options[optionIndex]!.description, "muted", "    ");
           else if (this.state.customDraft[this.state.tab]) addPrefixed("    ", this.theme.fg("muted", this.state.customDraft[this.state.tab]!));
 
           const editingHere = this.state.editMode.type !== "browse"
