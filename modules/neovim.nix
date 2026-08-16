@@ -19,7 +19,6 @@
 
           # Bash
           bash-language-server
-          shfmt
 
           # Copilot
           copilot-language-server
@@ -34,20 +33,15 @@
 
           # Lua
           lua-language-server
-          luajitPackages.luacheck
           luajitPackages.luarocks
-          stylua
 
           # Markdown
           marksman
 
           # Nix
-          nixfmt
-          nixfmt-tree
           nixd
 
           # Node
-          prettierd
           vtsls
 
           # PHP
@@ -55,20 +49,24 @@
           phpantom-lsp
           php
 
-          # QML
-          kdePackages.qtdeclarative
-
           # Vue
           vue-language-server
 
-          # XML
-          xmlformat
-
           # Yaml
           yaml-language-server
-          yamlfmt
         ];
       };
+
+      home.packages = with pkgs; [
+        shfmt
+        stylua
+        luajitPackages.luacheck
+        nixfmt
+        nixfmt-tree
+        prettierd
+        xmlformat
+        yamlfmt
+      ];
 
       programs.fish.shellAliases."neogit" = "nvim +Neogit";
       programs.nushell.shellAliases."neogit" = "nvim +Neogit";
