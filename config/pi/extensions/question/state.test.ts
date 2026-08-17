@@ -7,6 +7,7 @@ import {
   cancelEdit,
   createQuestionState,
   dismiss,
+  handleOptionInput,
   moveHighlight,
   recoverQuestionParamsFromLeaf,
   saveEdit,
@@ -60,6 +61,17 @@ test("multi-select toggles in selection order and removes only its target", () =
   assert.deepEqual(state.answers, [[1, 0]]);
   state = selectOption(state, questions, 1).state;
   assert.deepEqual(state.answers, [[0]]);
+});
+
+test("multi-select uses Space or number keys to toggle and Enter to advance", () => {
+  const questions: Question[] = [{ ...single[0]!, multiple: true }];
+  let state = createQuestionState(questions);
+  state = handleOptionInput(state, questions, "number", 0).state;
+  state = handleOptionInput(state, questions, "space", 1).state;
+  assert.deepEqual(state.answers, [[0, 1]]);
+  state = handleOptionInput(state, questions, "enter").state;
+  assert.deepEqual(state.answers, [[0, 1]]);
+  assert.equal(state.tab, 1);
 });
 
 test("question tab navigation wraps, resets focus, and confirm permits unanswered questions", () => {

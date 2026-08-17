@@ -160,6 +160,19 @@ export function selectOption(
   return finishSingleSelection(next, state.tab);
 }
 
+export function handleOptionInput(
+  state: QuestionState,
+  questions: Question[],
+  input: "enter" | "space" | "number",
+  optionIndex = state.highlighted,
+): QuestionStep {
+  const question = questions[state.tab];
+  if (question?.multiple === true && input === "enter") {
+    return { state: setTab(state, questions, state.tab + 1), submit: false };
+  }
+  return selectOption(state, questions, optionIndex);
+}
+
 export function saveEdit(state: QuestionState): QuestionStep {
   const mode = state.editMode;
   if (mode.type === "browse") return { state, submit: false };

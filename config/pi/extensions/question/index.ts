@@ -21,12 +21,12 @@ import {
   cancelEdit,
   createQuestionState,
   dismiss,
+  handleOptionInput,
   isConfirm,
   isSingleFlow,
   moveHighlight,
   recoverQuestionParamsFromLeaf,
   saveEdit,
-  selectOption,
   setEditDraft,
   setTab,
   submit,
@@ -114,8 +114,8 @@ class QuestionComponent implements Focusable {
     this.done({ details: submit(this.state, this.questions).details });
   }
 
-  private activate(optionIndex = this.state.highlighted): void {
-    const step = selectOption(this.state, this.questions, optionIndex);
+  private activate(input: "enter" | "space" | "number", optionIndex = this.state.highlighted): void {
+    const step = handleOptionInput(this.state, this.questions, input, optionIndex);
     if (step.state.editMode.type !== "browse") this.openEditor(step.state);
     else {
       this.state = step.state;
@@ -175,15 +175,19 @@ class QuestionComponent implements Focusable {
       this.openEditor(beginNoteEdit(this.state, this.questions));
       return;
     }
-    if (matchesKey(data, Key.enter) || matchesKey(data, Key.space)) {
-      this.activate();
+    if (matchesKey(data, Key.enter)) {
+      this.activate("enter");
+      return;
+    }
+    if (matchesKey(data, Key.space)) {
+      this.activate("space");
       return;
     }
 
     for (let digit = 1; digit <= 9; digit++) {
       if (matchesKey(data, String(digit) as "1")) {
         const question = this.questions[this.state.tab];
-        if (question && digit <= question.options.length + 1) this.activate(digit - 1);
+        if (question && digit <= question.options.length + 1) this.activate("number", digit - 1);
         return;
       }
     }
@@ -297,7 +301,7 @@ class QuestionComponent implements Focusable {
         }
         lines.push("");
         const hint = this.state.editMode.type === "browse"
-          ? `${isSingleFlow(this.questions) ? "" : "Tab/←→/h/l tabs • "}↑↓/jk select • Enter/Space act • n add note • Esc dismiss`
+          ? `${isSingleFlow(this.questions) ? "" : "Tab/←→/h/l tabs • "}↑↓/jk select • ${question.multiple === true ? "Space toggle • Enter next" : "Enter/Space choose"} • n add note • Esc dismiss`
           : `Enter save • Esc ${this.state.editMode.type === "note" ? "discard" : "go back"}`;
         add(this.theme.fg("dim", hint));
       }
