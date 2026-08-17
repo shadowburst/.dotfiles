@@ -290,7 +290,7 @@ class QuestionComponent implements Focusable {
             addPrefixed("    ", this.theme.fg("muted", `note: ${savedNote}`));
           }
           if (editingHere) {
-            const title = this.state.editMode.type === "note" ? "Option note:" : "Your answer:";
+            const title = this.state.editMode.type === "note" ? "Note:" : "Your answer:";
             addPrefixed("    ", this.theme.fg("muted", title));
             for (const editorLine of this.editor.render(Math.max(1, renderWidth - 4))) lines.push(`    ${editorLine}`);
           }

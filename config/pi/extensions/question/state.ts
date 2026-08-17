@@ -169,10 +169,16 @@ export function saveEdit(state: QuestionState): QuestionStep {
     const notes = state.notes.map((entry) => ({ ...entry }));
     if (value) notes[mode.questionIndex]![mode.optionIndex] = value;
     else delete notes[mode.questionIndex]![mode.optionIndex];
-    return {
-      state: { ...state, notes, editMode: { type: "browse" }, editDraft: "" },
-      submit: false,
-    };
+    let next = { ...state, notes, editMode: { type: "browse" } as const, editDraft: "" };
+    if (!value || (mode.optionIndex === state.configuredCounts[mode.questionIndex] && !state.custom[mode.questionIndex])) {
+      return { state: next, submit: false };
+    }
+    const answers = [...(state.answers[mode.questionIndex] ?? [])];
+    if (!answers.includes(mode.optionIndex)) answers.push(mode.optionIndex);
+    next = storeAnswers(next, mode.questionIndex, state.multiple[mode.questionIndex] ? answers : [mode.optionIndex]);
+    return state.multiple[mode.questionIndex]
+      ? { state: next, submit: false }
+      : finishSingleSelection(next, mode.questionIndex);
   }
 
   const questionIndex = mode.questionIndex;

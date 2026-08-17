@@ -116,13 +116,23 @@ test("saved custom answers and option notes preserve whitespace", () => {
   });
 });
 
-test("configured options and custom row keep independent notes without selecting", () => {
-  let state = createQuestionState(single);
-  for (const [option, note] of [[0, "note A"], [1, "note B"], [2, "custom note"]] as const) {
-    state = beginNoteEdit(state, single, option);
-    state = saveEdit(setEditDraft(state, note)).state;
-  }
-  assert.deepEqual(state.notes, [{ 0: "note A", 1: "note B", 2: "custom note" }]);
+test("saving a non-empty note selects its configured option", () => {
+  const step = saveEdit(setEditDraft(beginNoteEdit(createQuestionState(single), single, 1), "note B"));
+  assert.deepEqual(step.state.notes, [{ 1: "note B" }]);
+  assert.deepEqual(step.state.answers, [[1]]);
+  assert.equal(step.submit, true);
+});
+
+test("saving a note keeps an already-selected multi-select option selected", () => {
+  const questions: Question[] = [{ ...single[0]!, multiple: true }];
+  let state = selectOption(createQuestionState(questions), questions, 0).state;
+  state = saveEdit(setEditDraft(beginNoteEdit(state, questions, 0), "note A")).state;
+  assert.deepEqual(state.answers, [[0]]);
+});
+
+test("a note cannot select an empty custom answer", () => {
+  const state = saveEdit(setEditDraft(beginNoteEdit(createQuestionState(single), single, 2), "custom note")).state;
+  assert.deepEqual(state.notes, [{ 2: "custom note" }]);
   assert.deepEqual(state.answers, [[]]);
 });
 
@@ -139,7 +149,6 @@ test("submission excludes unselected and deselected notes", () => {
   let state = createQuestionState(questions);
   state = saveEdit(setEditDraft(beginNoteEdit(state, questions, 0), "keep only while selected")).state;
   state = selectOption(state, questions, 0).state;
-  state = selectOption(state, questions, 0).state;
   assert.deepEqual(submit(state, questions).details, { answers: [[]] });
 });
 
@@ -147,7 +156,6 @@ test("submitted notes use final configured and custom labels", () => {
   const questions: Question[] = [{ ...single[0]!, multiple: true }];
   let state = createQuestionState(questions);
   state = saveEdit(setEditDraft(beginNoteEdit(state, questions, 0), "configured note")).state;
-  state = selectOption(state, questions, 0).state;
   state = saveEdit(setEditDraft(beginNoteEdit(state, questions, 2), "custom note")).state;
   state = saveEdit(setEditDraft(beginCustomEdit(state, questions), "My answer")).state;
   assert.deepEqual(submit(state, questions).details, {
