@@ -96,6 +96,7 @@ _: {
         ".pi/agent/keybindings.json" = mkPiConfigSymlink "config/pi/keybindings.json";
         ".pi/agent/extensions/pi-kitty.ts" = mkPiConfigSymlink "config/pi/extensions/pi-kitty.ts";
         ".pi/agent/extensions/question" = mkPiConfigSymlink "config/pi/extensions/question";
+        ".pi/agent/extensions/subagents" = mkPiConfigSymlink "config/pi/extensions/subagents";
         ".pi/agent/extensions/pi-mcp-adapter".source = mcpAdapter;
         ".pi/agent/extensions/pi-web-access".source = webAccess;
         ".pi/agent/extensions/ponytail".source = ponytail;
