@@ -336,6 +336,14 @@ async function showDialog(params: QuestionParams, ctx: ExtensionContext): Promis
 }
 
 export default function questionExtension(pi: ExtensionAPI): void {
+  const reopenQuestion = async (params: QuestionParams, ctx: ExtensionContext): Promise<void> => {
+    const result = await showDialog(params, ctx);
+    const message = result
+      ? resultText(params, result.details)
+      : "The interrupted question was cancelled. Continue without those answers.";
+    setTimeout(() => pi.sendUserMessage(message), 0);
+  };
+
   pi.registerTool({
       name: "question",
       label: "Question",
@@ -386,13 +394,15 @@ export default function questionExtension(pi: ExtensionAPI): void {
   pi.on("session_start", async (_event, ctx) => {
     if (ctx.mode !== "tui") return;
     const params = recoverQuestionParamsFromLeaf(ctx.sessionManager.getLeafEntry());
-    if (!params) return;
+    if (params) await reopenQuestion(params, ctx);
+  });
 
-    const result = await showDialog(params, ctx);
-    const message = result
-      ? resultText(params, result.details)
-      : "The interrupted question was cancelled. Continue without those answers.";
-    // Let session_start finish rebinding the resumed runtime before triggering a turn.
-    setTimeout(() => pi.sendUserMessage(message), 0);
+  pi.on("session_tree", async (event, ctx) => {
+    if (ctx.mode !== "tui") return;
+    const selectedId = event.summaryEntry?.parentId ?? event.newLeafId;
+    const params = selectedId
+      ? recoverQuestionParamsFromLeaf(ctx.sessionManager.getEntry(selectedId))
+      : undefined;
+    if (params) await reopenQuestion(params, ctx);
   });
 }
