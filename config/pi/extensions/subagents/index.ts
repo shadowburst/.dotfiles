@@ -20,7 +20,6 @@ import {
   type EditorComponent,
   type EditorTheme,
   type Focusable,
-  isFocusable,
   Key,
   Markdown,
   matchesKey,
@@ -380,59 +379,28 @@ class ActiveWidget {
   invalidate(): void {}
 }
 
-class AgentEditor implements EditorComponent, Focusable {
-  private _focused = false;
-
-  constructor(
-    private readonly base: EditorComponent,
-    private readonly activeIds: () => string[],
-    private readonly selectedId: () => string | undefined,
-    private readonly select: (direction: number) => void,
-    private readonly open: (id: string) => void,
-  ) {}
-
-  get focused(): boolean { return this._focused; }
-  set focused(value: boolean) {
-    this._focused = value;
-    if (isFocusable(this.base)) this.base.focused = value;
-  }
-  get wantsKeyRelease(): boolean | undefined { return this.base.wantsKeyRelease; }
-  get onSubmit(): ((text: string) => void) | undefined { return this.base.onSubmit; }
-  set onSubmit(value: ((text: string) => void) | undefined) { this.base.onSubmit = value; }
-  get onChange(): ((text: string) => void) | undefined { return this.base.onChange; }
-  set onChange(value: ((text: string) => void) | undefined) { this.base.onChange = value; }
-  get borderColor(): ((text: string) => string) | undefined { return this.base.borderColor; }
-  set borderColor(value: ((text: string) => string) | undefined) { this.base.borderColor = value; }
-
-  handleInput(data: string): void {
-    const empty = this.getText().length === 0;
-    const ids = this.activeIds();
+function addAgentNavigation(
+  editor: EditorComponent,
+  activeIds: () => string[],
+  selectedId: () => string | undefined,
+  select: (direction: number) => void,
+  open: (id: string) => void,
+): EditorComponent {
+  const handleInput = editor.handleInput.bind(editor);
+  editor.handleInput = (data) => {
+    const empty = editor.getText().length === 0;
+    const ids = activeIds();
     if (ids.length > 0 && (matchesKey(data, Key.alt("j")) || (empty && (matchesKey(data, Key.down) || matchesKey(data, Key.ctrl("n")))))) {
-      this.select(1);
-      return;
+      select(1);
+    } else if (ids.length > 0 && (matchesKey(data, Key.alt("k")) || (empty && (matchesKey(data, Key.up) || matchesKey(data, Key.ctrl("p")))))) {
+      select(-1);
+    } else if (empty && ids.length > 0 && matchesKey(data, Key.enter)) {
+      open(selectedId() ?? ids[0]!);
+    } else {
+      handleInput(data);
     }
-    if (ids.length > 0 && (matchesKey(data, Key.alt("k")) || (empty && (matchesKey(data, Key.up) || matchesKey(data, Key.ctrl("p")))))) {
-      this.select(-1);
-      return;
-    }
-    if (empty && ids.length > 0 && matchesKey(data, Key.enter)) {
-      const id = this.selectedId() ?? ids[0];
-      if (id) this.open(id);
-      return;
-    }
-    this.base.handleInput(data);
-  }
-
-  render(width: number): string[] { return this.base.render(width); }
-  invalidate(): void { this.base.invalidate(); }
-  getText(): string { return this.base.getText(); }
-  setText(text: string): void { this.base.setText(text); }
-  addToHistory(text: string): void { this.base.addToHistory?.(text); }
-  insertTextAtCursor(text: string): void { this.base.insertTextAtCursor?.(text); }
-  getExpandedText(): string { return this.base.getExpandedText?.() ?? this.base.getText(); }
-  setAutocompleteProvider(provider: Parameters<NonNullable<EditorComponent["setAutocompleteProvider"]>>[0]): void { this.base.setAutocompleteProvider?.(provider); }
-  setPaddingX(padding: number): void { this.base.setPaddingX?.(padding); }
-  setAutocompleteMaxVisible(max: number): void { this.base.setAutocompleteMaxVisible?.(max); }
+  };
+  return editor;
 }
 
 class AgentListComponent {
@@ -938,7 +906,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       const base = previous
         ? previous(tui, theme, keybindings)
         : new CustomEditor(tui, theme, keybindings);
-      return new AgentEditor(
+      return addAgentNavigation(
         base,
         () => activeChildren().map((child) => child.id),
         () => selectedActiveId,
