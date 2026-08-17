@@ -45,20 +45,32 @@ _: {
           '';
         };
 
+      browserTools = pkgs.buildNpmPackage {
+        pname = "pi-browser-tools";
+        version = "1.0.0";
+        src = ../config/pi/extensions/browser;
+        npmDepsHash = "sha256-aVy1q1BEsarAT1Ow6CcAFgwM9sR/Q8vjxuzzd+fPYj0=";
+        dontNpmBuild = true;
+        doCheck = true;
+        checkPhase = ''
+          runHook preCheck
+          ${pkgs.nodejs}/bin/node --test state.test.ts
+          runHook postCheck
+        '';
+        installPhase = ''
+          runHook preInstall
+          mkdir -p $out
+          cp -r index.ts state.ts package.json package-lock.json node_modules $out/
+          runHook postInstall
+        '';
+      };
+
       webAccess = buildPiPackage {
         owner = "nicobailon";
         repo = "pi-web-access";
         version = "0.21.0";
         hash = "sha256-4KdCTOEPXo0rI6pl72ko9nhC8mXSOmza7BY1+4cjdjs=";
         npmDepsHash = "sha256-YpHJ/HUt/XARhX8yYjtWrRFhGcYtAzhCSUL67AiXjH8=";
-      };
-
-      mcpAdapter = buildPiPackage {
-        owner = "nicobailon";
-        repo = "pi-mcp-adapter";
-        version = "2.21.1";
-        hash = "sha256-voO8gCDjGtXoSiEQM/D4lL4JXrz5be3HZ5ol7KYVCzI=";
-        npmDepsHash = "sha256-WGcZrFz/g17NdyhhQ2xaHkNe0TqNMD3UrCHKm8S3Mi4=";
       };
 
       ponytail = buildPiPackage {
@@ -95,9 +107,9 @@ _: {
         ".pi/agent/settings.json" = mkPiConfigSymlink "config/pi/settings.json";
         ".pi/agent/keybindings.json" = mkPiConfigSymlink "config/pi/keybindings.json";
         ".pi/agent/extensions/pi-kitty.ts" = mkPiConfigSymlink "config/pi/extensions/pi-kitty.ts";
+        ".pi/agent/extensions/browser".source = browserTools;
         ".pi/agent/extensions/question" = mkPiConfigSymlink "config/pi/extensions/question";
         ".pi/agent/extensions/subagents" = mkPiConfigSymlink "config/pi/extensions/subagents";
-        ".pi/agent/extensions/pi-mcp-adapter".source = mcpAdapter;
         ".pi/agent/extensions/pi-web-access".source = webAccess;
         ".pi/agent/extensions/ponytail".source = ponytail;
       };

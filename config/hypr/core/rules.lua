@@ -33,8 +33,8 @@ hl.window_rule({
 })
 
 hl.window_rule({
-  name = "devtools-mcp-workspace",
-  match = { initial_class = "brave-browser", initial_title = "about:blank - Brave" },
+  name = "pi-browser-tools-workspace",
+  match = { initial_class = "pi-browser-tools" },
   workspace = "7 silent",
 })
 

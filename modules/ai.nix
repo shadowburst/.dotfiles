@@ -10,18 +10,5 @@ _: {
       home.file.".agents/skills".source = mkDotfilesSymlink skillsRel;
 
       xdg.stateFile."skills/.skill-lock.json".source = mkDotfilesSymlink "${skillsRel}/.skill-lock.json";
-
-      programs.mcp = {
-        enable = true;
-        servers.chrome-devtools = {
-          command = "npx";
-          args = [
-            "-y"
-            "chrome-devtools-mcp@latest"
-            "--isolated"
-            "--executablePath=${config.programs.brave.package}/bin/brave"
-          ];
-        };
-      };
     };
 }
