@@ -73,6 +73,14 @@ _: {
         npmDepsHash = "sha256-YpHJ/HUt/XARhX8yYjtWrRFhGcYtAzhCSUL67AiXjH8=";
       };
 
+      mcpAdapter = buildPiPackage {
+        owner = "nicobailon";
+        repo = "pi-mcp-adapter";
+        version = "2.21.1";
+        hash = "sha256-voO8gCDjGtXoSiEQM/D4lL4JXrz5be3HZ5ol7KYVCzI=";
+        npmDepsHash = "sha256-WGcZrFz/g17NdyhhQ2xaHkNe0TqNMD3UrCHKm8S3Mi4=";
+      };
+
       ponytail = buildPiPackage {
         owner = "DietrichGebert";
         repo = "ponytail";
@@ -110,6 +118,7 @@ _: {
         ".pi/agent/extensions/browser".source = browserTools;
         ".pi/agent/extensions/question" = mkPiConfigSymlink "config/pi/extensions/question";
         ".pi/agent/extensions/subagents" = mkPiConfigSymlink "config/pi/extensions/subagents";
+        ".pi/agent/extensions/pi-mcp-adapter".source = mcpAdapter;
         ".pi/agent/extensions/pi-web-access".source = webAccess;
         ".pi/agent/extensions/ponytail".source = ponytail;
       };
