@@ -2,7 +2,7 @@ _: {
   flake.homeModules.gui =
     { ... }:
     {
-      programs.brave = {
+      programs.brave-origin = {
         enable = true;
         commandLineArgs = [
           "--enable-features=AcceleratedVideoDecodeLinuxGL,AcceleratedVideoEncoder,VaapiIgnoreDriverChecks,TouchpadOverscrollHistoryNavigation,WaylandWindowDecorations"
@@ -10,6 +10,6 @@ _: {
         ];
       };
 
-      home.sessionVariables.BROWSER = "brave";
+      home.sessionVariables.BROWSER = "brave-origin";
     };
 }

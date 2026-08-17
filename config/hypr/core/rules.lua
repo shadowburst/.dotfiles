@@ -17,16 +17,16 @@ hl.window_rule({
 })
 
 hl.window_rule({
-  name = "brave-profile-floating",
-  match = { initial_class = "brave-(\\w+)-Default" },
+  name = "brave-origin-profile-floating",
+  match = { initial_class = "brave-origin-(\\w+)-Default" },
   float = true,
   center = true,
   size = "560 760",
 })
 
 hl.window_rule({
-  name = "brave-open-file-floating",
-  match = { initial_class = "brave", initial_title = "Open File" },
+  name = "brave-origin-open-file-floating",
+  match = { initial_class = "brave-origin", initial_title = "Open File" },
   float = true,
   center = true,
   size = "1000 600",

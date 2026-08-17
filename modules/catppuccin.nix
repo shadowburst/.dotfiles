@@ -49,7 +49,6 @@ in
         accent = "lavender";
 
         bat.enable = true;
-        brave.enable = true;
         btop.enable = true;
         cava.enable = true;
         cursors.enable = true;

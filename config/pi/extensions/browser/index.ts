@@ -66,8 +66,8 @@ function validateUrl(raw: string): string {
   return url.href;
 }
 
-async function findBrave(): Promise<string> {
-  const configured = process.env.BROWSER || "brave";
+async function findBrowser(): Promise<string> {
+  const configured = process.env.BROWSER || "brave-origin";
   const candidates = isAbsolute(configured)
     ? [configured]
     : (process.env.PATH ?? "").split(":").map((directory) => join(directory, configured));
@@ -77,7 +77,7 @@ async function findBrave(): Promise<string> {
       return candidate;
     } catch {}
   }
-  throw new Error(`Brave executable not found: ${configured}`);
+  throw new Error(`Browser executable not found: ${configured}`);
 }
 
 async function jsonOutput(value: unknown, prefix: string): Promise<string> {
@@ -145,7 +145,7 @@ class BrowserRuntime {
     const profileDir = await mkdtemp(join(tmpdir(), "pi-browser-"));
     try {
       const browser = await puppeteer.launch({
-        executablePath: await findBrave(),
+        executablePath: await findBrowser(),
         headless: false,
         userDataDir: profileDir,
         args: [
