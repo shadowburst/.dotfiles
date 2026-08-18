@@ -118,6 +118,7 @@ _: {
         ".pi/agent/extensions/browser".source = browserTools;
         ".pi/agent/extensions/question" = mkPiConfigSymlink "config/pi/extensions/question";
         ".pi/agent/extensions/subagents" = mkPiConfigSymlink "config/pi/extensions/subagents";
+        ".pi/agent/extensions/usage" = mkPiConfigSymlink "config/pi/extensions/usage";
         ".pi/agent/extensions/pi-mcp-adapter".source = mcpAdapter;
         ".pi/agent/extensions/pi-web-access".source = webAccess;
         ".pi/agent/extensions/ponytail".source = ponytail;
