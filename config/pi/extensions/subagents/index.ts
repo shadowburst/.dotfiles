@@ -368,7 +368,7 @@ class ActiveWidget {
   render(width: number): string[] {
     return this.rows().map(({ child, runtime, selected }) => {
       const running = child.status === "running";
-      const marker = selected ? this.theme.fg("accent", "▶") : " ";
+      const marker = selected ? this.theme.fg("accent", "→") : " ";
       const label = `${preview(child.title, Math.max(12, Math.floor(width / 2)))} (${child.id})`;
       const activity = running ? runtime?.activity ?? "running" : child.status;
       const line = `${marker} ${this.theme.fg(running ? "accent" : "muted", running ? "●" : "○")} ${label} ${this.theme.fg("dim", `· ${activity}`)}`;
@@ -434,7 +434,7 @@ class AgentListComponent {
       const selected = index === this.selected;
       const icon = child.status === "failed" ? "✗" : child.status === "running" ? "●" : "○";
       const color = child.status === "failed" ? "error" : child.status === "running" ? "accent" : "muted";
-      const line = `${selected ? "▶" : " "} ${this.theme.fg(color, icon)} ${child.title} ${this.theme.fg("accent", `(${child.id})`)} · ${child.status} · ${child.model}:${child.thinking}`;
+      const line = `${selected ? "→" : " "} ${this.theme.fg(color, icon)} ${child.title} ${this.theme.fg("accent", `(${child.id})`)} · ${child.status} · ${child.model}:${child.thinking}`;
       lines.push(selected ? this.theme.bg("selectedBg", truncateToWidth(line, width, "")) : truncateToWidth(line, width, ""));
       if (selected && child.error) lines.push(truncateToWidth(this.theme.fg("error", `    ${child.error}`), width, ""));
     });
@@ -546,7 +546,7 @@ class TranscriptComponent implements Focusable {
         if (entry.text) add("Agent: ", entry.text, "text");
       } else {
         const status = entry.result === undefined ? "…" : entry.error ? "✗" : "✓";
-        const suffix = entry.result ? ` ▶ ${entry.result}` : "";
+        const suffix = entry.result ? ` → ${entry.result}` : "";
         add(`${status} `, `${entry.summary}${suffix}`, entry.error ? "error" : "muted");
       }
     }

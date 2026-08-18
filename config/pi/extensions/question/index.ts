@@ -276,7 +276,7 @@ class QuestionComponent implements Focusable {
           const custom = optionIndex === question.options.length;
           const highlighted = optionIndex === this.state.highlighted;
           const selected = this.state.answers[this.state.tab]?.includes(optionIndex) ?? false;
-          const marker = highlighted ? this.theme.fg("accent", "▶ ") : "  ";
+          const marker = highlighted ? this.theme.fg("accent", "→ ") : "  ";
           const checkbox = question.multiple === true ? `[${selected ? "✓" : " "}] ` : selected ? "✓ " : "";
           const color = highlighted ? "accent" : selected ? "success" : "text";
           const label = custom ? "Type your own answer" : question.options[optionIndex]!.label;
