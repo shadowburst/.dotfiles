@@ -3,9 +3,11 @@ import {
   DEFAULT_MAX_BYTES,
   DEFAULT_MAX_LINES,
   formatSize,
+  keyHint,
   truncateHead,
 } from "@earendil-works/pi-coding-agent";
 import { StringEnum } from "@earendil-works/pi-ai";
+import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import { randomUUID } from "node:crypto";
 import { constants } from "node:fs";
@@ -549,6 +551,30 @@ export default function browserTools(pi: ExtensionAPI) {
     async execute(_id, { code }) {
       const result = await runtime.run(() => runtime.evaluate(code));
       return { content: [{ type: "text", text: await jsonOutput(result, "browser-evaluate") }], details: { result } };
+    },
+    renderCall({ code }, theme, { expanded }) {
+      const compact = code.replace(/\s+/g, " ").trim();
+      const shown = expanded ? code : compact.length > 120 ? `${compact.slice(0, 117)}...` : compact;
+      return new Text(
+        theme.fg("toolTitle", theme.bold("browser_evaluate ")) + theme.fg("accent", shown),
+        0,
+        0,
+      );
+    },
+    renderResult(result, { expanded, isPartial }, theme, context) {
+      if (isPartial) return new Text(theme.fg("warning", "Evaluating..."), 0, 0);
+
+      const content = result.content.find((item) => item.type === "text");
+      const output = content?.type === "text" ? content.text : "No serializable result";
+      if (expanded) return new Text(theme.fg("toolOutput", output), 0, 0);
+
+      const lines = output.split("\n").length;
+      const status = context.isError ? theme.fg("error", "failed") : theme.fg("success", "done");
+      return new Text(
+        `${status}${theme.fg("dim", ` · ${lines} line${lines === 1 ? "" : "s"}`)} · ${keyHint("app.tools.expand", "to expand")}`,
+        0,
+        0,
+      );
     },
   });
 
