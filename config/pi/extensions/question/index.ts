@@ -365,7 +365,10 @@ export default function questionExtension(pi: ExtensionAPI): void {
       async execute(_toolCallId, params, _signal, _onUpdate, executeCtx) {
         if (executeCtx.mode !== "tui") throw new Error("question requires interactive TUI mode");
         const result = await showDialog(params, executeCtx);
-        if (!result) throw new Error("User cancelled");
+        if (!result) {
+          executeCtx.abort();
+          throw new Error("User cancelled");
+        }
         return {
           content: [{ type: "text" as const, text: resultText(params, result.details) }],
           details: result.details,
