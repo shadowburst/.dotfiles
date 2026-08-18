@@ -18,7 +18,7 @@ hl.window_rule({
 
 hl.window_rule({
   name = "brave-origin-profile-floating",
-  match = { initial_class = "brave-origin-(\\w+)-Default" },
+  match = { initial_class = "brave-(\\w+)-Default" },
   float = true,
   center = true,
   size = "560 760",
