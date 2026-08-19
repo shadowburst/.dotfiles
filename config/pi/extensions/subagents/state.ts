@@ -1,5 +1,6 @@
 export const MAX_RUNNING = 4;
 export const MAX_RETAINED = 12;
+export const COMPLETION_DELIVERY = { deliverAs: "followUp", triggerTurn: true } as const;
 
 export type ChildStatus = "queued" | "running" | "idle" | "failed" | "closed";
 

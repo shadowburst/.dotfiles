@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   addChild,
   closeChild,
+  COMPLETION_DELIVERY,
   createSchedulerState,
   failChild,
   MAX_RETAINED,
@@ -19,6 +20,10 @@ const spec = (task: string) => ({ title: `Title ${task}`, task, model: "provider
 function add(state: SchedulerState, task: string) {
   return addChild(state, spec(task));
 }
+
+test("subagent completion wakes the parent after it settles", () => {
+  assert.deepEqual(COMPLETION_DELIVERY, { deliverAs: "followUp", triggerTurn: true });
+});
 
 test("trims titles and rejects blank or oversized ones", () => {
   assert.equal(normalizeTitle("  Fix flaky tests  "), "Fix flaky tests");

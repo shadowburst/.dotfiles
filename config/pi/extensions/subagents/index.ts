@@ -34,6 +34,7 @@ import { Type, type Static } from "typebox";
 import {
   addChild,
   closeChild as closeRetainedChild,
+  COMPLETION_DELIVERY,
   createSchedulerState,
   failChild,
   normalizeTitle,
@@ -613,7 +614,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       content: `Subagent ${runtime.title} (${runtime.id}.${run.number}) ${success ? "completed" : "failed"}.\nTask: ${runtime.task}\n\n${finalText}`,
       display: true,
       details,
-    }, { deliverAs: "nextTurn" });
+    }, COMPLETION_DELIVERY);
   };
 
   const failRuntime = (id: string, diagnostic: string) => {
