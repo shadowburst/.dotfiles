@@ -51,7 +51,7 @@ const TOOL_NAME = "spawn_subagent";
 const WIDGET_KEY = "subagents";
 const MESSAGE_TYPE = "subagent-result";
 const CHILD_CONTRACT = "Complete the delegated task and report clearly. Do not delegate further. Do not assume access to the parent conversation.";
-const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
+const THINKING_LEVELS = ["low", "medium", "high"] as const;
 
 type ThinkingLevel = (typeof THINKING_LEVELS)[number];
 type TranscriptEntry =
@@ -106,8 +106,8 @@ interface CompletionDetails {
 const SpawnSchema = Type.Object({
   title: Type.String({ description: "Specific 2–5 word sentence-case title, at most 40 characters, with no trailing punctuation or agent/subagent boilerplate" }),
   task: Type.String({ description: "One concrete task to delegate to a fresh subagent" }),
-  model: Type.String({ description: "Exact provider/model from the parent session's scoped models" }),
-  thinking: StringEnum(THINKING_LEVELS, { description: "Fixed thinking level for this subagent" }),
+  model: Type.String({ description: "Capability needed, independent of thinking effort. For the current GPT-5.6 scope: Luna for routine work, Terra for work needing stronger knowledge or capability, Sol only for the most demanding work. Use the exact provider/model from the parent session's scoped models." }),
+  thinking: StringEnum(THINKING_LEVELS, { description: "Reasoning effort needed, independent of model capability. Use low for routine work, medium by default, and high when the same model needs to reason longer or more carefully. Fixed for this subagent." }),
 });
 type SpawnParams = Static<typeof SpawnSchema>;
 
@@ -845,11 +845,12 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
   pi.registerTool({
     name: TOOL_NAME,
     label: "Spawn Subagent",
-    description: "Spawn one named dynamic subagent and return its handle immediately. Call spawn_subagent only when the current user request explicitly asks for subagent delegation; never delegate automatically. Generate a specific short title for each child. The model and thinking level stay fixed for the child's lifetime.",
+    description: "Spawn one named dynamic subagent and return its handle immediately. Call spawn_subagent only when the current user request explicitly asks for subagent delegation; never delegate automatically. Choose model capability and thinking effort as separate axes. Generate a specific short title for each child. The model and thinking level stay fixed for the child's lifetime.",
     promptSnippet: "Spawn one dynamic subagent only for explicit user-requested delegation",
     promptGuidelines: [
       "Call spawn_subagent only when the current user request explicitly asks for subagent delegation; do not infer or automate delegation.",
       "Use spawn_subagent only to create a new task-specific child; existing children are controlled only through the user UI.",
+      "When calling spawn_subagent, choose model and thinking independently. Model is capability and knowledge: use GPT-5.6 Luna for routine work, Terra when the task needs stronger knowledge or capability, and Sol only for the most demanding work. Thinking is effort: use low for routine work, medium by default, and high when the chosen model needs more careful or sustained reasoning. Do not raise thinking merely because the task needs a more capable model, and do not raise the model merely because the task needs more reasoning.",
       "When calling spawn_subagent, generate a concrete 2–5 word sentence-case title of at most 40 characters, without trailing punctuation or agent/subagent boilerplate.",
     ],
     parameters: SpawnSchema,
