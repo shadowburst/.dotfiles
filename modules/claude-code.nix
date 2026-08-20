@@ -4,7 +4,11 @@ _: {
     {
       programs.claude-code = {
         enable = true;
+        context = ''
+          # Interaction
 
+          - During grilling sessions, ask every round through the `AskUserQuestion` tool, batching the whole frontier into one call.
+        '';
         plugins = {
           "ponytail" = (
             pkgs.fetchFromGitHub {
@@ -16,7 +20,6 @@ _: {
             }
           );
         };
-
         commands = {
           commit = ''
             ---
