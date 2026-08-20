@@ -154,11 +154,12 @@ class UsageOverlay {
         lines.push(line(this.theme.fg("muted", " No percentage limits returned.")));
       } else {
         for (const window of snapshot.windows) {
-          const color = window.usedPercent >= 90 ? "error" : window.usedPercent >= 70 ? "warning" : "accent";
-          const percent = this.theme.fg(color, `${Math.round(window.usedPercent)}% used`);
+          const remainingPercent = 100 - window.usedPercent;
+          const color = remainingPercent <= 10 ? "error" : remainingPercent <= 30 ? "warning" : "accent";
+          const percent = this.theme.fg(color, `${Math.round(remainingPercent)}% left`);
           lines.push(line(` ${columns(window.label, percent, Math.max(1, innerWidth - 2))} `));
           const barWidth = Math.max(1, innerWidth - 2);
-          const filled = Math.round(barWidth * window.usedPercent / 100);
+          const filled = Math.round(barWidth * remainingPercent / 100);
           const bar = this.theme.fg(color, "█".repeat(filled)) + this.theme.fg("dim", "░".repeat(barWidth - filled));
           lines.push(line(` ${bar} `));
           lines.push(line(` ${this.theme.fg("dim", resetText(window))}`));
