@@ -5,7 +5,7 @@ hl.config({
   general = { layout = "scrolling" },
 
   scrolling = {
-    fullscreen_on_one_column = true,
+    fullscreen_on_one_column = false,
     focus_fit_method = 1,
     follow_min_visible = 1,
     wrap_focus = false,
