@@ -333,15 +333,20 @@ function resultText(params: QuestionParams, details: QuestionDetails): string {
   return `User has answered your questions: ${formatted}. You can now continue with the user's answers in mind.`;
 }
 
-async function showDialog(params: QuestionParams, ctx: ExtensionContext): Promise<DialogResult> {
+async function showDialog(pi: ExtensionAPI, params: QuestionParams, ctx: ExtensionContext): Promise<DialogResult> {
   if (params.questions.length === 0) return { details: { answers: [] } };
-  return ctx.ui.custom<DialogResult>((tui, theme, _keybindings, done) =>
-    new QuestionComponent(params.questions, tui, theme, done));
+  pi.events.emit("herdr:blocked", { active: true, label: params.questions[0]!.header });
+  try {
+    return await ctx.ui.custom<DialogResult>((tui, theme, _keybindings, done) =>
+      new QuestionComponent(params.questions, tui, theme, done));
+  } finally {
+    pi.events.emit("herdr:blocked", { active: false });
+  }
 }
 
 export default function questionExtension(pi: ExtensionAPI): void {
   const reopenQuestion = async (params: QuestionParams, ctx: ExtensionContext): Promise<void> => {
-    const result = await showDialog(params, ctx);
+    const result = await showDialog(pi, params, ctx);
     const message = result
       ? resultText(params, result.details)
       : "The interrupted question was cancelled. Continue without those answers.";
@@ -364,7 +369,7 @@ export default function questionExtension(pi: ExtensionAPI): void {
       executionMode: "sequential",
       async execute(_toolCallId, params, _signal, _onUpdate, executeCtx) {
         if (executeCtx.mode !== "tui") throw new Error("question requires interactive TUI mode");
-        const result = await showDialog(params, executeCtx);
+        const result = await showDialog(pi, params, executeCtx);
         if (!result) {
           executeCtx.abort();
           throw new Error("User cancelled");
