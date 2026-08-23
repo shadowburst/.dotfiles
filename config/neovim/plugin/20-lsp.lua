@@ -22,7 +22,6 @@ local servers = {
       },
     },
   },
-  laravel_ls = {},
   lua_ls = {
     settings = {
       Lua = {

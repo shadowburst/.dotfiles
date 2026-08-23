@@ -45,7 +45,6 @@
           vtsls
 
           # PHP
-          self.packages.${pkgs.stdenv.hostPlatform.system}.laravel-ls
           phpantom-lsp
           php
 
