@@ -1,16 +1,16 @@
 { lib, pkgs }:
 (pkgs.buildNpmPackage.override { nodejs = pkgs.nodejs_22; }) (finalAttrs: {
   pname = "clickup-cli";
-  version = "1.38.3";
+  version = "1.43.0";
 
   src = pkgs.fetchFromGitHub {
     owner = "krodak";
     repo = "clickup-cli";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-LDYiQ7Q8E6ywRzr6y2mu12QbDip9At11WBDUrbdfsXA=";
+    hash = "sha256-io/KZnyt719w1S775d7ig2lJKqS/hElbzYgOqVXkx7k=";
   };
 
-  npmDepsHash = "sha256-eH//seWNd0GQxTF/DY/PcEjAOzWZuBxoBo0IuMLYLXc=";
+  npmDepsHash = "sha256-KWWUrgvtziv5OpLuaXLGoE+Dvdtt5SJSg8c2W6nUuB8=";
 
   nativeBuildInputs = [ pkgs.makeWrapper ];
   npmBuildScript = "build";
