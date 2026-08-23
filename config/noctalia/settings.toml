@@ -1,4 +1,4 @@
-config_version = 12
+config_version = 13
 
 [bar.main]
 end = [ "tray", "notifications", "bluetooth", "network", "volume", "battery" ]
@@ -297,7 +297,7 @@ video_codec = "av1"
 video_source = "focused"
 
 [plugins]
-auto_update = true
+auto_update = "all"
 enabled = [ "noctalia/screen_recorder", "noctalia/translator" ]
 
     [[plugins.source]]
