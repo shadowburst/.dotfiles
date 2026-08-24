@@ -13,6 +13,12 @@ hl.config({
   },
 })
 
+hl.window_rule({
+  name = "first-column-full-width",
+  match = { float = false, workspace = "w[0]" },
+  scrolling_width = 1,
+})
+
 hl.bind(mod .. " + h", hl.dsp.layout("focus l"))
 hl.bind(mod .. " + j", hl.dsp.layout("focus d"))
 hl.bind(mod .. " + k", hl.dsp.layout("focus u"))
