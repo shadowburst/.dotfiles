@@ -9,12 +9,15 @@ import {
   DEFAULT_MAX_BYTES,
   DEFAULT_MAX_LINES,
   getMarkdownTheme,
+  keyHint,
   type ExtensionAPI,
   type ExtensionContext,
+  type KeybindingsManager,
   type Theme,
   truncateHead,
 } from "@earendil-works/pi-coding-agent";
 import {
+  Box,
   Container,
   Editor,
   type EditorComponent,
@@ -23,11 +26,10 @@ import {
   Key,
   Markdown,
   matchesKey,
+  Spacer,
   Text,
   truncateToWidth,
   type TUI,
-  visibleWidth,
-  wrapTextWithAnsi,
 } from "@earendil-works/pi-tui";
 import { Type, type Static } from "typebox";
 
@@ -58,7 +60,7 @@ type ThinkingLevel = (typeof THINKING_LEVELS)[number];
 type TranscriptEntry =
   | { type: "user"; text: string }
   | { type: "assistant"; text: string; thinking: string; draft?: boolean }
-  | { type: "tool"; id: string; name: string; summary: string; result?: string; error?: boolean };
+  | { type: "tool"; id: string; name: string; args: Record<string, unknown>; summary: string; result?: string; error?: boolean };
 
 interface RunUsage {
   input: number;
@@ -158,8 +160,11 @@ function thinkingContent(content: unknown): string {
 
 function resultContent(result: unknown): string {
   if (!result || typeof result !== "object") return "";
-  const content = (result as { content?: unknown }).content;
-  return preview(textContent(content), 100);
+  const content = textContent((result as { content?: unknown }).content);
+  const truncated = truncateHead(content, { maxBytes: DEFAULT_MAX_BYTES, maxLines: DEFAULT_MAX_LINES });
+  return truncated.truncated
+    ? `${truncated.content}\n\n[Output truncated at ${DEFAULT_MAX_BYTES} bytes or ${DEFAULT_MAX_LINES} lines.]`
+    : truncated.content;
 }
 
 function toolSummary(name: string, args: Record<string, unknown>): string {
@@ -451,12 +456,14 @@ class TranscriptComponent implements Focusable {
   private editor: Editor;
   private _focused = false;
   private showThinking = false;
+  private toolsExpanded = false;
   private scrollFromBottom = 0;
   private lastHistoryLength = 0;
 
   constructor(
     private readonly tui: TUI,
     private readonly theme: Theme,
+    private readonly keybindings: KeybindingsManager,
     private readonly child: RuntimeChild,
     private readonly status: () => RetainedChild | undefined,
     private readonly done: (result: "back" | "close") => void,
@@ -486,8 +493,14 @@ class TranscriptComponent implements Focusable {
       return;
     }
     if (matchesKey(data, Key.ctrl("d"))) return this.done("close");
-    if (matchesKey(data, Key.ctrl("t"))) {
+    if (this.keybindings.matches(data, "app.thinking.toggle")) {
       this.showThinking = !this.showThinking;
+      this.tui.requestRender();
+      return;
+    }
+    if (this.keybindings.matches(data, "app.tools.expand")) {
+      this.toolsExpanded = !this.toolsExpanded;
+      this.scrollFromBottom = 0;
       this.tui.requestRender();
       return;
     }
@@ -510,10 +523,8 @@ class TranscriptComponent implements Focusable {
     const retained = this.status();
     const state = retained?.status ?? "closed";
     const header = `${this.theme.fg("accent", this.theme.bold(this.child.title))} ${this.theme.fg("muted", `(${this.child.id}) · ${state} · ${this.child.model}:${this.child.thinking}`)}`;
-    const task = `${this.theme.fg("muted", "Task: ")}${this.child.task}`;
     const inputLines = this.editor.render(renderWidth);
-    const fixed = 5 + inputLines.length;
-    const viewport = Math.max(1, this.tui.terminal.rows - fixed);
+    const viewport = Math.max(1, this.tui.terminal.rows - inputLines.length - 4);
     const history = this.historyLines(renderWidth);
     if (this.scrollFromBottom > 0 && history.length > this.lastHistoryLength) {
       this.scrollFromBottom += history.length - this.lastHistoryLength;
@@ -522,37 +533,66 @@ class TranscriptComponent implements Focusable {
     const maxOffset = Math.max(0, history.length - viewport);
     this.scrollFromBottom = Math.min(this.scrollFromBottom, maxOffset);
     const end = history.length - this.scrollFromBottom;
-    const start = Math.max(0, end - viewport);
-    const visible = history.slice(start, end);
+    const visible = history.slice(Math.max(0, end - viewport), end);
     const activity = state === "running" ? ` · ${this.child.activity}` : "";
-    const hints = `Esc back • Ctrl+C interrupt • Ctrl+D close • Ctrl+T thinking ${this.showThinking ? "on" : "off"} • PgUp/PgDn scroll${activity}`;
-    const lines = [header, ...wrapTextWithAnsi(task, renderWidth), this.theme.fg("borderMuted", "─".repeat(renderWidth)), ...visible];
-    while (lines.length < 3 + viewport) lines.push("");
+    const hints = `Esc back • Ctrl+C interrupt • Ctrl+D close • ${keyHint("app.thinking.toggle", `thinking ${this.showThinking ? "on" : "off"}`)} • ${keyHint("app.tools.expand", this.toolsExpanded ? "collapse tools" : "expand tools")} • PgUp/PgDn scroll${activity}`;
+    const lines = [header, this.theme.fg("borderMuted", "─".repeat(renderWidth)), ...visible];
+    while (lines.length < 2 + viewport) lines.push("");
     lines.push(this.theme.fg("borderMuted", "─".repeat(renderWidth)), ...inputLines, this.theme.fg("dim", hints));
     return lines.map((line) => truncateToWidth(line, renderWidth, ""));
   }
 
   private historyLines(width: number): string[] {
-    const lines: string[] = [];
-    const add = (prefix: string, text: string, color: Parameters<Theme["fg"]>[0]) => {
-      const styledPrefix = this.theme.fg(color, prefix);
-      const available = Math.max(1, width - visibleWidth(prefix));
-      const wrapped = wrapTextWithAnsi(text || "(empty)", available);
-      wrapped.forEach((line, index) => lines.push(`${index === 0 ? styledPrefix : " ".repeat(visibleWidth(prefix))}${line}`));
+    const history = new Container();
+    const markdownTheme = getMarkdownTheme();
+    let hasEntry = false;
+    const addEntry = (component: Box | Container | Markdown | Text) => {
+      if (hasEntry) history.addChild(new Spacer(1));
+      history.addChild(component);
+      hasEntry = true;
     };
+
     for (const entry of this.child.transcript) {
-      if (entry.type === "user") add("You: ", entry.text, "accent");
-      else if (entry.type === "assistant") {
-        if (this.showThinking && entry.thinking) add("Think: ", entry.thinking, "dim");
-        if (entry.text) add("Agent: ", entry.text, "text");
-      } else {
-        const status = entry.result === undefined ? "…" : entry.error ? "✗" : "✓";
-        const suffix = entry.result ? ` → ${entry.result}` : "";
-        add(`${status} `, `${entry.summary}${suffix}`, entry.error ? "error" : "muted");
+      if (entry.type === "user") {
+        const box = new Box(1, 1, (text) => this.theme.bg("userMessageBg", text));
+        box.addChild(new Markdown(entry.text, 0, 0, markdownTheme, {
+          color: (text) => this.theme.fg("userMessageText", text),
+        }, { preserveOrderedListMarkers: true, preserveBackslashEscapes: true }));
+        addEntry(box);
+        continue;
       }
+
+      if (entry.type === "assistant") {
+        const message = new Container();
+        if (this.showThinking && entry.thinking) {
+          message.addChild(new Markdown(entry.thinking, 1, 0, markdownTheme, {
+            color: (text) => this.theme.fg("dim", text),
+            italic: true,
+          }));
+          if (entry.text) message.addChild(new Spacer(1));
+        }
+        if (entry.text) message.addChild(new Markdown(entry.text, 1, 0, markdownTheme));
+        if (message.render(width).length > 0) addEntry(message);
+        continue;
+      }
+
+      const tool = new Container();
+      const status = entry.result === undefined ? "…" : entry.error ? "✗" : "✓";
+      const color = entry.error ? "error" : entry.result === undefined ? "warning" : "success";
+      const resultPreview = entry.result ? ` → ${preview(entry.result, 100)}` : "";
+      tool.addChild(new Text(`${this.theme.fg(color, status)} ${this.theme.fg("toolTitle", entry.summary)}${this.theme.fg("muted", resultPreview)}`, 1, 0));
+      if (this.toolsExpanded) {
+        tool.addChild(new Text(this.theme.fg("muted", "Arguments"), 3, 0));
+        tool.addChild(new Text(JSON.stringify(entry.args, null, 2), 3, 0));
+        if (entry.result !== undefined) {
+          tool.addChild(new Text(this.theme.fg("muted", entry.error ? "Error" : "Output"), 3, 0));
+          tool.addChild(new Text(entry.result || "(empty)", 3, 0));
+        }
+      }
+      addEntry(tool);
     }
-    if (lines.length === 0) lines.push(this.theme.fg("muted", "(no transcript yet)"));
-    return lines;
+
+    return hasEntry ? history.render(width) : [this.theme.fg("muted", "(no transcript yet)")];
   }
 
   invalidate(): void { this.editor.invalidate(); }
@@ -675,6 +715,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
         type: "tool",
         id: String(event.toolCallId ?? ""),
         name: String(event.toolName ?? "tool"),
+        args,
         summary: toolSummary(String(event.toolName ?? "tool"), args),
       });
       runtime.activity = activityForTool(String(event.toolName ?? "tool"), args);
@@ -779,11 +820,12 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     for (;;) {
       const runtime = runtimes.get(id);
       if (!runtime) return;
-      const result = await ctx.ui.custom<"back" | "close">((tui, theme, _keybindings, done) => {
+      const result = await ctx.ui.custom<"back" | "close">((tui, theme, keybindings, done) => {
         openTuis.add(tui);
         const component = new TranscriptComponent(
           tui,
           theme,
+          keybindings,
           runtime,
           () => childState(id),
           done,
