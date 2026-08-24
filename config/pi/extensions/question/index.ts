@@ -126,6 +126,12 @@ class QuestionComponent implements Focusable {
 
   handleInput(data: string): void {
     if (this.state.editMode.type !== "browse") {
+      if (this.state.editMode.type === "note" && matchesKey(data, Key.ctrl("c"))) {
+        this.state = setEditDraft(this.state, "");
+        this.editor.setText("");
+        this.refresh();
+        return;
+      }
       if (matchesKey(data, Key.escape)) {
         this.state = cancelEdit(setEditDraft(this.state, this.editor.getExpandedText()));
         this.editor.setText("");
@@ -302,7 +308,7 @@ class QuestionComponent implements Focusable {
         lines.push("");
         const hint = this.state.editMode.type === "browse"
           ? `${isSingleFlow(this.questions) ? "" : "Tab/←→/h/l tabs • "}↑↓/jk select • ${question.multiple === true ? "Space toggle • Enter next" : "Enter/Space choose"} • n add note • Esc dismiss`
-          : `Enter save • Esc ${this.state.editMode.type === "note" ? "discard" : "go back"}`;
+          : `Enter save • ${this.state.editMode.type === "note" ? "Ctrl+C clear • Esc discard" : "Esc go back"}`;
         add(this.theme.fg("dim", hint));
       }
     }
@@ -395,8 +401,8 @@ export default function questionExtension(pi: ExtensionAPI): void {
         const lines = params.questions.map((question, questionIndex) => {
           const answers = details.answers[questionIndex] ?? [];
           let line = `${theme.fg(answers.length ? "success" : "warning", answers.length ? "✓" : "!")} ${theme.fg("accent", question.header)}: ${answers.length ? answers.join(", ") : "Unanswered"}`;
-          const notes = details.notes?.[questionIndex];
-          if (notes && Object.keys(notes).length) line += theme.fg("muted", ` notes=${JSON.stringify(notes)}`);
+          const notes = Object.values(details.notes?.[questionIndex] ?? {});
+          if (notes.length) line += theme.fg("muted", ` • ${notes.join(" • ")}`);
           return line;
         });
         return new Text(lines.join("\n"), 0, 0);
