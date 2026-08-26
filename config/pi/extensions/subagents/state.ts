@@ -1,19 +1,11 @@
 export const MAX_RUNNING = 4;
 export const MAX_RETAINED = 12;
-export const SUBAGENT_MODELS = ["Luna", "Sol"] as const;
+export const SUBAGENT_MODELS = ["Luna", "Terra", "Sol"] as const;
 export const SUBAGENT_THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
 
 export type SubagentModel = (typeof SUBAGENT_MODELS)[number];
 export type SubagentThinkingLevel = (typeof SUBAGENT_THINKING_LEVELS)[number];
 export type ChildStatus = "queued" | "running" | "idle" | "failed" | "closed";
-
-export function resolveSpawnDefaults(
-  model: SubagentModel | undefined,
-  thinking: SubagentThinkingLevel | undefined,
-): { model: SubagentModel; thinking: SubagentThinkingLevel } {
-  const resolvedModel = model ?? "Luna";
-  return { model: resolvedModel, thinking: thinking ?? (resolvedModel === "Sol" ? "high" : "max") };
-}
 
 export interface ChildSpec {
   title: string;

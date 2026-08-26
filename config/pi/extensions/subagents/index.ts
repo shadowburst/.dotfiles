@@ -44,7 +44,6 @@ import {
   hasPendingCompletionBatch,
   isSubagentWaitCommand,
   normalizeTitle,
-  resolveSpawnDefaults,
   retryChild,
   settleChild,
   settleCompletionBatchChild,
@@ -65,6 +64,7 @@ const MESSAGE_TYPE = "subagent-result";
 const CHILD_CONTRACT = "Complete the delegated task and report clearly. Do not delegate further. Do not assume access to the parent conversation.";
 const MODEL_PATHS = {
   Luna: "openai-codex/gpt-5.6-luna",
+  Terra: "openai-codex/gpt-5.6-terra",
   Sol: "openai-codex/gpt-5.6-sol",
 } as const;
 type TranscriptEntry =
@@ -119,8 +119,8 @@ interface CompletionDetails {
 const SpawnSchema = Type.Object({
   title: Type.String({ description: "Specific 2–5 word sentence-case title, at most 40 characters, with no trailing punctuation or agent/subagent boilerplate" }),
   task: Type.String({ description: "One concrete task to delegate to a fresh subagent" }),
-  model: Type.Optional(StringEnum(SUBAGENT_MODELS, { description: "User-requested model override. Omit unless the user explicitly requests Luna or Sol. Defaults to Luna." })),
-  thinking: Type.Optional(StringEnum(SUBAGENT_THINKING_LEVELS, { description: "User-requested reasoning override. Omit unless the user explicitly requests an effort level. Defaults to max for Luna and high for Sol." })),
+  model: StringEnum(SUBAGENT_MODELS, { description: "Model chosen from the delegated deliverable: Luna for implementation, exploration, and bounded fact-finding; Sol for planning, review, synthesis, and judgment-heavy answers" }),
+  thinking: StringEnum(SUBAGENT_THINKING_LEVELS, { description: "Thinking effort: normally max for Luna and high for Sol; every supported level remains available for explicit user requests" }),
 });
 type SpawnParams = Static<typeof SpawnSchema>;
 
@@ -917,12 +917,15 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
   pi.registerTool({
     name: TOOL_NAME,
     label: "Spawn Subagent",
-    description: "Spawn one named dynamic subagent and return its handle immediately. Call spawn_subagent only when the current user request explicitly asks for subagent delegation; never delegate automatically. Defaults to Luna with max reasoning. Model and reasoning overrides are allowed only when explicitly requested by the user. Generate a specific short title for each child. The model and thinking level stay fixed for the child's lifetime.",
-    promptSnippet: "Spawn one dynamic subagent only for explicit user-requested delegation; defaults to Luna/max",
+    description: "Spawn one named dynamic subagent and return its handle immediately. Call spawn_subagent only when the current user request explicitly asks for subagent delegation; never delegate automatically. Route the model and thinking effort by the requested deliverable. Generate a specific short title for each child. The model and thinking level stay fixed for the child's lifetime.",
+    promptSnippet: "Spawn one dynamic subagent only for explicit user-requested delegation; route Luna/max for execution and Sol/high for judgment",
     promptGuidelines: [
       "Call spawn_subagent only when the current user request explicitly asks for subagent delegation; do not infer or automate delegation.",
       "Use spawn_subagent only to create a new task-specific child; existing children are controlled only through the user UI.",
-      "When calling spawn_subagent, omit model and thinking unless the user explicitly requests an override. Omitted values use Luna with max reasoning; an explicit Sol override uses high reasoning unless the user also specifies another effort. Never choose Sol or a different reasoning level based on your own judgment.",
+      "When calling spawn_subagent, honor an explicit user request for a model or thinking level. Otherwise route by the requested deliverable, not the internal steps the child will take: use Luna with max thinking for implementation, exploration, and bounded fact-finding; use Sol with high thinking for planning, review, synthesis, and answers that require judgment.",
+      "Escalate a Luna-class task to Sol with high thinking only when its deliverable requires high-stakes judgment, such as architecture, security, data-loss risk, or a costly irreversible decision. Coding difficulty alone stays on Luna with max thinking.",
+      "Examples for Luna with max thinking: repository search, research legwork, and code changes.",
+      "Examples for Sol with high thinking: architecture plans, code reviews, and consequential advice.",
       "When calling spawn_subagent, generate a concrete 2–5 word sentence-case title of at most 40 characters, without trailing punctuation or agent/subagent boilerplate.",
       "Spawn all requested subagents in one assistant response, then end the turn immediately. Do not sleep, poll, or call more tools while waiting. Completion is delivered automatically and wakes you after the whole spawn batch settles.",
     ],
@@ -930,26 +933,25 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     executionMode: "parallel",
     async execute(_toolCallId, params: SpawnParams, _signal, _onUpdate, ctx) {
       sessionCtx = ctx;
-      const config = resolveSpawnDefaults(params.model, params.thinking);
-      const modelPath = MODEL_PATHS[config.model];
+      const modelPath = MODEL_PATHS[params.model];
       const available = ctx.scopedModels.length > 0
         ? ctx.scopedModels
         : ctx.modelRegistry.getAvailable().map((model) => ({ model, thinkingLevel: undefined }));
       const scoped = available.find(({ model }) => `${model.provider}/${model.id}` === modelPath);
       if (!scoped) throw new Error(`Default or requested subagent model is outside the parent session scope: ${modelPath}`);
-      if (scoped.thinkingLevel && scoped.thinkingLevel !== config.thinking) {
+      if (scoped.thinkingLevel && scoped.thinkingLevel !== params.thinking) {
         throw new Error(`Model ${modelPath} is scoped to thinking level ${scoped.thinkingLevel}`);
       }
       const supported = getSupportedThinkingLevels(scoped.model);
-      if (!supported.includes(config.thinking)) {
-        throw new Error(`Thinking level ${config.thinking} is not supported by ${modelPath}; choose one of: ${supported.join(", ")}`);
+      if (!supported.includes(params.thinking)) {
+        throw new Error(`Thinking level ${params.thinking} is not supported by ${modelPath}; choose one of: ${supported.join(", ")}`);
       }
       const title = normalizeTitle(params.title);
       const tools = pi.getActiveTools().filter((name) => name !== TOOL_NAME && name !== "question");
-      const transition = addChild(scheduler, { title, task: params.task, model: modelPath, thinking: config.thinking });
+      const transition = addChild(scheduler, { title, task: params.task, model: modelPath, thinking: params.thinking });
       scheduler = transition.state;
       completionBatches = addCompletionBatchChild(completionBatches, currentCompletionBatchId, transition.child.id);
-      addRuntime(transition.child, config.thinking, tools);
+      addRuntime(transition.child, params.thinking, tools);
       launchStarted(transition.started);
       return {
         content: [{ type: "text" as const, text: `Spawned ${transition.child.title} (${transition.child.id}) · ${transition.child.status}. End this turn; the completed batch will wake you.` }],
@@ -957,8 +959,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       };
     },
     renderCall(args, theme) {
-      const config = resolveSpawnDefaults(args.model, args.thinking);
-      return new Text(`${theme.fg("toolTitle", theme.bold("spawn_subagent "))}${theme.fg("accent", preview(args.title ?? "", 40))} ${theme.fg("muted", `· ${config.model}:${config.thinking}`)}`, 0, 0);
+      return new Text(`${theme.fg("toolTitle", theme.bold("spawn_subagent "))}${theme.fg("accent", preview(args.title ?? "", 40))} ${theme.fg("muted", `· ${args.model ?? "…"}:${args.thinking ?? "…"}`)}`, 0, 0);
     },
     renderResult(result, _options, theme) {
       const text = result.content.find((part) => part.type === "text");

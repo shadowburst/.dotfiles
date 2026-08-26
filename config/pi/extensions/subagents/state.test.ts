@@ -12,11 +12,12 @@ import {
   isSubagentWaitCommand,
   MAX_RETAINED,
   normalizeTitle,
-  resolveSpawnDefaults,
   retryChild,
   settleChild,
   settleCompletionBatchChild,
   submitToChild,
+  SUBAGENT_MODELS,
+  SUBAGENT_THINKING_LEVELS,
   type SchedulerState,
 } from "./state.ts";
 
@@ -56,11 +57,9 @@ test("detects shell sleeps without blocking commands that only mention sleep", (
   assert.equal(isSubagentWaitCommand("npm test -- sleep"), false);
 });
 
-test("resolves model-specific spawn defaults and explicit effort overrides", () => {
-  assert.deepEqual(resolveSpawnDefaults(undefined, undefined), { model: "Luna", thinking: "max" });
-  assert.deepEqual(resolveSpawnDefaults("Sol", undefined), { model: "Sol", thinking: "high" });
-  assert.deepEqual(resolveSpawnDefaults("Sol", "minimal"), { model: "Sol", thinking: "minimal" });
-  assert.deepEqual(resolveSpawnDefaults("Luna", "off"), { model: "Luna", thinking: "off" });
+test("exposes every model and thinking override", () => {
+  assert.deepEqual(SUBAGENT_MODELS, ["Luna", "Terra", "Sol"]);
+  assert.deepEqual(SUBAGENT_THINKING_LEVELS, ["off", "minimal", "low", "medium", "high", "xhigh", "max"]);
 });
 
 test("trims titles and rejects blank or oversized ones", () => {
