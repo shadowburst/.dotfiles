@@ -58,7 +58,7 @@ test("detects shell sleeps without blocking commands that only mention sleep", (
 });
 
 test("exposes every model and thinking override", () => {
-  assert.deepEqual(SUBAGENT_MODELS, ["Luna", "Terra", "Sol"]);
+  assert.deepEqual(SUBAGENT_MODELS, ["Luna", "Sol"]);
   assert.deepEqual(SUBAGENT_THINKING_LEVELS, ["off", "minimal", "low", "medium", "high", "xhigh", "max"]);
 });
 

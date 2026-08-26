@@ -64,7 +64,6 @@ const MESSAGE_TYPE = "subagent-result";
 const CHILD_CONTRACT = "Complete the delegated task and report clearly. Do not delegate further. Do not assume access to the parent conversation.";
 const MODEL_PATHS = {
   Luna: "openai-codex/gpt-5.6-luna",
-  Terra: "openai-codex/gpt-5.6-terra",
   Sol: "openai-codex/gpt-5.6-sol",
 } as const;
 type TranscriptEntry =
@@ -119,8 +118,8 @@ interface CompletionDetails {
 const SpawnSchema = Type.Object({
   title: Type.String({ description: "Specific 2–5 word sentence-case title, at most 40 characters, with no trailing punctuation or agent/subagent boilerplate" }),
   task: Type.String({ description: "One concrete task to delegate to a fresh subagent" }),
-  model: StringEnum(SUBAGENT_MODELS, { description: "Model chosen from the delegated deliverable: Luna for implementation, exploration, and bounded fact-finding; Sol for planning, review, synthesis, and judgment-heavy answers" }),
-  thinking: StringEnum(SUBAGENT_THINKING_LEVELS, { description: "Thinking effort: normally max for Luna and high for Sol; every supported level remains available for explicit user requests" }),
+  model: StringEnum(SUBAGENT_MODELS, { description: "Required routing choice: Luna for execution and concrete facts; Sol for decisions, critique, diagnosis, and synthesis. Honor an explicit user choice." }),
+  thinking: StringEnum(SUBAGENT_THINKING_LEVELS, { description: "Required effort choice based on complexity and risk. Honor an explicit user choice when the model supports it." }),
 });
 type SpawnParams = Static<typeof SpawnSchema>;
 
@@ -917,15 +916,15 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
   pi.registerTool({
     name: TOOL_NAME,
     label: "Spawn Subagent",
-    description: "Spawn one named dynamic subagent and return its handle immediately. Call spawn_subagent only when the current user request explicitly asks for subagent delegation; never delegate automatically. Route the model and thinking effort by the requested deliverable. Generate a specific short title for each child. The model and thinking level stay fixed for the child's lifetime.",
-    promptSnippet: "Spawn one dynamic subagent only for explicit user-requested delegation; route Luna/max for execution and Sol/high for judgment",
+    description: "Spawn one named dynamic subagent and return its handle immediately. Call spawn_subagent only when the current user request explicitly asks for subagent delegation; never delegate automatically. Choose the model and thinking effort from the delegated task. Generate a specific short title for each child. The model and thinking level stay fixed for the child's lifetime.",
+    promptSnippet: "Spawn one dynamic subagent only for explicit user-requested delegation; choose model and effort from the delegated task",
     promptGuidelines: [
       "Call spawn_subagent only when the current user request explicitly asks for subagent delegation; do not infer or automate delegation.",
       "Use spawn_subagent only to create a new task-specific child; existing children are controlled only through the user UI.",
-      "When calling spawn_subagent, honor an explicit user request for a model or thinking level. Otherwise route by the requested deliverable, not the internal steps the child will take: use Luna with max thinking for implementation, exploration, and bounded fact-finding; use Sol with high thinking for planning, review, synthesis, and answers that require judgment.",
-      "Escalate a Luna-class task to Sol with high thinking only when its deliverable requires high-stakes judgment, such as architecture, security, data-loss risk, or a costly irreversible decision. Coding difficulty alone stays on Luna with max thinking.",
-      "Examples for Luna with max thinking: repository search, research legwork, and code changes.",
-      "Examples for Sol with high thinking: architecture plans, code reviews, and consequential advice.",
+      "Always provide model and thinking. Honor explicit user choices when supported. Otherwise route the delegated task as a whole: use Luna for execution and concrete facts, and Sol when the task materially depends on decisions, critique, diagnosis, or synthesis. Routine implementation choices stay on Luna; unresolved architecture goes to Sol. Do not split the task unless the user asks.",
+      "For Luna, use low for mechanical work, bounded lookup, and verification; medium for repository exploration; high for ordinary implementation; max for hard or high-impact implementation.",
+      "For Sol, use low for bounded critique; medium for ordinary planning, review, synthesis, or diagnosis; high for complex or high-impact judgment.",
+      "Examples: settled implementation and fact-finding use Luna; architecture plans, code review, cross-source synthesis, bug diagnosis, and security analysis use Sol. Apply the execution-or-facts versus decisions-or-critique rule to unlisted tasks.",
       "When calling spawn_subagent, generate a concrete 2–5 word sentence-case title of at most 40 characters, without trailing punctuation or agent/subagent boilerplate.",
       "Spawn all requested subagents in one assistant response, then end the turn immediately. Do not sleep, poll, or call more tools while waiting. Completion is delivered automatically and wakes you after the whole spawn batch settles.",
     ],

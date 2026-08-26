@@ -1,6 +1,6 @@
 export const MAX_RUNNING = 4;
 export const MAX_RETAINED = 12;
-export const SUBAGENT_MODELS = ["Luna", "Terra", "Sol"] as const;
+export const SUBAGENT_MODELS = ["Luna", "Sol"] as const;
 export const SUBAGENT_THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
 
 export type SubagentModel = (typeof SUBAGENT_MODELS)[number];
