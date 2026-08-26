@@ -3,14 +3,19 @@ import test from "node:test";
 
 import {
   addChild,
+  addCompletionBatchChild,
   closeChild,
-  COMPLETION_DELIVERY,
+  createCompletionBatchState,
   createSchedulerState,
   failChild,
+  hasPendingCompletionBatch,
+  isSubagentWaitCommand,
   MAX_RETAINED,
   normalizeTitle,
+  resolveSpawnDefaults,
   retryChild,
   settleChild,
+  settleCompletionBatchChild,
   submitToChild,
   type SchedulerState,
 } from "./state.ts";
@@ -21,8 +26,41 @@ function add(state: SchedulerState, task: string) {
   return addChild(state, spec(task));
 }
 
-test("subagent completion wakes the parent after it settles", () => {
-  assert.deepEqual(COMPLETION_DELIVERY, { deliverAs: "followUp", triggerTurn: true });
+test("a completion batch wakes only after its final child settles", () => {
+  let state = createCompletionBatchState();
+  state = addCompletionBatchChild(state, 1, "A1");
+  state = addCompletionBatchChild(state, 1, "A2");
+  assert.equal(hasPendingCompletionBatch(state), true);
+
+  const first = settleCompletionBatchChild(state, "A1");
+  assert.deepEqual({ tracked: first.tracked, complete: first.complete }, { tracked: true, complete: false });
+  const last = settleCompletionBatchChild(first.state, "A2");
+  assert.deepEqual({ tracked: last.tracked, complete: last.complete }, { tracked: true, complete: true });
+  assert.equal(hasPendingCompletionBatch(last.state), false);
+});
+
+test("separate completion batches settle independently", () => {
+  let state = createCompletionBatchState();
+  state = addCompletionBatchChild(state, 1, "A1");
+  state = addCompletionBatchChild(state, 2, "A2");
+  const result = settleCompletionBatchChild(state, "A1");
+  assert.equal(result.complete, true);
+  assert.equal(hasPendingCompletionBatch(result.state), true);
+});
+
+test("detects shell sleeps without blocking commands that only mention sleep", () => {
+  assert.equal(isSubagentWaitCommand("sleep 10"), true);
+  assert.equal(isSubagentWaitCommand("while kill -0 123; do sleep 1; done"), true);
+  assert.equal(isSubagentWaitCommand("echo ready && sleep 2"), true);
+  assert.equal(isSubagentWaitCommand("rg sleep config"), false);
+  assert.equal(isSubagentWaitCommand("npm test -- sleep"), false);
+});
+
+test("resolves model-specific spawn defaults and explicit effort overrides", () => {
+  assert.deepEqual(resolveSpawnDefaults(undefined, undefined), { model: "Luna", thinking: "max" });
+  assert.deepEqual(resolveSpawnDefaults("Sol", undefined), { model: "Sol", thinking: "high" });
+  assert.deepEqual(resolveSpawnDefaults("Sol", "minimal"), { model: "Sol", thinking: "minimal" });
+  assert.deepEqual(resolveSpawnDefaults("Luna", "off"), { model: "Luna", thinking: "off" });
 });
 
 test("trims titles and rejects blank or oversized ones", () => {

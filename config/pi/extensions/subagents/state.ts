@@ -1,8 +1,19 @@
 export const MAX_RUNNING = 4;
 export const MAX_RETAINED = 12;
-export const COMPLETION_DELIVERY = { deliverAs: "followUp", triggerTurn: true } as const;
+export const SUBAGENT_MODELS = ["Luna", "Sol"] as const;
+export const SUBAGENT_THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
 
+export type SubagentModel = (typeof SUBAGENT_MODELS)[number];
+export type SubagentThinkingLevel = (typeof SUBAGENT_THINKING_LEVELS)[number];
 export type ChildStatus = "queued" | "running" | "idle" | "failed" | "closed";
+
+export function resolveSpawnDefaults(
+  model: SubagentModel | undefined,
+  thinking: SubagentThinkingLevel | undefined,
+): { model: SubagentModel; thinking: SubagentThinkingLevel } {
+  const resolvedModel = model ?? "Luna";
+  return { model: resolvedModel, thinking: thinking ?? (resolvedModel === "Sol" ? "high" : "max") };
+}
 
 export interface ChildSpec {
   title: string;
@@ -30,6 +41,11 @@ export interface SchedulerState {
   nextId: number;
 }
 
+export interface CompletionBatchState {
+  batches: Record<number, string[]>;
+  childBatches: Record<string, number>;
+}
+
 export interface StartWork {
   childId: string;
   prompt: string;
@@ -45,6 +61,47 @@ export type SubmitResult = Transition & { action: "started" | "queued" | "steer"
 
 export function createSchedulerState(): SchedulerState {
   return { children: [], queue: [], nextId: 1 };
+}
+
+export function createCompletionBatchState(): CompletionBatchState {
+  return { batches: {}, childBatches: {} };
+}
+
+export function addCompletionBatchChild(state: CompletionBatchState, batchId: number, childId: string): CompletionBatchState {
+  return {
+    batches: { ...state.batches, [batchId]: [...(state.batches[batchId] ?? []), childId] },
+    childBatches: { ...state.childBatches, [childId]: batchId },
+  };
+}
+
+export function settleCompletionBatchChild(state: CompletionBatchState, childId: string): {
+  state: CompletionBatchState;
+  tracked: boolean;
+  complete: boolean;
+} {
+  const batchId = state.childBatches[childId];
+  if (batchId === undefined) return { state, tracked: false, complete: false };
+  const remaining = (state.batches[batchId] ?? []).filter((id) => id !== childId);
+  const childBatches = { ...state.childBatches };
+  delete childBatches[childId];
+  if (remaining.length > 0) {
+    return {
+      state: { batches: { ...state.batches, [batchId]: remaining }, childBatches },
+      tracked: true,
+      complete: false,
+    };
+  }
+  const batches = { ...state.batches };
+  delete batches[batchId];
+  return { state: { batches, childBatches }, tracked: true, complete: true };
+}
+
+export function hasPendingCompletionBatch(state: CompletionBatchState): boolean {
+  return Object.keys(state.batches).length > 0;
+}
+
+export function isSubagentWaitCommand(command: string): boolean {
+  return /(?:^|[;&|()]\s*|\b(?:do|then)\s+)sleep(?:\s|$)/m.test(command.trim());
 }
 
 export function normalizeTitle(title: string): string {
