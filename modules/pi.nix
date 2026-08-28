@@ -19,14 +19,19 @@ _: {
           version,
           hash,
           npmDepsHash,
+          rev ? "v${version}",
         }:
         pkgs.buildNpmPackage {
           pname = repo;
           inherit version npmDepsHash;
           forceEmptyCache = true;
           src = pkgs.fetchFromGitHub {
-            inherit owner repo hash;
-            tag = "v${version}";
+            inherit
+              owner
+              repo
+              hash
+              rev
+              ;
           };
           postPatch = ''
             ${pkgs.nodejs}/bin/npm pkg delete devDependencies
@@ -68,17 +73,35 @@ _: {
       webAccess = buildPiPackage {
         owner = "nicobailon";
         repo = "pi-web-access";
-        version = "0.21.0";
-        hash = "sha256-4KdCTOEPXo0rI6pl72ko9nhC8mXSOmza7BY1+4cjdjs=";
-        npmDepsHash = "sha256-YpHJ/HUt/XARhX8yYjtWrRFhGcYtAzhCSUL67AiXjH8=";
+        version = "0.27.0";
+        hash = "sha256-q7o4PMNr2zZR+UXjL9ZGMuedehJEYayuoSH03QBBB68=";
+        npmDepsHash = "sha256-d1RsJxvXHtaXlNTyDe9wemjTPdHMSlRbHKNmdqxAFGk=";
       };
 
       mcpAdapter = buildPiPackage {
         owner = "nicobailon";
         repo = "pi-mcp-adapter";
-        version = "2.21.1";
-        hash = "sha256-voO8gCDjGtXoSiEQM/D4lL4JXrz5be3HZ5ol7KYVCzI=";
-        npmDepsHash = "sha256-WGcZrFz/g17NdyhhQ2xaHkNe0TqNMD3UrCHKm8S3Mi4=";
+        version = "2.30.0";
+        rev = "f3192880de5e87a2ceb2cb5820e50a91eb5ebcb2";
+        hash = "sha256-cEJZqX/Rd8hIn0qRB4OhjmpU1bxOYbL6jaAa5bEbhq0=";
+        npmDepsHash = "sha256-MrAt37DvVNwtMtSZmSeICtEkue9CoNQQPtQfYrUXmzI=";
+      };
+
+      subagents = buildPiPackage {
+        owner = "tintinweb";
+        repo = "pi-subagents";
+        version = "0.19.0";
+        hash = "sha256-1K6U5+2qLgOV7lUWbvqUne/Pf7oMRDf40GXLl8gv6Bk=";
+        npmDepsHash = "sha256-0fPvMUErqeBqp/HJzT2RKYcZW307tXB/07ofNq/ksOw=";
+      };
+
+      tasks = buildPiPackage {
+        owner = "tintinweb";
+        repo = "pi-tasks";
+        version = "0.9.0";
+        rev = "29180d72498bdd77d5601dc77a9093d25da42102";
+        hash = "sha256-2Wa+lUHQP6qvnRERaqFNu1IkOD4d5etb+x6oTCqh6Vg=";
+        npmDepsHash = "sha256-A1JP5lX9TApIlOT/IO+1IEpyX9WEn2hiDmPFFolbX1Y=";
       };
 
       ponytail = buildPiPackage {
@@ -111,13 +134,17 @@ _: {
 
       home.file = {
         ".pi/agent/APPEND_SYSTEM.md" = mkPiConfigSymlink "config/pi/APPEND_SYSTEM.md";
+        ".pi/agent/agents" = mkPiConfigSymlink "config/pi/agents";
         ".pi/agent/themes" = mkPiConfigSymlink "config/pi/themes";
         ".pi/agent/settings.json" = mkPiConfigSymlink "config/pi/settings.json";
         ".pi/agent/keybindings.json" = mkPiConfigSymlink "config/pi/keybindings.json";
+        ".pi/agent/subagents.json" = mkPiConfigSymlink "config/pi/subagents.json";
+        ".pi/agent/tasks-config.json" = mkPiConfigSymlink "config/pi/tasks-config.json";
         ".pi/agent/extensions/pi-kitty.ts" = mkPiConfigSymlink "config/pi/extensions/pi-kitty.ts";
         ".pi/agent/extensions/browser".source = browserTools;
         ".pi/agent/extensions/question" = mkPiConfigSymlink "config/pi/extensions/question";
-        ".pi/agent/extensions/subagents" = mkPiConfigSymlink "config/pi/extensions/subagents";
+        ".pi/agent/extensions/subagents".source = subagents;
+        ".pi/agent/extensions/tasks".source = tasks;
         ".pi/agent/extensions/usage" = mkPiConfigSymlink "config/pi/extensions/usage";
         ".pi/agent/extensions/pi-mcp-adapter".source = mcpAdapter;
         ".pi/agent/extensions/pi-web-access".source = webAccess;

@@ -2,7 +2,5 @@
   "tui.select.up": ["up", "ctrl+p"],
   "tui.select.down": ["down", "ctrl+n"],
 
-  "app.session.togglePath": [],
-  "app.session.toggleNamedFilter": [],
-  "app.models.toggleProvider": []
+  "app.model.cycleForward": []
 }
