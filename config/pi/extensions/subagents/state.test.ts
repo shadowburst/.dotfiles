@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import test from "node:test";
 
 import {
@@ -12,6 +15,7 @@ import {
   isSubagentWaitCommand,
   MAX_RETAINED,
   normalizeTitle,
+  resolveChildCwd,
   retryChild,
   settleChild,
   settleCompletionBatchChild,
@@ -21,7 +25,7 @@ import {
   type SchedulerState,
 } from "./state.ts";
 
-const spec = (task: string) => ({ title: `Title ${task}`, task, model: "provider/model", thinking: "high" });
+const spec = (task: string) => ({ title: `Title ${task}`, task, model: "provider/model", thinking: "high", cwd: "/workspace" });
 
 function add(state: SchedulerState, task: string) {
   return addChild(state, spec(task));
@@ -58,7 +62,8 @@ test("detects shell sleeps without blocking commands that only mention sleep", (
 });
 
 test("exposes every model and thinking override", () => {
-  assert.deepEqual(SUBAGENT_MODELS, ["Luna", "Sol"]);
+  assert.equal(MAX_RETAINED, 24);
+  assert.deepEqual(SUBAGENT_MODELS, ["Luna", "Terra", "Sol"]);
   assert.deepEqual(SUBAGENT_THINKING_LEVELS, ["off", "minimal", "low", "medium", "high", "xhigh", "max"]);
 });
 
@@ -66,6 +71,30 @@ test("trims titles and rejects blank or oversized ones", () => {
   assert.equal(normalizeTitle("  Fix flaky tests  "), "Fix flaky tests");
   assert.throws(() => normalizeTitle("   "), /1–40 characters/);
   assert.throws(() => normalizeTitle("x".repeat(41)), /1–40 characters/);
+});
+
+test("resolves and validates subagent working directories", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "pi-subagent-cwd-"));
+  const parent = path.join(root, "parent");
+  const target = path.join(root, "target");
+  const home = path.join(root, "home");
+  fs.mkdirSync(parent);
+  fs.mkdirSync(target);
+  fs.mkdirSync(path.join(home, "project"), { recursive: true });
+  fs.symlinkSync(target, path.join(root, "linked-target"), "dir");
+  fs.writeFileSync(path.join(root, "file"), "not a directory");
+
+  try {
+    assert.equal(resolveChildCwd(parent), parent);
+    assert.equal(resolveChildCwd(parent, "../target", home), target);
+    assert.equal(resolveChildCwd(parent, "~/project", home), path.join(home, "project"));
+    assert.equal(resolveChildCwd(parent, "../linked-target", home), path.join(root, "linked-target"));
+    assert.throws(() => resolveChildCwd(parent, "../missing", home), /does not exist or is not accessible/);
+    assert.throws(() => resolveChildCwd(parent, "../file", home), /is not a directory/);
+    assert.throws(() => resolveChildCwd(parent, "~someone/project", home), /supports only ~ or ~\//);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("runs four children and queues the fifth", () => {
@@ -134,12 +163,53 @@ test("retry creates a new identity with the failed child's original runtime", ()
   assert.equal(retried.child.task, "original");
   assert.equal(retried.child.model, "provider/model");
   assert.equal(retried.child.thinking, "high");
+  assert.equal(retried.child.cwd, "/workspace");
   assert.equal(retried.state.children.find((child) => child.id === "A1")?.status, "failed");
 });
 
-test("refuses a thirteenth retained child without eviction", () => {
+test("evicts the oldest idle child at the retained limit", () => {
+  let state = createSchedulerState();
+  for (let index = 0; index < MAX_RETAINED; index++) {
+    const added = add(state, `task ${index}`);
+    state = settleChild(added.state, added.child.id).state;
+  }
+
+  const result = add(state, "overflow");
+  assert.equal(result.evicted?.id, "A1");
+  assert.equal(result.state.children.length, MAX_RETAINED);
+  assert.equal(result.state.children.some((child) => child.id === "A1"), false);
+  assert.equal(result.child.id, `A${MAX_RETAINED + 1}`);
+});
+
+test("preserves failed children when trimming idle children", () => {
+  let state = createSchedulerState();
+  for (let index = 0; index < MAX_RETAINED; index++) {
+    const added = add(state, `task ${index}`);
+    state = settleChild(added.state, added.child.id).state;
+  }
+  state = failChild(state, "A1", "keep me").state;
+
+  const result = add(state, "overflow");
+  assert.equal(result.evicted?.id, "A2");
+  assert.equal(result.state.children.find((child) => child.id === "A1")?.status, "failed");
+});
+
+test("refuses another child at the limit when none are idle", () => {
   let state = createSchedulerState();
   for (let index = 0; index < MAX_RETAINED; index++) state = add(state, `task ${index}`).state;
-  assert.throws(() => add(state, "overflow"), /Retained subagent limit reached/);
+  assert.throws(() => add(state, "overflow"), /no idle agent to trim/);
   assert.equal(state.children.length, MAX_RETAINED);
+});
+
+test("retry evicts the oldest idle child at the retained limit", () => {
+  let state = createSchedulerState();
+  for (let index = 0; index < MAX_RETAINED; index++) {
+    const added = add(state, `task ${index}`);
+    state = settleChild(added.state, added.child.id).state;
+  }
+  state = failChild(state, `A${MAX_RETAINED}`, "retry me").state;
+
+  const result = retryChild(state, `A${MAX_RETAINED}`);
+  assert.equal(result.evicted?.id, "A1");
+  assert.equal(result.child.id, `A${MAX_RETAINED + 1}`);
 });

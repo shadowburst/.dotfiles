@@ -44,6 +44,8 @@ import {
   hasPendingCompletionBatch,
   isSubagentWaitCommand,
   normalizeTitle,
+  resolveChildCwd,
+  resolveChildCwdPath,
   retryChild,
   settleChild,
   settleCompletionBatchChild,
@@ -64,6 +66,7 @@ const MESSAGE_TYPE = "subagent-result";
 const CHILD_CONTRACT = "Complete the delegated task and report clearly. Do not delegate further. Do not assume access to the parent conversation.";
 const MODEL_PATHS = {
   Luna: "openai-codex/gpt-5.6-luna",
+  Terra: "openai-codex/gpt-5.6-terra",
   Sol: "openai-codex/gpt-5.6-sol",
 } as const;
 type TranscriptEntry =
@@ -95,6 +98,7 @@ interface RuntimeChild {
   task: string;
   model: string;
   thinking: SubagentThinkingLevel;
+  cwd: string;
   tools: string[];
   transcript: TranscriptEntry[];
   activity: string;
@@ -118,8 +122,9 @@ interface CompletionDetails {
 const SpawnSchema = Type.Object({
   title: Type.String({ description: "Specific 2–5 word sentence-case title, at most 40 characters, with no trailing punctuation or agent/subagent boilerplate" }),
   task: Type.String({ description: "One concrete task to delegate to a fresh subagent" }),
-  model: StringEnum(SUBAGENT_MODELS, { description: "Required routing choice: Luna for execution and concrete facts; Sol for decisions, critique, diagnosis, and synthesis. Honor an explicit user choice." }),
+  model: StringEnum(SUBAGENT_MODELS, { description: "Required routing choice: Luna for execution, exploration, and concrete facts; Terra for review; Sol for planning, architecture, diagnosis, synthesis, and non-review judgment. Honor an explicit user choice." }),
   thinking: StringEnum(SUBAGENT_THINKING_LEVELS, { description: "Required effort choice based on complexity and risk. Honor an explicit user choice when the model supports it." }),
+  cwd: Type.Optional(Type.String({ description: "Working directory for the subagent. Relative paths resolve from the parent session directory; ~ expands to the current user's home." })),
 });
 type SpawnParams = Static<typeof SpawnSchema>;
 
@@ -765,7 +770,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     runtime.activity = "starting";
     if (!runtime.rpc) {
       runtime.rpc = new RpcChild(
-        sessionCtx?.cwd ?? process.cwd(),
+        runtime.cwd,
         { model: runtime.model, thinking: runtime.thinking },
         runtime.tools,
         (event) => handleEvent(runtime, event),
@@ -790,12 +795,21 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       task: child.task,
       model: child.model,
       thinking,
+      cwd: child.cwd,
       tools,
       transcript: [{ type: "user", text: child.task }],
       activity: child.status === "queued" ? "queued" : "starting",
     };
     runtimes.set(child.id, runtime);
     return runtime;
+  };
+
+  const finishEviction = async (child: RetainedChild | undefined, ctx: ExtensionContext) => {
+    if (!child) return;
+    const runtime = runtimes.get(child.id);
+    runtimes.delete(child.id);
+    await runtime?.rpc?.terminate();
+    if (ctx.mode === "tui") ctx.ui.notify(`Trimmed idle subagent ${child.id}: ${child.title}`, "info");
   };
 
   const closeAgent = async (id: string) => {
@@ -817,9 +831,10 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     launchStarted(transition.started);
   };
 
-  const retryAgent = (id: string): string => {
+  const retryAgent = async (id: string, ctx: ExtensionContext): Promise<string> => {
     const transition = retryChild(scheduler, id);
     scheduler = transition.state;
+    await finishEviction(transition.evicted, ctx);
     addRuntime(
       transition.child,
       transition.child.thinking as SubagentThinkingLevel,
@@ -890,7 +905,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       if (result.action === "open") await showTranscript(result.id);
       else if (result.action === "retry") {
         try {
-          const newId = retryAgent(result.id);
+          const newId = await retryAgent(result.id, ctx);
           ctx.ui.notify(`Retried ${result.id} as ${newId}`, "info");
         } catch (error) {
           ctx.ui.notify(error instanceof Error ? error.message : String(error), "error");
@@ -921,10 +936,11 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     promptGuidelines: [
       "Call spawn_subagent only when the current user request explicitly asks for subagent delegation; do not infer or automate delegation.",
       "Use spawn_subagent only to create a new task-specific child; existing children are controlled only through the user UI.",
-      "Always provide model and thinking. Honor explicit user choices when supported. Otherwise route the delegated task as a whole: use Luna for execution and concrete facts, and Sol when the task materially depends on decisions, critique, diagnosis, or synthesis. Routine implementation choices stay on Luna; unresolved architecture goes to Sol. Do not split the task unless the user asks.",
-      "For Luna, use low for mechanical work, bounded lookup, and verification; medium for repository exploration; high for ordinary implementation; max for hard or high-impact implementation.",
-      "For Sol, use low for bounded critique; medium for ordinary planning, review, synthesis, or diagnosis; high for complex or high-impact judgment.",
-      "Examples: settled implementation and fact-finding use Luna; architecture plans, code review, cross-source synthesis, bug diagnosis, and security analysis use Sol. Apply the execution-or-facts versus decisions-or-critique rule to unlisted tasks.",
+      "Always provide model and thinking. Honor explicit user choices when supported. Otherwise route the delegated task as a whole: use Luna for execution, exploration, and concrete facts; Terra for review; and Sol for planning, architecture, diagnosis, synthesis, and non-review judgment. Do not split the task unless the user asks.",
+      "For Luna, use low for mechanical work, bounded lookup, and verification; high for repository exploration; and xhigh for every implementation task. Never choose Luna max automatically, but honor an explicit request for it.",
+      "For Terra, use high for all review work, including code, spec, security, and bounded critique.",
+      "For Sol, use medium for ordinary planning, diagnosis, synthesis, and non-review judgment; high for complex or high-impact judgment.",
+      "Examples: implementation and fact-finding use Luna; code and security review use Terra; architecture plans, cross-source synthesis, bug diagnosis, and security analysis use Sol. Apply these role boundaries to unlisted tasks.",
       "When calling spawn_subagent, generate a concrete 2–5 word sentence-case title of at most 40 characters, without trailing punctuation or agent/subagent boilerplate.",
       "Spawn all requested subagents in one assistant response, then end the turn immediately. Do not sleep, poll, or call more tools while waiting. Completion is delivered automatically and wakes you after the whole spawn batch settles.",
     ],
@@ -946,9 +962,11 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
         throw new Error(`Thinking level ${params.thinking} is not supported by ${modelPath}; choose one of: ${supported.join(", ")}`);
       }
       const title = normalizeTitle(params.title);
+      const cwd = resolveChildCwd(ctx.cwd, params.cwd);
       const tools = pi.getActiveTools().filter((name) => name !== TOOL_NAME && name !== "question");
-      const transition = addChild(scheduler, { title, task: params.task, model: modelPath, thinking: params.thinking });
+      const transition = addChild(scheduler, { title, task: params.task, model: modelPath, thinking: params.thinking, cwd });
       scheduler = transition.state;
+      await finishEviction(transition.evicted, ctx);
       completionBatches = addCompletionBatchChild(completionBatches, currentCompletionBatchId, transition.child.id);
       addRuntime(transition.child, params.thinking, tools);
       launchStarted(transition.started);
@@ -957,8 +975,9 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
         details: { id: transition.child.id, status: transition.child.status },
       };
     },
-    renderCall(args, theme) {
-      return new Text(`${theme.fg("toolTitle", theme.bold("spawn_subagent "))}${theme.fg("accent", preview(args.title ?? "", 40))} ${theme.fg("muted", `· ${args.model ?? "…"}:${args.thinking ?? "…"}`)}`, 0, 0);
+    renderCall(args, theme, context) {
+      const cwd = args.cwd ? ` · ${preview(resolveChildCwdPath(context.cwd, args.cwd), 58)}` : "";
+      return new Text(`${theme.fg("toolTitle", theme.bold("spawn_subagent "))}${theme.fg("accent", preview(args.title ?? "", 40))} ${theme.fg("muted", `· ${args.model ?? "…"}:${args.thinking ?? "…"}${cwd}`)}`, 0, 0);
     },
     renderResult(result, _options, theme) {
       const text = result.content.find((part) => part.type === "text");
