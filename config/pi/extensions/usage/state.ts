@@ -85,6 +85,35 @@ export function parseUsagePayload(value: unknown): UsageSnapshot {
   };
 }
 
+export function selectUsageWindow(snapshot: UsageSnapshot, modelId: string): UsageWindow | undefined {
+  const modelKey = modelId.toLowerCase().replaceAll(/[^a-z0-9]/g, "");
+  const specific = snapshot.windows.filter((window) => {
+    const name = window.label.split(" · ", 1)[0]?.toLowerCase() ?? "";
+    if (name === "general" || name === "code review") return false;
+    const key = name.replaceAll(/[^a-z0-9]/g, "");
+    const shortKey = key.replace(/^codex/, "");
+    return key.length > 0 && (modelKey.includes(key) || (shortKey.length > 0 && modelKey.includes(shortKey)));
+  });
+  const eligible = specific.length > 0
+    ? specific
+    : snapshot.windows.filter((window) => window.label.startsWith("General · "));
+  return eligible.reduce<UsageWindow | undefined>(
+    (lowest, window) => (!lowest || window.usedPercent > lowest.usedPercent ? window : lowest),
+    undefined,
+  );
+}
+
+export function resetCountdown(window: UsageWindow, now = Date.now() / 1000, compact = false): string {
+  if (!window.resetsAt) return "—";
+  const seconds = Math.max(0, Math.round(window.resetsAt - now));
+  const days = Math.floor(seconds / 86_400);
+  const hours = Math.floor((seconds % 86_400) / 3_600);
+  const minutes = Math.floor((seconds % 3_600) / 60);
+  if (days) return compact ? `${days}d` : `${days}d ${hours}h`;
+  if (hours) return compact ? `${hours}h` : `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
 export function formatWindowDuration(seconds: number): string {
   const units = [
     [365 * 24 * 60 * 60, "year"],

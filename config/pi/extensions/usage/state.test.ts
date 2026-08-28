@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { formatWindowDuration, maskEmail, parseUsagePayload } from "./state.ts";
+import { formatWindowDuration, maskEmail, parseUsagePayload, resetCountdown, selectUsageWindow } from "./state.ts";
 
 test("normalizes every Codex limit and meaningful metadata", () => {
   const snapshot = parseUsagePayload({
@@ -35,4 +35,28 @@ test("normalizes every Codex limit and meaningful metadata", () => {
   assert.equal(formatWindowDuration(300), "5 minutes");
   assert.equal(maskEmail("person@example.com"), "p•••@example.com");
   assert.equal(parseUsagePayload({ credits: { has_credits: false, balance: "0" } }).credits, undefined);
+});
+
+test("selects the tightest limit relevant to the active model", () => {
+  const snapshot = parseUsagePayload({
+    rate_limit: {
+      primary_window: { used_percent: 42, limit_window_seconds: 18_000 },
+      secondary_window: { used_percent: 70, limit_window_seconds: 604_800 },
+    },
+    code_review_rate_limit: { primary_window: { used_percent: 99 } },
+    additional_rate_limits: [{
+      limit_name: "Codex Spark",
+      rate_limit: { primary_window: { used_percent: 80 } },
+    }],
+  });
+
+  assert.equal(selectUsageWindow(snapshot, "gpt-5.6-luna")?.usedPercent, 70);
+  assert.equal(selectUsageWindow(snapshot, "gpt-5.3-codex-spark")?.usedPercent, 80);
+});
+
+test("formats reset countdowns without seconds", () => {
+  const window = { label: "General", usedPercent: 0, resetsAt: 100_000 };
+  assert.equal(resetCountdown(window, 90_000), "2h 46m");
+  assert.equal(resetCountdown(window, 90_000, true), "2h");
+  assert.equal(resetCountdown({ label: "General", usedPercent: 0 }), "—");
 });
