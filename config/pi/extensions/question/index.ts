@@ -34,6 +34,7 @@ import {
   type QuestionDetails,
   type QuestionState,
 } from "./state.ts";
+import { queueSkillMentions } from "./skills.ts";
 
 const QuestionSchema = Type.Object({
   question: Type.String(),
@@ -329,14 +330,17 @@ class QuestionComponent implements Focusable {
   }
 }
 
-function resultText(params: QuestionParams, details: QuestionDetails): string {
+function resultText(params: QuestionParams, details: QuestionDetails, unknownSkills: string[] = []): string {
   const formatted = params.questions.map((question, index) => {
     const answer = details.answers[index]?.length ? details.answers[index]!.join(", ") : "Unanswered";
     const note = details.notes?.[index];
     const suffix = note && Object.keys(note).length ? ` notes=${JSON.stringify(note)}` : "";
     return `${JSON.stringify(question.question)}=${JSON.stringify(answer)}${suffix}`;
   }).join(", ");
-  return `User has answered your questions: ${formatted}. You can now continue with the user's answers in mind.`;
+  const unknown = unknownSkills.length
+    ? ` Unknown skills mentioned: ${unknownSkills.map((name) => `/skill:${name}`).join(", ")}.`
+    : "";
+  return `User has answered your questions: ${formatted}. You can now continue with the user's answers in mind.${unknown}`;
 }
 
 async function showDialog(pi: ExtensionAPI, params: QuestionParams, ctx: ExtensionContext): Promise<DialogResult> {
@@ -351,12 +355,24 @@ async function showDialog(pi: ExtensionAPI, params: QuestionParams, ctx: Extensi
 }
 
 export default function questionExtension(pi: ExtensionAPI): void {
+  const queueQuestionSkills = (details: QuestionDetails): string[] => queueSkillMentions(
+    details,
+    pi.getCommands().filter((command) => command.source === "skill"),
+    (name) => pi.sendUserMessage(`/skill:${name}`, {
+      deliverAs: "steer",
+      expandPromptTemplates: true,
+    }),
+  );
+
   const reopenQuestion = async (params: QuestionParams, ctx: ExtensionContext): Promise<void> => {
     const result = await showDialog(pi, params, ctx);
-    const message = result
-      ? resultText(params, result.details)
-      : "The interrupted question was cancelled. Continue without those answers.";
-    setTimeout(() => pi.sendUserMessage(message), 0);
+    setTimeout(() => {
+      const unknownSkills = result ? queueQuestionSkills(result.details) : [];
+      const message = result
+        ? resultText(params, result.details, unknownSkills)
+        : "The interrupted question was cancelled. Continue without those answers.";
+      pi.sendUserMessage(message);
+    }, 0);
   };
 
   pi.registerTool({
@@ -380,8 +396,9 @@ export default function questionExtension(pi: ExtensionAPI): void {
           executeCtx.abort();
           throw new Error("User cancelled");
         }
+        const unknownSkills = queueQuestionSkills(result.details);
         return {
-          content: [{ type: "text" as const, text: resultText(params, result.details) }],
+          content: [{ type: "text" as const, text: resultText(params, result.details, unknownSkills) }],
           details: result.details,
         };
       },
