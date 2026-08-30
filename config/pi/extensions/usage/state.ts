@@ -85,6 +85,47 @@ export function parseUsagePayload(value: unknown): UsageSnapshot {
   };
 }
 
+export function parseCopilotUsagePayload(value: unknown): UsageSnapshot {
+  const payload = object(value);
+  if (!payload) throw new Error("Copilot returned an invalid usage response");
+
+  const resetValue = payload.quota_reset_date_utc ?? payload.quota_reset_date;
+  const resetMilliseconds = typeof resetValue === "string" ? Date.parse(resetValue) : NaN;
+  const resetsAt = Number.isFinite(resetMilliseconds) ? resetMilliseconds / 1000 : undefined;
+  const quotas = object(payload.quota_snapshots);
+  const windows: UsageWindow[] = [];
+
+  for (const [key, label] of [
+    ["premium_interactions", "Premium"],
+    ["chat", "Chat"],
+    ["completions", "Completions"],
+  ] as const) {
+    const quota = object(quotas?.[key]);
+    if (!quota) continue;
+    const entitlement = number(quota.entitlement);
+    const remaining = number(quota.remaining) ?? number(quota.quota_remaining);
+    const percentRemaining = number(quota.percent_remaining);
+    const usedPercent = quota.unlimited === true
+      ? 0
+      : percentRemaining !== undefined
+        ? 100 - percentRemaining
+        : entitlement !== undefined && entitlement > 0 && remaining !== undefined
+          ? 100 * (entitlement - remaining) / entitlement
+          : undefined;
+    if (usedPercent === undefined) continue;
+    windows.push({
+      label,
+      usedPercent: Math.max(0, Math.min(100, usedPercent)),
+      ...(resetsAt !== undefined ? { resetsAt } : {}),
+    });
+  }
+
+  return {
+    ...(typeof payload.copilot_plan === "string" ? { plan: title(payload.copilot_plan) } : {}),
+    windows,
+  };
+}
+
 export function selectUsageWindow(snapshot: UsageSnapshot, modelId: string): UsageWindow | undefined {
   const modelKey = modelId.toLowerCase().replaceAll(/[^a-z0-9]/g, "");
   const specific = snapshot.windows.filter((window) => {
@@ -101,6 +142,14 @@ export function selectUsageWindow(snapshot: UsageSnapshot, modelId: string): Usa
     (lowest, window) => (!lowest || window.usedPercent > lowest.usedPercent ? window : lowest),
     undefined,
   );
+}
+
+export function selectCopilotUsageWindow(snapshot: UsageSnapshot, _modelId: string): UsageWindow | undefined {
+  return snapshot.windows.find((window) => window.label === "Premium");
+}
+
+export function cycleIndex(index: number, count: number, offset: number): number {
+  return count > 0 ? ((index + offset) % count + count) % count : -1;
 }
 
 export function resetCountdown(window: UsageWindow, now = Date.now() / 1000, compact = false): string {

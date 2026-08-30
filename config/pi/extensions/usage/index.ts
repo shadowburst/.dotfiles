@@ -1,11 +1,22 @@
 import { arch, platform, release } from "node:os";
 
-import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext, Theme } from "@earendil-works/pi-coding-agent";
+import { readStoredCredential, type ExtensionAPI, type ExtensionCommandContext, type ExtensionContext, type Theme } from "@earendil-works/pi-coding-agent";
 import { Key, matchesKey, truncateToWidth, type TUI, visibleWidth } from "@earendil-works/pi-tui";
 
-import { maskEmail, parseUsagePayload, resetCountdown, selectUsageWindow, type UsageSnapshot, type UsageWindow } from "./state.ts";
+import {
+  cycleIndex,
+  maskEmail,
+  parseCopilotUsagePayload,
+  parseUsagePayload,
+  resetCountdown,
+  selectCopilotUsageWindow,
+  selectUsageWindow,
+  type UsageSnapshot,
+  type UsageWindow,
+} from "./state.ts";
 
 const CODEX_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage";
+const COPILOT_USAGE_URL = "https://api.github.com/copilot_internal/user";
 const JWT_CLAIM = "https://api.openai.com/auth";
 const WIDGET_ID = "usage-current";
 
@@ -56,12 +67,41 @@ async function loadCodexUsage(ctx: ExtensionContext, signal: AbortSignal): Promi
   return fetchCodexUsage(token, id, resolved.auth.headers, signal);
 }
 
-const PROVIDER_TABS: ProviderTab[] = [{
-  provider: "openai-codex",
-  label: "Codex",
-  load: loadCodexUsage,
-  selectWindow: selectUsageWindow,
-}];
+async function loadCopilotUsage(_ctx: ExtensionContext, signal: AbortSignal): Promise<UsageSnapshot> {
+  const credential = readStoredCredential("github-copilot");
+  if (credential?.type !== "oauth") {
+    throw new Error("Copilot is not logged in with OAuth. Run /login github-copilot.");
+  }
+  if (typeof credential.enterpriseUrl === "string" && credential.enterpriseUrl) {
+    throw new Error("Copilot usage supports github.com accounts only.");
+  }
+
+  const response = await fetch(COPILOT_USAGE_URL, {
+    headers: {
+      accept: "application/json",
+      authorization: `Bearer ${credential.refresh}`,
+      "user-agent": "GitHubCopilotChat/0.35.0",
+    },
+    signal: AbortSignal.any([signal, AbortSignal.timeout(10_000)]),
+  });
+  if (!response.ok) throw new Error(`Copilot usage request failed (${response.status})`);
+  return parseCopilotUsagePayload(await response.json());
+}
+
+const PROVIDER_TABS: ProviderTab[] = [
+  {
+    provider: "openai-codex",
+    label: "Codex",
+    load: loadCodexUsage,
+    selectWindow: selectUsageWindow,
+  },
+  {
+    provider: "github-copilot",
+    label: "Copilot",
+    load: loadCopilotUsage,
+    selectWindow: selectCopilotUsageWindow,
+  },
+];
 
 function providerTab(provider: string | undefined): ProviderTab | undefined {
   return PROVIDER_TABS.find((tab) => tab.provider === provider);
@@ -147,7 +187,7 @@ class UsageOverlay {
     private readonly done: () => void,
     private readonly ctx: ExtensionCommandContext,
     private readonly store: UsageStore,
-    private readonly tab: ProviderTab,
+    private tab: ProviderTab,
   ) {
     this.clock = setInterval(() => this.tui.requestRender(), 30_000);
     this.unsubscribe = this.store.subscribe(() => this.tui.requestRender());
@@ -160,15 +200,24 @@ class UsageOverlay {
     } else if (matchesKey(data, "r")) {
       void this.store.refresh(this.tab, this.ctx);
     } else if (
-      matchesKey(data, Key.tab)
-      || matchesKey(data, Key.shift("tab"))
+      matchesKey(data, Key.shift("tab"))
       || matchesKey(data, Key.left)
-      || matchesKey(data, Key.right)
       || matchesKey(data, "h")
+    ) {
+      this.switchTab(-1);
+    } else if (
+      matchesKey(data, Key.tab)
+      || matchesKey(data, Key.right)
       || matchesKey(data, "l")
     ) {
-      this.tui.requestRender();
+      this.switchTab(1);
     }
+  }
+
+  private switchTab(offset: number): void {
+    const index = cycleIndex(PROVIDER_TABS.indexOf(this.tab), PROVIDER_TABS.length, offset);
+    this.tab = PROVIDER_TABS[index]!;
+    void this.store.refresh(this.tab, this.ctx);
   }
 
   render(width: number): string[] {
@@ -183,7 +232,10 @@ class UsageOverlay {
     const titleWidth = visibleWidth(title);
     const left = Math.max(0, Math.floor((innerWidth - titleWidth) / 2));
     lines.push(`${border(`╭${"─".repeat(left)}`)}${this.theme.fg("accent", this.theme.bold(title))}${border(`${"─".repeat(Math.max(0, innerWidth - left - titleWidth))}╮`)}`);
-    lines.push(line(` ${this.theme.bg("selectedBg", this.theme.fg("text", ` ${this.tab.label} `))}`));
+    const tabs = PROVIDER_TABS.map((tab) => tab === this.tab
+      ? this.theme.bg("selectedBg", this.theme.fg("text", ` ${tab.label} `))
+      : this.theme.fg("muted", ` ${tab.label} `));
+    lines.push(line(` ${tabs.join(" ")}`));
     lines.push(`${border("├")}${border("─".repeat(innerWidth))}${border("┤")}`);
 
     if (snapshot) {
@@ -261,7 +313,7 @@ async function showUsage(ctx: ExtensionCommandContext, store: UsageStore): Promi
     return;
   }
 
-  const tab = PROVIDER_TABS[0];
+  const tab = providerTab(ctx.model?.provider) ?? PROVIDER_TABS[0];
   if (!tab) return;
   await ctx.ui.custom<void>(
     (tui, theme, _keybindings, done) => new UsageOverlay(tui, theme, done, ctx, store, tab),

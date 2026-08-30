@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { formatWindowDuration, maskEmail, parseUsagePayload, resetCountdown, selectUsageWindow } from "./state.ts";
+import {
+  cycleIndex,
+  formatWindowDuration,
+  maskEmail,
+  parseCopilotUsagePayload,
+  parseUsagePayload,
+  resetCountdown,
+  selectCopilotUsageWindow,
+  selectUsageWindow,
+} from "./state.ts";
 
 test("normalizes every Codex limit and meaningful metadata", () => {
   const snapshot = parseUsagePayload({
@@ -52,6 +61,34 @@ test("selects the tightest limit relevant to the active model", () => {
 
   assert.equal(selectUsageWindow(snapshot, "gpt-5.6-luna")?.usedPercent, 70);
   assert.equal(selectUsageWindow(snapshot, "gpt-5.3-codex-spark")?.usedPercent, 80);
+});
+
+test("normalizes GitHub Copilot quota snapshots", () => {
+  const snapshot = parseCopilotUsagePayload({
+    copilot_plan: "individual",
+    quota_reset_date_utc: "2026-09-01T00:00:00.000Z",
+    quota_snapshots: {
+      premium_interactions: { percent_remaining: 37.5, entitlement: 300, remaining: 112 },
+      chat: { unlimited: true, percent_remaining: 0 },
+      completions: { entitlement: 4_000, remaining: 3_000 },
+    },
+  });
+
+  assert.deepEqual(snapshot, {
+    plan: "Individual",
+    windows: [
+      { label: "Premium", usedPercent: 62.5, resetsAt: 1_788_220_800 },
+      { label: "Chat", usedPercent: 0, resetsAt: 1_788_220_800 },
+      { label: "Completions", usedPercent: 25, resetsAt: 1_788_220_800 },
+    ],
+  });
+  assert.equal(selectCopilotUsageWindow(snapshot, "ignored")?.label, "Premium");
+});
+
+test("cycles provider tabs in either direction", () => {
+  assert.equal(cycleIndex(0, 2, 1), 1);
+  assert.equal(cycleIndex(1, 2, 1), 0);
+  assert.equal(cycleIndex(0, 2, -1), 1);
 });
 
 test("formats reset countdowns without seconds", () => {
