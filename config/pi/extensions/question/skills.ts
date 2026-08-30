@@ -23,16 +23,45 @@ function skillNames(details: QuestionDetails): string[] {
   return [...names];
 }
 
+export function discoverSkillMentions(
+  details: QuestionDetails,
+  skillCommands: SkillCommand[],
+): { valid: string[]; unknown: string[] } {
+  const available = new Set(skillCommands.map((command) => command.name));
+  const valid: string[] = [];
+  const unknown: string[] = [];
+  for (const name of skillNames(details)) {
+    if (available.has(`skill:${name}`)) valid.push(name);
+    else unknown.push(name);
+  }
+  return { valid, unknown };
+}
+
 export function queueSkillMentions(
   details: QuestionDetails,
   skillCommands: SkillCommand[],
   queue: QueueSkill,
 ): string[] {
-  const available = new Set(skillCommands.map((command) => command.name));
-  const unknown: string[] = [];
-  for (const name of skillNames(details)) {
-    if (available.has(`skill:${name}`)) queue(name);
-    else unknown.push(name);
-  }
+  const { valid, unknown } = discoverSkillMentions(details, skillCommands);
+  for (const name of valid) queue(name);
   return unknown;
+}
+
+export function createReopenSkillQueue(deliver: QueueSkill): {
+  schedule: (names: string[]) => void;
+  flush: () => void;
+} {
+  let pending: string[] | undefined;
+
+  return {
+    schedule(names) {
+      pending = names.length ? [...names] : undefined;
+    },
+    flush() {
+      const names = pending;
+      pending = undefined;
+      if (!names) return;
+      for (const name of names) deliver(name);
+    },
+  };
 }

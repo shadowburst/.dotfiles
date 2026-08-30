@@ -34,7 +34,7 @@ import {
   type QuestionDetails,
   type QuestionState,
 } from "./state.ts";
-import { queueSkillMentions } from "./skills.ts";
+import { createReopenSkillQueue, discoverSkillMentions, queueSkillMentions } from "./skills.ts";
 
 const QuestionSchema = Type.Object({
   question: Type.String(),
@@ -355,6 +355,15 @@ async function showDialog(pi: ExtensionAPI, params: QuestionParams, ctx: Extensi
 }
 
 export default function questionExtension(pi: ExtensionAPI): void {
+  const reopenSkillQueue = createReopenSkillQueue((name) => pi.sendUserMessage(`/skill:${name}`, {
+    deliverAs: "followUp",
+    expandPromptTemplates: true,
+  }));
+
+  // An idle sendUserMessage() starts its run asynchronously. Queueing reopen skills
+  // from agent_start makes the answer run active before Pi accepts the follow-ups.
+  pi.on("agent_start", () => reopenSkillQueue.flush());
+
   const queueQuestionSkills = (details: QuestionDetails): string[] => queueSkillMentions(
     details,
     pi.getCommands().filter((command) => command.source === "skill"),
@@ -366,13 +375,18 @@ export default function questionExtension(pi: ExtensionAPI): void {
 
   const reopenQuestion = async (params: QuestionParams, ctx: ExtensionContext): Promise<void> => {
     const result = await showDialog(pi, params, ctx);
-    setTimeout(() => {
-      const unknownSkills = result ? queueQuestionSkills(result.details) : [];
-      const message = result
-        ? resultText(params, result.details, unknownSkills)
-        : "The interrupted question was cancelled. Continue without those answers.";
-      pi.sendUserMessage(message);
-    }, 0);
+    const discovered = result
+      ? discoverSkillMentions(
+        result.details,
+        pi.getCommands().filter((command) => command.source === "skill"),
+      )
+      : undefined;
+    reopenSkillQueue.schedule(discovered?.valid ?? []);
+    const unknownSkills = discovered?.unknown ?? [];
+    const message = result
+      ? resultText(params, result.details, unknownSkills)
+      : "The interrupted question was cancelled. Continue without those answers.";
+    pi.sendUserMessage(message);
   };
 
   pi.registerTool({
