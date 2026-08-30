@@ -268,6 +268,15 @@
       "skillFolderHash": "6161508c5c7959b156ff0e4e10b510863b51f9cc",
       "installedAt": "2026-08-19T06:32:04.122Z",
       "updatedAt": "2026-08-19T06:32:04.122Z"
+    },
+    "implement-spec": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mattpocock/skills.git",
+      "skillPath": "skills/in-progress/implement-spec/SKILL.md",
+      "skillFolderHash": "1ec4cd3fbcc62d57cd32cf1d907c4c4761355e2b",
+      "installedAt": "2026-08-28T21:50:13.272Z",
+      "updatedAt": "2026-08-28T21:50:13.272Z"
     }
   },
   "dismissed": {
