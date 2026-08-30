@@ -1,7 +1,19 @@
+import { readFile } from "node:fs/promises";
+import { dirname } from "node:path";
+import { stripFrontmatter } from "@earendil-works/pi-coding-agent";
+
 import type { QuestionDetails } from "./state.ts";
 
-type SkillCommand = { name: string };
-type QueueSkill = (name: string) => void;
+type SkillCommand = {
+  name: string;
+  sourceInfo: { path: string };
+};
+
+export type SkillExpansion = {
+  blocks: string[];
+  unknown: string[];
+  failed: string[];
+};
 
 const skillMentionPattern = /\/skill:([a-z0-9]+(?:-[a-z0-9]+)*)(?![\p{L}\p{N}_-])/gu;
 
@@ -23,45 +35,34 @@ function skillNames(details: QuestionDetails): string[] {
   return [...names];
 }
 
-export function discoverSkillMentions(
+export async function expandSkillMentions(
   details: QuestionDetails,
   skillCommands: SkillCommand[],
-): { valid: string[]; unknown: string[] } {
-  const available = new Set(skillCommands.map((command) => command.name));
-  const valid: string[] = [];
+): Promise<SkillExpansion> {
+  const commands = new Map(skillCommands.map((command) => [command.name, command]));
+  const blocks: string[] = [];
   const unknown: string[] = [];
+  const failed: string[] = [];
+
   for (const name of skillNames(details)) {
-    if (available.has(`skill:${name}`)) valid.push(name);
-    else unknown.push(name);
+    const command = commands.get(`skill:${name}`);
+    if (!command) {
+      unknown.push(name);
+      continue;
+    }
+
+    try {
+      const path = command.sourceInfo.path;
+      const body = stripFrontmatter(await readFile(path, "utf8")).trim();
+      blocks.push(`<skill name="${name}" location="${path}">
+References are relative to ${dirname(path)}.
+
+${body}
+</skill>`);
+    } catch {
+      failed.push(name);
+    }
   }
-  return { valid, unknown };
-}
 
-export function queueSkillMentions(
-  details: QuestionDetails,
-  skillCommands: SkillCommand[],
-  queue: QueueSkill,
-): string[] {
-  const { valid, unknown } = discoverSkillMentions(details, skillCommands);
-  for (const name of valid) queue(name);
-  return unknown;
-}
-
-export function createReopenSkillQueue(deliver: QueueSkill): {
-  schedule: (names: string[]) => void;
-  flush: () => void;
-} {
-  let pending: string[] | undefined;
-
-  return {
-    schedule(names) {
-      pending = names.length ? [...names] : undefined;
-    },
-    flush() {
-      const names = pending;
-      pending = undefined;
-      if (!names) return;
-      for (const name of names) deliver(name);
-    },
-  };
+  return { blocks, unknown, failed };
 }

@@ -34,7 +34,7 @@ import {
   type QuestionDetails,
   type QuestionState,
 } from "./state.ts";
-import { createReopenSkillQueue, discoverSkillMentions, queueSkillMentions } from "./skills.ts";
+import { expandSkillMentions, type SkillExpansion } from "./skills.ts";
 
 const QuestionSchema = Type.Object({
   question: Type.String(),
@@ -330,17 +330,24 @@ class QuestionComponent implements Focusable {
   }
 }
 
-function resultText(params: QuestionParams, details: QuestionDetails, unknownSkills: string[] = []): string {
+function resultText(
+  params: QuestionParams,
+  details: QuestionDetails,
+  expansion: SkillExpansion = { blocks: [], unknown: [], failed: [] },
+): string {
   const formatted = params.questions.map((question, index) => {
     const answer = details.answers[index]?.length ? details.answers[index]!.join(", ") : "Unanswered";
     const note = details.notes?.[index];
     const suffix = note && Object.keys(note).length ? ` notes=${JSON.stringify(note)}` : "";
     return `${JSON.stringify(question.question)}=${JSON.stringify(answer)}${suffix}`;
   }).join(", ");
-  const unknown = unknownSkills.length
-    ? ` Unknown skills mentioned: ${unknownSkills.map((name) => `/skill:${name}`).join(", ")}.`
+  const unknown = expansion.unknown.length
+    ? ` Unknown skills mentioned: ${expansion.unknown.map((name) => `/skill:${name}`).join(", ")}.`
     : "";
-  return `User has answered your questions: ${formatted}. You can now continue with the user's answers in mind.${unknown}`;
+  const failed = expansion.failed.length
+    ? ` Failed to load skills: ${expansion.failed.map((name) => `/skill:${name}`).join(", ")}.`
+    : "";
+  return `User has answered your questions: ${formatted}. You can now continue with the user's answers in mind.${unknown}${failed}`;
 }
 
 async function showDialog(pi: ExtensionAPI, params: QuestionParams, ctx: ExtensionContext): Promise<DialogResult> {
@@ -355,36 +362,19 @@ async function showDialog(pi: ExtensionAPI, params: QuestionParams, ctx: Extensi
 }
 
 export default function questionExtension(pi: ExtensionAPI): void {
-  const reopenSkillQueue = createReopenSkillQueue((name) => pi.sendUserMessage(`/skill:${name}`, {
-    deliverAs: "followUp",
-    expandPromptTemplates: true,
-  }));
-
-  // An idle sendUserMessage() starts its run asynchronously. Queueing reopen skills
-  // from agent_start makes the answer run active before Pi accepts the follow-ups.
-  pi.on("agent_start", () => reopenSkillQueue.flush());
-
-  const queueQuestionSkills = (details: QuestionDetails): string[] => queueSkillMentions(
-    details,
-    pi.getCommands().filter((command) => command.source === "skill"),
-    (name) => pi.sendUserMessage(`/skill:${name}`, {
-      deliverAs: "steer",
-      expandPromptTemplates: true,
-    }),
-  );
+  const skillCommands = () => pi.getCommands().filter((command) => command.source === "skill");
+  const questionMessage = async (params: QuestionParams, details: QuestionDetails): Promise<string> => {
+    const expansion = await expandSkillMentions(details, skillCommands());
+    const answer = resultText(params, details, expansion);
+    return expansion.blocks.length
+      ? `${expansion.blocks.join("\n\n")}\n\n${answer}`
+      : answer;
+  };
 
   const reopenQuestion = async (params: QuestionParams, ctx: ExtensionContext): Promise<void> => {
     const result = await showDialog(pi, params, ctx);
-    const discovered = result
-      ? discoverSkillMentions(
-        result.details,
-        pi.getCommands().filter((command) => command.source === "skill"),
-      )
-      : undefined;
-    reopenSkillQueue.schedule(discovered?.valid ?? []);
-    const unknownSkills = discovered?.unknown ?? [];
     const message = result
-      ? resultText(params, result.details, unknownSkills)
+      ? await questionMessage(params, result.details)
       : "The interrupted question was cancelled. Continue without those answers.";
     pi.sendUserMessage(message);
   };
@@ -410,9 +400,8 @@ export default function questionExtension(pi: ExtensionAPI): void {
           executeCtx.abort();
           throw new Error("User cancelled");
         }
-        const unknownSkills = queueQuestionSkills(result.details);
         return {
-          content: [{ type: "text" as const, text: resultText(params, result.details, unknownSkills) }],
+          content: [{ type: "text" as const, text: await questionMessage(params, result.details) }],
           details: result.details,
         };
       },
