@@ -1,6 +1,18 @@
 {
-  "reportUsage": true,
-  "outputTranscript": false,
+  "maxConcurrent": 4,
+  "maxConcurrentForeground": 1,
+  "defaultMaxTurns": 25,
+  "graceTurns": 5,
+  "backgroundByDefault": true,
+  "schedulingEnabled": false,
+  "scopeModels": true,
+  "strictAgentFiles": true,
+  "disableDefaultAgents": true,
   "toolDescriptionMode": "compact",
-  "strictAgentFiles": true
+  "agentMentions": "off",
+  "workflowsEnabled": false,
+  "maxSubagentDepth": 1,
+  "fallbackSubagent": "none",
+  "reportUsage": true,
+  "outputTranscript": false
 }
