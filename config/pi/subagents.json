@@ -1,4 +1,6 @@
 {
   "reportUsage": true,
-  "outputTranscript": false
+  "outputTranscript": false,
+  "toolDescriptionMode": "compact",
+  "strictAgentFiles": true
 }
