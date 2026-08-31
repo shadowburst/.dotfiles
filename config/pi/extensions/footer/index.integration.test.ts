@@ -4,7 +4,14 @@ import { test } from "node:test";
 
 const indexUrl = new URL("./index.ts", import.meta.url).href;
 const packageSources = {
-  "@earendil-works/pi-coding-agent": "export const SettingsManager = { create: () => ({ getCompactionEnabled: () => true }) };",
+  "@earendil-works/pi-coding-agent": `
+    export const SettingsManager = {
+      create: () => {
+        if (globalThis.__footerCompactionError) throw new Error("settings unavailable");
+        return { getCompactionEnabled: () => globalThis.__footerCompactionEnabled ?? true };
+      },
+    };
+  `,
   "@earendil-works/pi-tui": `
     export const visibleWidth = (text) => text.replace(/\\x1b\\[[0-9;]*m/g, "").length;
     export const truncateToWidth = (text, width, ellipsis = "…", fromStart = false) => {
@@ -60,6 +67,7 @@ function harness(options: {
   reasoning?: boolean;
   thinkingLevel?: string;
   usingOAuth?: boolean;
+  oauthSubscription?: boolean;
 } = {}) {
   let factory: ((tui: unknown, theme: unknown, footerData: unknown) => { render(width: number): string[]; dispose?(): void }) | undefined;
   const handlers = new Map<string, (...args: unknown[]) => unknown>();
@@ -72,7 +80,10 @@ function harness(options: {
     model: { id: "gpt-test", provider: "test", reasoning: options.reasoning ?? true, contextWindow: 128_000 },
     thinkingLevel: options.thinkingLevel ?? "high",
     ui: { setFooter(value: typeof factory) { factory = value; } },
-    modelRegistry: { isUsingOAuth: () => options.usingOAuth ?? false },
+    modelRegistry: {
+      isUsingOAuth: () => options.usingOAuth ?? false,
+      getProvider: () => ({ auth: { oauth: { isSubscription: options.oauthSubscription ?? false } } }),
+    },
     sessionManager: {
       getCwd: () => options.cwd ?? `${process.env.HOME}/project/src`,
       getSessionName: () => options.sessionName,
@@ -107,9 +118,22 @@ test("renders the normal footer through the public extension seam", () => {
   assert.ok(visible.length <= 240);
 });
 
-test("marks OAuth usage with the built-in pricing marker", () => {
-  const { component } = harness({ usingOAuth: true });
-  assert.match(plain(component.render(200)[0]!), /\$0\.123 \(sub\)/);
+test("marks only subscription-backed OAuth usage with the pricing marker", () => {
+  const subscription = harness({ usingOAuth: true, oauthSubscription: true });
+  assert.match(plain(subscription.component.render(200)[0]!), /\$0\.123 \(sub\)/);
+
+  const ordinaryOAuth = harness({ usingOAuth: true, oauthSubscription: false });
+  assert.doesNotMatch(plain(ordinaryOAuth.component.render(200)[0]!), /\(sub\)/);
+});
+
+test("omits auto-compaction when settings are unavailable", () => {
+  (globalThis as Record<string, unknown>).__footerCompactionError = true;
+  try {
+    const { component } = harness();
+    assert.doesNotMatch(plain(component.render(200)[0]!), /\(auto\)/);
+  } finally {
+    delete (globalThis as Record<string, unknown>).__footerCompactionError;
+  }
 });
 
 test("omits git-only and center-only sections when unavailable", () => {
@@ -119,6 +143,24 @@ test("omits git-only and center-only sections when unavailable", () => {
   assert.ok(line.endsWith("gpt-test │ high"));
   assert.ok(!line.includes("main"));
   assert.ok(line.length <= 200);
+});
+
+test("renders detached HEAD as the branch section", () => {
+  const { component } = harness({ branch: "detached" });
+  assert.match(plain(component.render(200)[0]!), /~\/project\/src │ detached │/);
+});
+
+test("preserves status text and registration order", () => {
+  const { component } = harness({
+    statuses: [
+      ["z-mcp", "🔌 MCP: 1 server enabled"],
+      ["a-ponytail", "○ 🐴 ponytail: ⚡ FULL"],
+    ],
+  });
+  assert.match(
+    plain(component.render(240)[0]!),
+    /🔌 MCP: 1 server enabled │ ○ 🐴 ponytail: ⚡ FULL/,
+  );
 });
 
 test("renders a named session as its own section", () => {
