@@ -35,6 +35,7 @@ type UsageLike = Omit<Partial<UsageTotals>, "cost"> & { cost?: number | { total?
 
 const SEPARATOR = " │ ";
 const USAGE_DROP_ORDER: FooterItemKind[] = ["cacheHitRate", "cacheWrite", "cacheRead", "cost", "output", "input", "context"];
+const USAGE_ITEM_KINDS = new Set<FooterItemKind>(USAGE_DROP_ORDER);
 
 function formatTokens(count: number): string {
   if (count < 1000) return count.toString();
@@ -104,12 +105,22 @@ function sessionUsage(ctx: ExtensionContext): { totals: UsageTotals; cacheHitRat
   return { totals, cacheHitRate };
 }
 
+function itemSeparator(items: FooterItem[], index: number): string {
+  if (index === 0) return "";
+  return USAGE_ITEM_KINDS.has(items[index - 1]!.kind) && USAGE_ITEM_KINDS.has(items[index]!.kind)
+    ? " "
+    : SEPARATOR;
+}
+
 function itemWidth(items: FooterItem[]): number {
-  return items.reduce((total, item, index) => total + visibleWidth(item.text) + (index ? visibleWidth(SEPARATOR) : 0), 0);
+  return items.reduce(
+    (total, item, index) => total + visibleWidth(item.text) + visibleWidth(itemSeparator(items, index)),
+    0,
+  );
 }
 
 function joinItems(items: FooterItem[]): string {
-  return items.map((item) => item.text).join(SEPARATOR);
+  return items.map((item, index) => `${itemSeparator(items, index)}${item.text}`).join("");
 }
 
 function fitLeft(items: FooterItem[], width: number): FooterItem[] {
@@ -150,7 +161,11 @@ function fitLeft(items: FooterItem[], width: number): FooterItem[] {
 }
 
 function renderGroup(items: FooterItem[], theme: Theme, color: "dim" | "muted"): string {
-  return items.map((item, index) => `${index ? theme.fg("border", SEPARATOR) : ""}${theme.fg(color, item.text)}`).join("");
+  return items.map((item, index) => {
+    const separator = itemSeparator(items, index);
+    const styledSeparator = separator === SEPARATOR ? theme.fg("border", separator) : separator;
+    return `${styledSeparator}${theme.fg(color, item.text)}`;
+  }).join("");
 }
 
 function getAutoCompactionEnabled(ctx: ExtensionContext): boolean | undefined {

@@ -110,7 +110,7 @@ test("renders the normal footer through the public extension seam", () => {
   const { component } = harness({ sessionName: "API work" });
   const line = component.render(240)[0]!;
   const visible = plain(line);
-  const left = "~/project/src │ main │ API work │ ↑1.2k │ ↓2.3k │ R4.0k │ W500 │ CH70.2% │ $0.123 │ 9.6%/128k (auto)";
+  const left = "~/project/src │ main │ API work │ ↑1.2k ↓2.3k R4.0k W500 CH70.2% $0.123 9.6%/128k (auto)";
   assert.ok(visible.startsWith(left));
   assert.equal(visible.slice(-15), "gpt-test │ high");
   assert.equal(visible.indexOf("build │ lint"), Math.floor((240 - 12) / 2));
@@ -139,7 +139,7 @@ test("omits auto-compaction when settings are unavailable", () => {
 test("omits git-only and center-only sections when unavailable", () => {
   const { component } = harness({ branch: null, statuses: [] });
   const line = plain(component.render(200)[0]!);
-  assert.ok(line.startsWith("~/project/src │ ↑1.2k │ ↓2.3k │ R4.0k │ W500 │ CH70.2% │ $0.123 │ 9.6%/128k (auto)"));
+  assert.ok(line.startsWith("~/project/src │ ↑1.2k ↓2.3k R4.0k W500 CH70.2% $0.123 9.6%/128k (auto)"));
   assert.ok(line.endsWith("gpt-test │ high"));
   assert.ok(!line.includes("main"));
   assert.ok(line.length <= 200);
