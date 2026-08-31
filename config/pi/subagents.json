@@ -1,7 +1,7 @@
 {
   "maxConcurrent": 4,
   "maxConcurrentForeground": 1,
-  "defaultMaxTurns": 25,
+  "defaultMaxTurns": 0,
   "graceTurns": 5,
   "backgroundByDefault": true,
   "schedulingEnabled": false,

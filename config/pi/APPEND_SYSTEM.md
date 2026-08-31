@@ -13,14 +13,16 @@ Delegate only when a separate context, parallel work, an independent check, or a
 
 Use only the `general-purpose` agent. Give every dispatch a purpose, a compact self-contained prompt, explicit authority, acceptance checks, `inherit_context: false`, and the configuration below. Leave `isolated` false so extension tools and skills remain available.
 
-| Purpose | Default | Max turns | Authority |
-|---|---|---:|---|
-| Scout | `openai-codex/gpt-5.6-luna`, high | 15 | Read-only |
-| Researcher | `openai-codex/gpt-5.6-luna`, high | 20 | Read-only |
-| Worker | `openai-codex/gpt-5.6-luna`, high when fully constrained; otherwise `openai-codex/gpt-5.6-terra`, high | 35 | May edit |
-| Reviewer | `openai-codex/gpt-5.6-sol`, high | 20 | Read-only unless edits are explicit |
-| Oracle | `openai-codex/gpt-5.6-sol`, high, fresh context | 15 | Read-only |
-| Delegate | Inherit the active parent model and effort, capped at Sol/high | 25 | State it explicitly |
+| Purpose | Default | Authority |
+|---|---|---|
+| Scout | `openai-codex/gpt-5.6-luna`, high | Read-only |
+| Researcher | `openai-codex/gpt-5.6-luna`, high | Read-only |
+| Worker | `openai-codex/gpt-5.6-luna`, high when fully constrained; otherwise `openai-codex/gpt-5.6-terra`, high | May edit |
+| Reviewer | `openai-codex/gpt-5.6-sol`, high | Read-only unless edits are explicit |
+| Oracle | `openai-codex/gpt-5.6-sol`, high, fresh context | Read-only |
+| Delegate | Inherit the active parent model and effort, capped at Sol/high | State it explicitly |
+
+Omit `max_turns` by default so agents run without a turn ceiling. Set it only when the user explicitly requests a bounded run.
 
 A fully constrained Worker has explicit scope and files, intended behavior, acceptance criteria, and deterministic checks. It requires no product or architecture decision. Route broader work to Terra/high.
 
