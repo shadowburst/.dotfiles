@@ -142,6 +142,7 @@ _: {
         ".pi/agent/tasks-config.json" = mkPiConfigSymlink "config/pi/tasks-config.json";
         ".pi/agent/extensions/pi-kitty.ts" = mkPiConfigSymlink "config/pi/extensions/pi-kitty.ts";
         ".pi/agent/extensions/browser".source = browserTools;
+        ".pi/agent/extensions/footer" = mkPiConfigSymlink "config/pi/extensions/footer";
         ".pi/agent/extensions/question" = mkPiConfigSymlink "config/pi/extensions/question";
         ".pi/agent/extensions/subagents".source = subagents;
         ".pi/agent/extensions/tasks".source = tasks;
