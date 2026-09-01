@@ -6,12 +6,10 @@ _: {
       pkgs,
       ...
     }:
-    let
-      tomlFormat = pkgs.formats.toml { };
-    in
     {
       home.packages = with pkgs; [
         herdr
+        python3 # Needed for claude integration
       ];
 
       home.activation.herdrIntegrations = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
@@ -21,53 +19,56 @@ _: {
         run ${pkgs.herdr}/bin/herdr integration install claude
       '';
 
-      xdg.configFile."herdr/config.toml".source = tomlFormat.generate "herdr-config.toml" {
-        onboarding = false;
+      programs.herdr = {
+        enable = true;
+        settings = {
+          onboarding = false;
 
-        terminal = {
-          new_cwd = "follow";
-          shell_mode = "auto";
-        };
+          terminal = {
+            new_cwd = "follow";
+            shell_mode = "auto";
+          };
 
-        theme = {
-          name = "catppuccin";
-          custom.surface_dim = config.catppuccin.palette.colors.mantle.hex;
-        };
+          theme = {
+            name = "catppuccin";
+            custom.surface_dim = config.catppuccin.palette.colors.mantle.hex;
+          };
 
-        ui = {
-          confirm_close = false;
-          prompt_new_tab_name = false;
-          agent_panel_sort = "priority";
-        };
+          ui = {
+            confirm_close = false;
+            prompt_new_tab_name = false;
+            agent_panel_sort = "priority";
+          };
 
-        advanced.scrollback_limit_bytes = 10485760;
+          advanced.scrollback_limit_bytes = 10485760;
 
-        experimental.kitty_graphics = true;
+          experimental.kitty_graphics = true;
 
-        keys = {
-          detach = "";
-          goto = "alt+space";
-          toggle_sidebar = "alt+b";
+          keys = {
+            detach = "";
+            goto = "alt+space";
+            toggle_sidebar = "alt+b";
 
-          next_workspace = "alt+tab";
-          previous_workspace = "alt+shift+tab";
-          focus_agent = "alt+1..9";
+            next_workspace = "alt+tab";
+            previous_workspace = "alt+shift+tab";
+            focus_agent = "alt+1..9";
 
-          next_tab = "alt+n";
-          previous_tab = "alt+p";
-          new_tab = "alt+t";
+            next_tab = "alt+n";
+            previous_tab = "alt+p";
+            new_tab = "alt+t";
 
-          focus_pane_left = "alt+h";
-          focus_pane_down = "alt+j";
-          focus_pane_up = "alt+k";
-          focus_pane_right = "alt+l";
-          zoom = "alt+f";
-          close_pane = "alt+q";
-          split_vertical = "alt+v";
-          split_horizontal = "alt+s";
-          resize_mode = "alt+plus";
+            focus_pane_left = "alt+h";
+            focus_pane_down = "alt+j";
+            focus_pane_up = "alt+k";
+            focus_pane_right = "alt+l";
+            zoom = "alt+f";
+            close_pane = "alt+q";
+            split_vertical = "alt+v";
+            split_horizontal = "alt+s";
+            resize_mode = "alt+plus";
 
-          edit_scrollback = "alt+esc";
+            edit_scrollback = "alt+esc";
+          };
         };
       };
     };
