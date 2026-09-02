@@ -87,14 +87,6 @@ _: {
         npmDepsHash = "sha256-MrAt37DvVNwtMtSZmSeICtEkue9CoNQQPtQfYrUXmzI=";
       };
 
-      subagents = buildPiPackage {
-        owner = "tintinweb";
-        repo = "pi-subagents";
-        version = "0.19.0";
-        hash = "sha256-1K6U5+2qLgOV7lUWbvqUne/Pf7oMRDf40GXLl8gv6Bk=";
-        npmDepsHash = "sha256-0fPvMUErqeBqp/HJzT2RKYcZW307tXB/07ofNq/ksOw=";
-      };
-
       tasks = buildPiPackage {
         owner = "tintinweb";
         repo = "pi-tasks";
@@ -134,17 +126,15 @@ _: {
 
       home.file = {
         ".pi/agent/APPEND_SYSTEM.md" = mkPiConfigSymlink "config/pi/APPEND_SYSTEM.md";
-        ".pi/agent/agents" = mkPiConfigSymlink "config/pi/agents";
         ".pi/agent/themes" = mkPiConfigSymlink "config/pi/themes";
         ".pi/agent/settings.json" = mkPiConfigSymlink "config/pi/settings.json";
         ".pi/agent/keybindings.json" = mkPiConfigSymlink "config/pi/keybindings.json";
-        ".pi/agent/subagents.json" = mkPiConfigSymlink "config/pi/subagents.json";
         ".pi/agent/tasks-config.json" = mkPiConfigSymlink "config/pi/tasks-config.json";
         ".pi/agent/extensions/pi-kitty.ts" = mkPiConfigSymlink "config/pi/extensions/pi-kitty.ts";
         ".pi/agent/extensions/browser".source = browserTools;
         ".pi/agent/extensions/footer" = mkPiConfigSymlink "config/pi/extensions/footer";
         ".pi/agent/extensions/question" = mkPiConfigSymlink "config/pi/extensions/question";
-        ".pi/agent/extensions/subagents".source = subagents;
+        ".pi/agent/extensions/subagents" = mkPiConfigSymlink "config/pi/extensions/subagents";
         ".pi/agent/extensions/tasks".source = tasks;
         ".pi/agent/extensions/usage" = mkPiConfigSymlink "config/pi/extensions/usage";
         ".pi/agent/extensions/pi-mcp-adapter".source = mcpAdapter;
