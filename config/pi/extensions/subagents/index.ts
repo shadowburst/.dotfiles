@@ -25,6 +25,7 @@ import {
   matchesKey,
   Text,
   truncateToWidth,
+  visibleWidth,
   wrapTextWithAnsi,
   type Component,
   type Focusable,
@@ -172,6 +173,15 @@ function replayHistory(sessionManager: SessionManager, messages: AgentSession["m
   }
 }
 
+function panel(theme: Theme, width: number, content: string[]): string[] {
+  const renderWidth = Math.max(1, width);
+  const border = theme.fg("accent", "─".repeat(renderWidth));
+  return [border, ...content, border].map((line) => {
+    const fitted = truncateToWidth(line, renderWidth, "");
+    return theme.bg("customMessageBg", fitted + " ".repeat(Math.max(0, renderWidth - visibleWidth(fitted))));
+  });
+}
+
 function activity(record: AgentRecord): string {
   if (record.activeTools.size) {
     const names = [...new Set(record.activeTools.values())];
@@ -286,7 +296,7 @@ class AgentList implements Component {
   render(width: number): string[] {
     const records = this.records();
     this.selected = Math.min(this.selected, Math.max(0, records.length - 1));
-    const height = Math.max(1, this.tui.terminal.rows - 4);
+    const height = Math.max(1, this.tui.terminal.rows - 6);
     const start = Math.max(0, Math.min(this.selected - Math.floor(height / 2), records.length - height));
     const lines = [this.theme.fg("accent", this.theme.bold("Agents")), ""];
     if (!records.length) lines.push(this.theme.fg("muted", "No agents in this session."));
@@ -298,7 +308,7 @@ class AgentList implements Component {
         : truncateToWidth(line, width, ""));
     }
     lines.push("", this.theme.fg("dim", "navigate · Enter open · Esc/q back"));
-    return lines.map((line) => truncateToWidth(line, width, ""));
+    return panel(this.theme, width, lines);
   }
 
   invalidate(): void {}
@@ -379,21 +389,21 @@ class AgentDetail implements Component, Focusable {
         ? `${this.stopArmed ? "x again to STOP" : "x stop"} · `
         : "";
     const composer = this.composer ? this.composer.render(width) : [];
-    return [
-      truncateToWidth(header, width, ""),
+    return panel(this.theme, width, [
+      header,
       this.theme.fg("borderMuted", "─".repeat(width)),
       ...visible,
       ...Array.from({ length: Math.max(0, viewport - visible.length) }, () => ""),
       this.theme.fg("borderMuted", "─".repeat(width)),
       ...composer,
-      truncateToWidth(this.theme.fg("dim", `${actions}↑↓/jk scroll · PgUp/PgDn or Shift+↑↓ · Esc/ctrl+c/q close`), width, ""),
-    ];
+      this.theme.fg("dim", `${actions}↑↓/jk scroll · PgUp/PgDn or Shift+↑↓ · Esc/ctrl+c/q close`),
+    ]);
   }
 
   invalidate(): void {}
 
   private viewportHeight(): number {
-    return Math.max(3, this.tui.terminal.rows - (this.composer ? 6 : 5));
+    return Math.max(3, this.tui.terminal.rows - (this.composer ? 8 : 7));
   }
 
   private history(width: number): string[] {
