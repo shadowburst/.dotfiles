@@ -713,7 +713,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
         () => { void cancel(record); },
       );
       return Object.assign(component, { dispose: () => openTuis.delete(tui) });
-    }, { overlay: true, overlayOptions: { width: "100%", maxHeight: "100%", margin: 0 } });
+    });
   };
 
   const showManager = async () => {
@@ -724,7 +724,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
         openTuis.add(tui);
         const component = new AgentList(tui, theme, keybindings, allRecords, done);
         return Object.assign(component, { dispose: () => openTuis.delete(tui) });
-      }, { overlay: true, overlayOptions: { width: "100%", maxHeight: "100%", margin: 0 } });
+      });
       if (!id) return;
       await showDetail(id);
     }
