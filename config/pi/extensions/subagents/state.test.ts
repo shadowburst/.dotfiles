@@ -93,12 +93,29 @@ test("worktree cleanup commits edits, preserves a unique branch, and removes the
     const firstResult = await cleanupWorktree(pi, root, first, "first edit");
     assert.equal(firstResult.branch, "pi-agent-same-id");
 
-    const second = await createWorktree(pi, root, "same-id");
+    const second = await createWorktree(pi, root, "same-id", firstResult.branch);
     assert.ok(second);
+    assert.equal(await readFile(join(second.path, "file.txt"), "utf8"), "first\n");
     await writeFile(join(second.path, "file.txt"), "second\n");
     const secondResult = await cleanupWorktree(pi, root, second, "second edit");
     assert.match(secondResult.branch ?? "", /^pi-agent-same-id-/);
     await assert.rejects(readFile(second.path));
+
+    const third = await createWorktree(pi, root, "failed-cleanup");
+    assert.ok(third);
+    await writeFile(join(third.path, "file.txt"), "preserved\n");
+    const failingPi = {
+      ...pi,
+      exec: (command: string, args: string[], options: { cwd: string; timeout: number }) =>
+        args[0] === "branch"
+          ? Promise.resolve({ stdout: "", stderr: "branch failed", code: 1, killed: false })
+          : pi.exec(command, args, options),
+    };
+    const failedResult = await cleanupWorktree(failingPi, root, third, "failed edit");
+    assert.equal(failedResult.path, third.path);
+    assert.match(failedResult.error ?? "", /branch failed/);
+    assert.equal(await readFile(join(third.path, "file.txt"), "utf8"), "preserved\n");
+    await exec("git", ["worktree", "remove", "--force", third.path], { cwd: root });
   } finally {
     await rm(root, { recursive: true, force: true });
   }

@@ -29,6 +29,8 @@ export type Worktree = {
 export type WorktreeCleanupResult = {
   hasChanges: boolean;
   branch?: string;
+  path?: string;
+  error?: string;
 };
 
 type PiExec = {
@@ -100,7 +102,7 @@ export function transcriptForView(
   ];
 }
 
-function textContent(content: unknown): string {
+export function extractTextContent(content: unknown): string {
   if (typeof content === "string") return content;
   if (!Array.isArray(content)) return "";
   return content
@@ -121,13 +123,13 @@ export function latestAssistantResponse(
     const message = messages[index] as { role?: string; content?: unknown; stopReason?: string; errorMessage?: string };
     if (message?.role !== "assistant") continue;
     final = message;
-    const candidate = textContent(message.content).trim();
+    const candidate = extractTextContent(message.content).trim();
     if (candidate) text = candidate;
   }
 
   if (!final) return { text };
   if (final.stopReason === "error") return { text, error: final.errorMessage?.trim() || "provider error with no output" };
-  if (final.stopReason === "length" && !textContent(final.content).trim()) {
+  if (final.stopReason === "length" && !extractTextContent(final.content).trim()) {
     return { text, error: "run hit the output token limit before producing any text" };
   }
   return { text };
@@ -163,12 +165,17 @@ async function git(pi: PiExec, cwd: string, args: string[], timeout: number): Pr
   return result.stdout.trim();
 }
 
-export async function createWorktree(pi: PiExec, cwd: string, agentId: string): Promise<Worktree | undefined> {
+export async function createWorktree(
+  pi: PiExec,
+  cwd: string,
+  agentId: string,
+  ref = "HEAD",
+): Promise<Worktree | undefined> {
   let baseSha: string;
   let subdir: string;
   try {
     await git(pi, cwd, ["rev-parse", "--is-inside-work-tree"], 5_000);
-    baseSha = await git(pi, cwd, ["rev-parse", "HEAD"], 5_000);
+    baseSha = await git(pi, cwd, ["rev-parse", ref], 5_000);
     const topLevel = await git(pi, cwd, ["rev-parse", "--show-toplevel"], 5_000);
     subdir = relative(realpathSync(topLevel), realpathSync(cwd));
   } catch {
@@ -177,7 +184,7 @@ export async function createWorktree(pi: PiExec, cwd: string, agentId: string): 
 
   const path = join(tmpdir(), `pi-agent-${agentId}-${randomUUID().slice(0, 8)}`);
   try {
-    await git(pi, cwd, ["worktree", "add", "--detach", path, "HEAD"], 30_000);
+    await git(pi, cwd, ["worktree", "add", "--detach", path, ref], 30_000);
     return {
       path,
       workPath: subdir ? join(path, subdir) : path,
@@ -229,8 +236,11 @@ export async function cleanupWorktree(
     worktree.branch = branch;
     await removeWorktree(pi, cwd, worktree.path);
     return { hasChanges: true, branch };
-  } catch {
-    await removeWorktree(pi, cwd, worktree.path);
-    return { hasChanges: false };
+  } catch (failure) {
+    return {
+      hasChanges: true,
+      path: worktree.path,
+      error: failure instanceof Error ? failure.message : String(failure),
+    };
   }
 }

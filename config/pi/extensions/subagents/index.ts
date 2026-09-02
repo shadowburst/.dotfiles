@@ -28,7 +28,6 @@ import {
   wrapTextWithAnsi,
   type Component,
   type Focusable,
-  type KeyId,
   type KeybindingsManager,
   type TUI,
 } from "@earendil-works/pi-tui";
@@ -44,6 +43,7 @@ import {
   transcriptForView,
   truncateResponse,
   validateAgentRequest,
+  extractTextContent,
   type Effort,
   type ModelId,
   type TranscriptEntry,
@@ -75,7 +75,6 @@ type AgentRecord = {
   effort: Effort;
   background: boolean;
   isolation?: "worktree";
-  tools: string[];
   context: ExtensionContext;
   status: AgentStatus;
   startedAt?: number;
@@ -86,8 +85,11 @@ type AgentRecord = {
   activeTools: Map<string, string>;
   error?: string;
   session?: AgentSession;
+  history: AgentSession["messages"];
   unsubscribe?: () => void;
   worktree?: Worktree;
+  worktreeBranch?: string;
+  worktreePath?: string;
   pendingSteers: string[];
   acceptingSteer: boolean;
   initialUserSeen: boolean;
@@ -127,16 +129,6 @@ function deferred(): Deferred {
   return { promise: new Promise<void>((done) => { resolve = done; }), resolve };
 }
 
-function textContent(content: unknown): string {
-  if (typeof content === "string") return content;
-  if (!Array.isArray(content)) return "";
-  return content
-    .filter((part): part is { type: "text"; text: string } =>
-      Boolean(part && typeof part === "object" && (part as { type?: string }).type === "text"))
-    .map((part) => part.text)
-    .join("\n");
-}
-
 function elapsed(record: AgentRecord): string {
   const end = record.completedAt ?? Date.now();
   const start = record.startedAt ?? end;
@@ -158,6 +150,26 @@ function abortable<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
 
 function bounded(text: string): string {
   return truncateResponse(text, DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES);
+}
+
+function worktreeSummary(record: AgentRecord): string | undefined {
+  if (record.worktreePath) return `Worktree preserved at ${record.worktreePath}.`;
+  if (record.worktreeBranch) return `Changes saved to branch ${record.worktreeBranch}.`;
+  return undefined;
+}
+
+function replayHistory(sessionManager: SessionManager, messages: AgentSession["messages"]): void {
+  for (const message of messages) {
+    if (message.role === "branchSummary" || message.role === "compactionSummary") {
+      sessionManager.appendMessage({
+        role: "user",
+        content: [{ type: "text", text: `Previous conversation summary:\n${message.summary}` }],
+        timestamp: message.timestamp,
+      });
+    } else {
+      sessionManager.appendMessage(message);
+    }
+  }
 }
 
 function activity(record: AgentRecord): string {
@@ -244,8 +256,8 @@ class AgentWidget implements Component {
 
 type SelectKey = "tui.select.up" | "tui.select.down" | "tui.select.pageUp" | "tui.select.pageDown" | "tui.select.confirm" | "tui.select.cancel";
 
-function keyMatches(keybindings: KeybindingsManager, data: string, id: SelectKey, fallback: KeyId): boolean {
-  return keybindings.matches(data, id) || matchesKey(data, fallback);
+function keyMatches(keybindings: KeybindingsManager, data: string, id: SelectKey): boolean {
+  return keybindings.matches(data, id);
 }
 
 class AgentList implements Component {
@@ -261,13 +273,13 @@ class AgentList implements Component {
 
   handleInput(data: string): void {
     const records = this.records();
-    if (keyMatches(this.keybindings, data, "tui.select.cancel", Key.escape) || matchesKey(data, "q") || matchesKey(data, Key.ctrl("c"))) return this.done();
+    if (keyMatches(this.keybindings, data, "tui.select.cancel") || matchesKey(data, "q") || matchesKey(data, Key.ctrl("c"))) return this.done();
     if (!records.length) return;
-    if (keyMatches(this.keybindings, data, "tui.select.up", Key.up) || matchesKey(data, "k")) this.selected = (this.selected - 1 + records.length) % records.length;
-    else if (keyMatches(this.keybindings, data, "tui.select.down", Key.down) || matchesKey(data, "j")) this.selected = (this.selected + 1) % records.length;
-    else if (keyMatches(this.keybindings, data, "tui.select.pageUp", Key.pageUp)) this.selected = Math.max(0, this.selected - 10);
-    else if (keyMatches(this.keybindings, data, "tui.select.pageDown", Key.pageDown)) this.selected = Math.min(records.length - 1, this.selected + 10);
-    else if (keyMatches(this.keybindings, data, "tui.select.confirm", Key.enter)) return this.done(records[this.selected]!.id);
+    if (keyMatches(this.keybindings, data, "tui.select.up") || matchesKey(data, "k")) this.selected = (this.selected - 1 + records.length) % records.length;
+    else if (keyMatches(this.keybindings, data, "tui.select.down") || matchesKey(data, "j")) this.selected = (this.selected + 1) % records.length;
+    else if (keyMatches(this.keybindings, data, "tui.select.pageUp")) this.selected = Math.max(0, this.selected - 10);
+    else if (keyMatches(this.keybindings, data, "tui.select.pageDown")) this.selected = Math.min(records.length - 1, this.selected + 10);
+    else if (keyMatches(this.keybindings, data, "tui.select.confirm")) return this.done(records[this.selected]!.id);
     this.tui.requestRender();
   }
 
@@ -341,10 +353,10 @@ class AgentDetail implements Component, Focusable {
     const total = this.history(this.width).length;
     const viewport = this.viewportHeight();
     const max = Math.max(0, total - viewport);
-    const up = keyMatches(this.keybindings, data, "tui.select.up", Key.up) || matchesKey(data, "k");
-    const down = keyMatches(this.keybindings, data, "tui.select.down", Key.down) || matchesKey(data, "j");
-    const pageUp = keyMatches(this.keybindings, data, "tui.select.pageUp", Key.pageUp) || matchesKey(data, "shift+up");
-    const pageDown = keyMatches(this.keybindings, data, "tui.select.pageDown", Key.pageDown) || matchesKey(data, "shift+down");
+    const up = keyMatches(this.keybindings, data, "tui.select.up") || matchesKey(data, "k");
+    const down = keyMatches(this.keybindings, data, "tui.select.down") || matchesKey(data, "j");
+    const pageUp = keyMatches(this.keybindings, data, "tui.select.pageUp") || matchesKey(data, "shift+up");
+    const pageDown = keyMatches(this.keybindings, data, "tui.select.pageDown") || matchesKey(data, "shift+down");
     if (up) { this.scrollOffset = Math.max(0, this.scrollOffset - 1); this.autoScroll = false; }
     else if (down) { this.scrollOffset = Math.min(max, this.scrollOffset + 1); this.autoScroll = this.scrollOffset === max; }
     else if (pageUp) { this.scrollOffset = Math.max(0, this.scrollOffset - viewport); this.autoScroll = false; }
@@ -506,18 +518,27 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     if (record.runNumber !== runNumber || record.settled) return;
     record.settled = true;
     record.acceptingSteer = false;
+    const finalStatus = record.status === "cancelled" ? "cancelled" : proposed;
     record.error = error;
 
+    if (record.session) record.history = [...record.session.messages];
     if (record.worktree) {
       const worktree = record.worktree;
+      const session = record.session;
       record.worktree = undefined;
+      record.unsubscribe?.();
+      record.unsubscribe = undefined;
+      record.session = undefined;
+      await shutdownChildSession(session);
       const result = await cleanupWorktree(pi, record.context.cwd, worktree, record.description);
-      if (result.hasChanges && result.branch) {
-        record.latestFinalText += `${record.latestFinalText ? "\n\n" : ""}---\nChanges saved to branch \`${result.branch}\`. Merge with: \`git merge ${result.branch}\``;
+      if (result.branch) record.worktreeBranch = result.branch;
+      if (result.path) record.worktreePath = result.path;
+      if (result.error) {
+        record.error = `Worktree cleanup failed; edits were preserved at ${result.path}: ${result.error}`;
       }
     }
 
-    record.status = record.status === "cancelled" ? "cancelled" : proposed;
+    record.status = record.worktreePath ? "failed" : finalStatus;
     record.completedAt = Date.now();
     record.lingerTurns = record.status === "completed" ? 1 : 2;
     if (!record.background) record.consumed = true;
@@ -539,11 +560,11 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
         if (latest?.role === "assistant") latest.text += event.assistantMessageEvent.delta;
       } else if (event.type === "message_end") {
         if (event.message.role === "user") {
-          const text = textContent(event.message.content).trim();
+          const text = extractTextContent(event.message.content).trim();
           if (!record.initialUserSeen) record.initialUserSeen = true;
           else if (text) record.transcript.push({ role: "user", text });
         } else if (event.message.role === "assistant") {
-          const text = textContent(event.message.content).trim();
+          const text = extractTextContent(event.message.content).trim();
           const latest = record.transcript.at(-1);
           if (latest?.role === "assistant") latest.text = text;
           else record.transcript.push({ role: "assistant", text });
@@ -566,17 +587,18 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       runtime?: NonNullable<Parameters<typeof createAgentSession>[0]>["modelRuntime"];
     }).runtime;
     if (!modelRuntime) throw new Error("Parent model runtime is unavailable");
+    const sessionManager = SessionManager.inMemory(cwd);
+    replayHistory(sessionManager, record.history);
     const { session } = await childSessionContext.run(true, () => createAgentSession({
       cwd,
       agentDir,
       modelRuntime,
       model: record.resolvedModel,
       thinkingLevel: record.effort,
-      tools: record.tools,
       excludeTools: [...SUBAGENT_TOOLS],
       resourceLoader: loader,
       settingsManager,
-      sessionManager: SessionManager.inMemory(cwd),
+      sessionManager,
     }));
     await session.bindExtensions({
       mode: "print",
@@ -599,7 +621,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     try {
       let cwd = record.context.cwd;
       if (!record.session && record.isolation === "worktree") {
-        const worktree = await createWorktree(pi, cwd, record.id);
+        const worktree = await createWorktree(pi, cwd, record.id, record.worktreeBranch);
         if (!worktree) {
           throw new Error('Cannot run with isolation: "worktree": git worktree creation failed. Initialize and commit the repository, or omit isolation.');
         }
@@ -655,14 +677,19 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       return;
     }
     if (record.status !== "running") return;
+    if (record.settled) {
+      await record.done.promise;
+      return;
+    }
     record.status = "cancelled";
+    record.acceptingSteer = false;
     record.abortController.abort();
     await record.session?.abort().catch(() => {});
     refresh();
   }
 
   async function steer(record: AgentRecord, message: string): Promise<void> {
-    if (record.status !== "running") throw new Error(`Agent is not running: ${record.id}`);
+    if (record.status !== "running" || record.settled) throw new Error(`Agent is not running: ${record.id}`);
     if (!record.session || !record.acceptingSteer) {
       record.pendingSteers.push(message);
       return;
@@ -716,7 +743,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     return model;
   }
 
-  pi.registerMessageRenderer(NOTICE_TYPE, (message) => new Text(textContent(message.content), 0, 0));
+  pi.registerMessageRenderer(NOTICE_TYPE, (message) => new Text(extractTextContent(message.content), 0, 0));
 
   pi.registerTool({
     name: AGENT_TOOL,
@@ -754,7 +781,6 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
         record.latestFinalText = "";
         record.responseText = "";
         record.activeTools.clear();
-        record.pendingSteers = [];
         record.acceptingSteer = false;
         record.startedAt = undefined;
         record.completedAt = undefined;
@@ -777,13 +803,13 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
           effort: params.effort,
           background,
           isolation: params.isolation,
-          tools: pi.getActiveTools().filter((name) => !SUBAGENT_TOOLS.has(name)),
           context: ctx,
           status: "queued",
           transcript: [],
           latestFinalText: "",
           responseText: "",
           activeTools: new Map(),
+          history: [],
           pendingSteers: [],
           acceptingSteer: false,
           initialUserSeen: false,
@@ -820,12 +846,13 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       await record.done.promise;
       detachAbort?.();
       cancelNotice(record);
+      const summary = worktreeSummary(record);
       const output = record.status === "completed"
-        ? record.latestFinalText || "Agent completed without a final assistant response."
-        : `Agent ${record.id} ${record.status}: ${record.error ?? "no final assistant response"}${record.latestFinalText ? `\n\n${record.latestFinalText}` : ""}`;
+        ? [summary, record.latestFinalText || "Agent completed without a final assistant response."].filter(Boolean).join("\n\n")
+        : `Agent ${record.id} ${record.status}: ${record.error ?? "no final assistant response"}${summary ? `\n\n${summary}` : ""}${record.latestFinalText ? `\n\n${record.latestFinalText}` : ""}`;
       return {
         content: [{ type: "text", text: bounded(output) }],
-        details: { agent_id: record.id, status: record.status },
+        details: { agent_id: record.id, status: record.status, branch: record.worktreeBranch, worktree_path: record.worktreePath },
       };
     },
     renderCall(args, theme) {
@@ -848,10 +875,12 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       if (record.status !== "queued" && record.status !== "running") cancelNotice(record);
       const parts = [`Status: ${record.status}`];
       if (record.error) parts.push(`Error: ${record.error}`);
+      const summary = worktreeSummary(record);
+      if (summary) parts.push(summary);
       parts.push(record.latestFinalText || "No final assistant response.");
       return {
         content: [{ type: "text", text: bounded(parts.join("\n\n")) }],
-        details: { agent_id: record.id, status: record.status },
+        details: { agent_id: record.id, status: record.status, branch: record.worktreeBranch, worktree_path: record.worktreePath },
       };
     },
   });
@@ -907,13 +936,29 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       new Promise<void>((resolve) => setTimeout(resolve, CHILD_SHUTDOWN_TIMEOUT_MS).unref()),
     ]);
     await Promise.all(allRecords().map(async (record) => {
-      if (record.worktree) {
-        await cleanupWorktree(pi, record.context.cwd, record.worktree, record.description);
-        record.worktree = undefined;
+      const forced = !record.settled;
+      if (forced) {
+        record.settled = true;
+        record.status = "cancelled";
+        record.acceptingSteer = false;
+        record.started.resolve();
+        record.done.resolve();
+        pool.cancel(record.id);
       }
+      const session = record.session;
+      if (session) record.history = [...session.messages];
       record.unsubscribe?.();
-      await shutdownChildSession(record.session);
+      record.unsubscribe = undefined;
+      record.session = undefined;
+      await shutdownChildSession(session);
+      if (record.worktree) {
+        const worktree = record.worktree;
+        record.worktree = undefined;
+        if (forced) record.worktreePath = worktree.path;
+        else await cleanupWorktree(pi, record.context.cwd, worktree, record.description);
+      }
     }));
+    await Promise.allSettled(allRecords().map((record) => record.done.promise));
     if (context?.mode === "tui") context.ui.setWidget(WIDGET_KEY, undefined);
     widgetRegistered = false;
     widgetTui = undefined;
