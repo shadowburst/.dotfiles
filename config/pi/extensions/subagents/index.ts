@@ -178,7 +178,7 @@ function panel(theme: Theme, width: number, content: string[]): string[] {
   const border = theme.fg("accent", "─".repeat(renderWidth));
   return [border, ...content, border].map((line) => {
     const fitted = truncateToWidth(line, renderWidth, "");
-    return theme.bg("customMessageBg", fitted + " ".repeat(Math.max(0, renderWidth - visibleWidth(fitted))));
+    return theme.bg("selectedBg", fitted + " ".repeat(Math.max(0, renderWidth - visibleWidth(fitted))));
   });
 }
 
