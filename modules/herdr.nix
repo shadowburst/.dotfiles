@@ -31,7 +31,7 @@ _: {
 
           theme = {
             name = "catppuccin";
-            custom.surface_dim = config.catppuccin.palette.colors.mantle.hex;
+            custom.active_row_bg = config.catppuccin.palette.colors.mantle.hex;
           };
 
           ui = {
