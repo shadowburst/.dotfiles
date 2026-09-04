@@ -67,7 +67,7 @@ _: {
             split_horizontal = "alt+s";
             resize_mode = "alt+plus";
 
-            edit_scrollback = "alt+esc";
+            copy_mode = "alt+esc";
           };
         };
       };
