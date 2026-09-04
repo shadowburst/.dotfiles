@@ -15,7 +15,7 @@ hl.config({
 
 hl.window_rule({
   name = "first-column-full-width",
-  match = { float = false, workspace = "w[0]" },
+  match = { float = false, workspace = "w[t0]" },
   scrolling_width = 1,
 })
 
