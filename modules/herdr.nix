@@ -17,6 +17,7 @@ _: {
         run ${pkgs.herdr}/bin/herdr integration install pi
         run ${pkgs.herdr}/bin/herdr integration install opencode
         run ${pkgs.herdr}/bin/herdr integration install claude
+        run ${pkgs.herdr}/bin/herdr plugin link ${lib.escapeShellArg "${pkgs.herdr-auto-title}"} --enabled
       '';
 
       programs.herdr = {

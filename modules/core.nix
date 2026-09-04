@@ -9,6 +9,7 @@
     {
       system.stateVersion = self.stateVersion;
 
+      nixpkgs.overlays = [ self.overlays.default ];
       nixpkgs.config.allowUnfree = true;
       environment.pathsToLink = [
         "/share/applications"

@@ -131,7 +131,7 @@ _: {
         ".pi/agent/keybindings.json" = mkPiConfigSymlink "config/pi/keybindings.json";
         ".pi/agent/tasks-config.json" = mkPiConfigSymlink "config/pi/tasks-config.json";
         ".pi/agent/extensions/pi-kitty.ts" = mkPiConfigSymlink "config/pi/extensions/pi-kitty.ts";
-        ".pi/agent/extensions/session-title.ts" = mkPiConfigSymlink "config/pi/extensions/session-title.ts";
+        ".pi/agent/extensions/auto-title.ts" = mkPiConfigSymlink "config/pi/extensions/auto-title.ts";
         ".pi/agent/extensions/browser".source = browserTools;
         ".pi/agent/extensions/footer" = mkPiConfigSymlink "config/pi/extensions/footer";
         ".pi/agent/extensions/question" = mkPiConfigSymlink "config/pi/extensions/question";
