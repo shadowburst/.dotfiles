@@ -134,6 +134,7 @@ _: {
         ".pi/agent/extensions/auto-title.ts" = mkPiConfigSymlink "config/pi/extensions/auto-title.ts";
         ".pi/agent/extensions/browser".source = browserTools;
         ".pi/agent/extensions/footer" = mkPiConfigSymlink "config/pi/extensions/footer";
+        ".pi/agent/extensions/git" = mkPiConfigSymlink "config/pi/extensions/git";
         ".pi/agent/extensions/question" = mkPiConfigSymlink "config/pi/extensions/question";
         ".pi/agent/extensions/subagents" = mkPiConfigSymlink "config/pi/extensions/subagents";
         ".pi/agent/extensions/tasks".source = tasks;

@@ -103,6 +103,23 @@ type AgentRecord = {
 };
 
 type AgentParams = Static<typeof AgentSchema>;
+type AgentRunResult = {
+  agentId: string;
+  status: AgentStatus;
+  output: string;
+  branch?: string;
+  worktreePath?: string;
+};
+type SubagentRunRequest = {
+  version: 1;
+  prompt: string;
+  description: string;
+  model: ModelId;
+  effort: Effort;
+  accept: () => void;
+  resolve: (result: AgentRunResult) => void;
+  reject: (error: Error) => void;
+};
 
 const AgentSchema = Type.Object({
   prompt: Type.String({ description: "The self-contained task for the child." }),
@@ -747,6 +764,135 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     return model;
   }
 
+  async function runAgent(
+    params: AgentParams,
+    signal: AbortSignal | undefined,
+    ctx: ExtensionContext,
+  ): Promise<AgentRunResult> {
+    context = ctx;
+    const valid = validateAgentRequest(params.model, params.effort, params.isolation);
+    if (!valid.ok) throw new Error(valid.error);
+    const background = params.run_in_background ?? true;
+    let record: AgentRecord;
+
+    if (params.resume) {
+      record = records.get(params.resume) ?? (() => { throw new Error(`Unknown agent: ${params.resume}`); })();
+      if (record.status !== "completed") throw new Error(`Only completed agents can resume: ${params.resume}`);
+      if (record.model !== params.model || record.effort !== params.effort) {
+        throw new Error("Resume must keep the original model and effort");
+      }
+      if (params.isolation !== undefined && params.isolation !== record.isolation) {
+        throw new Error("Resume cannot change isolation");
+      }
+      cancelNotice(record);
+      record.description = params.description;
+      record.nextPrompt = params.prompt;
+      record.background = background;
+      record.status = "queued";
+      record.error = undefined;
+      record.latestFinalText = "";
+      record.responseText = "";
+      record.activeTools.clear();
+      record.acceptingSteer = false;
+      record.startedAt = undefined;
+      record.completedAt = undefined;
+      record.abortController = new AbortController();
+      record.done = deferred();
+      record.started = deferred();
+      record.settled = false;
+      record.runNumber++;
+      record.consumed = false;
+      record.lingerTurns = 0;
+    } else {
+      const id = randomUUID().slice(0, 17);
+      record = {
+        id,
+        description: params.description,
+        prompt: params.prompt,
+        nextPrompt: params.prompt,
+        model: params.model,
+        resolvedModel: resolveModel(ctx, params.model),
+        effort: params.effort,
+        background,
+        isolation: params.isolation,
+        context: ctx,
+        status: "queued",
+        transcript: [],
+        latestFinalText: "",
+        responseText: "",
+        activeTools: new Map(),
+        history: [],
+        pendingSteers: [],
+        acceptingSteer: false,
+        initialUserSeen: false,
+        abortController: new AbortController(),
+        done: deferred(),
+        started: deferred(),
+        settled: false,
+        runNumber: 1,
+        consumed: false,
+        lingerTurns: 0,
+      };
+      records.set(id, record);
+    }
+
+    startQueued(pool.enqueue(record.id));
+    let detachAbort: (() => void) | undefined;
+    if (!background && signal) {
+      const onAbort = () => { void cancel(record); };
+      if (signal.aborted) onAbort();
+      else {
+        signal.addEventListener("abort", onAbort, { once: true });
+        detachAbort = () => signal.removeEventListener("abort", onAbort);
+      }
+    }
+
+    if (background) {
+      if (record.status === "running") await record.started.promise;
+      return {
+        agentId: record.id,
+        status: record.status,
+        output: bounded(`Agent ID: ${record.id}\nStatus: ${record.status}`),
+      };
+    }
+
+    await record.done.promise;
+    detachAbort?.();
+    cancelNotice(record);
+    const summary = worktreeSummary(record);
+    const output = record.status === "completed"
+      ? [summary, record.latestFinalText || "Agent completed without a final assistant response."].filter(Boolean).join("\n\n")
+      : `Agent ${record.id} ${record.status}: ${record.error ?? "no final assistant response"}${summary ? `\n\n${summary}` : ""}${record.latestFinalText ? `\n\n${record.latestFinalText}` : ""}`;
+    return {
+      agentId: record.id,
+      status: record.status,
+      output: bounded(output),
+      branch: record.worktreeBranch,
+      worktreePath: record.worktreePath,
+    };
+  }
+
+  pi.events.on("subagents:run", (request: SubagentRunRequest) => {
+    if (request.version !== 1 || !context) {
+      request.reject(new Error("The subagents bridge is unavailable. Reload Pi after updating both extensions."));
+      return;
+    }
+    request.accept();
+    void runAgent(
+      {
+        prompt: request.prompt,
+        description: request.description,
+        model: request.model,
+        effort: request.effort,
+        run_in_background: false,
+      },
+      undefined,
+      context,
+    ).then(request.resolve, (failure) => {
+      request.reject(failure instanceof Error ? failure : new Error(String(failure)));
+    });
+  });
+
   pi.registerMessageRenderer(NOTICE_TYPE, (message) => new Text(extractTextContent(message.content), 0, 0));
 
   pi.registerTool({
@@ -761,102 +907,15 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     parameters: AgentSchema,
     executionMode: "parallel",
     async execute(_toolCallId, params: AgentParams, signal, _onUpdate, ctx) {
-      context = ctx;
-      const valid = validateAgentRequest(params.model, params.effort, params.isolation);
-      if (!valid.ok) throw new Error(valid.error);
-      const background = params.run_in_background ?? true;
-      let record: AgentRecord;
-
-      if (params.resume) {
-        record = records.get(params.resume) ?? (() => { throw new Error(`Unknown agent: ${params.resume}`); })();
-        if (record.status !== "completed") throw new Error(`Only completed agents can resume: ${params.resume}`);
-        if (record.model !== params.model || record.effort !== params.effort) {
-          throw new Error("Resume must keep the original model and effort");
-        }
-        if (params.isolation !== undefined && params.isolation !== record.isolation) {
-          throw new Error("Resume cannot change isolation");
-        }
-        cancelNotice(record);
-        record.description = params.description;
-        record.nextPrompt = params.prompt;
-        record.background = background;
-        record.status = "queued";
-        record.error = undefined;
-        record.latestFinalText = "";
-        record.responseText = "";
-        record.activeTools.clear();
-        record.acceptingSteer = false;
-        record.startedAt = undefined;
-        record.completedAt = undefined;
-        record.abortController = new AbortController();
-        record.done = deferred();
-        record.started = deferred();
-        record.settled = false;
-        record.runNumber++;
-        record.consumed = false;
-        record.lingerTurns = 0;
-      } else {
-        const id = randomUUID().slice(0, 17);
-        record = {
-          id,
-          description: params.description,
-          prompt: params.prompt,
-          nextPrompt: params.prompt,
-          model: params.model,
-          resolvedModel: resolveModel(ctx, params.model),
-          effort: params.effort,
-          background,
-          isolation: params.isolation,
-          context: ctx,
-          status: "queued",
-          transcript: [],
-          latestFinalText: "",
-          responseText: "",
-          activeTools: new Map(),
-          history: [],
-          pendingSteers: [],
-          acceptingSteer: false,
-          initialUserSeen: false,
-          abortController: new AbortController(),
-          done: deferred(),
-          started: deferred(),
-          settled: false,
-          runNumber: 1,
-          consumed: false,
-          lingerTurns: 0,
-        };
-        records.set(id, record);
-      }
-
-      startQueued(pool.enqueue(record.id));
-      let detachAbort: (() => void) | undefined;
-      if (!background && signal) {
-        const onAbort = () => { void cancel(record); };
-        if (signal.aborted) onAbort();
-        else {
-          signal.addEventListener("abort", onAbort, { once: true });
-          detachAbort = () => signal.removeEventListener("abort", onAbort);
-        }
-      }
-
-      if (background) {
-        if (record.status === "running") await record.started.promise;
-        return {
-          content: [{ type: "text", text: bounded(`Agent ID: ${record.id}\nStatus: ${record.status}`) }],
-          details: { agent_id: record.id, status: record.status },
-        };
-      }
-
-      await record.done.promise;
-      detachAbort?.();
-      cancelNotice(record);
-      const summary = worktreeSummary(record);
-      const output = record.status === "completed"
-        ? [summary, record.latestFinalText || "Agent completed without a final assistant response."].filter(Boolean).join("\n\n")
-        : `Agent ${record.id} ${record.status}: ${record.error ?? "no final assistant response"}${summary ? `\n\n${summary}` : ""}${record.latestFinalText ? `\n\n${record.latestFinalText}` : ""}`;
+      const result = await runAgent(params, signal, ctx);
       return {
-        content: [{ type: "text", text: bounded(output) }],
-        details: { agent_id: record.id, status: record.status, branch: record.worktreeBranch, worktree_path: record.worktreePath },
+        content: [{ type: "text", text: result.output }],
+        details: {
+          agent_id: result.agentId,
+          status: result.status,
+          branch: result.branch,
+          worktree_path: result.worktreePath,
+        },
       };
     },
     renderCall(args, theme) {
