@@ -25,7 +25,6 @@ import {
   matchesKey,
   Text,
   truncateToWidth,
-  visibleWidth,
   wrapTextWithAnsi,
   type Component,
   type Focusable,
@@ -176,10 +175,7 @@ function replayHistory(sessionManager: SessionManager, messages: AgentSession["m
 function panel(theme: Theme, width: number, content: string[]): string[] {
   const renderWidth = Math.max(1, width);
   const border = theme.fg("accent", "─".repeat(renderWidth));
-  return [border, ...content, border].map((line) => {
-    const fitted = truncateToWidth(line, renderWidth, "");
-    return theme.bg("selectedBg", fitted + " ".repeat(Math.max(0, renderWidth - visibleWidth(fitted))));
-  });
+  return [border, ...content, border].map((line) => truncateToWidth(line, renderWidth, ""));
 }
 
 function activity(record: AgentRecord): string {
@@ -303,9 +299,7 @@ class AgentList implements Component {
     for (const [offset, record] of records.slice(start, start + height).entries()) {
       const index = start + offset;
       const line = `${index === this.selected ? "→" : " "} ${record.description} · ${record.status} · ${record.model} · ${elapsed(record)}`;
-      lines.push(index === this.selected
-        ? this.theme.bg("selectedBg", truncateToWidth(line, width, ""))
-        : truncateToWidth(line, width, ""));
+      lines.push(truncateToWidth(line, width, ""));
     }
     lines.push("", this.theme.fg("dim", "navigate · Enter open · Esc/q back"));
     return panel(this.theme, width, lines);
