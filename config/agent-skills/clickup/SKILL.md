@@ -3,11 +3,11 @@ name: clickup
 description: 'Use when managing ClickUp tasks, sprints, or comments via the `cup` CLI tool. Triggers: task queries, status updates, sprint tracking, creating subtasks, posting comments, threaded replies, standup summaries, searching tasks, checking overdue items, assigning tasks, listing spaces and lists, opening tasks in browser, checking auth or config, setting custom fields, deleting tasks, managing tags, managing checklists, editing comments, task links, time tracking, attachments, file uploads, listing members, listing fields, duplicating tasks, bulk operations, goals, key results, saved filters, favorites.'
 ---
 
-# ClickUp CLI (`cup`) - skill version 1.43.0
+# ClickUp CLI (`cup`) - skill version 1.46.1
 
 Reference for AI agents using the `cup` CLI tool. Covers task management, sprint tracking, comments, time tracking, custom fields, goals, docs, and project workflows.
 
-> **Version check:** Run `cup --version`. If your installed version is older than 1.43.0, update with `npm install -g @krodak/clickup-cli` and refresh this skill with `cup skill`.
+> **Version check:** Run `cup --version`. If your installed version is older than 1.46.1, update with `npm install -g @krodak/clickup-cli` and refresh this skill with `cup skill`.
 
 ## Install & Configure
 
@@ -158,6 +158,7 @@ All commands support `--help` for full flag details. All commands support `--jso
 | `cup chat followers <channelId>`                                                                                                                                                                                                | List channel followers                                                                                                                                       |
 | `cup chat replies <messageId>`                                                                                                                                                                                                  | List message replies                                                                                                                                         |
 | `cup chat reactions <messageId>`                                                                                                                                                                                                | List reactions on a message                                                                                                                                  |
+| `cup export user\|team\|roadmap\|initiatives\|docs\|all ... [--out dir] [--dry-run] [--item-id n] [--yes]`                                                                                                                      | Export tasks/docs to a local archive (lossless JSON + markdown). See Export below                                                                            |
 
 ### Write
 
@@ -210,8 +211,8 @@ All commands support `--help` for full flag details. All commands support `--jso
 | `cup key-result-update <keyResultId> [--progress n] [--note text]`                                                                                                                                                                                                                                                                                     | Update key result                                                                                                                                                                                                              |
 | `cup key-result-delete <keyResultId>`                                                                                                                                                                                                                                                                                                                  | Delete key result                                                                                                                                                                                                              |
 | `cup doc-create <title> [-c content]`                                                                                                                                                                                                                                                                                                                  | Create a doc (root page is named after the title; `-c` writes its markdown content)                                                                                                                                            |
-| `cup doc-page-create <docId> <name> [-c content] [--parent-page pageId]`                                                                                                                                                                                                                                                                               | Create doc page                                                                                                                                                                                                                |
-| `cup doc-page-edit <docId> <pageId> [--name text] [-c content]`                                                                                                                                                                                                                                                                                        | Edit doc page                                                                                                                                                                                                                  |
+| `cup doc-page-create <docId> <name> [-c content\|--content-file path] [--parent-page pageId]`                                                                                                                                                                                                                                                          | Create doc page (`--content-file` reads markdown from a file or `-` for stdin)                                                                                                                                                 |
+| `cup doc-page-edit <docId> <pageId> [--name text] [-c content\|--content-file path]`                                                                                                                                                                                                                                                                   | Edit doc page (`--content-file` reads markdown from a file or `-` for stdin)                                                                                                                                                   |
 | `cup doc-delete <docId>`                                                                                                                                                                                                                                                                                                                               | **Not supported** — ClickUp has no delete-Doc API (HTTP 405). Fails fast; delete Docs in the UI. Use `cup doc-page-delete` for a single page                                                                                   |
 | `cup doc-page-delete <docId> <pageId>`                                                                                                                                                                                                                                                                                                                 | Delete doc page                                                                                                                                                                                                                |
 | `cup space-create <name>`                                                                                                                                                                                                                                                                                                                              | Create a space                                                                                                                                                                                                                 |
@@ -426,6 +427,23 @@ cup doc-create "Architecture Notes" -c "# Draft"
 cup doc-page-create <docId> "Section" --parent-page <pageId>
 cup doc-page-edit <docId> <pageId> -c "# Updated"
 ```
+
+### Export (knowledge transfer / off-boarding)
+
+Every task stored once (`tasks/<id>/task.json` + `task.md` + comments + attachments); each scope adds an index. Slices compose into one `--out` dir; shared tasks are fetched once. Re-runs skip what is already there.
+
+```bash
+cup export user me --out ./archive                    # my tasks, incl. closed + archived
+cup export team "Atlas" --out ./archive             # every list in a space
+cup export roadmap <listId> --item-id 1004 --out ./archive   # initiatives grouped with subtask trees
+cup export docs --out ./archive                       # every doc as markdown page trees
+cup export all --dry-run                              # plan: counts, estimated time
+cup export all --yes --out ./archive                  # whole workspace (long-running; confirms)
+```
+
+- `--item-id` is the initiative `custom_item_id` (team convention; `cup task-types` lists them).
+- `all` refuses to run non-interactively without `--yes`; always `--dry-run` first to see the estimate.
+- Whiteboards, dashboards, automations have no API: export those from the UI by hand.
 
 ### Workspace structure
 
