@@ -2,7 +2,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { randomUUID } from "node:crypto";
 
-import { StringEnum, type Model } from "@earendil-works/pi-ai";
+import { getSupportedThinkingLevels, StringEnum, type Model, type ModelThinkingLevel } from "@earendil-works/pi-ai";
 import {
   createAgentSession,
   DEFAULT_MAX_BYTES,
@@ -35,8 +35,6 @@ import { Type, type Static } from "typebox";
 
 import {
   AgentPool,
-  EFFORTS,
-  MODELS,
   cleanupWorktree,
   createWorktree,
   latestAssistantResponse,
@@ -44,8 +42,7 @@ import {
   truncateResponse,
   validateAgentRequest,
   extractTextContent,
-  type Effort,
-  type ModelId,
+  type ModelCatalog,
   type TranscriptEntry,
   type Worktree,
 } from "./state.ts";
@@ -70,9 +67,9 @@ type AgentRecord = {
   description: string;
   prompt: string;
   nextPrompt: string;
-  model: ModelId;
+  model: string;
   resolvedModel: Model<any>;
-  effort: Effort;
+  effort: ModelThinkingLevel;
   background: boolean;
   isolation?: "worktree";
   context: ExtensionContext;
@@ -114,8 +111,8 @@ type SubagentRunRequest = {
   version: 1;
   prompt: string;
   description: string;
-  model: ModelId;
-  effort: Effort;
+  model: string;
+  effort: ModelThinkingLevel;
   accept: () => void;
   resolve: (result: AgentRunResult) => void;
   reject: (error: Error) => void;
@@ -124,8 +121,8 @@ type SubagentRunRequest = {
 const AgentSchema = Type.Object({
   prompt: Type.String({ description: "The self-contained task for the child." }),
   description: Type.String({ description: "Short label shown in /agents and completion notices." }),
-  model: StringEnum(MODELS, { description: "Full provider/model ID." }),
-  effort: StringEnum(EFFORTS, { description: "Reasoning effort for the selected model." }),
+  model: Type.String({ minLength: 1, description: "Full provider/model ID from the session's available model catalog." }),
+  effort: Type.String({ minLength: 1, description: "Reasoning effort supported by the selected model." }),
   run_in_background: Type.Optional(Type.Boolean({ description: "Default true. Set false to wait for the final response." })),
   resume: Type.Optional(Type.String({ description: "Completed agent ID to reactivate in its existing session." })),
   isolation: Type.Optional(StringEnum(["worktree"] as const, { description: "Create a strict isolated git worktree." })),
@@ -473,6 +470,8 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
   const notices = new Map<string, ReturnType<typeof setTimeout>>();
   const openTuis = new Set<TUI>();
   let context: ExtensionContext | undefined;
+  let catalog: ModelCatalog = new Map();
+  let resolvedModels = new Map<string, Model<any>>();
   let widgetRegistered = false;
   let widgetTui: TUI | undefined;
   let shuttingDown = false;
@@ -751,16 +750,20 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     }
   };
 
-  function resolveModel(ctx: ExtensionContext, id: ModelId): Model<any> {
-    const slash = id.indexOf("/");
-    const provider = id.slice(0, slash);
-    const modelId = id.slice(slash + 1);
-    const model = ctx.modelRegistry.find(provider, modelId);
-    const scoped = ctx.scopedModels.map(({ model: item }) => `${item.provider}/${item.id}`);
-    if (scoped.length && !scoped.includes(id)) throw new Error(`Model is unavailable in this session: ${id}`);
-    if (!model || !ctx.modelRegistry.getAvailable().some((item) => item.provider === provider && item.id === modelId)) {
-      throw new Error(`Model is unavailable in this session: ${id}`);
-    }
+  function snapshotCatalog(ctx: ExtensionContext): void {
+    const scoped = new Set(ctx.scopedModels.map(({ model }) => `${model.provider}/${model.id}`));
+    const models = ctx.modelRegistry.getAvailable().filter((model) =>
+      scoped.size === 0 || scoped.has(`${model.provider}/${model.id}`));
+    catalog = new Map(models.map((model) => [
+      `${model.provider}/${model.id}`,
+      getSupportedThinkingLevels(model),
+    ]));
+    resolvedModels = new Map(models.map((model) => [`${model.provider}/${model.id}`, model]));
+  }
+
+  function resolveModel(id: string): Model<any> {
+    const model = resolvedModels.get(id);
+    if (!model) throw new Error(`Model is unavailable in this session: ${id}`);
     return model;
   }
 
@@ -770,8 +773,8 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     ctx: ExtensionContext,
   ): Promise<AgentRunResult> {
     context = ctx;
-    const valid = validateAgentRequest(params.model, params.effort, params.isolation);
-    if (!valid.ok) throw new Error(valid.error);
+    const valid = validateAgentRequest(params.model, params.effort, catalog, params.isolation);
+    if (valid.ok === false) throw new Error(valid.error);
     const background = params.run_in_background ?? true;
     let record: AgentRecord;
 
@@ -811,8 +814,8 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
         prompt: params.prompt,
         nextPrompt: params.prompt,
         model: params.model,
-        resolvedModel: resolveModel(ctx, params.model),
-        effort: params.effort,
+        resolvedModel: resolveModel(params.model),
+        effort: params.effort as ModelThinkingLevel,
         background,
         isolation: params.isolation,
         context: ctx,
@@ -872,6 +875,11 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     };
   }
 
+  pi.on("session_start", (_event, ctx) => {
+    context = ctx;
+    snapshotCatalog(ctx);
+  });
+
   pi.events.on("subagents:run", (request: SubagentRunRequest) => {
     if (request.version !== 1 || !context) {
       request.reject(new Error("The subagents bridge is unavailable. Reload Pi after updating both extensions."));
@@ -902,7 +910,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     promptSnippet: "Delegate a bounded task to a fresh subagent",
     promptGuidelines: [
       "Use Agent only when a separate context or parallel work saves more than dispatch costs.",
-      "For Agent routing, use Luna/medium for exploration; Luna/high for source-heavy research and tightly specified edits; Terra/high for broad implementation; Sol/high for review and consequential reasoning. Other valid combinations remain allowed.",
+      "Before calling Agent, use the subagents skill to choose its required model and effort.",
     ],
     parameters: AgentSchema,
     executionMode: "parallel",

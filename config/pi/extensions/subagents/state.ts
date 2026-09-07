@@ -3,16 +3,7 @@ import { existsSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 
-export const MODELS = [
-  "openai-codex/gpt-5.6-luna",
-  "openai-codex/gpt-5.6-terra",
-  "openai-codex/gpt-5.6-sol",
-] as const;
-
-export const EFFORTS = ["low", "medium", "high", "xhigh"] as const;
-
-export type ModelId = (typeof MODELS)[number];
-export type Effort = (typeof EFFORTS)[number];
+export type ModelCatalog = ReadonlyMap<string, readonly string[]>;
 export type TranscriptEntry = {
   role: "user" | "assistant" | "tool";
   text: string;
@@ -45,11 +36,17 @@ type PiExec = {
 export function validateAgentRequest(
   model: string,
   effort: string,
+  catalog: ModelCatalog,
   isolation?: string,
 ): { ok: true } | { ok: false; error: string } {
-  if (!MODELS.includes(model as ModelId)) return { ok: false, error: `Unsupported model: ${model}` };
-  const allowed = model.endsWith("luna") ? EFFORTS : EFFORTS.slice(0, 3);
-  if (!allowed.includes(effort as Effort)) return { ok: false, error: `${model} supports ${allowed.join(", ")}` };
+  if (!model.trim()) return { ok: false, error: "Model is required" };
+  if (!effort.trim()) return { ok: false, error: "Reasoning effort is required" };
+  const efforts = catalog.get(model);
+  if (!efforts) {
+    const available = [...catalog.keys()].sort().join(", ") || "none";
+    return { ok: false, error: `Model is unavailable in this session: ${model}. Available models: ${available}` };
+  }
+  if (!efforts.includes(effort)) return { ok: false, error: `${model} supports ${efforts.join(", ")}` };
   if (isolation !== undefined && isolation !== "worktree") return { ok: false, error: 'isolation must be "worktree"' };
   return { ok: true };
 }

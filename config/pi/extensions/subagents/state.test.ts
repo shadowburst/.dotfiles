@@ -18,11 +18,22 @@ import {
 
 const exec = promisify(execFile);
 
-test("only approved model and effort combinations validate", () => {
-  assert.deepEqual(validateAgentRequest("openai-codex/gpt-5.6-luna", "xhigh"), { ok: true });
-  assert.deepEqual(validateAgentRequest("openai-codex/gpt-5.6-terra", "xhigh"), { ok: false, error: "openai-codex/gpt-5.6-terra supports low, medium, high" });
-  assert.deepEqual(validateAgentRequest("openai-codex/gpt-5.6-luna", "medium", "worktree"), { ok: true });
-  assert.deepEqual(validateAgentRequest("openai-codex/gpt-5.6-luna", "medium", "off"), { ok: false, error: 'isolation must be "worktree"' });
+test("the catalog, not a static allowlist, validates model and effort", () => {
+  const catalog = new Map([
+    ["custom/reasoner", ["low", "max"]],
+    ["local/plain", ["off"]],
+  ]);
+
+  assert.deepEqual(validateAgentRequest("custom/reasoner", "max", catalog), { ok: true });
+  assert.deepEqual(validateAgentRequest("", "max", catalog), { ok: false, error: "Model is required" });
+  assert.deepEqual(validateAgentRequest("custom/reasoner", "", catalog), { ok: false, error: "Reasoning effort is required" });
+  assert.deepEqual(validateAgentRequest("local/plain", "off", catalog, "worktree"), { ok: true });
+  assert.deepEqual(validateAgentRequest("custom/reasoner", "xhigh", catalog), { ok: false, error: "custom/reasoner supports low, max" });
+  assert.deepEqual(validateAgentRequest("missing/model", "high", catalog), {
+    ok: false,
+    error: "Model is unavailable in this session: missing/model. Available models: custom/reasoner, local/plain",
+  });
+  assert.deepEqual(validateAgentRequest("custom/reasoner", "max", catalog, "off"), { ok: false, error: 'isolation must be "worktree"' });
 });
 
 test("the pool starts queued work in FIFO order with at most eight running", () => {
