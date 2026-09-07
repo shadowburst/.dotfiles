@@ -9,7 +9,8 @@ hl.config({
     focus_fit_method = 1,
     follow_min_visible = 1,
     wrap_focus = false,
-    column_width = 0.667,
+    column_width = 0.5,
+    explicit_column_widths = "0.5,1",
   },
 })
 
