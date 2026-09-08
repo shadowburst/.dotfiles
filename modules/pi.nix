@@ -132,6 +132,7 @@ _: {
         ".pi/agent/extensions/pi-kitty.ts" = mkPiConfigSymlink "config/pi/extensions/pi-kitty.ts";
         ".pi/agent/extensions/auto-title.ts" = mkPiConfigSymlink "config/pi/extensions/auto-title.ts";
         ".pi/agent/extensions/browser".source = browserTools;
+        ".pi/agent/extensions/prompt-stash.ts" = mkPiConfigSymlink "config/pi/extensions/prompt-stash.ts";
         ".pi/agent/extensions/footer" = mkPiConfigSymlink "config/pi/extensions/footer";
         ".pi/agent/extensions/git" = mkPiConfigSymlink "config/pi/extensions/git";
         ".pi/agent/extensions/question" = mkPiConfigSymlink "config/pi/extensions/question";
