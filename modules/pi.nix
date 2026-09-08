@@ -50,26 +50,6 @@ _: {
           '';
         };
 
-      browserTools = pkgs.buildNpmPackage {
-        pname = "pi-browser-tools";
-        version = "1.0.0";
-        src = ../config/pi/extensions/browser;
-        npmDepsHash = "sha256-aVy1q1BEsarAT1Ow6CcAFgwM9sR/Q8vjxuzzd+fPYj0=";
-        dontNpmBuild = true;
-        doCheck = true;
-        checkPhase = ''
-          runHook preCheck
-          ${pkgs.nodejs}/bin/node --test state.test.ts
-          runHook postCheck
-        '';
-        installPhase = ''
-          runHook preInstall
-          mkdir -p $out
-          cp -r index.ts state.ts package.json package-lock.json node_modules $out/
-          runHook postInstall
-        '';
-      };
-
       webAccess = buildPiPackage {
         owner = "nicobailon";
         repo = "pi-web-access";
@@ -131,7 +111,6 @@ _: {
         ".pi/agent/tasks-config.json" = mkPiConfigSymlink "config/pi/tasks-config.json";
         ".pi/agent/extensions/pi-kitty.ts" = mkPiConfigSymlink "config/pi/extensions/pi-kitty.ts";
         ".pi/agent/extensions/auto-title.ts" = mkPiConfigSymlink "config/pi/extensions/auto-title.ts";
-        ".pi/agent/extensions/browser".source = browserTools;
         ".pi/agent/extensions/prompt-stash.ts" = mkPiConfigSymlink "config/pi/extensions/prompt-stash.ts";
         ".pi/agent/extensions/footer" = mkPiConfigSymlink "config/pi/extensions/footer";
         ".pi/agent/extensions/git" = mkPiConfigSymlink "config/pi/extensions/git";
