@@ -188,6 +188,15 @@
       "skillFolderHash": "35153230eaaf0aa02437e7004bc319b33c5fbe1f",
       "installedAt": "2026-08-19T06:32:04.122Z",
       "updatedAt": "2026-09-07T07:07:09.676Z"
+    },
+    "tuicr": {
+      "source": "agavra/tuicr",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/agavra/tuicr.git",
+      "skillPath": "skills/tuicr/SKILL.md",
+      "skillFolderHash": "1081b169405cfe4c8518608e0f70e468378bbff3",
+      "installedAt": "2026-09-08T08:18:25.314Z",
+      "updatedAt": "2026-09-08T08:18:25.314Z"
     }
   },
   "dismissed": {
