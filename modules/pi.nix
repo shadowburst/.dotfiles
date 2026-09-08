@@ -73,18 +73,17 @@ _: {
       webAccess = buildPiPackage {
         owner = "nicobailon";
         repo = "pi-web-access";
-        version = "0.27.0";
-        hash = "sha256-q7o4PMNr2zZR+UXjL9ZGMuedehJEYayuoSH03QBBB68=";
-        npmDepsHash = "sha256-d1RsJxvXHtaXlNTyDe9wemjTPdHMSlRbHKNmdqxAFGk=";
+        version = "0.28.0";
+        hash = "sha256-oPUUqlxPUUxOmt9ZrM1RnXynGwFi0hkHhug/jC4ZbVk=";
+        npmDepsHash = "sha256-NiNNToyd8q0ve8baB9ZtpXK/iqrbnTJirS8Taxydm5c=";
       };
 
       mcpAdapter = buildPiPackage {
         owner = "nicobailon";
         repo = "pi-mcp-adapter";
-        version = "2.30.0";
-        rev = "f3192880de5e87a2ceb2cb5820e50a91eb5ebcb2";
-        hash = "sha256-cEJZqX/Rd8hIn0qRB4OhjmpU1bxOYbL6jaAa5bEbhq0=";
-        npmDepsHash = "sha256-MrAt37DvVNwtMtSZmSeICtEkue9CoNQQPtQfYrUXmzI=";
+        version = "2.32.1";
+        hash = "sha256-/NrC8cVEdhswKEQcuVugNSOCGJ3/c6k2Qg8o6hg0X14=";
+        npmDepsHash = "sha256-M/OE8vusoS1tfanshYMso/mDVoG0J0JkgeWoYSequo8=";
       };
 
       tasks = buildPiPackage {
