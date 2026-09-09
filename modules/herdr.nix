@@ -12,6 +12,9 @@ _: {
         python3 # Needed for claude integration
       ];
 
+      xdg.configFile."herdr-auto-title/config.env".source =
+        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/herdr-auto-title/config.env";
+
       home.activation.herdrIntegrations = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
         run mkdir -p ${lib.escapeShellArg "${config.home.homeDirectory}/.pi/agent/extensions"}
         run ${pkgs.herdr}/bin/herdr integration install pi
