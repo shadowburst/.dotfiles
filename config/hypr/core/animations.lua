@@ -11,7 +11,7 @@ hl.curve("quick", { type = "bezier", points = { { 0.1, 0 }, { 0.0, 1 } } })
 hl.curve("spring", { type = "spring", mass = 1, stiffness = 800, dampening = 40 })
 
 hl.animation({ leaf = "global", enabled = true, speed = 10, bezier = "default" })
-hl.animation({ leaf = "border", enabled = true, speed = 5, bezier = "almostLinear" })
+hl.animation({ leaf = "border", enabled = true, speed = 1, bezier = "almostLinear" })
 hl.animation({ leaf = "windows", enabled = true, speed = 15, spring = "spring", style = "slide" })
 hl.animation({ leaf = "windowsIn", enabled = true, speed = 15, spring = "spring", style = "slide" })
 hl.animation({ leaf = "windowsOut", enabled = true, speed = 15, spring = "spring", style = "slide bottom" })

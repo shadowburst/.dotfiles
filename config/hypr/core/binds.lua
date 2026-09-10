@@ -9,7 +9,7 @@ hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- Windows.
 hl.bind(mod .. " + c", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mod .. " + f", hl.dsp.window.fullscreen({ action = "toggle" }))
+hl.bind(mod .. " + f", hl.dsp.window.fullscreen_state({ action = "toggle", internal = 2, client = 0 }))
 hl.bind(mod .. " + q", hl.dsp.window.close())
 hl.bind(mod .. " + SHIFT + p", hl.dsp.window.pin())
 

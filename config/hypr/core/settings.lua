@@ -4,7 +4,7 @@ hl.config({
   general = {
     col = { active_border = theme.accent },
     border_size = 2,
-    gaps_in = 2,
+    gaps_in = 0,
     gaps_out = { top = 0, right = 24, bottom = 0, left = 24 },
   },
 
@@ -21,7 +21,7 @@ hl.config({
       size = 6,
       xray = true,
     },
-    rounding = 6,
+    rounding = 0,
     shadow = { enabled = false },
   },
 
