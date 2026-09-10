@@ -1,8 +1,10 @@
 import { arch, platform, release } from "node:os";
+import { join } from "node:path";
 
-import { readStoredCredential, type ExtensionAPI, type ExtensionCommandContext, type ExtensionContext, type Theme } from "@earendil-works/pi-coding-agent";
+import { getAgentDir, readStoredCredential, type ExtensionAPI, type ExtensionCommandContext, type ExtensionContext, type Theme } from "@earendil-works/pi-coding-agent";
 import { Key, matchesKey, truncateToWidth, type TUI, visibleWidth } from "@earendil-works/pi-tui";
 
+import { SharedUsageCache } from "./cache.ts";
 import {
   cycleIndex,
   maskEmail,
@@ -115,6 +117,14 @@ class UsageStore {
   private readonly states = new Map<string, ViewState>();
   private readonly jobs = new Map<string, AbortController>();
   private readonly listeners = new Set<() => void>();
+  private readonly cache = new SharedUsageCache(join(getAgentDir(), "usage-cache"));
+
+  async start(): Promise<void> {
+    await this.cache.start(PROVIDER_TABS.map((tab) => tab.provider), (provider, snapshot) => {
+      this.states.set(provider, { status: "ready", snapshot });
+      this.emit();
+    });
+  }
 
   get(tab: ProviderTab): ViewState {
     return this.states.get(tab.provider) ?? { status: "idle" };
@@ -139,7 +149,10 @@ class UsageStore {
 
     try {
       const next = await tab.load(ctx, controller.signal);
-      if (this.jobs.get(tab.provider) === controller) this.states.set(tab.provider, { status: "ready", snapshot: next });
+      if (this.jobs.get(tab.provider) === controller) {
+        this.states.set(tab.provider, { status: "ready", snapshot: next });
+        await this.cache.write(tab.provider, next).catch(() => {});
+      }
     } catch (error) {
       if (this.jobs.get(tab.provider) === controller && !controller.signal.aborted) {
         this.states.set(tab.provider, { status: "error", message: error instanceof Error ? error.message : String(error) });
@@ -155,6 +168,7 @@ class UsageStore {
     for (const controller of this.jobs.values()) controller.abort();
     this.jobs.clear();
     this.listeners.clear();
+    this.cache.close();
   }
 }
 
@@ -336,9 +350,10 @@ export default function usageExtension(pi: ExtensionAPI): void {
     if (tab) void store.refresh(tab, ctx);
   };
 
-  pi.on("session_start", (_event, ctx) => {
+  pi.on("session_start", async (_event, ctx) => {
     activeProvider = ctx.model?.provider;
     activeModel = ctx.model?.id ?? "";
+    await store.start();
     if (ctx.mode !== "tui") return;
 
     ctx.ui.setWidget(WIDGET_ID, (tui, theme) => {
