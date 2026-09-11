@@ -1,4 +1,4 @@
-{ self, ... }:
+{ ... }:
 {
   flake.homeModules.cli =
     {
@@ -19,9 +19,6 @@
 
           # Bash
           bash-language-server
-
-          # Copilot
-          copilot-language-server
 
           # CSS
           tailwindcss-language-server

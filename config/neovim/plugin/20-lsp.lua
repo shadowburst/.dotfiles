@@ -5,11 +5,6 @@ vim.pack.add({
 
 local servers = {
   bashls = {},
-  copilot = {
-    settings = {
-      telemetry = { telemetryLevel = "off" },
-    },
-  },
   cssls = {},
   docker_compose_language_service = {},
   dockerls = {},
@@ -106,57 +101,6 @@ for server, settings in pairs(servers) do
   vim.lsp.enable(server)
 end
 
-vim.schedule(function() vim.lsp.inline_completion.enable() end)
-
-local function accept_word(item)
-  local insert_text = item.insert_text
-  if type(insert_text) == "string" then
-    local range = item.range
-    if range then
-      local lines = vim.split(insert_text, "\n")
-      local current_lines =
-        vim.api.nvim_buf_get_text(range.buf, range.start_row, range.start_col, range.end_row, range.end_col, {})
-
-      local row = 1
-      while row <= #lines and row <= #current_lines and lines[row] == current_lines[row] do
-        row = row + 1
-      end
-
-      local col = 1
-      while
-        row <= #lines
-        and col <= #lines[row]
-        and row <= #current_lines
-        and col <= #current_lines[row]
-        and lines[row]:sub(col, col) == current_lines[row]:sub(col, col)
-      do
-        col = col + 1
-      end
-
-      local prefix = row <= #lines and col <= #lines[row] and lines[row]:sub(1, col - 1) or ""
-      local rest = row <= #lines and lines[row]:sub(col) or ""
-      local word = rest:match("^%S+%s*") or rest:match("^%s+") or ""
-      item.insert_text = table.concat(vim.list_slice(lines, 1, row - 1), "\n")
-        .. (row <= #current_lines and "" or "\n")
-        .. prefix
-        .. word
-    end
-  end
-  return item
-end
-
-Snacks.keymap.set({ "i", "s" }, "<tab>", function()
-  if not vim.lsp.inline_completion.get({
-    on_accept = accept_word,
-  }) then
-    return "<Tab>"
-  end
-end, { expr = true, desc = "Accept word completion" })
-Snacks.keymap.set({ "i", "s" }, "<s-tab>", function()
-  if not vim.lsp.inline_completion.get() then
-    return "<Tab>"
-  end
-end, { expr = true, desc = "Accept completion" })
 Snacks.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, {
   lsp = { method = "textDocument/codeAction" },
   desc = "Code Action",
