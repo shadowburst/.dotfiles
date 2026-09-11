@@ -1,12 +1,12 @@
 _:
 let
   mkClickupCli = import ./clickup-cli.nix;
-  mkHerdrAutoTitle = import ./herdr-auto-title.nix;
+  mkHerdrAutomaticRename = import ./herdr-automatic-rename.nix;
   mkHerdrReviewr = import ./herdr-reviewr.nix;
 
   mkPackages = { lib, pkgs }: {
     clickup-cli = mkClickupCli { inherit lib pkgs; };
-    herdr-auto-title = mkHerdrAutoTitle { inherit lib pkgs; };
+    herdr-automatic-rename = mkHerdrAutomaticRename { inherit lib pkgs; };
     herdr-reviewr = mkHerdrReviewr { inherit lib pkgs; };
   };
 in

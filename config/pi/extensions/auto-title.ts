@@ -3,7 +3,7 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 
 const TITLE_PROVIDER = "openai-codex";
 const TITLE_MODEL = "gpt-5.6-luna";
-const TITLE_MAX = 80;
+const TITLE_MAX = 50;
 const PROMPT_MAX = 2000;
 
 function hasUserMessage(ctx: ExtensionContext): boolean {
