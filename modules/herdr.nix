@@ -21,6 +21,7 @@ _: {
         run ${pkgs.herdr}/bin/herdr integration install opencode
         run ${pkgs.herdr}/bin/herdr integration install claude
         run ${pkgs.herdr}/bin/herdr plugin link ${lib.escapeShellArg "${pkgs.herdr-auto-title}"} --enabled
+        run ${pkgs.herdr}/bin/herdr plugin link ${lib.escapeShellArg "${pkgs.herdr-reviewr}"} --enabled
       '';
 
       programs.herdr = {
@@ -49,6 +50,14 @@ _: {
           experimental.kitty_graphics = true;
 
           keys = {
+            command = [
+              {
+                key = "alt+r";
+                type = "plugin_action";
+                command = "persiyanov.reviewr.toggle";
+              }
+            ];
+
             detach = "";
             goto = "alt+space";
             toggle_sidebar = "alt+b";
