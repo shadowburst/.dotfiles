@@ -1,4 +1,5 @@
 _: {
+
   flake.homeModules.cli =
     {
       config,
@@ -8,7 +9,6 @@ _: {
     }:
     {
       home.packages = with pkgs; [
-        herdr
         python3 # Needed for claude integration
       ];
 
@@ -24,8 +24,6 @@ _: {
         run ${pkgs.herdr}/bin/herdr integration install pi
         run ${pkgs.herdr}/bin/herdr integration install opencode
         run ${pkgs.herdr}/bin/herdr integration install claude
-        run ${pkgs.herdr}/bin/herdr plugin link ${lib.escapeShellArg "${pkgs.herdr-automatic-rename}"} --enabled
-        run ${pkgs.herdr}/bin/herdr plugin link ${lib.escapeShellArg "${pkgs.herdr-reviewr}"} --enabled
       '';
 
       programs.fish.interactiveShellInit = lib.mkAfter ''
@@ -34,6 +32,10 @@ _: {
 
       programs.herdr = {
         enable = true;
+        plugins = {
+          automatic-rename.package = pkgs.herdr-automatic-rename;
+          reviewr.package = pkgs.herdr-reviewr;
+        };
         settings = {
           onboarding = false;
 
@@ -112,6 +114,71 @@ _: {
             copy_mode = "alt+esc";
           };
         };
+      };
+    };
+
+  flake.homeModules.core =
+    # Backport of https://github.com/nix-community/home-manager/pull/9815.
+    # Remove this module once the pinned Home Manager provides programs.herdr.plugins.
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
+    let
+      cfg = config.programs.herdr;
+      bin = if cfg.package == null then "herdr" else lib.getExe cfg.package;
+      desired = lib.toJSON (
+        lib.mapAttrsToList (_: plugin: "${toString plugin.package}/herdr-plugin.toml") cfg.plugins
+      );
+    in
+    {
+      options.programs.herdr.plugins = lib.mkOption {
+        type =
+          with lib.types;
+          attrsOf (submodule {
+            options.package = lib.mkOption {
+              type = either package path;
+              description = "Plugin package or directory containing herdr-plugin.toml.";
+            };
+          });
+        default = { };
+        description = "Plugins to register with Herdr; IDs are read from their manifests.";
+      };
+
+      config = lib.mkIf cfg.enable {
+        home.activation.herdrPlugins = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+          # Listing falls back to the on-disk registry when the server is offline.
+          # Do not reconcile an unreadable registry as though it were empty.
+          if registered="$(${bin} plugin list --json)" \
+            && printf '%s' "$registered" | ${lib.getExe pkgs.jq} -e '.result.plugins | type == "array"' >/dev/null; then
+            printf '%s' "$registered" \
+              | ${lib.getExe pkgs.jq} -r \
+                --arg store ${lib.escapeShellArg "${builtins.storeDir}/"} \
+                --argjson desired ${lib.escapeShellArg desired} '
+                  .result.plugins[]
+                  | select((.manifest_path // "") | startswith($store))
+                  | select((.manifest_path as $p | $desired | index($p)) | not)
+                  | .plugin_id
+                ' \
+              | while IFS= read -r id; do
+                  # Unlink needs a live server; retry on the next activation if offline.
+                  run ${bin} plugin unlink "$id" || true
+                done
+
+            printf '%s' "$registered" \
+              | ${lib.getExe pkgs.jq} -r --argjson desired ${lib.escapeShellArg desired} '
+                  ($desired - [.result.plugins[].manifest_path])[]
+                ' \
+              | while IFS= read -r manifest; do
+                  # Link persists offline. Do not re-enable plugins disabled by the user.
+                  run ${bin} plugin link "$manifest" || true
+                done
+          else
+            echo "Skipping Herdr plugin registration: unable to read the registry." >&2
+          fi
+        '';
       };
     };
 }
