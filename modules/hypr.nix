@@ -17,7 +17,6 @@ _: {
         hyprshot
         pavucontrol
         socat
-        satty
         wl-clipboard
       ];
 

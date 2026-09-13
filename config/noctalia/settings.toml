@@ -33,6 +33,9 @@ thickness = 40
     padding = 6.0
     radius = 8.0
 
+[battery]
+warning_threshold = 30
+
 [calendar]
 enabled = true
 
@@ -368,8 +371,7 @@ settings_show_advanced = true
     enabled = true
 
     [shell.screenshot]
-    pipe_command = "satty -f -"
-    pipe_to_command = true
+    annotate = true
     save_to_file = false
 
     [[shell.session.actions]]
@@ -408,7 +410,7 @@ source = "community"
 
 [wallpaper]
 fill_color = "surface"
-transition = [ "disc" ]
+transition = [ "disc", "fade", "honeycomb", "stripes", "wipe", "zoom" ]
 transition_on_startup = true
 
     [wallpaper.default]
