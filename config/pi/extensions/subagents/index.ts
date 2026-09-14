@@ -908,10 +908,6 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     label: "Agent",
     description: "Delegate a task to a fresh neutral Pi session. Background is the default; foreground waits for the final response.",
     promptSnippet: "Delegate a bounded task to a fresh subagent",
-    promptGuidelines: [
-      "Use Agent only when a separate context or parallel work saves more than dispatch costs.",
-      "Before calling Agent, use the subagents skill to choose its required model and effort.",
-    ],
     parameters: AgentSchema,
     executionMode: "parallel",
     async execute(_toolCallId, params: AgentParams, signal, _onUpdate, ctx) {
