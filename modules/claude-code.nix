@@ -15,8 +15,8 @@ _: {
               name = "ponytail";
               owner = "DietrichGebert";
               repo = "ponytail";
-              rev = "v4.8.4";
-              hash = "sha256-1A9GkjCuiqwd6Wxl18CZUGYekxrbeTLVDapNUua8ihg=";
+              rev = "v4.9.0";
+              hash = "sha256-8cYggVltBAlZ/Zj4pl1bOu7mQdZFXCmDGW4RSpvRA+w=";
             }
           );
         };

@@ -20,10 +20,20 @@ _: {
           hash,
           npmDepsHash,
           rev ? "v${version}",
+          npmDepsFetcherVersion ? 1,
+          postPatch ? ''
+            ${pkgs.nodejs}/bin/npm pkg delete devDependencies
+            ${pkgs.nodejs}/bin/npm install --package-lock-only --ignore-scripts --legacy-peer-deps
+          '',
         }:
         pkgs.buildNpmPackage {
           pname = repo;
-          inherit version npmDepsHash;
+          inherit
+            version
+            npmDepsHash
+            postPatch
+            npmDepsFetcherVersion
+            ;
           forceEmptyCache = true;
           src = pkgs.fetchFromGitHub {
             inherit
@@ -33,10 +43,6 @@ _: {
               rev
               ;
           };
-          postPatch = ''
-            ${pkgs.nodejs}/bin/npm pkg delete devDependencies
-            ${pkgs.nodejs}/bin/npm install --package-lock-only --ignore-scripts --legacy-peer-deps
-          '';
           npmInstallFlags = [
             "--omit=dev"
             "--legacy-peer-deps"
@@ -53,17 +59,28 @@ _: {
       webAccess = buildPiPackage {
         owner = "nicobailon";
         repo = "pi-web-access";
-        version = "0.28.0";
-        hash = "sha256-oPUUqlxPUUxOmt9ZrM1RnXynGwFi0hkHhug/jC4ZbVk=";
-        npmDepsHash = "sha256-NiNNToyd8q0ve8baB9ZtpXK/iqrbnTJirS8Taxydm5c=";
+        version = "0.29.0";
+        hash = "sha256-5YMwE44pyMmCapGt9kFLxT61Qg3OCzuJCIATRhMBv6M=";
+        npmDepsHash = "sha256-ucfGly9xWc9PYGKwTx/oPB5rnhwIWInNN/PP2Ibeff0=";
       };
 
       mcpAdapter = buildPiPackage {
         owner = "nicobailon";
         repo = "pi-mcp-adapter";
-        version = "2.32.1";
-        hash = "sha256-/NrC8cVEdhswKEQcuVugNSOCGJ3/c6k2Qg8o6hg0X14=";
-        npmDepsHash = "sha256-M/OE8vusoS1tfanshYMso/mDVoG0J0JkgeWoYSequo8=";
+        version = "2.33.0";
+        hash = "sha256-6p0uDmtGse+vIH0yiYKBSpQQG0eiWcj9Q+uDcRs/Ulg=";
+        npmDepsHash = "sha256-tS5bJqUGvExvPPLsDMfs1WF11ijyEkOfPgSQeV7Fw1A=";
+        npmDepsFetcherVersion = 2;
+        postPatch = ''
+          ${pkgs.jq}/bin/jq 'del(.devDependencies)' package.json > package.json.tmp
+          mv package.json.tmp package.json
+          ${pkgs.jq}/bin/jq '
+            del(.packages[""].devDependencies)
+            | .packages |= with_entries(select(.value.dev != true))
+            | .packages["node_modules/@modelcontextprotocol/client"].dependencies["@modelcontextprotocol/core"] = "https://pkg.pr.new/@modelcontextprotocol/core@3b205e7dd2f997b6a87e479e36421f7eaa2058e0"
+          ' package-lock.json > package-lock.json.tmp
+          mv package-lock.json.tmp package-lock.json
+        '';
       };
 
       tasks = buildPiPackage {
