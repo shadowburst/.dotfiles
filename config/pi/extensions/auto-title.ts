@@ -65,13 +65,11 @@ export default function (pi: ExtensionAPI) {
     armed = false;
   });
 
-  pi.on("before_agent_start", (event) => {
+  pi.on("before_agent_start", (event, ctx) => {
     if (!armed || firstPrompt !== undefined) return;
     const prompt = event.prompt.trim();
-    if (prompt) firstPrompt = prompt;
-  });
-
-  pi.on("agent_settled", (_event, ctx) => {
+    if (!prompt) return;
+    firstPrompt = prompt;
     void nameIfNeeded(ctx);
   });
 
