@@ -225,7 +225,7 @@ class AgentWidget implements Component {
     if (!running.length && !queued.length && !finished.length) return [];
 
     const runningLines = running.map((record) => [
-      `${this.theme.fg("dim", "├─")} ${this.theme.fg("accent", SPINNER[this.frame % SPINNER.length]!)} ${this.theme.bold(record.description)} ${this.theme.fg("dim", `· ${elapsed(record)}`)}`,
+      `${this.theme.fg("dim", "├─")} ${this.theme.fg("accent", SPINNER[this.frame % SPINNER.length]!)} ${this.theme.bold(record.description)} ${this.theme.fg("muted", `· ${record.model} · ${record.effort}`)} ${this.theme.fg("dim", `· ${elapsed(record)}`)}`,
       `${this.theme.fg("dim", "│")}    ${this.theme.fg("dim", `⎿  ${activity(record)}`)}`,
     ]);
     const queuedLine = queued.length
