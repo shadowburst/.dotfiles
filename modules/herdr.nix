@@ -12,13 +12,6 @@ _: {
         python3 # Needed for claude integration
       ];
 
-      xdg.configFile."herdr-automatic-rename/config.sh".text = ''
-        AUTO_INDEX=0
-        TAB_CONTEXT=0
-        AGENT_TRANSCRIPT=0
-        MAX_TITLE_LEN=50
-      '';
-
       home.activation.herdrIntegrations = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
         run mkdir -p ${lib.escapeShellArg "${config.home.homeDirectory}/.pi/agent/extensions"}
         run ${pkgs.herdr}/bin/herdr integration install pi
@@ -26,16 +19,9 @@ _: {
         run ${pkgs.herdr}/bin/herdr integration install claude
       '';
 
-      programs.fish.interactiveShellInit = lib.mkAfter ''
-        source ${pkgs.herdr-automatic-rename}/shell/hook.fish
-      '';
-
       programs.herdr = {
         enable = true;
-        plugins = {
-          automatic-rename.package = pkgs.herdr-automatic-rename;
-          reviewr.package = pkgs.herdr-reviewr;
-        };
+        plugins.reviewr.package = pkgs.herdr-reviewr;
         settings = {
           onboarding = false;
 
@@ -50,14 +36,10 @@ _: {
           ui.agent_panel_sort = "priority";
           ui.pane_gaps = false;
           ui.show_agent_labels_on_pane_borders = true;
-          ui.status_indicators = "symbols";
-          ui.sidebar.agents.row_gap = 1;
-          ui.sidebar.spaces.row_gap = 1;
           ui.sidebar.agents.rows = [
             [
-              "state_icon"
               {
-                token = "tab";
+                token = "terminal_title_stripped";
                 fg = config.catppuccin.palette.colors.text.hex;
                 bold = true;
                 dim = false;
@@ -76,6 +58,10 @@ _: {
                 bold = false;
                 dim = true;
               }
+            ]
+            [
+              "state_icon"
+              "state_text"
             ]
           ];
           advanced.scrollback_limit_bytes = 10485760;
