@@ -6,8 +6,8 @@
   src = pkgs.fetchFromGitHub {
     owner = "krodak";
     repo = "clickup-cli";
-    rev = "v${finalAttrs.version}";
-    hash = "sha256-io/KZnyt719w1S775d7ig2lJKqS/hElbzYgOqVXkx7k=";
+    rev = "1ff0de3a1905b861b3b91f2d0eb3162dd6c03455";
+    hash = "sha256-DGI7NknzOqtLwf4/s68MIes9x01t+UXA5hcnQ2Ne45A=";
   };
 
   npmDepsHash = "sha256-KWWUrgvtziv5OpLuaXLGoE+Dvdtt5SJSg8c2W6nUuB8=";
