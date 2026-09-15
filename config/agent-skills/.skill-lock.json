@@ -185,18 +185,18 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/cursor/plugins.git",
       "skillPath": "pstack/skills/unslop/SKILL.md",
-      "skillFolderHash": "35153230eaaf0aa02437e7004bc319b33c5fbe1f",
+      "skillFolderHash": "e19dcc9c531f4609df38bc86c62cf0e8b6d8f444",
       "installedAt": "2026-08-19T06:32:04.122Z",
-      "updatedAt": "2026-09-07T07:07:09.676Z"
+      "updatedAt": "2026-09-15T05:40:16.028Z"
     },
     "tuicr": {
       "source": "agavra/tuicr",
       "sourceType": "github",
       "sourceUrl": "https://github.com/agavra/tuicr.git",
       "skillPath": "skills/tuicr/SKILL.md",
-      "skillFolderHash": "1081b169405cfe4c8518608e0f70e468378bbff3",
+      "skillFolderHash": "e562ca662244ca6908a1733646cccf5c4d36d609",
       "installedAt": "2026-09-08T08:18:25.314Z",
-      "updatedAt": "2026-09-08T08:18:25.314Z"
+      "updatedAt": "2026-09-15T05:40:17.955Z"
     }
   },
   "dismissed": {
