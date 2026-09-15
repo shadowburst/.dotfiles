@@ -20,8 +20,9 @@
     "openai-codex/gpt-5.6-terra",
     "openai-codex/gpt-5.6-luna"
   ],
-  "tuiMode": "regular",
+  "tuiMode": "fullscreen",
   "enableSkillCommands": true,
   "outputPad": 1,
-  "collapseChangelog": true
+  "collapseChangelog": true,
+  "fullscreenExitOutput": "transcript"
 }
