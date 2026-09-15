@@ -1,15 +1,19 @@
 import type { AssistantMessage } from "@earendil-works/pi-ai";
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+} from "@earendil-works/pi-coding-agent";
 
 const TITLE_PROVIDER = "openai-codex";
 const TITLE_MODEL = "gpt-5.6-luna";
-const TITLE_MAX = 50;
+const TITLE_MAX_WORDS = 4;
+const TITLE_MAX_CHARS = 28;
 const PROMPT_MAX = 2000;
 
 function hasUserMessage(ctx: ExtensionContext): boolean {
-  return ctx.sessionManager.getEntries().some(
-    (entry) => entry.type === "message" && entry.message.role === "user",
-  );
+  return ctx.sessionManager
+    .getEntries()
+    .some((entry) => entry.type === "message" && entry.message.role === "user");
 }
 
 function shouldArm(
@@ -34,13 +38,17 @@ function cleanTitle(text: string): string | undefined {
   if (!line) return;
   const unquoted = line.replace(/^["'`]+|["'`]+$/g, "").trim();
   if (!unquoted) return;
-  return unquoted.length > TITLE_MAX ? unquoted.slice(0, TITLE_MAX).trimEnd() : unquoted;
+  const words = unquoted.split(/\s+/).slice(0, TITLE_MAX_WORDS);
+  while (words.join(" ").length > TITLE_MAX_CHARS) words.pop();
+  return words.join(" ") || undefined;
 }
 
 function titleFromResponse(response: AssistantMessage): string | undefined {
   if (response.stopReason === "error") return;
   const text = response.content
-    .filter((block): block is { type: "text"; text: string } => block.type === "text")
+    .filter(
+      (block): block is { type: "text"; text: string } => block.type === "text",
+    )
     .map((block) => block.text)
     .join("\n");
   return cleanTitle(text);
@@ -94,7 +102,7 @@ export default function (pi: ExtensionAPI) {
                   type: "text",
                   text: [
                     "Reply with a session title only.",
-                    `Maximum ${TITLE_MAX} characters.`,
+                    `Maximum ${TITLE_MAX_WORDS} words and ${TITLE_MAX_CHARS} characters.`,
                     "No quotes.",
                     "",
                     "Prompt:",
@@ -116,6 +124,7 @@ export default function (pi: ExtensionAPI) {
       const title = titleFromResponse(response);
       if (!title || pi.getSessionName()) return;
       pi.setSessionName(title);
+      ctx.ui.setTitle(title);
     } catch {
       // fail silent
     }
