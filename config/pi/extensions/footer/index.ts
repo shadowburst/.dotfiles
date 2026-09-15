@@ -1,18 +1,12 @@
-import { isAbsolute, relative, resolve, sep } from "node:path";
-
 import {
   SettingsManager,
   type ExtensionAPI,
   type ExtensionContext,
-  type ReadonlyFooterDataProvider,
   type Theme,
 } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 
 type FooterItemKind =
-  | "cwd"
-  | "branch"
-  | "session"
   | "input"
   | "output"
   | "cacheRead"
@@ -20,7 +14,6 @@ type FooterItemKind =
   | "cacheHitRate"
   | "cost"
   | "context"
-  | "status"
   | "model"
   | "thinking";
 type FooterItem = { kind: FooterItemKind; text: string };
@@ -43,19 +36,6 @@ function formatTokens(count: number): string {
   if (count < 1_000_000) return `${Math.round(count / 1000)}k`;
   if (count < 10_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
   return `${Math.round(count / 1_000_000)}M`;
-}
-
-function formatCwd(cwd: string): string {
-  const home = process.env.HOME || process.env.USERPROFILE;
-  if (!home) return cwd;
-
-  const resolvedCwd = resolve(cwd);
-  const resolvedHome = resolve(home);
-  const homeRelative = relative(resolvedHome, resolvedCwd);
-  const insideHome = homeRelative === "" ||
-    (homeRelative !== ".." && !homeRelative.startsWith(`..${sep}`) && !isAbsolute(homeRelative));
-  if (!insideHome) return cwd;
-  return homeRelative === "" ? "~" : `~${sep}${homeRelative}`;
 }
 
 function truncateLeft(text: string, width: number): string {
@@ -123,41 +103,13 @@ function joinItems(items: FooterItem[]): string {
   return items.map((item, index) => `${itemSeparator(items, index)}${item.text}`).join("");
 }
 
-function fitLeft(items: FooterItem[], width: number): FooterItem[] {
+function fitUsage(items: FooterItem[], width: number): FooterItem[] {
   let selected = [...items];
-  if (itemWidth(selected) <= width) return selected;
-  selected = selected.filter((item) => item.kind !== "session");
-
-  const fitPath = (candidate: FooterItem[]): FooterItem[] | undefined => {
-    const path = candidate.find((item) => item.kind === "cwd");
-    if (!path) return undefined;
-    const fixed = candidate.filter((item) => item.kind !== "cwd");
-    const availablePath = width - itemWidth(fixed) - (fixed.length ? visibleWidth(SEPARATOR) : 0);
-    if (availablePath < 1) return undefined;
-    return [{ ...path, text: truncateLeft(path.text, availablePath) }, ...fixed];
-  };
-
-  let fitted = fitPath(selected);
-  if (fitted) return fitted;
-
-  for (const kind of USAGE_DROP_ORDER) {
-    selected = selected.filter((item) => item.kind !== kind);
-    fitted = fitPath(selected);
-    if (fitted) return fitted;
-  }
-
-  // The path yields before a complete branch. A branch longer than the entire
-  // available left side is omitted instead of being fragmented.
-  selected = selected.filter((item) => item.kind !== "cwd");
-  const branch = selected.find((item) => item.kind === "branch");
-  if (branch && visibleWidth(branch.text) > width) {
-    selected = selected.filter((item) => item.kind !== "branch");
-  }
   for (const kind of USAGE_DROP_ORDER) {
     if (itemWidth(selected) <= width) break;
     selected = selected.filter((item) => item.kind !== kind);
   }
-  return selected.filter((item) => itemWidth([item]) <= width);
+  return selected;
 }
 
 function renderGroup(items: FooterItem[], theme: Theme, color: "dim" | "muted"): string {
@@ -176,14 +128,7 @@ function getAutoCompactionEnabled(ctx: ExtensionContext): boolean | undefined {
   }
 }
 
-function footerComponent(
-  ctx: ExtensionContext,
-  tui: { requestRender(): void },
-  theme: Theme,
-  footerData: ReadonlyFooterDataProvider,
-) {
-  const unsubscribeBranch = footerData.onBranchChange(() => tui.requestRender());
-
+function footerComponent(ctx: ExtensionContext, theme: Theme) {
   return {
     render(width: number): string[] {
       if (width < 1) return [""];
@@ -201,61 +146,36 @@ function footerComponent(
           && provider?.auth.oauth?.isSubscription === true,
         );
 
-      const left: FooterItem[] = [{ kind: "cwd", text: formatCwd(ctx.sessionManager.getCwd()) }];
-      const branch = footerData.getGitBranch();
-      if (branch) left.push({ kind: "branch", text: branch });
-      const sessionName = ctx.sessionManager.getSessionName();
-      if (sessionName) left.push({ kind: "session", text: sessionName });
-      if (totals.input) left.push({ kind: "input", text: `↑${formatTokens(totals.input)}` });
-      if (totals.output) left.push({ kind: "output", text: `↓${formatTokens(totals.output)}` });
-      if (totals.cacheRead) left.push({ kind: "cacheRead", text: `R${formatTokens(totals.cacheRead)}` });
-      if (totals.cacheWrite) left.push({ kind: "cacheWrite", text: `W${formatTokens(totals.cacheWrite)}` });
+      const usage: FooterItem[] = [];
+      if (totals.input) usage.push({ kind: "input", text: `↑${formatTokens(totals.input)}` });
+      if (totals.output) usage.push({ kind: "output", text: `↓${formatTokens(totals.output)}` });
+      if (totals.cacheRead) usage.push({ kind: "cacheRead", text: `R${formatTokens(totals.cacheRead)}` });
+      if (totals.cacheWrite) usage.push({ kind: "cacheWrite", text: `W${formatTokens(totals.cacheWrite)}` });
       if ((totals.cacheRead || totals.cacheWrite) && cacheHitRate !== undefined) {
-        left.push({ kind: "cacheHitRate", text: `CH${cacheHitRate.toFixed(1)}%` });
+        usage.push({ kind: "cacheHitRate", text: `CH${cacheHitRate.toFixed(1)}%` });
       }
       if (totals.cost || usingSubscription) {
-        left.push({ kind: "cost", text: `$${totals.cost.toFixed(3)}${usingSubscription ? " (sub)" : ""}` });
+        usage.push({ kind: "cost", text: `$${totals.cost.toFixed(3)}${usingSubscription ? " (sub)" : ""}` });
       }
-      left.push({
+      usage.push({
         kind: "context",
         text: `${contextPercent}/${formatTokens(contextWindow)}${autoCompactionEnabled === true ? " (auto)" : ""}`,
       });
 
-      const statuses: FooterItem[] = Array.from(footerData.getExtensionStatuses().values())
-        .map((text) => ({ kind: "status", text }));
-      const right: FooterItem[] = [{ kind: "model", text: ctx.model?.id || "no-model" }];
-      if (ctx.model?.reasoning) right.push({ kind: "thinking", text: ctx.thinkingLevel || "off" });
+      let model: FooterItem[] = [{ kind: "model", text: ctx.model?.id || "no-model" }];
+      if (ctx.model?.reasoning) model.push({ kind: "thinking", text: ctx.thinkingLevel || "off" });
+      if (itemWidth(model) > width) model = model.slice(0, 1);
+      if (itemWidth(model) > width) model = [{ kind: "model", text: truncateLeft(model[0]!.text, width) }];
 
-      let center = statuses;
-      let fittedRight = right;
-      while (center.length > 0) {
-        const centerWidth = itemWidth(center);
-        const centerStart = Math.floor((width - centerWidth) / 2);
-        if (centerStart + centerWidth + 1 <= width - itemWidth(fittedRight)) break;
-        center = center.slice(0, -1);
-      }
-      if (itemWidth(fittedRight) > width) fittedRight = right.slice(0, 1);
-      if (itemWidth(fittedRight) > width) fittedRight = [{ kind: "model", text: truncateLeft(fittedRight[0]!.text, width) }];
-
-      const centerWidth = itemWidth(center);
-      const centerStart = Math.floor((width - centerWidth) / 2);
-      const leftWidth = center.length ? Math.max(0, centerStart - 1) : Math.max(0, width - itemWidth(fittedRight) - 1);
-      let fittedLeft = fitLeft(left, leftWidth);
-      if (itemWidth(fittedLeft) > leftWidth) fittedLeft = fitLeft(fittedLeft.filter((item) => item.kind !== "cwd"), leftWidth);
-
-      const leftText = renderGroup(fittedLeft, theme, "dim");
-      const centerText = renderGroup(center, theme, "dim");
-      const rightText = renderGroup(fittedRight, theme, "dim");
-      const rawLeftWidth = visibleWidth(joinItems(fittedLeft));
-      const rawCenterWidth = visibleWidth(joinItems(center));
-      const rawRightWidth = visibleWidth(joinItems(fittedRight));
-      const line = center.length
-        ? `${leftText}${" ".repeat(Math.max(0, centerStart - rawLeftWidth))}${centerText}${" ".repeat(Math.max(0, width - rawRightWidth - centerStart - rawCenterWidth))}${rightText}`
-        : `${leftText}${" ".repeat(Math.max(0, width - rawLeftWidth - rawRightWidth))}${rightText}`;
+      const fittedUsage = fitUsage(usage, Math.max(0, width - itemWidth(model) - 1));
+      const modelText = renderGroup(model, theme, "dim");
+      const usageText = renderGroup(fittedUsage, theme, "dim");
+      const modelWidth = visibleWidth(joinItems(model));
+      const usageWidth = visibleWidth(joinItems(fittedUsage));
+      const line = `${modelText}${" ".repeat(Math.max(0, width - modelWidth - usageWidth))}${usageText}`;
       return [truncateToWidth(line, width, "")];
     },
     invalidate(): void {},
-    dispose(): void { unsubscribeBranch(); },
   };
 }
 
@@ -264,14 +184,13 @@ export default function footerExtension(pi: ExtensionAPI): void {
 
   pi.on("session_start", (_event, ctx) => {
     if (ctx.mode !== "tui") return;
-    ctx.ui.setFooter((tui, theme, footerData) => {
+    ctx.ui.setFooter((tui, theme) => {
       const requestFooterRender = () => tui.requestRender();
       requestRender = requestFooterRender;
-      const component = footerComponent(ctx, tui, theme, footerData);
+      const component = footerComponent(ctx, theme);
       return {
         ...component,
         dispose(): void {
-          component.dispose();
           if (requestRender === requestFooterRender) requestRender = undefined;
         },
       };
@@ -281,7 +200,6 @@ export default function footerExtension(pi: ExtensionAPI): void {
   pi.on("model_select", () => requestRender?.());
   pi.on("thinking_level_select", () => requestRender?.());
   pi.on("message_end", () => requestRender?.());
-  pi.on("session_info_changed", () => requestRender?.());
   pi.on("session_shutdown", (_event, ctx) => {
     ctx.ui.setFooter(undefined);
     requestRender = undefined;

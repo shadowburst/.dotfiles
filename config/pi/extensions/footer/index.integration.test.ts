@@ -57,10 +57,6 @@ function usage(input = 1_200) {
 }
 
 function harness(options: {
-  cwd?: string;
-  branch?: string | null;
-  sessionName?: string;
-  statuses?: Array<[string, string]>;
   width?: number;
   entries?: unknown[];
   context?: { tokens: number | null; contextWindow: number; percent: number | null };
@@ -76,7 +72,7 @@ function harness(options: {
   };
   const ctx = {
     mode: "tui",
-    cwd: options.cwd ?? `${process.env.HOME}/project/src`,
+    cwd: `${process.env.HOME}/project/src`,
     model: { id: "gpt-test", provider: "test", reasoning: options.reasoning ?? true, contextWindow: 128_000 },
     thinkingLevel: options.thinkingLevel ?? "high",
     ui: { setFooter(value: typeof factory) { factory = value; } },
@@ -85,8 +81,6 @@ function harness(options: {
       getProvider: () => ({ auth: { oauth: { isSubscription: options.oauthSubscription ?? false } } }),
     },
     sessionManager: {
-      getCwd: () => options.cwd ?? `${process.env.HOME}/project/src`,
-      getSessionName: () => options.sessionName,
       getEntries: () => options.entries ?? [{ type: "message", message: { role: "assistant", usage: usage() } }],
     },
     getContextUsage: () => options.context ?? { tokens: 12_345, contextWindow: 128_000, percent: 9.6 },
@@ -94,26 +88,16 @@ function harness(options: {
   footerExtension(pi);
   handlers.get("session_start")?.({}, ctx);
   assert.ok(factory, "session_start should install a custom footer");
-  const branchCallbacks = new Set<() => void>();
-  let renderRequests = 0;
-  const tui = { requestRender() { renderRequests++; } };
-  const footerData = {
-    getGitBranch: () => options.branch === undefined ? "main" : options.branch,
-    getExtensionStatuses: () => new Map(options.statuses ?? [["first", "build"], ["second", "lint"]]),
-    onBranchChange: (callback: () => void) => { branchCallbacks.add(callback); return () => branchCallbacks.delete(callback); },
-  };
-  const component = factory(tui, theme, footerData);
-  return { component, branchCallbacks, getRenderRequests: () => renderRequests };
+  const component = factory({ requestRender() {} }, theme, {});
+  return { component };
 }
 
 test("renders the normal footer through the public extension seam", () => {
-  const { component } = harness({ sessionName: "API work" });
+  const { component } = harness();
   const line = component.render(240)[0]!;
   const visible = plain(line);
-  const left = "~/project/src │ main │ API work │ ↑1.2k ↓2.3k R4.0k W500 CH70.2% $0.123 9.6%/128k (auto)";
-  assert.ok(visible.startsWith(left));
-  assert.equal(visible.slice(-15), "gpt-test │ high");
-  assert.equal(visible.indexOf("build │ lint"), Math.floor((240 - 12) / 2));
+  assert.ok(visible.startsWith("gpt-test │ high"));
+  assert.ok(visible.endsWith("↑1.2k ↓2.3k R4.0k W500 CH70.2% $0.123 9.6%/128k (auto)"));
   assert.equal(line.includes("\n"), false);
   assert.ok(visible.length <= 240);
 });
@@ -136,83 +120,32 @@ test("omits auto-compaction when settings are unavailable", () => {
   }
 });
 
-test("omits git-only and center-only sections when unavailable", () => {
-  const { component } = harness({ branch: null, statuses: [] });
+test("omits path, branch, session, and extension statuses", () => {
+  const { component } = harness();
   const line = plain(component.render(200)[0]!);
-  assert.ok(line.startsWith("~/project/src │ ↑1.2k ↓2.3k R4.0k W500 CH70.2% $0.123 9.6%/128k (auto)"));
-  assert.ok(line.endsWith("gpt-test │ high"));
-  assert.ok(!line.includes("main"));
-  assert.ok(line.length <= 200);
+  for (const removed of ["~/project/src", "main", "release", "build", "lint"]) {
+    assert.ok(!line.includes(removed));
+  }
 });
 
-test("renders detached HEAD as the branch section", () => {
-  const { component } = harness({ branch: "detached" });
-  assert.match(plain(component.render(200)[0]!), /~\/project\/src │ detached │/);
+test("keeps the model while dropping low-priority fields", () => {
+  const { component } = harness();
+  const line = plain(component.render(20)[0]!);
+  assert.equal(line.trim(), "gpt-test │ high");
+  assert.ok(line.length <= 20);
 });
 
-test("preserves status text and registration order", () => {
-  const { component } = harness({
-    statuses: [
-      ["z-mcp", "🔌 MCP: 1 server enabled"],
-      ["a-ponytail", "○ 🐴 ponytail: ⚡ FULL"],
-    ],
-  });
-  assert.match(
-    plain(component.render(240)[0]!),
-    /🔌 MCP: 1 server enabled │ ○ 🐴 ponytail: ⚡ FULL/,
-  );
-});
-
-test("renders a named session as its own section", () => {
-  const { component } = harness({ sessionName: "release" });
-  assert.match(plain(component.render(240)[0]!), /~\/project\/src │ main │ release │/);
-});
-
-test("keeps the branch and model while dropping session and whole low-priority fields", () => {
-  const { component } = harness({ sessionName: "a very long session name" });
-  const line = plain(component.render(42)[0]!);
-  assert.ok(line.startsWith("…"));
-  assert.ok(line.includes("main"));
-  assert.ok(!line.includes("very long session"));
-  assert.ok(!line.includes("↑1.2k"));
-  assert.ok(line.endsWith("gpt-test │ high"));
-  assert.ok(line.length <= 42);
-});
-
-test("truncates the path before dropping complete usage items", () => {
-  const { component } = harness({
-    cwd: `${process.env.HOME}/a/very/long/project/path`,
-    statuses: [],
-  });
+test("drops complete usage items as space shrinks", () => {
+  const { component } = harness();
   const line = plain(component.render(100)[0]!);
-  assert.ok(line.startsWith("…"));
-  for (const item of ["main", "↑1.2k", "↓2.3k", "R4.0k", "W500", "CH70.2%", "$0.123", "9.6%/128k (auto)"]) {
+  for (const item of ["↑1.2k", "↓2.3k", "R4.0k", "W500", "CH70.2%", "$0.123", "9.6%/128k (auto)"]) {
     assert.ok(line.includes(item), `expected ${item} to remain visible`);
   }
-  assert.ok(line.endsWith("gpt-test │ high"));
+  assert.ok(line.startsWith("gpt-test │ high"));
   assert.ok(line.length <= 100);
   for (const width of [1, 2, 8, 20, 42, 80]) {
     const rendered = component.render(width);
     assert.equal(rendered.length, 1);
     assert.ok(plain(rendered[0]!).length <= width);
   }
-});
-
-test("never fragments a branch when it cannot fit", () => {
-  const { component } = harness({
-    branch: "feature/this-branch-is-too-long",
-    statuses: [],
-  });
-  const line = plain(component.render(20)[0]!);
-  assert.equal(line.trim(), "gpt-test │ high");
-  assert.ok(line.length <= 20);
-});
-
-test("rerenders on branch changes and disposes the subscription", () => {
-  const { component, branchCallbacks, getRenderRequests } = harness();
-  assert.equal(branchCallbacks.size, 1);
-  branchCallbacks.values().next().value!();
-  assert.equal(getRenderRequests(), 1);
-  component.dispose?.();
-  assert.equal(branchCallbacks.size, 0);
 });
