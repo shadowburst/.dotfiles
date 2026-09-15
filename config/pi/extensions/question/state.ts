@@ -111,7 +111,7 @@ export function setEditDraft(state: QuestionState, editDraft: string): QuestionS
 export function cancelEdit(state: QuestionState): QuestionState {
   if (state.editMode.type === "browse") return state;
   const customDraft = [...state.customDraft];
-  if (state.editMode.type === "custom") customDraft[state.editMode.questionIndex] = state.editDraft;
+  if (state.editMode.type === "custom") customDraft[state.editMode.questionIndex] = "";
   return { ...state, customDraft, editMode: { type: "browse" }, editDraft: "" };
 }
 

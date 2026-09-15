@@ -84,11 +84,11 @@ test("question tab navigation wraps, resets focus, and confirm permits unanswere
   assert.deepEqual(submit(state, multipleQuestions).details.answers, [[], []]);
 });
 
-test("custom draft survives editor Escape", () => {
+test("custom draft is cleared by editor Escape", () => {
   let state = beginCustomEdit(createQuestionState(single), single);
   state = setEditDraft(state, "work in progress");
   state = cancelEdit(state);
-  assert.equal(state.customDraft[0], "work in progress");
+  assert.equal(state.customDraft[0], "");
   assert.equal(state.custom[0], "");
   assert.deepEqual(state.answers, [[]]);
 });

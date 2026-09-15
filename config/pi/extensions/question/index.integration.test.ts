@@ -12,11 +12,34 @@ const packageSources = {
     export const stripFrontmatter = (content) => content.replace(/^---\\n[\\s\\S]*?\\n---\\n?/, "");
   `,
   "@earendil-works/pi-tui": `
-    export class Editor {}
+    export class Editor {
+      value = "";
+      setText(value) { this.value = value; }
+      getExpandedText() { return this.value; }
+      handleInput(data) {
+        if (data === Key.enter) this.onSubmit?.(this.value);
+        else {
+          this.value += data;
+          this.onChange?.(this.value);
+        }
+      }
+      invalidate() {}
+    }
     export class Markdown {}
     export class Text {}
-    export const Key = {};
-    export const matchesKey = () => false;
+    export const Key = {
+      ctrl: (key) => "ctrl+" + key,
+      enter: "enter",
+      escape: "escape",
+      space: "space",
+      tab: "tab",
+      shift: (key) => "shift+" + key,
+      up: "up",
+      down: "down",
+      left: "left",
+      right: "right",
+    };
+    export const matchesKey = (data, key) => data === key;
     export const truncateToWidth = (text) => text;
     export const visibleWidth = (text) => text.length;
     export const wrapTextWithAnsi = (text) => [text];
@@ -165,6 +188,26 @@ function executeContext() {
     ui: { custom: async () => ({ details: { answers: [[]] } }) },
   };
 }
+
+test("Ctrl+C clears a custom answer before saving", async () => {
+  const harness = createHarness([]);
+  const result = await harness.tool.execute("call", questions, undefined, undefined, {
+    ...executeContext(),
+    ui: {
+      custom: (factory: Function) => new Promise((resolve) => {
+        const component = factory({ requestRender: () => undefined }, {}, {}, resolve);
+        component.handleInput("2");
+        component.handleInput("discard me");
+        component.handleInput("ctrl+c");
+        component.handleInput("keep me");
+        component.handleInput("enter");
+      }),
+    },
+  });
+
+  assert.match(result.content[0]!.text, /"keep me"/);
+  assert.doesNotMatch(result.content[0]!.text, /discard me/);
+});
 
 test("returns one atomic result with every mentioned skill in mention order", async () => {
   const details = {

@@ -127,7 +127,7 @@ class QuestionComponent implements Focusable {
 
   handleInput(data: string): void {
     if (this.state.editMode.type !== "browse") {
-      if (this.state.editMode.type === "note" && matchesKey(data, Key.ctrl("c"))) {
+      if (matchesKey(data, Key.ctrl("c"))) {
         this.state = setEditDraft(this.state, "");
         this.editor.setText("");
         this.refresh();
@@ -309,7 +309,7 @@ class QuestionComponent implements Focusable {
         lines.push("");
         const hint = this.state.editMode.type === "browse"
           ? `${isSingleFlow(this.questions) ? "" : "Tab/←→/h/l tabs • "}↑↓/jk select • ${question.multiple === true ? "Space toggle • Enter next" : "Enter/Space choose"} • n add note • Esc dismiss`
-          : `Enter save • ${this.state.editMode.type === "note" ? "Ctrl+C clear • Esc discard" : "Esc go back"}`;
+          : "Enter save • Ctrl+C clear • Esc discard";
         add(this.theme.fg("dim", hint));
       }
     }
