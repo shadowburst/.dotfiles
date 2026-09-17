@@ -1,0 +1,10 @@
+{
+  "name": "Catppuccin Mocha",
+  "appearance": "dark",
+  "canvas": "#1e1e2e",
+  "accent": "#b4befe",
+  "colors": {
+    "terminalSelection": "#45475a",
+    "error": "#f38ba8"
+  }
+}

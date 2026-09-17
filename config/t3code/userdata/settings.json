@@ -1,0 +1,42 @@
+{
+  "defaultModelSelection": {
+    "instanceId": "opencode",
+    "model": "openai/gpt-5.6-sol"
+  },
+  "sourceControlWritingStyle": {
+    "mode": "conventional_commits"
+  },
+  "sourceControlWriterModelSelection": {
+    "instanceId": "codex",
+    "model": "gpt-5.6-luna",
+    "options": [
+      {
+        "id": "reasoningEffort",
+        "value": "low"
+      }
+    ]
+  },
+  "providers": {
+    "cursor": {
+      "enabled": false
+    },
+    "grok": {
+      "enabled": false
+    },
+    "opencode": {
+      "enabled": false
+    }
+  },
+  "providerInstances": {
+    "opencode": {
+      "driver": "opencode",
+      "enabled": true,
+      "config": {
+        "binaryPath": "opencode",
+        "serverUrl": "",
+        "serverPassword": "",
+        "customModels": []
+      }
+    }
+  }
+}
