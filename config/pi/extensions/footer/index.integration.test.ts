@@ -96,8 +96,8 @@ test("renders the normal footer through the public extension seam", () => {
   const { component } = harness();
   const line = component.render(240)[0]!;
   const visible = plain(line);
-  assert.ok(visible.startsWith("gpt-test │ high"));
-  assert.ok(visible.endsWith("↑1.2k ↓2.3k R4.0k W500 CH70.2% $0.123 9.6%/128k (auto)"));
+  assert.ok(visible.startsWith(" gpt-test │ high"));
+  assert.ok(visible.endsWith("↑1.2k ↓2.3k R4.0k W500 CH70.2% $0.123 9.6%/128k (auto) "));
   assert.equal(line.includes("\n"), false);
   assert.ok(visible.length <= 240);
 });
@@ -141,7 +141,7 @@ test("drops complete usage items as space shrinks", () => {
   for (const item of ["↑1.2k", "↓2.3k", "R4.0k", "W500", "CH70.2%", "$0.123", "9.6%/128k (auto)"]) {
     assert.ok(line.includes(item), `expected ${item} to remain visible`);
   }
-  assert.ok(line.startsWith("gpt-test │ high"));
+  assert.ok(line.startsWith(" gpt-test │ high"));
   assert.ok(line.length <= 100);
   for (const width of [1, 2, 8, 20, 42, 80]) {
     const rendered = component.render(width);

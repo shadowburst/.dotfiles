@@ -133,6 +133,7 @@ function footerComponent(ctx: ExtensionContext, theme: Theme) {
     render(width: number): string[] {
       if (width < 1) return [""];
 
+      const contentWidth = Math.max(0, width - 2);
       const { totals, cacheHitRate } = sessionUsage(ctx);
       const contextUsage = ctx.getContextUsage();
       const contextWindow = contextUsage?.contextWindow ?? ctx.model?.contextWindow ?? 0;
@@ -164,16 +165,16 @@ function footerComponent(ctx: ExtensionContext, theme: Theme) {
 
       let model: FooterItem[] = [{ kind: "model", text: ctx.model?.id || "no-model" }];
       if (ctx.model?.reasoning) model.push({ kind: "thinking", text: ctx.thinkingLevel || "off" });
-      if (itemWidth(model) > width) model = model.slice(0, 1);
-      if (itemWidth(model) > width) model = [{ kind: "model", text: truncateLeft(model[0]!.text, width) }];
+      if (itemWidth(model) > contentWidth) model = model.slice(0, 1);
+      if (itemWidth(model) > contentWidth) model = [{ kind: "model", text: truncateLeft(model[0]!.text, contentWidth) }];
 
-      const fittedUsage = fitUsage(usage, Math.max(0, width - itemWidth(model) - 1));
+      const fittedUsage = fitUsage(usage, Math.max(0, contentWidth - itemWidth(model) - 1));
       const modelText = renderGroup(model, theme, "dim");
       const usageText = renderGroup(fittedUsage, theme, "dim");
       const modelWidth = visibleWidth(joinItems(model));
       const usageWidth = visibleWidth(joinItems(fittedUsage));
-      const line = `${modelText}${" ".repeat(Math.max(0, width - modelWidth - usageWidth))}${usageText}`;
-      return [truncateToWidth(line, width, "")];
+      const line = `${modelText}${" ".repeat(Math.max(0, contentWidth - modelWidth - usageWidth))}${usageText}`;
+      return [truncateToWidth(` ${line} `, width, "")];
     },
     invalidate(): void {},
   };
