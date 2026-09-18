@@ -3,5 +3,6 @@
 /userdata/*
 !/userdata/keybindings.json
 !/userdata/settings.json
+!/userdata/client-settings.json
 !/userdata/themes/
 !/userdata/themes/*.json
