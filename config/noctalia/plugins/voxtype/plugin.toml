@@ -1,0 +1,25 @@
+id = "shadowburst/voxtype"
+name = "Voxtype"
+version = "1.0.0"
+plugin_api = 30
+author = "shadowburst"
+license = "MIT"
+icon = "microphone"
+description = "Voxtype dictation status, controls, and recording OSD."
+dependencies = ["voxtype", "voxtype-audio-bridge", "systemctl"]
+tags = ["audio", "bar", "recording", "utility"]
+
+[[widget]]
+id = "status"
+entry = "widget.luau"
+
+[[panel]]
+id = "osd"
+entry = "osd.luau"
+width = 180
+height = 48
+position = "top_center"
+layer = "overlay"
+dismiss_on_outside_click = false
+keyboard_focus = "none"
+persistent = true

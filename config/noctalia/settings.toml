@@ -1,7 +1,7 @@
 config_version = 14
 
 [bar.main]
-end = [ "tray", "notifications", "bluetooth", "network", "volume", "battery" ]
+end = [ "tray", "voxtype", "notifications", "bluetooth", "network", "volume", "battery" ]
 layer = "overlay"
 margin_edge = 0.0
 margin_ends = 60
@@ -330,7 +330,7 @@ video_source = "focused"
 
 [plugins]
 auto_update = "all"
-enabled = [ "noctalia/screen_recorder", "noctalia/translator" ]
+enabled = [ "noctalia/screen_recorder", "noctalia/translator", "shadowburst/voxtype" ]
 
     [[plugins.source]]
     kind = "git"
@@ -341,6 +341,11 @@ enabled = [ "noctalia/screen_recorder", "noctalia/translator" ]
     kind = "git"
     location = "https://github.com/noctalia-dev/community-plugins"
     name = "community"
+
+    [[plugins.source]]
+    kind = "path"
+    location = "~/.dotfiles/config/noctalia/plugins"
+    name = "dotfiles"
 
 [shell]
 password_style = "random"
@@ -436,6 +441,9 @@ display = "text"
 
 [widget.notifications]
 hide_when_no_unread = true
+
+[widget.voxtype]
+type = "shadowburst/voxtype:status"
 
 [widget.ram]
 display = "text"

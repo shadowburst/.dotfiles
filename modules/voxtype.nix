@@ -13,6 +13,7 @@ _: {
         wayland.display = "wayland-1";
 
         settings = {
+          state_file = "auto";
           hotkey.enabled = false;
 
           whisper = {
@@ -34,8 +35,8 @@ _: {
             append_text = " ";
 
             notification = {
-              on_recording_start = true;
-              on_recording_stop = true;
+              on_recording_start = false;
+              on_recording_stop = false;
               on_transcription = false;
               urgency = "normal";
             };

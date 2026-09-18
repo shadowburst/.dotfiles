@@ -19,6 +19,7 @@ hl.bind(mod .. " + x", hl.dsp.exec_cmd("noctalia msg panel-toggle session"))
 hl.bind(mod .. " + v", hl.dsp.exec_cmd("noctalia msg panel-toggle clipboard"))
 
 -- Audio/media.
+hl.bind(mod .. " + i", hl.dsp.exec_cmd("noctalia msg plugin shadowburst/voxtype:status focused toggle"))
 hl.bind("XF86AudioMute", hl.dsp.exec_cmd("noctalia msg volume-mute"))
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("noctalia msg volume-down"))
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("noctalia msg volume-up"))
