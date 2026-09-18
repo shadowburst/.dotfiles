@@ -12,8 +12,17 @@ const packageSources = {
     export const stripFrontmatter = (content) => content.replace(/^---\\n[\\s\\S]*?\\n---\\n?/, "");
   `,
   "@earendil-works/pi-tui": `
+    export class CombinedAutocompleteProvider {
+      constructor(commands, cwd) {
+        this.commands = commands;
+        this.cwd = cwd;
+      }
+    }
     export class Editor {
       value = "";
+      setAutocompleteProvider(provider) {
+        if (!(provider instanceof CombinedAutocompleteProvider)) throw new Error("invalid autocomplete provider");
+      }
       setText(value) { this.value = value; }
       getExpandedText() { return this.value; }
       handleInput(data) {
@@ -183,6 +192,7 @@ Disabled body
 
 function executeContext() {
   return {
+    cwd: process.cwd(),
     mode: "tui",
     abort: () => undefined,
     ui: { custom: async () => ({ details: { answers: [[]] } }) },
@@ -258,6 +268,7 @@ test("reopens a question with all skills and the answer in one user message", as
   assert.equal(harness.handlers.has("agent_start"), false);
 
   await sessionStart({}, {
+    cwd: process.cwd(),
     mode: "tui",
     ui: { custom: async () => ({ details }) },
     sessionManager: { getLeafEntry: () => leaf },

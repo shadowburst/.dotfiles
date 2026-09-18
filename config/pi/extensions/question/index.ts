@@ -1,5 +1,6 @@
 import { getMarkdownTheme, type ExtensionAPI, type ExtensionContext, type Theme } from "@earendil-works/pi-coding-agent";
 import {
+  CombinedAutocompleteProvider,
   Editor,
   type EditorTheme,
   type Focusable,
@@ -73,9 +74,11 @@ class QuestionComponent implements Focusable {
     private readonly tui: TUI,
     private readonly theme: Theme,
     private readonly done: (result: DialogResult) => void,
+    autocompleteProvider: CombinedAutocompleteProvider,
   ) {
     this.state = createQuestionState(questions);
     this.editor = new Editor(tui, editorTheme(theme));
+    this.editor.setAutocompleteProvider(autocompleteProvider);
     this.editor.onChange = (value) => {
       this.state = setEditDraft(this.state, value);
       this.refresh();
@@ -355,7 +358,13 @@ async function showDialog(pi: ExtensionAPI, params: QuestionParams, ctx: Extensi
   pi.events.emit("herdr:blocked", { active: true, label: params.questions[0]!.header });
   try {
     return await ctx.ui.custom<DialogResult>((tui, theme, _keybindings, done) =>
-      new QuestionComponent(params.questions, tui, theme, done));
+      new QuestionComponent(
+        params.questions,
+        tui,
+        theme,
+        done,
+        new CombinedAutocompleteProvider(pi.getCommands(), ctx.cwd),
+      ));
   } finally {
     pi.events.emit("herdr:blocked", { active: false });
   }
