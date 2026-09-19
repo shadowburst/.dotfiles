@@ -23,6 +23,11 @@
 
     lerd.url = "github:lerd-env/lerd-nixos";
     lerd.inputs.nixpkgs.follows = "nixpkgs";
+
+    bb-src = {
+      url = "github:get-bb/bb/desktop-latest";
+      flake = false;
+    };
   };
 
   outputs =
