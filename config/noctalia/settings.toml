@@ -1,12 +1,12 @@
 config_version = 14
 
 [bar.main]
-end = [ "tray", "voxtype", "notifications", "bluetooth", "network", "volume", "battery" ]
+end = [ "tray", "notifications", "bluetooth", "network", "volume", "battery" ]
 layer = "overlay"
 margin_edge = 0.0
 margin_ends = 60
 position = "bottom"
-reserve_space = false
+reserve_space = true
 smart_auto_hide = true
 start = [ "clock", "group:g1", "group:g2" ]
 thickness = 40
@@ -328,6 +328,9 @@ position = "top_center"
 video_codec = "av1"
 video_source = "focused"
 
+[plugin_settings."shadowburst/voxtype"]
+osd_position = "bottom_center"
+
 [plugins]
 auto_update = "all"
 enabled = [ "noctalia/screen_recorder", "noctalia/translator", "shadowburst/voxtype" ]
@@ -359,6 +362,7 @@ settings_show_advanced = true
     provider_prefix = ":"
 
     [shell.panel]
+    borders = true
     clipboard_position = "top_center"
     control_center_placement = "attached"
     control_center_position = "top_center"
@@ -368,7 +372,8 @@ settings_show_advanced = true
     polkit_position = "top_center"
     session_placement = "floating"
     session_position = "top_center"
-    transparency_mode = "soft"
+    shadow = false
+    transparency_mode = "solid"
     wallpaper_placement = "floating"
     wallpaper_position = "top_center"
 
@@ -441,9 +446,6 @@ display = "text"
 
 [widget.notifications]
 hide_when_no_unread = true
-
-[widget.voxtype]
-type = "shadowburst/voxtype:status"
 
 [widget.ram]
 display = "text"

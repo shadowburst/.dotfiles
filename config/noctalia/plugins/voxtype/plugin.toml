@@ -9,16 +9,16 @@ description = "Voxtype dictation status, controls, and recording OSD."
 dependencies = ["voxtype", "voxtype-audio-bridge", "systemctl"]
 tags = ["audio", "bar", "recording", "utility"]
 
-[[widget]]
+[[service]]
 id = "status"
 entry = "widget.luau"
 
 [[panel]]
 id = "osd"
 entry = "osd.luau"
-width = 180
+width = 220
 height = 48
-position = "top_center"
+position = "bottom_center"
 layer = "overlay"
 dismiss_on_outside_click = false
 keyboard_focus = "none"

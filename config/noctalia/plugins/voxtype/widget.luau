@@ -1,32 +1,10 @@
 --!nonstrict
 
 local state = "stopped"
-local tooltip = "Voxtype stopped"
-local spinnerFrame = 1
-local spinnerFrames = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }
 
-local function render()
-  local color = "on_surface_variant"
-  local glyph = "microphone-off"
-
-  if state == "recording" or state == "streaming" then
-    color = "error"
-    glyph = "microphone"
-  elseif state == "transcribing" or state == "outputting" then
-    color = "primary"
-    glyph = "loader-2"
-  elseif state == "idle" then
-    color = "primary"
-    glyph = "microphone"
-  end
-
-  local indicator = ui.glyph({ name = glyph, size = 16, color = color })
-  if state == "transcribing" or state == "outputting" then
-    indicator = ui.label({ text = spinnerFrames[spinnerFrame], fontSize = 16, color = color })
-  end
-
-  barWidget.setTooltip(tooltip)
-  barWidget.render(indicator)
+local function isActive(activeState)
+  return activeState == "recording" or activeState == "streaming"
+    or activeState == "transcribing" or activeState == "outputting"
 end
 
 local function setState(jsonLine)
@@ -36,25 +14,12 @@ local function setState(jsonLine)
     return
   end
 
-  local previousState = state
+  local wasActive = isActive(state)
   state = status.class or status.alt or "stopped"
-  tooltip = status.tooltip or ("Voxtype: " .. state)
-
-  local wasActive = previousState == "recording" or previousState == "streaming"
-    or previousState == "transcribing" or previousState == "outputting"
-  local isActive = state == "recording" or state == "streaming"
-    or state == "transcribing" or state == "outputting"
-  if isActive ~= wasActive then
-    local action = isActive and "panel-open" or "panel-close"
+  local active = isActive(state)
+  if active ~= wasActive then
+    local action = active and "panel-open" or "panel-close"
     noctalia.runAsync("noctalia msg " .. action .. " shadowburst/voxtype:osd", function() end)
-  end
-  render()
-end
-
-function update()
-  if state == "transcribing" or state == "outputting" then
-    spinnerFrame = spinnerFrame % #spinnerFrames + 1
-    render()
   end
 end
 
@@ -72,29 +37,20 @@ local function toggleRecording()
   end, 10000)
 end
 
-function onClick()
-  toggleRecording()
-end
-
 function onIpc(event)
   if event == "toggle" then
     toggleRecording()
+  elseif event == "restart" then
+    noctalia.runAsync("systemctl --user restart voxtype.service", function(result)
+      if result.exitCode ~= 0 then
+        noctalia.notifyError("Voxtype", result.stderr ~= "" and result.stderr or "Could not restart service")
+      end
+    end, 10000)
   end
 end
 
-function onRightClick()
-  noctalia.runAsync("systemctl --user restart voxtype.service", function(result)
-    if result.exitCode ~= 0 then
-      noctalia.notifyError("Voxtype", result.stderr ~= "" and result.stderr or "Could not restart service")
-    end
-  end, 10000)
-end
-
-if not noctalia.commandExists("voxtype") then
-  tooltip = "Voxtype is not installed"
-  render()
-else
-  noctalia.setUpdateInterval(80)
+if noctalia.commandExists("voxtype") then
   noctalia.runStream("while true; do voxtype status --follow --format json; sleep 1; done", setState)
-  render()
+else
+  noctalia.notifyError("Voxtype", "Voxtype is not installed")
 end
