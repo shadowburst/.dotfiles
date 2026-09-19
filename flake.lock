@@ -68,23 +68,6 @@
         "type": "github"
       }
     },
-    "bb-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1789773367,
-        "narHash": "sha256-BTWIridQITZjsnSQAlmmn8vAOYPZJd0qrPJP3SAbjfw=",
-        "owner": "get-bb",
-        "repo": "bb",
-        "rev": "e865697f56bea89f3413dd4cc7fae964850d20a0",
-        "type": "github"
-      },
-      "original": {
-        "owner": "get-bb",
-        "ref": "desktop-latest",
-        "repo": "bb",
-        "type": "github"
-      }
-    },
     "catppuccin": {
       "inputs": {
         "nixpkgs": "nixpkgs"
@@ -391,7 +374,6 @@
     },
     "root": {
       "inputs": {
-        "bb-src": "bb-src",
         "catppuccin": "catppuccin",
         "flake-parts": "flake-parts",
         "home-manager": "home-manager",
