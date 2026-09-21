@@ -1,72 +1,215 @@
 local M = {}
 
 local namespace = vim.api.nvim_create_namespace("herdr-comments")
+local state_file = vim.g.herdr_comments_state_file or (vim.fn.stdpath("state") .. "/herdr-comments.json")
 local comments = {}
 local next_id = 1
+local state_corrupt = false
 
 local function notify(message, level) vim.notify("herdr-comments: " .. message, level or vim.log.levels.INFO) end
 
-local function repo_for_buf(buf)
+local function neogit_path(path) return path:match("^neogit:/+[^/]+/(.+)$") end
+
+local function location_for_buf(buf)
   local file = vim.api.nvim_buf_get_name(buf)
   if file == "" then
     return nil
   end
-  return vim.fs.root(file, ".git")
+  local root = vim.fs.root(file, ".git")
+  if not root then
+    return nil
+  end
+  return root, neogit_path(file) or vim.fs.relpath(root, file)
 end
 
-local function resolve(id)
-  local stored = comments[id]
-  if not stored or not vim.api.nvim_buf_is_valid(stored.buf) then
-    return nil
-  end
+local function repo_for_buf(buf) return location_for_buf(buf) end
 
-  local mark = vim.api.nvim_buf_get_extmark_by_id(stored.buf, namespace, stored.mark, { details = true })
+local function file_for(comment) return vim.fs.joinpath(comment.root, comment.path) end
+
+local function detach(comment)
+  if comment.buf and vim.api.nvim_buf_is_valid(comment.buf) then
+    if comment.mark then
+      vim.api.nvim_buf_del_extmark(comment.buf, namespace, comment.mark)
+    end
+    for _, mark in ipairs(comment.bars or {}) do
+      vim.api.nvim_buf_del_extmark(comment.buf, namespace, mark)
+    end
+  end
+  comment.buf, comment.mark, comment.bars = nil, nil, nil
+end
+
+local function sync_comment(comment)
+  if not comment.buf or not comment.mark or not vim.api.nvim_buf_is_valid(comment.buf) then
+    return false
+  end
+  local mark = vim.api.nvim_buf_get_extmark_by_id(comment.buf, namespace, comment.mark, { details = true })
   if #mark == 0 or mark[3].invalid then
-    return nil
+    detach(comment)
+    return false
+  end
+  comment.start_line = mark[1] + 1
+  comment.end_line = math.max(comment.start_line, mark[3].end_row or comment.start_line)
+  return true
+end
+
+local function sync_marks()
+  for _, comment in pairs(comments) do
+    sync_comment(comment)
+  end
+end
+
+local function persist(changed)
+  if state_corrupt and not changed then
+    return
+  end
+  sync_marks()
+  local repos = {}
+  for _, comment in pairs(comments) do
+    repos[comment.root] = repos[comment.root] or {}
+    repos[comment.root][#repos[comment.root] + 1] = {
+      id = comment.id,
+      path = comment.path,
+      start_line = comment.start_line,
+      end_line = comment.end_line,
+      text = comment.text,
+    }
+  end
+  for _, repo_comments in pairs(repos) do
+    table.sort(repo_comments, function(a, b) return a.id < b.id end)
   end
 
-  local file = vim.api.nvim_buf_get_name(stored.buf)
-  local path = vim.fs.relpath(stored.root, file)
-  if not path then
-    return nil
+  vim.fn.mkdir(vim.fs.dirname(state_file), "p")
+  local temporary = state_file .. ".tmp." .. vim.uv.os_getpid()
+  local ok, err = pcall(function()
+    if
+      vim.fn.writefile({ vim.json.encode({ version = 1, next_id = next_id, repos = repos }) }, temporary, "b") ~= 0
+    then
+      error("could not write " .. temporary)
+    end
+    local renamed, rename_err = vim.uv.fs_rename(temporary, state_file)
+    if not renamed then
+      error(rename_err)
+    end
+  end)
+  if not ok then
+    vim.uv.fs_unlink(temporary)
+    notify("could not save comments: " .. tostring(err), vim.log.levels.ERROR)
+  else
+    state_corrupt = false
   end
+end
 
-  local start_line = mark[1] + 1
-  local end_line = math.max(start_line, mark[3].end_row or start_line)
+local function valid_record(root, record)
+  return type(root) == "string"
+    and type(record) == "table"
+    and type(record.id) == "number"
+    and type(record.path) == "string"
+    and type(record.start_line) == "number"
+    and type(record.end_line) == "number"
+    and record.start_line >= 1
+    and record.end_line >= record.start_line
+    and type(record.text) == "string"
+end
+
+local function load_state()
+  if vim.fn.filereadable(state_file) == 0 then
+    return
+  end
+  local ok, decoded = pcall(vim.json.decode, table.concat(vim.fn.readfile(state_file, "b"), "\n"))
+  if not ok or type(decoded) ~= "table" or type(decoded.repos) ~= "table" then
+    state_corrupt = true
+    notify("could not read saved comments; the state file will be replaced on the next change", vim.log.levels.ERROR)
+    return
+  end
+  for root, repo_comments in pairs(decoded.repos) do
+    if type(repo_comments) == "table" then
+      for _, record in ipairs(repo_comments) do
+        if valid_record(root, record) and not comments[record.id] then
+          comments[record.id] = {
+            id = record.id,
+            root = root,
+            path = neogit_path(record.path) or record.path,
+            start_line = record.start_line,
+            end_line = record.end_line,
+            text = record.text,
+          }
+          next_id = math.max(next_id, record.id + 1)
+        end
+      end
+    end
+  end
+  if type(decoded.next_id) == "number" then
+    next_id = math.max(next_id, decoded.next_id)
+  end
+end
+
+local function render(comment, buf)
+  local line_count = vim.api.nvim_buf_line_count(buf)
+  if comment.start_line > line_count or comment.end_line > line_count then
+    return false
+  end
+  detach(comment)
+  local mark = vim.api.nvim_buf_set_extmark(buf, namespace, comment.start_line - 1, 0, {
+    end_row = comment.end_line,
+    end_col = 0,
+    right_gravity = false,
+    end_right_gravity = true,
+    hl_group = "CursorLine",
+    hl_eol = true,
+    virt_lines = { { { "╭─ ", "DiagnosticInfo" }, { "💬 " .. comment.text, "DiagnosticInfo" } } },
+    virt_lines_above = true,
+  })
+  local bars = {}
+  for line = comment.start_line, comment.end_line do
+    bars[#bars + 1] = vim.api.nvim_buf_set_extmark(buf, namespace, line - 1, 0, {
+      sign_text = "▌",
+      sign_hl_group = "DiagnosticInfo",
+      right_gravity = false,
+    })
+  end
+  comment.buf, comment.mark, comment.bars = buf, mark, bars
+  return true
+end
+
+local function hydrate(buf)
+  local root, path = location_for_buf(buf)
+  if not root then
+    return
+  end
+  for _, comment in pairs(comments) do
+    if comment.root == root and comment.path == path then
+      local attached = sync_comment(comment)
+      if not attached or comment.buf ~= buf then
+        -- ponytail: render one view at a time; keep per-buffer marks if simultaneous views matter.
+        render(comment, buf)
+      end
+    end
+  end
+end
+
+local function snapshot(comment)
+  local attached = sync_comment(comment)
+  local file = file_for(comment)
+  local ok, lines = pcall(vim.fn.readfile, file)
   return {
-    id = id,
-    buf = stored.buf,
-    root = stored.root,
+    id = comment.id,
+    buf = attached and comment.buf or nil,
+    root = comment.root,
     file = file,
-    path = path,
-    start_line = start_line,
-    end_line = end_line,
-    text = stored.text,
+    path = comment.path,
+    start_line = comment.start_line,
+    end_line = comment.end_line,
+    text = comment.text,
+    stale = not ok or (not attached and comment.end_line > #lines),
   }
 end
 
-local function remove(id)
-  local stored = comments[id]
-  if not stored then
-    return
-  end
-  if vim.api.nvim_buf_is_valid(stored.buf) then
-    vim.api.nvim_buf_del_extmark(stored.buf, namespace, stored.mark)
-    for _, mark in ipairs(stored.bars) do
-      vim.api.nvim_buf_del_extmark(stored.buf, namespace, mark)
-    end
-  end
-  comments[id] = nil
-end
-
 local function list(root)
+  sync_marks()
   local result = {}
-  for id in pairs(comments) do
-    local comment = resolve(id)
-    if comment and (not root or comment.root == root) then
-      result[#result + 1] = comment
-    elseif not comment then
-      remove(id)
+  for _, stored in pairs(comments) do
+    if not root or stored.root == root then
+      result[#result + 1] = snapshot(stored)
     end
   end
   table.sort(result, function(a, b) return a.path == b.path and a.start_line < b.start_line or a.path < b.path end)
@@ -81,7 +224,7 @@ local function location(comment)
 end
 
 function M.add(buf, start_line, end_line, text)
-  local root = repo_for_buf(buf)
+  local root, path = location_for_buf(buf)
   if not root then
     notify("comments require a named file inside a Git repository", vim.log.levels.ERROR)
     return
@@ -89,29 +232,21 @@ function M.add(buf, start_line, end_line, text)
 
   local id = next_id
   next_id = next_id + 1
-  local mark = vim.api.nvim_buf_set_extmark(buf, namespace, start_line - 1, 0, {
-    end_row = end_line,
-    end_col = 0,
-    right_gravity = false,
-    end_right_gravity = true,
-    hl_group = "CursorLine",
-    hl_eol = true,
-    virt_lines = { { { "╭─ ", "DiagnosticInfo" }, { "💬 " .. text, "DiagnosticInfo" } } },
-    virt_lines_above = true,
-  })
-  local bars = {}
-  for line = start_line, end_line do
-    bars[#bars + 1] = vim.api.nvim_buf_set_extmark(buf, namespace, line - 1, 0, {
-      sign_text = "▌",
-      sign_hl_group = "DiagnosticInfo",
-      right_gravity = false,
-    })
-  end
-  comments[id] = { buf = buf, root = root, mark = mark, bars = bars, text = text }
+  local comment = {
+    id = id,
+    root = root,
+    path = path,
+    start_line = start_line,
+    end_line = end_line,
+    text = text,
+  }
+  comments[id] = comment
+  render(comment, buf)
+  persist(true)
 end
 
 local function current_repo()
-  local root = repo_for_buf(0)
+  local root = repo_for_buf(0) or vim.fs.root(vim.fn.getcwd(), ".git")
   if not root then
     notify("this action requires a named file inside a Git repository", vim.log.levels.ERROR)
   end
@@ -147,6 +282,7 @@ function M.pick_comments()
   if not root then
     return
   end
+  persist()
   local repo_comments = list(root)
   if #repo_comments == 0 then
     notify("no comments in this repository")
@@ -168,9 +304,10 @@ function M.pick_comments()
     items = items,
     format = function(item)
       return {
-        { "💬 ", "DiagnosticInfo" },
+        { item.comment.stale and "⚠ " or "💬 ", item.comment.stale and "DiagnosticWarn" or "DiagnosticInfo" },
         { item.location, "SnacksPickerFile" },
         { "  " .. item.comment.text, "String" },
+        { item.comment.stale and "  stale" or "", "DiagnosticWarn" },
       }
     end,
     preview = "file",
@@ -178,10 +315,19 @@ function M.pick_comments()
   })
 end
 
+local function remove(id)
+  local comment = comments[id]
+  if comment then
+    detach(comment)
+    comments[id] = nil
+  end
+end
+
 local function clear(selected)
   for _, comment in ipairs(selected) do
     remove(comment.id)
   end
+  persist(true)
 end
 
 function M.clear_file()
@@ -189,8 +335,8 @@ function M.clear_file()
   if not root then
     return
   end
-  local file = vim.api.nvim_buf_get_name(0)
-  local selected = vim.tbl_filter(function(comment) return comment.file == file end, list(root))
+  local _, path = location_for_buf(0)
+  local selected = vim.tbl_filter(function(comment) return comment.path == path end, list(root))
   clear(selected)
   notify(string.format("cleared %d comment(s) from this file", #selected))
 end
@@ -286,16 +432,23 @@ local function deliver(submit)
   if not root then
     return
   end
+  persist()
   local selected = list(root)
   if #selected == 0 then
     notify("no comments in this repository")
     return
   end
   for _, comment in ipairs(selected) do
-    if vim.bo[comment.buf].modified then
+    if comment.buf and vim.bo[comment.buf].modified then
       notify("save all commented buffers before delivery", vim.log.levels.ERROR)
       return
     end
+  end
+  local sendable = vim.tbl_filter(function(comment) return not comment.stale end, selected)
+  if #sendable == 0 then
+    clear(selected)
+    notify(string.format("cleared %d stale comment(s)", #selected))
+    return
   end
 
   local found, err = agents()
@@ -307,7 +460,7 @@ local function deliver(submit)
     if agent.status == "working" then
       notify(agent.label .. " is working; sending anyway", vim.log.levels.WARN)
     end
-    local payload = format_payload(selected)
+    local payload = format_payload(sendable)
     local command = submit and { "herdr", "agent", "prompt", agent.target, payload }
       or { "herdr", "pane", "send-text", agent.pane_id, payload }
     local result = vim.system(command, { text = true }):wait()
@@ -316,12 +469,43 @@ local function deliver(submit)
       return
     end
     clear(selected)
-    notify(string.format("sent %d comment(s) to %s", #selected, agent.label))
+    notify(string.format("sent %d comment(s) to %s", #sendable, agent.label))
   end)
 end
 
 function M.append() deliver(false) end
 
 function M.submit() deliver(true) end
+
+load_state()
+
+local group = vim.api.nvim_create_augroup("herdr-comments", { clear = true })
+vim.api.nvim_create_autocmd({ "BufReadPost", "BufEnter" }, {
+  group = group,
+  callback = function(event) hydrate(event.buf) end,
+})
+vim.api.nvim_create_autocmd("BufWritePost", {
+  group = group,
+  callback = function(event)
+    hydrate(event.buf)
+    persist()
+  end,
+})
+vim.api.nvim_create_autocmd("BufWipeout", {
+  group = group,
+  callback = function(event)
+    for _, comment in pairs(comments) do
+      if comment.buf == event.buf then
+        comment.buf, comment.mark, comment.bars = nil, nil, nil
+      end
+    end
+  end,
+})
+vim.api.nvim_create_autocmd("VimLeavePre", { group = group, callback = persist })
+for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+  if vim.api.nvim_buf_is_loaded(buf) then
+    hydrate(buf)
+  end
+end
 
 return M
