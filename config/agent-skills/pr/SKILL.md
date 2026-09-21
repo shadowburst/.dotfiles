@@ -1,6 +1,6 @@
 ---
 name: pr
-description: "Use when writing a PR body."
+description: "Use when creating or writing a PR, gathering its evidence, or posting a browser demo."
 metadata:
   credits:
     skill: show-me
@@ -9,7 +9,19 @@ metadata:
     url: "https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md"
 ---
 
-Use this template for writing the PR body:
+## Workflow
+
+1. Gather evidence, then write or create the PR with the template below.
+2. For a runnable user-visible browser change, use Browser Control to open an agent-owned tab and record the changed behavior working. Use video-only CDP mode and a clean demo state: no secrets, personal data, unrelated tabs, or notifications. Keep the WebM focused and under 30 seconds and 10 MB.
+3. If recording is unavailable or oversized, proceed with other concrete evidence and say video evidence was unavailable.
+4. After the PR exists, attach the video in a separate comment with a one-line outcome summary:
+
+   ```bash
+   gh pr comment --body "Demo: <working behavior>" --attach "$video" && rm -- "$video"
+   ```
+5. When updating an existing PR, capture its remote head before pushing and review the commits and diff from that head to `HEAD`. Update the PR body when the overall scope changed, then comment with a concise summary of the incremental changes. If they change runnable user-visible browser behavior, record and attach a new video using the same rules above.
+
+Use this template for the PR body:
 
 ```markdown
 ## Summary

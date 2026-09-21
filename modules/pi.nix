@@ -56,6 +56,51 @@ _: {
           '';
         };
 
+      browserControl = pkgs.stdenv.mkDerivation (finalAttrs: {
+        pname = "browser-control";
+        version = "0.8.2";
+
+        src = pkgs.fetchFromGitHub {
+          owner = "anomalyco";
+          repo = "browser-control";
+          rev = "v${finalAttrs.version}";
+          hash = "sha256-ziCTACRwLaJA5nEdVPX3oTEZr52Fr9f1vlWH+klZ44A=";
+        };
+
+        pnpmDeps = pkgs.fetchPnpmDeps {
+          inherit (finalAttrs)
+            pname
+            version
+            src
+            ;
+          pnpm = pkgs.pnpm_11;
+          fetcherVersion = 4;
+          hash = "sha256-vIo8qV0B8aOXbDbACbSYK6OWxYtGqYBNKprEMJ7CmTg=";
+        };
+
+        nativeBuildInputs = [
+          pkgs.nodejs
+          pkgs.pnpm_11
+          pkgs.pnpmConfigHook
+        ];
+
+        buildPhase = ''
+          runHook preBuild
+          pnpm build
+          runHook postBuild
+        '';
+
+        installPhase = ''
+          runHook preInstall
+          pnpm prune --prod
+          mkdir -p $out/lib/browser-control $out/bin
+          cp -r package.json node_modules dist extension skills $out/lib/browser-control/
+          ln -s $out/lib/browser-control/dist/cli.js $out/bin/browser-control
+          ln -s $out/lib/browser-control/dist/mcp.js $out/bin/browser-control-mcp
+          runHook postInstall
+        '';
+      });
+
       webAccess = buildPiPackage {
         owner = "nicobailon";
         repo = "pi-web-access";
@@ -137,6 +182,12 @@ _: {
         ".pi/agent/extensions/usage" = mkPiConfigSymlink "config/pi/extensions/usage";
         ".pi/agent/extensions/pi-mcp-adapter".source = mcpAdapter;
         ".pi/agent/extensions/pi-web-access".source = webAccess;
+        ".local/bin/browser-control".source = "${browserControl}/bin/browser-control";
+        ".local/bin/browser-control-mcp".source = "${browserControl}/bin/browser-control-mcp";
+        ".pi/agent/skills/browser-control".source =
+          "${browserControl}/lib/browser-control/skills/browser-control";
+        ".local/share/browser-control/extension".source =
+          "${browserControl}/lib/browser-control/extension/dist";
         ".pi/agent/extensions/ponytail".source = ponytail;
       };
     };
