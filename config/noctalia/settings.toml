@@ -6,7 +6,7 @@ layer = "overlay"
 margin_edge = 0.0
 margin_ends = 60
 position = "bottom"
-reserve_space = true
+reserve_space = false
 smart_auto_hide = true
 start = [ "clock", "group:g1", "group:g2" ]
 thickness = 40
@@ -373,7 +373,7 @@ settings_show_advanced = true
     session_placement = "floating"
     session_position = "top_center"
     shadow = false
-    transparency_mode = "solid"
+    transparency_mode = "glass"
     wallpaper_placement = "floating"
     wallpaper_position = "top_center"
 
