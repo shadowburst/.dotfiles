@@ -197,6 +197,15 @@
       "skillFolderHash": "e562ca662244ca6908a1733646cccf5c4d36d609",
       "installedAt": "2026-09-08T08:18:25.314Z",
       "updatedAt": "2026-09-15T05:40:17.955Z"
+    },
+    "pr": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mattpocock/skills.git",
+      "skillPath": "skills/in-progress/pr/SKILL.md",
+      "skillFolderHash": "80d46d68aa3fea9ff45e191b7ec107d65d37e416",
+      "installedAt": "2026-09-21T09:48:44.384Z",
+      "updatedAt": "2026-09-21T09:48:44.384Z"
     }
   },
   "dismissed": {
@@ -204,14 +213,13 @@
   },
   "lastSelectedAgents": [
     "amp",
-    "antigravity",
-    "antigravity-cli",
     "cline",
     "codex",
     "cursor",
-    "deepagents",
+    "droid",
     "gemini-cli",
     "github-copilot",
+    "kilo",
     "kimi-code-cli",
     "opencode",
     "warp",

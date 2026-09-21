@@ -1,88 +1,168 @@
 ---
 name: pr
-description: Create or update a review-ready GitHub pull request for the current branch using committed branch state.
+description: "Use when writing a PR body."
+metadata:
+  credits:
+    skill: show-me
+    author: Dex Horthy
+    organisation: Humanlayer
+    url: "https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md"
 ---
 
-# PR
+Use this template for writing the PR body:
 
-Build a PR for the current branch without confirmation prompts.
+```markdown
+## Summary
 
-## Arguments
+<diagram, diff-sketch, or tree>
 
-- `$ARGUMENTS` is one free-form instruction block.
-- Parse it once into these intent keys:
-  - `base`: explicit base branch (optional)
-  - `draft`: true/false
-  - `ready`: true/false
-  - `title`: custom PR title override (optional)
-  - `body`: custom PR body override (optional)
-  - `skipSync`: true/false
-- If both `draft` and `ready` are true, prefer draft.
+## Evidence
 
-## Workflow
+- **Before:** <screenshot/output/failing test run>
+  **After:** <screenshot/output/passing test run>
 
-1. **Repository checks**
-   - Confirm this is a git repository.
-   - Determine current branch: `git branch --show-current`.
-   - Refuse when running on a base branch (default branch / branch pointed by `origin/HEAD`).
-   - If uncommitted changes exist, continue using committed state only and note they are excluded.
-2. **Remote check**
-   - Verify the configured `origin` remote is GitHub.
-   - If not GitHub, do not call GitHub APIs; output a complete PR title/body draft and stop.
-3. **Existing PR and base resolution**
-   - Check for PRs associated with the current branch, including closed and merged PRs, via `gh pr list --head <branch> --state all --json url,title,baseRefName,state`.
-   - Only an open PR is eligible for update.
-   - If an associated PR is already merged or closed, always create a new PR and never update the previous PR.
-   - Choose base branch (first successfully resolved):
-     1. explicit `base` intent
-     2. open existing PR base
-     3. GitHub default branch (`gh repo view --json defaultBranchRef`)
-     4. `origin/HEAD`
-     5. `main`, then `master`
-   - If base cannot be determined, stop and report ambiguity.
-4. **Sync branch safely**
-   - If intent key `skipSync` is true, skip this step and continue.
-   - Otherwise:
-     - Check upstream state (`git rev-list --left-right --count` equivalent).
-     - If branch is unpublished: `git push -u origin <branch>`.
-     - If ahead only: `git push`.
-     - If behind or diverged: stop and request manual sync.
-5. **Build PR content from committed state only**
-   - `git diff <base>...HEAD`
-   - `git log <base>..HEAD --oneline`
-   - `git diff --name-only <base>...HEAD`
-6. **Infer or apply title/body**
-   - If intent has `title`, use it.
-   - If intent has `body`, use it as the exact body.
-   - Otherwise infer title from commit history:
-     - Use a concise Conventional Commit-style title.
-     - If one commit is representative, reuse it as title when meaningful; otherwise synthesize dominant change with `feat|fix|docs|test|refactor|chore` (+ optional scope when obvious).
-   - If title intent is ambiguous, stop and report the required user input.
-   - Build body:
+## Merge Danger
 
-```md
-## Purpose
+**Door:** <one-way or two-way>
 
-<why this branch exists>
+<optional: description>
 
-## Changes
+**Blast Radius:** <one-word description>
 
-- review-relevant change
-- review-relevant change
-
-## Review Notes
-
-<tradeoffs, risks, migration notes, or "None">
+<optional: potential ramifications of merge>
 ```
 
-7. **Create or update**
-   - If an open PR exists: `gh pr edit --title <title> --body <body>`
-   - If no PR exists, or the associated PR is closed or merged: `gh pr create --base <base> --head <branch> --title <title> --body <body>`
-   - Add `--draft` when intent key `draft` is true.
-   - Never call `gh pr edit` on a closed or merged PR.
-8. **Report**
-   - Show resolved base, whether created or updated, PR URL, title, and body draft. If a closed or merged PR was found, note that it was intentionally not updated.
+## Sections
 
-## Failure mode
+Skip all preambles and keep prose brief. Use the user's domain language from `CONTEXT.md`.
 
-If push/create/update fails, stop immediately, report the error, and include `git status --short`.
+### Summary
+
+Pick the smallest view that makes the key point clear.
+
+- Show logic or an algorithm as pseudocode:
+
+```text
+on(save)
+  if content is unchanged
+    return cached result
+  write new content
+  return fresh result
+```
+
+- Show runtime control flow as a call tree:
+
+```text
+submitForm
+  createSession
+    persistPrompt
+    launchAgent
+  navigateToSession
+```
+
+- Show UI structure as a component tree, including state and module boundaries that matter:
+
+```tsx
+<SessionPage>(apps / example / src / routes / session.tsx);
+useSessionEvents() < SessionToolbar > <RunSkillButton>(packages / ui);
+```
+
+- Show file responsibility or a broad refactor as a shallow file tree:
+
+```text
+src/
+├── commands/       # parses user actions
+├── sessions/       # owns session state
+└── transport/      # sends API requests
+```
+
+- Show component interaction, control flow, or data flow with Mermaid:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI
+    participant Daemon
+    User->>UI: choose command
+    UI->>Daemon: send expanded prompt
+    Daemon-->>UI: stream result
+```
+
+- Use `diff` when the point is what changes and the surrounding shape already exists. Match the diff shape to the topic.
+
+For a component change:
+
+```diff
+ <SessionPage>
+   useSessionEvents()
+   <SessionToolbar>
++    <RunSkillButton />
+   <SessionTimeline>
++    <SkillResultCard />
+```
+
+For a file-layout change:
+
+```diff
+ src/
+ ├── commands/
++│   └── show-me.ts       # expands the slash command
+ ├── sessions/
+-└── transport.ts
++└── transport/
++    ├── client.ts
++    └── stream.ts
+```
+
+For a call-tree or call-stack change:
+
+```diff
+ submitForm
+   createSession
+     persistPrompt
++    expandSkillMention
+     launchAgent
+-  navigateToSession
++  navigateToSession
++    subscribeToEvents
+```
+
+For a state or control-flow change:
+
+```diff
+ on(save)
+-  write content
++  if content is unchanged
++    return cached result
++  write new content
++  invalidate cache
+```
+
+- Show the whole block when most of it is new, when omitted context would hide ownership or order, or when the user needs a copyable target shape:
+
+```ts
+function expandSkill(command: string): string {
+  const skillName = command.slice(1);
+  return `use the ${skillName} skill`;
+}
+```
+
+#### Guidance
+
+Place each visual next to the short text it supports. Keep only the calls, files, props, states, and boundaries needed to answer the user's current question or the options to resolve the current discussion point.
+
+You may use one of these, you may use several, it is unlikely you will use all of them. Use your judgement and don't overwhelm the user.
+
+### Evidence
+
+Concrete evidence that the change works. Show a before and after.
+
+Screenshots are S-tier - when the environment is set up for it and the change is visual.
+
+Execution-based evidence is A-tier. Test results, console output. Show the exact test that now fails and passes, using pseudocode.
+
+### Merge Danger
+
+Describe whether it's a one-way or two-way door. You can walk back through two-way doors, but not one-way doors. A PR that is cheap to roll back is lower risk. Changes that involve destructive actions or hard-to-reverse decisions are one-way doors.
+
+The blast radius is the potential impact or scope of the changes introduced by this PR. Consider all possibilities. Examples are layout shift, breakages for consumers, mobile responsiveness, etc.
