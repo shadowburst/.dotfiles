@@ -12,7 +12,7 @@ metadata:
 ## Workflow
 
 1. Gather evidence, then write or create the PR with the template below.
-2. For a runnable user-visible browser change, use Browser Control to open an agent-owned tab and record the changed behavior working. Use video-only CDP mode and a clean demo state: no secrets, personal data, unrelated tabs, or notifications. Keep the WebM focused and under 30 seconds and 10 MB.
+2. For a runnable user-visible browser change, activate `browser_record` with `browser_tools`, then record one page-scoped Puppeteer script in an isolated browser. Use `act.goto/click/type/check/select` for paced visible actions and a clean demo state: no secrets, personal data, unrelated tabs, or notifications. Keep the WebM focused and under 10 MB.
 3. If recording is unavailable or oversized, proceed with other concrete evidence and say video evidence was unavailable.
 4. After the PR exists, attach the video in a separate comment with a one-line outcome summary:
 

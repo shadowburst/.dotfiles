@@ -56,50 +56,25 @@ _: {
           '';
         };
 
-      browserControl = pkgs.stdenv.mkDerivation (finalAttrs: {
-        pname = "browser-control";
-        version = "0.8.2";
-
-        src = pkgs.fetchFromGitHub {
-          owner = "anomalyco";
-          repo = "browser-control";
-          rev = "v${finalAttrs.version}";
-          hash = "sha256-ziCTACRwLaJA5nEdVPX3oTEZr52Fr9f1vlWH+klZ44A=";
-        };
-
-        pnpmDeps = pkgs.fetchPnpmDeps {
-          inherit (finalAttrs)
-            pname
-            version
-            src
-            ;
-          pnpm = pkgs.pnpm_11;
-          fetcherVersion = 4;
-          hash = "sha256-vIo8qV0B8aOXbDbACbSYK6OWxYtGqYBNKprEMJ7CmTg=";
-        };
-
-        nativeBuildInputs = [
-          pkgs.nodejs
-          pkgs.pnpm_11
-          pkgs.pnpmConfigHook
-        ];
-
-        buildPhase = ''
-          runHook preBuild
-          pnpm build
-          runHook postBuild
+      browserTools = pkgs.buildNpmPackage {
+        pname = "pi-browser-tools";
+        version = "1.0.0";
+        src = ../config/pi/extensions/browser;
+        npmDepsHash = "sha256-aVy1q1BEsarAT1Ow6CcAFgwM9sR/Q8vjxuzzd+fPYj0=";
+        dontNpmBuild = true;
+        doCheck = true;
+        checkPhase = ''
+          runHook preCheck
+          ${pkgs.nodejs}/bin/node --test state.test.ts recording.test.ts index.integration.test.ts
+          runHook postCheck
         '';
-
         installPhase = ''
           runHook preInstall
-          pnpm prune --prod
-          mkdir -p $out/lib/browser-control $out/bin
-          cp -r package.json node_modules dist extension skills $out/lib/browser-control/
-          ln -s $out/lib/browser-control/dist/cli.js $out/bin/browser-control
-          ln -s $out/lib/browser-control/dist/mcp.js $out/bin/browser-control-mcp
+          mkdir -p $out
+          cp -r index.ts recording.ts state.ts package.json package-lock.json node_modules $out/
           runHook postInstall
         '';
-      });
+      };
 
       webAccess = buildPiPackage {
         owner = "nicobailon";
@@ -154,6 +129,7 @@ _: {
           wrapProgram $out/bin/pi \
             --set NPM_CONFIG_PREFIX ${lib.escapeShellArg piNpmPrefix} \
             --set NPM_CONFIG_CACHE ${lib.escapeShellArg piNpmCache} \
+            --set PI_BROWSER_FFMPEG ${lib.escapeShellArg "${pkgs.ffmpeg}/bin/ffmpeg"} \
             --prefix PATH : ${lib.escapeShellArg "${lib.makeBinPath [ nodejsLts ]}:${piNpmPrefix}/bin"}
         '';
       };
@@ -182,12 +158,7 @@ _: {
         ".pi/agent/extensions/usage" = mkPiConfigSymlink "config/pi/extensions/usage";
         ".pi/agent/extensions/pi-mcp-adapter".source = mcpAdapter;
         ".pi/agent/extensions/pi-web-access".source = webAccess;
-        ".local/bin/browser-control".source = "${browserControl}/bin/browser-control";
-        ".local/bin/browser-control-mcp".source = "${browserControl}/bin/browser-control-mcp";
-        ".pi/agent/skills/browser-control".source =
-          "${browserControl}/lib/browser-control/skills/browser-control";
-        ".local/share/browser-control/extension".source =
-          "${browserControl}/lib/browser-control/extension/dist";
+        ".pi/agent/extensions/browser".source = browserTools;
         ".pi/agent/extensions/ponytail".source = ponytail;
       };
     };
