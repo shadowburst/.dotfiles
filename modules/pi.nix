@@ -36,13 +36,23 @@ _: {
         context = ''
           During grilling sessions, ask every round through the `question` tool, batching the whole frontier into one call.
         '';
+        keybindings = {
+          "tui.select.up" = [
+            "up"
+            "ctrl+p"
+          ];
+          "tui.select.down" = [
+            "down"
+            "ctrl+n"
+          ];
+          "app.model.cycleForward" = [ ];
+        };
       };
 
       home.file = {
         ".pi/agent/themes" = mkPiConfigSymlink "config/pi/themes";
         ".pi/agent/settings.json" = mkPiConfigSymlink "config/pi/settings.json";
         ".pi/agent/skills/subagents" = mkPiConfigSymlink "config/pi/skills/subagents";
-        ".pi/agent/keybindings.json" = mkPiConfigSymlink "config/pi/keybindings.json";
         ".pi/agent/tasks-config.json" = mkPiConfigSymlink "config/pi/tasks-config.json";
         ".pi/agent/extensions/pi-kitty.ts" = mkPiConfigSymlink "config/pi/extensions/pi-kitty.ts";
         ".pi/agent/extensions/auto-title.ts" = mkPiConfigSymlink "config/pi/extensions/auto-title.ts";
