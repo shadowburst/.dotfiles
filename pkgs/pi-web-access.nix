@@ -1,18 +1,18 @@
 { pkgs }:
 pkgs.buildNpmPackage {
   pname = "pi-web-access";
-  version = "0.29.0";
+  version = "0.31.0";
 
   forceEmptyCache = true;
 
   src = pkgs.fetchFromGitHub {
     owner = "nicobailon";
     repo = "pi-web-access";
-    rev = "v0.29.0";
-    hash = "sha256-5YMwE44pyMmCapGt9kFLxT61Qg3OCzuJCIATRhMBv6M=";
+    rev = "v0.31.0";
+    hash = "sha256-ykR2slh8MkxxbP660h0rvk2Y7SaKv+Cw/lJC21JqGW8=";
   };
 
-  npmDepsHash = "sha256-ucfGly9xWc9PYGKwTx/oPB5rnhwIWInNN/PP2Ibeff0=";
+  npmDepsHash = "sha256-AsxdP0NJ5Y1raF5GjiFI6BAOwh3wYGMSNXuJIrX9dJA=";
 
   postPatch = ''
     ${pkgs.nodejs}/bin/npm pkg delete devDependencies
