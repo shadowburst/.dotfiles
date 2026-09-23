@@ -12,8 +12,8 @@ metadata:
 ## Workflow
 
 1. Gather evidence, then write or create the PR with the template below.
-2. For a runnable user-visible browser change, activate `browser_record` with `browser_tools`, then record one page-scoped Puppeteer script in an isolated browser. Use `act.goto/click/type/check/select` for paced visible actions and a clean demo state: no secrets, personal data, unrelated tabs, or notifications. Keep the WebM focused and under 10 MB.
-3. If recording is unavailable or oversized, proceed with other concrete evidence and say video evidence was unavailable.
+2. For a runnable user-visible browser change in Herdr, activate `browser_open`, `browser_action`, and `browser_record` via `browser_tools`. Open the page, start a named WebM with `browser_record`, drive the dedicated tab through `browser_action`, then stop and inspect the video. Recording starts in a fresh context, so set up a clean demo state: no secrets, personal data, unrelated tabs, or notifications. Keep the WebM focused and under 10 MB.
+3. If native recording fails or is oversized, proceed with other concrete evidence and say video evidence was unavailable.
 4. After the PR exists, attach the video in a separate comment with a one-line outcome summary:
 
    ```bash

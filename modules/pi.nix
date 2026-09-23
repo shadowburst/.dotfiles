@@ -56,26 +56,6 @@ _: {
           '';
         };
 
-      browserTools = pkgs.buildNpmPackage {
-        pname = "pi-browser-tools";
-        version = "1.0.0";
-        src = ../config/pi/extensions/browser;
-        npmDepsHash = "sha256-aVy1q1BEsarAT1Ow6CcAFgwM9sR/Q8vjxuzzd+fPYj0=";
-        dontNpmBuild = true;
-        doCheck = true;
-        checkPhase = ''
-          runHook preCheck
-          ${pkgs.nodejs}/bin/node --test state.test.ts recording.test.ts index.integration.test.ts
-          runHook postCheck
-        '';
-        installPhase = ''
-          runHook preInstall
-          mkdir -p $out
-          cp -r index.ts recording.ts state.ts package.json package-lock.json node_modules $out/
-          runHook postInstall
-        '';
-      };
-
       webAccess = buildPiPackage {
         owner = "nicobailon";
         repo = "pi-web-access";
@@ -129,7 +109,6 @@ _: {
           wrapProgram $out/bin/pi \
             --set NPM_CONFIG_PREFIX ${lib.escapeShellArg piNpmPrefix} \
             --set NPM_CONFIG_CACHE ${lib.escapeShellArg piNpmCache} \
-            --set PI_BROWSER_FFMPEG ${lib.escapeShellArg "${pkgs.ffmpeg}/bin/ffmpeg"} \
             --prefix PATH : ${lib.escapeShellArg "${lib.makeBinPath [ nodejsLts ]}:${piNpmPrefix}/bin"}
         '';
       };
@@ -159,7 +138,7 @@ _: {
         ".pi/agent/extensions/usage" = mkPiConfigSymlink "config/pi/extensions/usage";
         ".pi/agent/extensions/pi-mcp-adapter".source = mcpAdapter;
         ".pi/agent/extensions/pi-web-access".source = webAccess;
-        ".pi/agent/extensions/browser".source = browserTools;
+        ".pi/agent/extensions/browser" = mkPiConfigSymlink "config/pi/extensions/browser";
         ".pi/agent/extensions/ponytail".source = ponytail;
       };
     };
