@@ -2,12 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  beginAdditionalNoteEdit,
   beginCustomEdit,
   beginNoteEdit,
   cancelEdit,
   createQuestionState,
   dismiss,
   handleOptionInput,
+  isConfirm,
   moveHighlight,
   recoverQuestionParamsFromLeaf,
   saveEdit,
@@ -38,10 +40,12 @@ const multipleQuestions: Question[] = [
   },
 ];
 
-test("single configured option selects and completes immediately", () => {
+test("single configured option advances to confirmation instead of submitting", () => {
   const step = selectOption(createQuestionState(single), single, 1);
   assert.deepEqual(step.state.answers, [[1]]);
-  assert.equal(step.submit, true);
+  assert.equal(step.state.tab, 1);
+  assert.equal(isConfirm(step.state, single), true);
+  assert.equal(step.submit, false);
 });
 
 test("multi-question single-select advances and preserves earlier answers", () => {
@@ -132,7 +136,8 @@ test("saving a non-empty note selects its configured option", () => {
   const step = saveEdit(setEditDraft(beginNoteEdit(createQuestionState(single), single, 1), "note B"));
   assert.deepEqual(step.state.notes, [{ 1: "note B" }]);
   assert.deepEqual(step.state.answers, [[1]]);
-  assert.equal(step.submit, true);
+  assert.equal(step.state.tab, 1);
+  assert.equal(step.submit, false);
 });
 
 test("saving a note keeps an already-selected multi-select option selected", () => {
@@ -189,6 +194,16 @@ test("recovers only a valid question call from an assistant leaf", () => {
     type: "message",
     message: { role: "toolResult", content: [] },
   }), undefined);
+});
+
+test("general note is submitted separately and omitted when empty", () => {
+  const initial = createQuestionState(single);
+  assert.deepEqual(submit(initial, single).details, { answers: [[]] });
+  const state = saveEdit(setEditDraft(beginAdditionalNoteEdit(initial), "Unrelated follow-up")).state;
+  assert.deepEqual(submit(state, single).details, {
+    answers: [[]],
+    additionalNote: "Unrelated follow-up",
+  });
 });
 
 test("zero questions submits an empty result", () => {

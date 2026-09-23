@@ -111,7 +111,7 @@ type Handler = (...args: unknown[]) => unknown;
 
 type Harness = {
   tool: {
-    execute: (...args: unknown[]) => Promise<{ content: Array<{ text: string }> }>;
+    execute: (...args: unknown[]) => Promise<{ content: Array<{ text: string }>; details?: unknown }>;
   };
   handlers: Map<string, Handler>;
   sends: Send[];
@@ -211,12 +211,36 @@ test("Ctrl+C clears a custom answer before saving", async () => {
         component.handleInput("ctrl+c");
         component.handleInput("keep me");
         component.handleInput("enter");
+        component.handleInput("enter");
       }),
     },
   });
 
   assert.match(result.content[0]!.text, /"keep me"/);
   assert.doesNotMatch(result.content[0]!.text, /discard me/);
+});
+
+test("single-question flow can add a general note on confirmation", async () => {
+  const harness = createHarness([]);
+  const result = await harness.tool.execute("call", questions, undefined, undefined, {
+    ...executeContext(),
+    ui: {
+      custom: (factory: Function) => new Promise((resolve) => {
+        const component = factory({ requestRender: () => undefined }, {}, {}, resolve);
+        component.handleInput("1");
+        component.handleInput("n");
+        component.handleInput("A general follow-up");
+        component.handleInput("enter");
+        component.handleInput("enter");
+      }),
+    },
+  });
+
+  assert.deepEqual(result.details, {
+    answers: [["Configured"]],
+    additionalNote: "A general follow-up",
+  });
+  assert.match(result.content[0]!.text, /Additional note: "A general follow-up"/);
 });
 
 test("returns one atomic result with every mentioned skill in mention order", async () => {

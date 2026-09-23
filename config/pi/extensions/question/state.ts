@@ -13,11 +13,13 @@ export type Question = {
 export type EditMode =
   | { type: "browse" }
   | { type: "custom"; questionIndex: number; original: string }
-  | { type: "note"; questionIndex: number; optionIndex: number; original: string };
+  | { type: "note"; questionIndex: number; optionIndex: number; original: string }
+  | { type: "additionalNote"; original: string };
 
 export type QuestionDetails = {
   answers: string[][];
   notes?: Array<Record<string, string>>;
+  additionalNote?: string;
 };
 
 export type QuestionState = {
@@ -27,6 +29,7 @@ export type QuestionState = {
   custom: string[];
   customDraft: string[];
   notes: Array<Record<number, string>>;
+  additionalNote: string;
   editMode: EditMode;
   editDraft: string;
   configuredCounts: number[];
@@ -38,10 +41,6 @@ export type QuestionStep = {
   submit: boolean;
 };
 
-export function isSingleFlow(questions: Question[]): boolean {
-  return questions.length === 1 && questions[0]?.multiple !== true;
-}
-
 export function createQuestionState(questions: Question[]): QuestionState {
   return {
     tab: 0,
@@ -50,6 +49,7 @@ export function createQuestionState(questions: Question[]): QuestionState {
     custom: questions.map(() => ""),
     customDraft: questions.map(() => ""),
     notes: questions.map(() => ({})),
+    additionalNote: "",
     editMode: { type: "browse" },
     editDraft: "",
     configuredCounts: questions.map((question) => question.options.length),
@@ -58,12 +58,11 @@ export function createQuestionState(questions: Question[]): QuestionState {
 }
 
 export function isConfirm(state: QuestionState, questions: Question[]): boolean {
-  return !isSingleFlow(questions) && state.tab === questions.length;
+  return state.tab === questions.length;
 }
 
 export function setTab(state: QuestionState, questions: Question[], tab: number): QuestionState {
-  const total = isSingleFlow(questions) ? 1 : questions.length + 1;
-  if (total === 0) return state;
+  const total = questions.length + 1;
   return {
     ...state,
     tab: (tab + total) % total,
@@ -104,6 +103,14 @@ export function beginNoteEdit(state: QuestionState, questions: Question[], optio
   };
 }
 
+export function beginAdditionalNoteEdit(state: QuestionState): QuestionState {
+  return {
+    ...state,
+    editMode: { type: "additionalNote", original: state.additionalNote },
+    editDraft: state.additionalNote,
+  };
+}
+
 export function setEditDraft(state: QuestionState, editDraft: string): QuestionState {
   return { ...state, editDraft };
 }
@@ -121,9 +128,7 @@ function storeAnswers(state: QuestionState, questionIndex: number, answers: numb
   return { ...state, answers: all };
 }
 
-function finishSingleSelection(state: QuestionState, questionIndex: number): QuestionStep {
-  const single = state.configuredCounts.length === 1 && !state.multiple[0];
-  if (single) return { state, submit: true };
+function advanceAfterAnswer(state: QuestionState, questionIndex: number): QuestionStep {
   return {
     state: {
       ...state,
@@ -157,7 +162,7 @@ export function selectOption(
   }
 
   const next = storeAnswers(state, state.tab, [optionIndex]);
-  return finishSingleSelection(next, state.tab);
+  return advanceAfterAnswer(next, state.tab);
 }
 
 export function handleOptionInput(
@@ -178,6 +183,13 @@ export function saveEdit(state: QuestionState): QuestionStep {
   if (mode.type === "browse") return { state, submit: false };
   const value = state.editDraft;
 
+  if (mode.type === "additionalNote") {
+    return {
+      state: { ...state, additionalNote: value, editMode: { type: "browse" }, editDraft: "" },
+      submit: false,
+    };
+  }
+
   if (mode.type === "note") {
     const notes = state.notes.map((entry) => ({ ...entry }));
     if (value) notes[mode.questionIndex]![mode.optionIndex] = value;
@@ -191,7 +203,7 @@ export function saveEdit(state: QuestionState): QuestionStep {
     next = storeAnswers(next, mode.questionIndex, state.multiple[mode.questionIndex] ? answers : [mode.optionIndex]);
     return state.multiple[mode.questionIndex]
       ? { state: next, submit: false }
-      : finishSingleSelection(next, mode.questionIndex);
+      : advanceAfterAnswer(next, mode.questionIndex);
   }
 
   const questionIndex = mode.questionIndex;
@@ -207,7 +219,7 @@ export function saveEdit(state: QuestionState): QuestionStep {
   else if (!state.multiple[questionIndex]) answers = [customIndex];
   const next = storeAnswers({ ...state, custom, customDraft, editMode: { type: "browse" }, editDraft: "" }, questionIndex, answers);
   if (!value || state.multiple[questionIndex]) return { state: next, submit: false };
-  return finishSingleSelection(next, questionIndex);
+  return advanceAfterAnswer(next, questionIndex);
 }
 
 export function dismiss(state: QuestionState): { state: QuestionState; cancel: true; submit: false } {
@@ -273,5 +285,6 @@ export function submit(state: QuestionState, questions: Question[]): { details: 
   });
   const details: QuestionDetails = { answers };
   if (notes.some((entry) => Object.keys(entry).length > 0)) details.notes = notes;
+  if (state.additionalNote) details.additionalNote = state.additionalNote;
   return { details };
 }

@@ -21,6 +21,7 @@ function submittedTexts(details: QuestionDetails): string[] {
   return [
     ...details.answers.flat(),
     ...Object.values(details.notes ?? {}).flatMap((notes) => Object.values(notes)),
+    ...(details.additionalNote ? [details.additionalNote] : []),
   ];
 }
 

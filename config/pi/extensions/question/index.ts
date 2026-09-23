@@ -17,6 +17,7 @@ import { Type, type Static } from "typebox";
 
 import {
   answerLabel,
+  beginAdditionalNoteEdit,
   beginCustomEdit,
   beginNoteEdit,
   cancelEdit,
@@ -24,7 +25,6 @@ import {
   dismiss,
   handleOptionInput,
   isConfirm,
-  isSingleFlow,
   moveHighlight,
   recoverQuestionParamsFromLeaf,
   saveEdit,
@@ -152,21 +152,22 @@ class QuestionComponent implements Focusable {
       return;
     }
 
-    const single = isSingleFlow(this.questions);
-    if (!single) {
-      if (matchesKey(data, Key.tab) || matchesKey(data, Key.right) || matchesKey(data, "l")) {
-        this.state = setTab(this.state, this.questions, this.state.tab + 1);
-        this.refresh();
-        return;
-      }
-      if (matchesKey(data, Key.shift("tab")) || matchesKey(data, Key.left) || matchesKey(data, "h")) {
-        this.state = setTab(this.state, this.questions, this.state.tab - 1);
-        this.refresh();
-        return;
-      }
+    if (matchesKey(data, Key.tab) || matchesKey(data, Key.right) || matchesKey(data, "l")) {
+      this.state = setTab(this.state, this.questions, this.state.tab + 1);
+      this.refresh();
+      return;
+    }
+    if (matchesKey(data, Key.shift("tab")) || matchesKey(data, Key.left) || matchesKey(data, "h")) {
+      this.state = setTab(this.state, this.questions, this.state.tab - 1);
+      this.refresh();
+      return;
     }
 
     if (isConfirm(this.state, this.questions)) {
+      if (matchesKey(data, "n")) {
+        this.openEditor(beginAdditionalNoteEdit(this.state));
+        return;
+      }
       if (matchesKey(data, Key.enter)) this.finish();
       return;
     }
@@ -238,7 +239,7 @@ class QuestionComponent implements Focusable {
     };
 
     lines.push(this.theme.fg("accent", "─".repeat(renderWidth)));
-    if (!isSingleFlow(this.questions)) {
+    if (this.questions.length > 0) {
       const tabs = this.questions.map((question, index) => {
         const active = this.state.tab === index;
         const answered = (this.state.answers[index]?.length ?? 0) > 0;
@@ -276,7 +277,16 @@ class QuestionComponent implements Focusable {
         }
       });
       lines.push("");
-      add(this.theme.fg("dim", "Enter submit • Tab/←→/h/l navigate • Esc dismiss"));
+      add(this.theme.fg("muted", "Additional note:"));
+      if (this.state.editMode.type === "additionalNote") {
+        for (const editorLine of this.editor.render(Math.max(1, renderWidth - 2))) lines.push(`  ${editorLine}`);
+      } else {
+        addPrefixed("  ", this.theme.fg("text", this.state.additionalNote || "No additional note"));
+      }
+      lines.push("");
+      add(this.theme.fg("dim", this.state.editMode.type === "browse"
+        ? "Tab/←→/h/l navigate • Enter submit • n add note • Esc dismiss"
+        : "Enter save • Ctrl+C clear • Esc discard"));
     } else {
       const question = this.questions[this.state.tab];
       if (question) {
@@ -297,6 +307,7 @@ class QuestionComponent implements Focusable {
           else if (this.state.customDraft[this.state.tab]) addPrefixed("    ", this.theme.fg("muted", this.state.customDraft[this.state.tab]!));
 
           const editingHere = this.state.editMode.type !== "browse"
+            && this.state.editMode.type !== "additionalNote"
             && this.state.editMode.questionIndex === this.state.tab
             && (this.state.editMode.type === "custom" ? custom : this.state.editMode.optionIndex === optionIndex);
           const savedNote = this.state.notes[this.state.tab]?.[optionIndex];
@@ -311,7 +322,7 @@ class QuestionComponent implements Focusable {
         }
         lines.push("");
         const hint = this.state.editMode.type === "browse"
-          ? `${isSingleFlow(this.questions) ? "" : "Tab/←→/h/l tabs • "}↑↓/jk select • ${question.multiple === true ? "Space toggle • Enter next" : "Enter/Space choose"} • n add note • Esc dismiss`
+          ? `Tab/←→/h/l tabs • ↑↓/jk select • ${question.multiple === true ? "Space toggle • Enter next" : "Enter/Space choose"} • n add note • Esc dismiss`
           : "Enter save • Ctrl+C clear • Esc discard";
         add(this.theme.fg("dim", hint));
       }
@@ -350,7 +361,10 @@ function resultText(
   const failed = expansion.failed.length
     ? ` Failed to load skills: ${expansion.failed.map((name) => `/skill:${name}`).join(", ")}.`
     : "";
-  return `User has answered your questions: ${formatted}. You can now continue with the user's answers in mind.${unknown}${failed}`;
+  const additionalNote = details.additionalNote
+    ? ` Additional note: ${JSON.stringify(details.additionalNote)}.`
+    : "";
+  return `User has answered your questions: ${formatted}.${additionalNote} You can now continue with the user's answers in mind.${unknown}${failed}`;
 }
 
 async function showDialog(pi: ExtensionAPI, params: QuestionParams, ctx: ExtensionContext): Promise<DialogResult> {
@@ -434,6 +448,7 @@ export default function questionExtension(pi: ExtensionAPI): void {
           if (notes.length) line += theme.fg("muted", ` • ${notes.join(" • ")}`);
           return line;
         });
+        if (details.additionalNote) lines.push(theme.fg("muted", `Additional note: ${details.additionalNote}`));
         return new Text(lines.join("\n"), 0, 0);
       },
     });
