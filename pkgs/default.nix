@@ -1,12 +1,10 @@
 _:
 let
   mkClickupCli = import ./clickup-cli.nix;
-  mkHerdrReviewr = import ./herdr-reviewr.nix;
   mkTerminalBrowser = import ./terminal-browser.nix;
 
   mkPackages = { lib, pkgs }: {
     clickup-cli = mkClickupCli { inherit lib pkgs; };
-    herdr-reviewr = mkHerdrReviewr { inherit lib pkgs; };
     terminal-browser = mkTerminalBrowser { inherit lib pkgs; };
   };
 in

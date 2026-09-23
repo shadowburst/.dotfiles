@@ -21,7 +21,6 @@ _: {
 
       programs.herdr = {
         enable = true;
-        plugins.reviewr.package = pkgs.herdr-reviewr;
         settings = {
           onboarding = false;
 
@@ -67,14 +66,6 @@ _: {
           advanced.scrollback_limit_bytes = 10485760;
 
           keys = {
-            command = [
-              {
-                key = "alt+r";
-                type = "plugin_action";
-                command = "persiyanov.reviewr.toggle";
-              }
-            ];
-
             detach = "";
             goto = "alt+space";
             toggle_sidebar = "alt+b";
