@@ -10,15 +10,7 @@ _: {
           - During grilling sessions, ask every round through the `AskUserQuestion` tool, batching the whole frontier into one call.
         '';
         plugins = {
-          "ponytail" = (
-            pkgs.fetchFromGitHub {
-              name = "ponytail";
-              owner = "DietrichGebert";
-              repo = "ponytail";
-              rev = "v4.9.0";
-              hash = "sha256-8cYggVltBAlZ/Zj4pl1bOu7mQdZFXCmDGW4RSpvRA+w=";
-            }
-          );
+          "ponytail" = pkgs.ponytail.src;
         };
         commands = {
           commit = ''
