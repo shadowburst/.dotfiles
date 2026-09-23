@@ -95,8 +95,6 @@ _: {
     };
 
   flake.homeModules.core =
-    # Backport of https://github.com/nix-community/home-manager/pull/9815.
-    # Remove this module once the pinned Home Manager provides programs.herdr.plugins.
     {
       config,
       lib,
