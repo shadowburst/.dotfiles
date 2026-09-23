@@ -145,6 +145,7 @@ _: {
         ".pi/agent/APPEND_SYSTEM.md" = mkPiConfigSymlink "config/pi/APPEND_SYSTEM.md";
         ".pi/agent/themes" = mkPiConfigSymlink "config/pi/themes";
         ".pi/agent/settings.json" = mkPiConfigSymlink "config/pi/settings.json";
+        ".pi/agent/skills/subagents" = mkPiConfigSymlink "config/pi/skills/subagents";
         ".pi/agent/keybindings.json" = mkPiConfigSymlink "config/pi/keybindings.json";
         ".pi/agent/tasks-config.json" = mkPiConfigSymlink "config/pi/tasks-config.json";
         ".pi/agent/extensions/pi-kitty.ts" = mkPiConfigSymlink "config/pi/extensions/pi-kitty.ts";
