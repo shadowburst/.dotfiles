@@ -1,6 +1,6 @@
 ---
 name: subagents
-description: Subagents: use before dispatching a Pi subagent or when another skill proposes one; decide whether delegation helps and select an eligible model and effort.
+description: use before dispatching a Pi subagent or when another skill proposes one; decide whether delegation helps and select an eligible model and effort.
 ---
 
 # Subagents

@@ -51,6 +51,14 @@ export function validateAgentRequest(
   return { ok: true };
 }
 
+export function orderAgentsForList<T extends { completedAt?: number; listOrder: number }>(records: readonly T[]): { active: T[]; finished: T[] } {
+  const active: T[] = [];
+  const finished: T[] = [];
+  for (const record of records) (record.completedAt === undefined ? active : finished).push(record);
+  const newestFirst = (a: T, b: T) => b.listOrder - a.listOrder;
+  return { active: active.sort(newestFirst), finished: finished.sort(newestFirst) };
+}
+
 export class AgentPool {
   private queued: string[] = [];
   private running = new Set<string>();

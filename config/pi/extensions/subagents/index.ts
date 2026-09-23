@@ -38,6 +38,7 @@ import {
   cleanupWorktree,
   createWorktree,
   latestAssistantResponse,
+  orderAgentsForList,
   transcriptForView,
   truncateResponse,
   validateAgentRequest,
@@ -94,6 +95,7 @@ type AgentRecord = {
   done: Deferred;
   started: Deferred;
   settled: boolean;
+  listOrder: number;
   runNumber: number;
   consumed: boolean;
   lingerTurns: number;
@@ -281,7 +283,10 @@ function keyMatches(keybindings: KeybindingsManager, data: string, id: SelectKey
 }
 
 class AgentList implements Component {
-  private selected = 0;
+  private selectedId?: string;
+  private frame = 0;
+  private pageSize = 1;
+  private timer: ReturnType<typeof setInterval>;
 
   constructor(
     private readonly tui: TUI,
@@ -289,37 +294,100 @@ class AgentList implements Component {
     private readonly keybindings: KeybindingsManager,
     private readonly records: () => AgentRecord[],
     private readonly done: (id?: string) => void,
-  ) {}
+  ) {
+    this.timer = setInterval(() => {
+      if (this.records().some((record) => record.status === "running")) {
+        this.frame++;
+        tui.requestRender();
+      }
+    }, 80);
+    this.timer.unref();
+  }
 
   handleInput(data: string): void {
-    const records = this.records();
+    const records = this.orderedRecords();
+    const selected = this.selectedIndex(records);
     if (keyMatches(this.keybindings, data, "tui.select.cancel") || matchesKey(data, "q") || matchesKey(data, Key.ctrl("c"))) return this.done();
     if (!records.length) return;
-    if (keyMatches(this.keybindings, data, "tui.select.up") || matchesKey(data, "k")) this.selected = (this.selected - 1 + records.length) % records.length;
-    else if (keyMatches(this.keybindings, data, "tui.select.down") || matchesKey(data, "j")) this.selected = (this.selected + 1) % records.length;
-    else if (keyMatches(this.keybindings, data, "tui.select.pageUp")) this.selected = Math.max(0, this.selected - 10);
-    else if (keyMatches(this.keybindings, data, "tui.select.pageDown")) this.selected = Math.min(records.length - 1, this.selected + 10);
-    else if (keyMatches(this.keybindings, data, "tui.select.confirm")) return this.done(records[this.selected]!.id);
+    if (keyMatches(this.keybindings, data, "tui.select.up") || matchesKey(data, "k")) this.selectedId = records[(selected - 1 + records.length) % records.length]!.id;
+    else if (keyMatches(this.keybindings, data, "tui.select.down") || matchesKey(data, "j")) this.selectedId = records[(selected + 1) % records.length]!.id;
+    else if (keyMatches(this.keybindings, data, "tui.select.pageUp")) this.selectedId = records[Math.max(0, selected - this.pageSize)]!.id;
+    else if (keyMatches(this.keybindings, data, "tui.select.pageDown")) this.selectedId = records[Math.min(records.length - 1, selected + this.pageSize)]!.id;
+    else if (keyMatches(this.keybindings, data, "tui.select.confirm")) return this.done(records[selected]!.id);
     this.tui.requestRender();
   }
 
   render(width: number): string[] {
-    const records = this.records();
-    this.selected = Math.min(this.selected, Math.max(0, records.length - 1));
-    const height = Math.max(1, this.tui.terminal.rows - 6);
-    const start = Math.max(0, Math.min(this.selected - Math.floor(height / 2), records.length - height));
-    const lines = [this.theme.fg("accent", this.theme.bold("Agents")), ""];
-    if (!records.length) lines.push(this.theme.fg("muted", "No agents in this session."));
-    for (const [offset, record] of records.slice(start, start + height).entries()) {
-      const index = start + offset;
-      const line = `${index === this.selected ? "→" : " "} ${record.description} · ${record.status} · ${record.model} · ${elapsed(record)}`;
-      lines.push(truncateToWidth(line, width, ""));
+    const { active, finished } = orderAgentsForList(this.records());
+    const records = [...active, ...finished];
+    this.selectedIndex(records);
+    const lines: Array<{ text: string; recordId?: string }> = [];
+    const addRecord = (record: AgentRecord) => {
+      const selected = record.id === this.selectedId;
+      const icon = record.status === "running"
+        ? this.theme.fg("accent", SPINNER[this.frame % SPINNER.length]!)
+        : record.status === "queued"
+          ? this.theme.fg("muted", "◦")
+          : record.status === "completed"
+            ? this.theme.fg("success", "✓")
+            : record.status === "cancelled"
+              ? this.theme.fg("dim", "■")
+              : this.theme.fg("error", "✗");
+      const marker = selected ? this.theme.fg("accent", "→") : " ";
+      const title = record.completedAt === undefined
+        ? this.theme.bold(record.description)
+        : this.theme.fg("dim", record.description);
+      const metadata = this.theme.fg("dim", `    ${record.status} · ${record.effort} · ${record.model} · ${elapsed(record)}`);
+      lines.push({ text: `${marker} ${icon} ${title}`, recordId: record.id });
+      lines.push({ text: metadata, recordId: record.id });
+    };
+
+    if (active.length) {
+      lines.push({ text: this.theme.fg("muted", "Active") });
+      active.forEach(addRecord);
     }
-    lines.push("", this.theme.fg("dim", "navigate · Enter open · Esc/q back"));
-    return panel(this.theme, width, lines);
+    if (finished.length) {
+      if (active.length) lines.push({ text: "" });
+      lines.push({ text: this.theme.fg("muted", "Finished") });
+      finished.forEach(addRecord);
+    }
+    if (!records.length) lines.push({ text: this.theme.fg("muted", "No agents in this session.") });
+
+    const height = Math.max(1, this.tui.terminal.rows - 6);
+    const selectedLine = lines.findIndex((line) => line.recordId === this.selectedId);
+    const maxStart = Math.max(0, lines.length - height);
+    let start = selectedLine < 0 ? 0 : height === 1
+      ? Math.min(selectedLine, maxStart)
+      : Math.max(0, Math.min(selectedLine - Math.floor((height - 2) / 2), maxStart));
+    if (selectedLine >= 0 && height > 1 && selectedLine + 2 > start + height) start = Math.min(maxStart, selectedLine + 2 - height);
+    const visible = lines.slice(start, start + height);
+    this.pageSize = Math.max(1, new Set(visible.flatMap((line) => line.recordId ? [line.recordId] : [])).size - 1);
+    const content = [
+      this.theme.fg("accent", this.theme.bold("Agents")),
+      "",
+      ...visible.map(({ text }) => truncateToWidth(text, width, "")),
+      "",
+      this.theme.fg("dim", "navigate · Enter open · Esc/q back"),
+    ];
+    return panel(this.theme, width, content);
   }
 
   invalidate(): void {}
+  dispose(): void { clearInterval(this.timer); }
+
+  private orderedRecords(): AgentRecord[] {
+    const { active, finished } = orderAgentsForList(this.records());
+    return [...active, ...finished];
+  }
+
+  private selectedIndex(records: AgentRecord[]): number {
+    let index = records.findIndex((record) => record.id === this.selectedId);
+    if (index < 0 && records.length) {
+      this.selectedId = records[0]!.id;
+      index = 0;
+    }
+    return index;
+  }
 }
 
 class AgentDetail implements Component, Focusable {
@@ -390,7 +458,7 @@ class AgentDetail implements Component, Focusable {
     if (this.autoScroll) this.scrollOffset = max;
     this.scrollOffset = Math.min(this.scrollOffset, max);
     const visible = history.slice(this.scrollOffset, this.scrollOffset + viewport);
-    const header = `${this.theme.bold(this.record.description)} ${this.theme.fg("muted", `(${this.record.id} · ${this.record.status} · ${this.record.model})`)}`;
+    const header = `${this.theme.bold(this.record.description)} ${this.theme.fg("muted", `(${this.record.id} · ${this.record.status} · ${this.record.model} · ${this.record.effort})`)}`;
     const actions = this.record.status === "running"
       ? `${this.stopArmed ? "x again to STOP" : "Enter steer · x stop"} · `
       : this.record.status === "queued"
@@ -467,6 +535,8 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
 
   const records = new Map<string, AgentRecord>();
   const pool = new AgentPool();
+  let listOrder = 0;
+  const bumpListOrder = (record: AgentRecord) => { record.listOrder = ++listOrder; };
   const notices = new Map<string, ReturnType<typeof setTimeout>>();
   const openTuis = new Set<TUI>();
   let context: ExtensionContext | undefined;
@@ -560,6 +630,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
 
     record.status = record.worktreePath ? "failed" : finalStatus;
     record.completedAt = Date.now();
+    bumpListOrder(record);
     record.lingerTurns = record.status === "completed" ? 1 : 2;
     if (!record.background) record.consumed = true;
     scheduleNotice(record);
@@ -632,6 +703,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     record.status = "running";
     record.startedAt = Date.now();
     record.completedAt = undefined;
+    bumpListOrder(record);
     record.responseText = "";
     record.activeTools.clear();
     refresh();
@@ -688,6 +760,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       record.status = "cancelled";
       record.settled = true;
       record.completedAt = Date.now();
+      bumpListOrder(record);
       record.lingerTurns = 2;
       record.started.resolve();
       record.done.resolve();
@@ -702,6 +775,8 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       return;
     }
     record.status = "cancelled";
+    record.completedAt = Date.now();
+    bumpListOrder(record);
     record.acceptingSteer = false;
     record.abortController.abort();
     await record.session?.abort().catch(() => {});
@@ -743,7 +818,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       const id = await ctx.ui.custom<string | undefined>((tui, theme, keybindings, done) => {
         openTuis.add(tui);
         const component = new AgentList(tui, theme, keybindings, allRecords, done);
-        return Object.assign(component, { dispose: () => openTuis.delete(tui) });
+        return Object.assign(component, { dispose: () => { component.dispose(); openTuis.delete(tui); } });
       });
       if (!id) return;
       await showDetail(id);
@@ -792,6 +867,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       record.nextPrompt = params.prompt;
       record.background = background;
       record.status = "queued";
+      bumpListOrder(record);
       record.error = undefined;
       record.latestFinalText = "";
       record.responseText = "";
@@ -832,6 +908,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
         done: deferred(),
         started: deferred(),
         settled: false,
+        listOrder: ++listOrder,
         runNumber: 1,
         consumed: false,
         lingerTurns: 0,

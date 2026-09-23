@@ -11,6 +11,7 @@ import {
   cleanupWorktree,
   createWorktree,
   latestAssistantResponse,
+  orderAgentsForList,
   transcriptForView,
   truncateResponse,
   validateAgentRequest,
@@ -34,6 +35,19 @@ test("the catalog, not a static allowlist, validates model and effort", () => {
     error: "Model is unavailable in this session: missing/model. Available models: custom/reasoner, local/plain",
   });
   assert.deepEqual(validateAgentRequest("custom/reasoner", "max", catalog, "off"), { ok: false, error: 'isolation must be "worktree"' });
+});
+
+test("the agent list puts active and finished records in separate newest-first groups", () => {
+  const records = [
+    { id: "old-active", listOrder: 1 },
+    { id: "finished", listOrder: 2, completedAt: 10 },
+    { id: "new-active", listOrder: 3 },
+    { id: "resumed", listOrder: 4 },
+    { id: "newest-finished", listOrder: 5, completedAt: 20 },
+  ];
+  const groups = orderAgentsForList(records);
+  assert.deepEqual(groups.active.map(({ id }) => id), ["resumed", "new-active", "old-active"]);
+  assert.deepEqual(groups.finished.map(({ id }) => id), ["newest-finished", "finished"]);
 });
 
 test("the pool starts queued work in FIFO order with at most eight running", () => {
