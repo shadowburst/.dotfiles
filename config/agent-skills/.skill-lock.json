@@ -206,6 +206,51 @@
       "skillFolderHash": "80d46d68aa3fea9ff45e191b7ec107d65d37e416",
       "installedAt": "2026-09-21T09:48:44.384Z",
       "updatedAt": "2026-09-21T09:48:44.384Z"
+    },
+    "pr-review": {
+      "source": "Lynx-Business/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/Lynx-Business/skills.git",
+      "skillPath": "skills/pr-review/SKILL.md",
+      "skillFolderHash": "c1b7f685005994a039f4d393f08a86f119960ff9",
+      "installedAt": "2026-09-23T10:52:14.261Z",
+      "updatedAt": "2026-09-23T10:52:14.261Z"
+    },
+    "repo-review": {
+      "source": "Lynx-Business/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/Lynx-Business/skills.git",
+      "skillPath": "skills/repo-review/SKILL.md",
+      "skillFolderHash": "8a563e3ed1b65371dae651cff49cb7f76abe3b1a",
+      "installedAt": "2026-09-23T10:52:14.262Z",
+      "updatedAt": "2026-09-23T10:52:14.262Z"
+    },
+    "open-pr": {
+      "source": "Lynx-Business/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/Lynx-Business/skills.git",
+      "skillPath": "skills/open-pr/SKILL.md",
+      "skillFolderHash": "1afcacf2e6f434835dbd799a20152df1a22cbfca",
+      "installedAt": "2026-09-23T12:49:33.292Z",
+      "updatedAt": "2026-09-23T12:49:33.292Z"
+    },
+    "review-pr": {
+      "source": "Lynx-Business/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/Lynx-Business/skills.git",
+      "skillPath": "skills/review-pr/SKILL.md",
+      "skillFolderHash": "8bdf124a8e2409cae3b53683d3932b5a839fe4aa",
+      "installedAt": "2026-09-23T12:49:33.294Z",
+      "updatedAt": "2026-09-23T12:49:33.294Z"
+    },
+    "review-prs": {
+      "source": "Lynx-Business/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/Lynx-Business/skills.git",
+      "skillPath": "skills/review-prs/SKILL.md",
+      "skillFolderHash": "22c50e837f21e1a11bb004355f758caf023e90fa",
+      "installedAt": "2026-09-23T12:49:33.303Z",
+      "updatedAt": "2026-09-23T12:49:33.303Z"
     }
   },
   "dismissed": {
