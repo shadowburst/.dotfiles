@@ -20,6 +20,7 @@ _: {
         ripgrep
         sqlit-tui
         sshfs
+        terminal-browser
         tldr
         trash-cli
         tree
