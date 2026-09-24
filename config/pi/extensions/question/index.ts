@@ -248,11 +248,13 @@ class QuestionComponent implements Focusable {
           ? this.theme.bg("selectedBg", this.theme.fg("text", text))
           : this.theme.fg(answered ? "success" : "muted", text);
       });
-      const confirm = this.state.tab === this.questions.length;
-      const confirmText = " Confirm ";
-      tabs.push(confirm
-        ? this.theme.bg("selectedBg", this.theme.fg("text", confirmText))
-        : this.theme.fg("muted", confirmText));
+      if (this.questions.length > 1) {
+        const confirm = this.state.tab === this.questions.length;
+        const confirmText = " Confirm ";
+        tabs.push(confirm
+          ? this.theme.bg("selectedBg", this.theme.fg("text", confirmText))
+          : this.theme.fg("muted", confirmText));
+      }
       add(tabs.join(" "));
       lines.push("");
     }
@@ -322,7 +324,7 @@ class QuestionComponent implements Focusable {
         }
         lines.push("");
         const hint = this.state.editMode.type === "browse"
-          ? `Tab/←→/h/l tabs • ↑↓/jk select • ${question.multiple === true ? "Space toggle • Enter next" : "Enter/Space choose"} • n add note • Esc dismiss`
+          ? `${this.questions.length > 1 ? "Tab/←→/h/l tabs • " : ""}↑↓/jk select • ${question.multiple === true ? `Space toggle • Enter ${this.questions.length === 1 ? "submit" : "next"}` : "Enter/Space choose"} • n add note • Esc dismiss`
           : "Enter save • Ctrl+C clear • Esc discard";
         add(this.theme.fg("dim", hint));
       }

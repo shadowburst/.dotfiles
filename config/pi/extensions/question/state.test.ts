@@ -40,12 +40,12 @@ const multipleQuestions: Question[] = [
   },
 ];
 
-test("single configured option advances to confirmation instead of submitting", () => {
+test("single configured option submits without confirmation", () => {
   const step = selectOption(createQuestionState(single), single, 1);
   assert.deepEqual(step.state.answers, [[1]]);
-  assert.equal(step.state.tab, 1);
-  assert.equal(isConfirm(step.state, single), true);
-  assert.equal(step.submit, false);
+  assert.equal(step.state.tab, 0);
+  assert.equal(step.submit, true);
+  assert.equal(isConfirm(setTab(step.state, single, 1), single), false);
 });
 
 test("multi-question single-select advances and preserves earlier answers", () => {
@@ -67,15 +67,26 @@ test("multi-select toggles in selection order and removes only its target", () =
   assert.deepEqual(state.answers, [[0]]);
 });
 
-test("multi-select uses Space or number keys to toggle and Enter to advance", () => {
+test("single multi-select uses Space or number keys to toggle and Enter to submit", () => {
   const questions: Question[] = [{ ...single[0]!, multiple: true }];
   let state = createQuestionState(questions);
   state = handleOptionInput(state, questions, "number", 0).state;
   state = handleOptionInput(state, questions, "space", 1).state;
   assert.deepEqual(state.answers, [[0, 1]]);
-  state = handleOptionInput(state, questions, "enter").state;
-  assert.deepEqual(state.answers, [[0, 1]]);
-  assert.equal(state.tab, 1);
+  const step = handleOptionInput(state, questions, "enter");
+  assert.deepEqual(step.state.answers, [[0, 1]]);
+  assert.equal(step.state.tab, 0);
+  assert.equal(step.submit, true);
+});
+
+test("multiple questions retain confirmation and multi-select advances to it", () => {
+  const questions: Question[] = [{ ...single[0]!, multiple: true }, multipleQuestions[1]!];
+  const first = handleOptionInput(createQuestionState(questions), questions, "enter");
+  assert.equal(first.state.tab, 1);
+  assert.equal(first.submit, false);
+  const second = handleOptionInput(first.state, questions, "enter");
+  assert.equal(second.state.tab, 2);
+  assert.equal(second.submit, false);
 });
 
 test("question tab navigation wraps, resets focus, and confirm permits unanswered questions", () => {
@@ -95,6 +106,13 @@ test("custom draft is cleared by editor Escape", () => {
   assert.equal(state.customDraft[0], "");
   assert.equal(state.custom[0], "");
   assert.deepEqual(state.answers, [[]]);
+});
+
+test("single custom answer submits when saved", () => {
+  const state = beginCustomEdit(createQuestionState(single), single);
+  const step = saveEdit(setEditDraft(state, "Custom"));
+  assert.equal(step.submit, true);
+  assert.deepEqual(submit(step.state, single).details.answers, [["Custom"]]);
 });
 
 test("saving custom text selects it and clearing it removes its selection", () => {
@@ -136,8 +154,8 @@ test("saving a non-empty note selects its configured option", () => {
   const step = saveEdit(setEditDraft(beginNoteEdit(createQuestionState(single), single, 1), "note B"));
   assert.deepEqual(step.state.notes, [{ 1: "note B" }]);
   assert.deepEqual(step.state.answers, [[1]]);
-  assert.equal(step.state.tab, 1);
-  assert.equal(step.submit, false);
+  assert.equal(step.state.tab, 0);
+  assert.equal(step.submit, true);
 });
 
 test("saving a note keeps an already-selected multi-select option selected", () => {

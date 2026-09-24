@@ -211,7 +211,6 @@ test("Ctrl+C clears a custom answer before saving", async () => {
         component.handleInput("ctrl+c");
         component.handleInput("keep me");
         component.handleInput("enter");
-        component.handleInput("enter");
       }),
     },
   });
@@ -220,7 +219,7 @@ test("Ctrl+C clears a custom answer before saving", async () => {
   assert.doesNotMatch(result.content[0]!.text, /discard me/);
 });
 
-test("single-question flow can add a general note on confirmation", async () => {
+test("single-question selection submits immediately", async () => {
   const harness = createHarness([]);
   const result = await harness.tool.execute("call", questions, undefined, undefined, {
     ...executeContext(),
@@ -228,6 +227,22 @@ test("single-question flow can add a general note on confirmation", async () => 
       custom: (factory: Function) => new Promise((resolve) => {
         const component = factory({ requestRender: () => undefined }, {}, {}, resolve);
         component.handleInput("1");
+      }),
+    },
+  });
+  assert.deepEqual(result.details, { answers: [["Configured"]] });
+});
+
+test("multi-question flow can add a general note on confirmation", async () => {
+  const harness = createHarness([]);
+  const params = { questions: [...questions.questions, { question: "Anything else?", header: "Other", options: [] }] };
+  const result = await harness.tool.execute("call", params, undefined, undefined, {
+    ...executeContext(),
+    ui: {
+      custom: (factory: Function) => new Promise((resolve) => {
+        const component = factory({ requestRender: () => undefined }, {}, {}, resolve);
+        component.handleInput("1");
+        component.handleInput("tab");
         component.handleInput("n");
         component.handleInput("A general follow-up");
         component.handleInput("enter");
@@ -237,7 +252,7 @@ test("single-question flow can add a general note on confirmation", async () => 
   });
 
   assert.deepEqual(result.details, {
-    answers: [["Configured"]],
+    answers: [["Configured"], []],
     additionalNote: "A general follow-up",
   });
   assert.match(result.content[0]!.text, /Additional note: "A general follow-up"/);

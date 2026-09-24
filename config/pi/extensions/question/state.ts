@@ -62,7 +62,7 @@ export function isConfirm(state: QuestionState, questions: Question[]): boolean 
 }
 
 export function setTab(state: QuestionState, questions: Question[], tab: number): QuestionState {
-  const total = questions.length + 1;
+  const total = questions.length > 1 ? questions.length + 1 : 1;
   return {
     ...state,
     tab: (tab + total) % total,
@@ -129,6 +129,7 @@ function storeAnswers(state: QuestionState, questionIndex: number, answers: numb
 }
 
 function advanceAfterAnswer(state: QuestionState, questionIndex: number): QuestionStep {
+  if (state.answers.length === 1) return { state, submit: true };
   return {
     state: {
       ...state,
@@ -173,7 +174,9 @@ export function handleOptionInput(
 ): QuestionStep {
   const question = questions[state.tab];
   if (question?.multiple === true && input === "enter") {
-    return { state: setTab(state, questions, state.tab + 1), submit: false };
+    return questions.length === 1
+      ? { state, submit: true }
+      : { state: setTab(state, questions, state.tab + 1), submit: false };
   }
   return selectOption(state, questions, optionIndex);
 }
