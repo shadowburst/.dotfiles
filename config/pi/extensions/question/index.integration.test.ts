@@ -8,7 +8,10 @@ import { after, test } from "node:test";
 const indexUrl = new URL("./index.ts", import.meta.url).href;
 const packageSources = {
   "@earendil-works/pi-coding-agent": `
-    export const getMarkdownTheme = () => ({});
+    export const getMarkdownTheme = () => ({
+      bold: (text) => '\\x1b[1m' + text + '\\x1b[0m',
+      italic: (text) => '\\x1b[3m' + text + '\\x1b[0m',
+    });
     export const stripFrontmatter = (content) => content.replace(/^---\\n[\\s\\S]*?\\n---\\n?/, "");
   `,
   "@earendil-works/pi-tui": `
@@ -20,11 +23,15 @@ const packageSources = {
     }
     export class Editor {
       value = "";
+      focused = false;
+      cursor = undefined;
       setAutocompleteProvider(provider) {
         if (!provider.triggerCharacters?.includes("$") || !provider.getSuggestions) throw new Error("invalid autocomplete provider");
       }
       setText(value) { this.value = value; }
       getExpandedText() { return this.value; }
+      getCursor() { return this.cursor ?? { line: 0, col: this.value.length }; }
+      isShowingAutocomplete() { return false; }
       handleInput(data) {
         if (data === Key.enter) this.onSubmit?.(this.value);
         else {
@@ -32,12 +39,14 @@ const packageSources = {
           this.onChange?.(this.value);
         }
       }
-      render() { return [this.value + "\\x1b[7m \\x1b[0m"]; }
+      render() { return ["──", ...this.value.split("\\n").map((line) => line + "\\x1b_pi:c\\x07"), "──"]; }
       invalidate() {}
     }
+    export const CURSOR_MARKER = "\\x1b_pi:c\\x07";
     export class Markdown {
       constructor(text) { this.text = text; }
-      render() { return [this.text]; }
+      setText(text) { this.text = text; }
+      render() { return this.text.split("\\n").map((line) => line.replace(/\\*\\*(.*?)\\*\\*/g, "$1")); }
     }
     export class Text {}
     export const Key = {
@@ -54,7 +63,8 @@ const packageSources = {
     };
     export const matchesKey = (data, key) => data === key;
     export const truncateToWidth = (text) => text;
-    export const visibleWidth = (text) => text.length;
+    export const sliceByColumn = (text, start, length) => text.slice(start, start + length);
+    export const visibleWidth = (text) => text.replace(/\\x1b\\[[0-9;]*m|\\x1b_pi:c\\x07/g, "").length;
     export const wrapTextWithAnsi = (text) => [text];
   `,
   typebox: `
@@ -223,7 +233,7 @@ test("Ctrl+C clears a custom answer before saving", async () => {
   assert.doesNotMatch(result.content[0]!.text, /discard me/);
 });
 
-test("custom answers render through prompt skill highlighting and cursor handling", async () => {
+test("custom answers style source Markdown without adding rows or remapping the cursor", async () => {
   const harness = createHarness(commands);
   await harness.tool.execute("call", questions, undefined, undefined, {
     ...executeContext(),
@@ -235,10 +245,12 @@ test("custom answers render through prompt skill highlighting and cursor handlin
           bold: (text: string) => text,
         };
         const component = factory({ requestRender: () => undefined }, theme, {}, resolve);
+        component.focused = true;
         component.handleInput("2");
-        component.handleInput("/skill:review");
+        component.handleInput("**bold** /skill:review\n> quoted");
         const rendered = component.render(100).join("\n");
-        assert.match(rendered, /<accent>\/skill:review<\/accent>/);
+        assert.match(rendered, /\x1b\[1m\*\*bold\*\*\x1b\[0m <accent>\/skill:review<\/accent>/);
+        assert.match(rendered, /> quoted\x1b_pi:c\x07/);
         assert.doesNotMatch(rendered, /\x1b\[7m/);
         component.handleInput("enter");
       }),

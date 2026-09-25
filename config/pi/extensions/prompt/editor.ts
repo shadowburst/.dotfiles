@@ -1,4 +1,4 @@
-import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
+import { getMarkdownTheme, type ExtensionAPI, type Theme } from "@earendil-works/pi-coding-agent";
 import type { AutocompleteProvider } from "@earendil-works/pi-tui";
 
 type SkillCommand = ReturnType<ExtensionAPI["getCommands"]>[number];
@@ -13,8 +13,53 @@ function stripFakeReverseCursor(line: string): string {
   return line.replace(/\x1b\[7m([\s\S]*?)\x1b\[(?:0|27)m/, "$1");
 }
 
-export function renderPrompt(lines: string[], getSkills: GetSkills, theme: Theme): string[] {
-  return highlightSkillReferences(lines.map(stripFakeReverseCursor), getSkills, theme);
+export function renderPrompt(lines: string[], getSkills: GetSkills, theme: Theme, markdown = false): string[] {
+  const source = lines.map(stripFakeReverseCursor);
+  if (markdown) {
+    const style = getMarkdownTheme();
+    // ponytail: emphasis split across wrapped rows loses styling; use editor source spans if that matters.
+    for (let i = 1; i < source.length - 1; i++) source[i] = styleMarkdownLine(source[i]!, style);
+  }
+  return highlightSkillReferences(source, getSkills, theme);
+}
+
+function styleMarkdownLine(line: string, style: ReturnType<typeof getMarkdownTheme>): string {
+  const positions: number[] = [];
+  let plain = "";
+  let last = 0;
+  for (const escape of line.matchAll(/\x1b\[[0-9;]*m|\x1b_pi:c\x07/g)) {
+    for (let i = last; i < escape.index; i++) { positions.push(i); plain += line[i]; }
+    last = escape.index + escape[0].length;
+  }
+  for (let i = last; i < line.length; i++) { positions.push(i); plain += line[i]; }
+  const apply = (ranges: { start: number; end: number; color: (text: string) => string }[]) => {
+    let result = "";
+    let end = 0;
+    for (const range of ranges) {
+      const start = positions[range.start]!;
+      const stop = positions[range.end] ?? line.length;
+      result += line.slice(end, start) + range.color(line.slice(start, stop));
+      end = stop;
+    }
+    return result + line.slice(end);
+  };
+
+  if (/^\s*#{1,6} /.test(plain)) return apply([{ start: plain.search(/#/), end: plain.trimEnd().length, color: style.heading }]);
+
+  const ranges: { start: number; end: number; color: (text: string) => string }[] = [];
+  const bullet = /^(\s*)([-+*]|\d+[.)])(?= )/.exec(plain);
+  if (bullet) ranges.push({ start: bullet[1]!.length, end: bullet[0].length, color: style.listBullet });
+  for (const match of plain.matchAll(/`[^`]+`|\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_/g)) {
+    const token = match[0];
+    const start = match.index;
+    if (start < (ranges.at(-1)?.end ?? 0)) continue;
+    ranges.push({
+      start,
+      end: start + token.length,
+      color: token.startsWith("`") ? style.code : token.startsWith("**") || token.startsWith("__") ? style.bold : style.italic,
+    });
+  }
+  return apply(ranges);
 }
 
 export function skillAutocomplete(current: AutocompleteProvider, getSkills: GetSkills): AutocompleteProvider {

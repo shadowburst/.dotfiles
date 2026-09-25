@@ -1,6 +1,17 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { highlightSkillReferences, renderPrompt, skillAutocomplete } from "./editor.ts";
+import { register } from "node:module";
+
+register(`data:text/javascript,${encodeURIComponent(`
+  export function resolve(specifier, context, nextResolve) {
+    if (specifier === "@earendil-works/pi-coding-agent") return {
+      url: "data:text/javascript," + encodeURIComponent("export const getMarkdownTheme = () => ({});"),
+      shortCircuit: true,
+    };
+    return nextResolve(specifier, context);
+  }
+`)}`, import.meta.url);
+const { highlightSkillReferences, renderPrompt, skillAutocomplete } = await import("./editor.ts");
 
 const commands = [
   { name: "skill:review", source: "skill" },

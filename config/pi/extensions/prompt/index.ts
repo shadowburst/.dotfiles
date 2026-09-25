@@ -3,7 +3,12 @@ import {
   type ExtensionAPI,
   type ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import { matchesKey, Text, type EditorTheme, type TUI } from "@earendil-works/pi-tui";
+import {
+  matchesKey,
+  Text,
+  type EditorTheme,
+  type TUI,
+} from "@earendil-works/pi-tui";
 import { renderPrompt, skillAutocomplete } from "./editor.ts";
 
 type KeybindingsManager = ConstructorParameters<typeof CustomEditor>[2];
@@ -83,7 +88,8 @@ class PromptEditor extends CustomEditor {
 
   render(width: number): string[] {
     this.focused = this.focused && this.kittyFocused;
-    return renderPrompt(super.render(width), () => this.pi.getCommands(), this.getTheme());
+    return renderPrompt(super.render(width), () => this.pi.getCommands(), this.getTheme(),
+      !!this.getExpandedText().trim() && !this.isShowingAutocomplete());
   }
 }
 

@@ -208,7 +208,8 @@ class QuestionComponent implements Focusable {
   }
 
   private renderEditor(width: number): string[] {
-    return renderPrompt(this.editor.render(width), this.getSkills, this.theme);
+    return renderPrompt(this.editor.render(width), this.getSkills, this.theme,
+      !!this.editor.getExpandedText().trim() && !this.editor.isShowingAutocomplete());
   }
 
   render(width: number): string[] {
