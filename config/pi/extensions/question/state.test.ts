@@ -89,7 +89,7 @@ test("multiple questions retain confirmation and multi-select advances to it", (
   assert.equal(second.submit, false);
 });
 
-test("question tab navigation wraps, resets focus, and confirm permits unanswered questions", () => {
+test("question tab navigation wraps, resets unanswered focus, and permits confirmation", () => {
   let state = createQuestionState(multipleQuestions);
   state = moveHighlight(state, multipleQuestions, -1);
   assert.equal(state.highlighted, 2);
@@ -97,6 +97,13 @@ test("question tab navigation wraps, resets focus, and confirm permits unanswere
   assert.equal(state.tab, 2);
   assert.equal(state.highlighted, 0);
   assert.deepEqual(submit(state, multipleQuestions).details.answers, [[], []]);
+});
+
+test("returning to an answered question highlights its selected option", () => {
+  let state = createQuestionState(multipleQuestions);
+  state = selectOption(state, multipleQuestions, 1).state;
+  state = setTab(state, multipleQuestions, 0);
+  assert.equal(state.highlighted, 1);
 });
 
 test("custom draft is cleared by editor Escape", () => {

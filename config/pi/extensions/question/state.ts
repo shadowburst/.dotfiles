@@ -63,10 +63,11 @@ export function isConfirm(state: QuestionState, questions: Question[]): boolean 
 
 export function setTab(state: QuestionState, questions: Question[], tab: number): QuestionState {
   const total = questions.length > 1 ? questions.length + 1 : 1;
+  const nextTab = (tab + total) % total;
   return {
     ...state,
-    tab: (tab + total) % total,
-    highlighted: 0,
+    tab: nextTab,
+    highlighted: state.answers[nextTab]?.[0] ?? 0,
     editMode: { type: "browse" },
     editDraft: "",
   };
