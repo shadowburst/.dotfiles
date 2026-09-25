@@ -54,7 +54,7 @@ _: {
         ".pi/agent/settings.json" = mkPiConfigSymlink "config/pi/settings.json";
         ".pi/agent/skills/subagents" = mkPiConfigSymlink "config/pi/skills/subagents";
         ".pi/agent/tasks-config.json" = mkPiConfigSymlink "config/pi/tasks-config.json";
-        ".pi/agent/extensions/pi-kitty.ts" = mkPiConfigSymlink "config/pi/extensions/pi-kitty.ts";
+        ".pi/agent/extensions/prompt" = mkPiConfigSymlink "config/pi/extensions/prompt";
         ".pi/agent/extensions/auto-title.ts" = mkPiConfigSymlink "config/pi/extensions/auto-title.ts";
         ".pi/agent/extensions/prompt-stash.ts" = mkPiConfigSymlink "config/pi/extensions/prompt-stash.ts";
         ".pi/agent/extensions/footer" = mkPiConfigSymlink "config/pi/extensions/footer";

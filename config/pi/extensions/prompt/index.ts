@@ -3,6 +3,7 @@ import {
   type ExtensionAPI,
 } from "@earendil-works/pi-coding-agent";
 import type { EditorTheme, TUI } from "@earendil-works/pi-tui";
+import { renderPrompt, skillAutocomplete } from "./editor.ts";
 
 type KeybindingsManager = ConstructorParameters<typeof CustomEditor>[2];
 
@@ -17,18 +18,17 @@ function isPartialFocusSequence(text: string): boolean {
   return FOCUS_SEQUENCES.some((sequence) => sequence.startsWith(text));
 }
 
-function stripFakeReverseCursor(line: string): string {
-  // Pi's editor renders a software cursor using reverse video. When the Kitty
-  // hardware cursor is enabled, that software cursor is the white block that
-  // remains visible on focus-out and flickers underneath Kitty's own cursor.
-  return line.replace(/\x1b\[7m([\s\S]*?)\x1b\[(?:0|27)m/, "$1");
-}
-
-class PiKittyEditor extends CustomEditor {
+class PromptEditor extends CustomEditor {
   private kittyFocused = true;
   private pendingFocusInput = "";
 
-  constructor(tui: TUI, theme: EditorTheme, keybindings: KeybindingsManager) {
+  constructor(
+    tui: TUI,
+    theme: EditorTheme,
+    keybindings: KeybindingsManager,
+    private readonly pi: ExtensionAPI,
+    private readonly getTheme: () => Parameters<typeof renderPrompt>[2],
+  ) {
     super(tui, theme, keybindings, { paddingX: 1 });
   }
 
@@ -77,7 +77,7 @@ class PiKittyEditor extends CustomEditor {
 
   render(width: number): string[] {
     this.focused = this.focused && this.kittyFocused;
-    return super.render(width).map(stripFakeReverseCursor);
+    return renderPrompt(super.render(width), () => this.pi.getCommands(), this.getTheme());
   }
 }
 
@@ -88,8 +88,9 @@ export default function (pi: ExtensionAPI) {
     }
 
     process.stdout.write(KITTY_SET_PI_FOCUS_AWARE);
+    ctx.ui.addAutocompleteProvider((current) => skillAutocomplete(current, () => pi.getCommands()));
     ctx.ui.setEditorComponent(
-      (tui, theme, keybindings) => new PiKittyEditor(tui, theme, keybindings),
+      (tui, theme, keybindings) => new PromptEditor(tui, theme, keybindings, pi, () => ctx.ui.theme),
     );
   });
 

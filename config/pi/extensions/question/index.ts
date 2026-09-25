@@ -2,6 +2,7 @@ import { getMarkdownTheme, type ExtensionAPI, type ExtensionContext, type Theme 
 import {
   CombinedAutocompleteProvider,
   Editor,
+  type AutocompleteProvider,
   type EditorTheme,
   type Focusable,
   Key,
@@ -36,6 +37,7 @@ import {
   type QuestionState,
 } from "./state.ts";
 import { expandSkillMentions, type SkillExpansion } from "./skills.ts";
+import { renderPrompt, skillAutocomplete } from "../prompt/editor.ts";
 
 const QuestionSchema = Type.Object({
   question: Type.String(),
@@ -74,7 +76,8 @@ class QuestionComponent implements Focusable {
     private readonly tui: TUI,
     private readonly theme: Theme,
     private readonly done: (result: DialogResult) => void,
-    autocompleteProvider: CombinedAutocompleteProvider,
+    autocompleteProvider: AutocompleteProvider,
+    private readonly getSkills: () => ReturnType<ExtensionAPI["getCommands"]>,
   ) {
     this.state = createQuestionState(questions);
     this.editor = new Editor(tui, editorTheme(theme));
@@ -204,6 +207,10 @@ class QuestionComponent implements Focusable {
     }
   }
 
+  private renderEditor(width: number): string[] {
+    return renderPrompt(this.editor.render(width), this.getSkills, this.theme);
+  }
+
   render(width: number): string[] {
     const renderWidth = Math.max(1, width);
     const lines: string[] = [];
@@ -281,7 +288,7 @@ class QuestionComponent implements Focusable {
       lines.push("");
       add(this.theme.fg("muted", "Additional note:"));
       if (this.state.editMode.type === "additionalNote") {
-        for (const editorLine of this.editor.render(Math.max(1, renderWidth - 2))) lines.push(`  ${editorLine}`);
+        for (const editorLine of this.renderEditor(Math.max(1, renderWidth - 2))) lines.push(`  ${editorLine}`);
       } else {
         addPrefixed("  ", this.theme.fg("text", this.state.additionalNote || "No additional note"));
       }
@@ -319,7 +326,7 @@ class QuestionComponent implements Focusable {
           if (editingHere) {
             const title = this.state.editMode.type === "note" ? "Note:" : "Your answer:";
             addPrefixed("    ", this.theme.fg("muted", title));
-            for (const editorLine of this.editor.render(Math.max(1, renderWidth - 4))) lines.push(`    ${editorLine}`);
+            for (const editorLine of this.renderEditor(Math.max(1, renderWidth - 4))) lines.push(`    ${editorLine}`);
           }
         }
         lines.push("");
@@ -379,7 +386,8 @@ async function showDialog(pi: ExtensionAPI, params: QuestionParams, ctx: Extensi
         tui,
         theme,
         done,
-        new CombinedAutocompleteProvider(pi.getCommands(), ctx.cwd),
+        skillAutocomplete(new CombinedAutocompleteProvider(pi.getCommands(), ctx.cwd), () => pi.getCommands()),
+        () => pi.getCommands(),
       ));
   } finally {
     pi.events.emit("herdr:blocked", { active: false });

@@ -21,7 +21,7 @@ const packageSources = {
     export class Editor {
       value = "";
       setAutocompleteProvider(provider) {
-        if (!(provider instanceof CombinedAutocompleteProvider)) throw new Error("invalid autocomplete provider");
+        if (!provider.triggerCharacters?.includes("$") || !provider.getSuggestions) throw new Error("invalid autocomplete provider");
       }
       setText(value) { this.value = value; }
       getExpandedText() { return this.value; }
@@ -32,9 +32,13 @@ const packageSources = {
           this.onChange?.(this.value);
         }
       }
+      render() { return [this.value + "\\x1b[7m \\x1b[0m"]; }
       invalidate() {}
     }
-    export class Markdown {}
+    export class Markdown {
+      constructor(text) { this.text = text; }
+      render() { return [this.text]; }
+    }
     export class Text {}
     export const Key = {
       ctrl: (key) => "ctrl+" + key,
@@ -217,6 +221,29 @@ test("Ctrl+C clears a custom answer before saving", async () => {
 
   assert.match(result.content[0]!.text, /"keep me"/);
   assert.doesNotMatch(result.content[0]!.text, /discard me/);
+});
+
+test("custom answers render through prompt skill highlighting and cursor handling", async () => {
+  const harness = createHarness(commands);
+  await harness.tool.execute("call", questions, undefined, undefined, {
+    ...executeContext(),
+    ui: {
+      custom: (factory: Function) => new Promise((resolve) => {
+        const theme = {
+          fg: (color: string, text: string) => color === "accent" ? `<accent>${text}</accent>` : text,
+          bg: (_color: string, text: string) => text,
+          bold: (text: string) => text,
+        };
+        const component = factory({ requestRender: () => undefined }, theme, {}, resolve);
+        component.handleInput("2");
+        component.handleInput("/skill:review");
+        const rendered = component.render(100).join("\n");
+        assert.match(rendered, /<accent>\/skill:review<\/accent>/);
+        assert.doesNotMatch(rendered, /\x1b\[7m/);
+        component.handleInput("enter");
+      }),
+    },
+  });
 });
 
 test("single-question selection submits immediately", async () => {
