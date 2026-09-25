@@ -24,9 +24,13 @@ test("only discovered skills complete at a dollar-word boundary", async () => {
   assert.deepEqual(suggestions?.items.map((item) => item.value), ["/skill:release-notes"]);
   assert.deepEqual(suggestions?.prefix, "$rel");
   const result = provider.applyCompletion(["Use $rel and $sec"], 0, 8, suggestions!.items[0]!, suggestions!.prefix);
-  assert.deepEqual(result, { lines: ["Use /skill:release-notes and $sec"], cursorLine: 0, cursorCol: 24 });
-  assert.deepEqual(provider.applyCompletion(["$release-nope now"], 0, 8, suggestions!.items[0]!, "$release").lines,
-    ["/skill:release-notes now"]);
+  assert.deepEqual(result, { lines: ["Use /skill:release-notes and $sec"], cursorLine: 0, cursorCol: 25 });
+  assert.deepEqual(provider.applyCompletion(["$release-nope now"], 0, 8, suggestions!.items[0]!, "$release"),
+    { lines: ["/skill:release-notes now"], cursorLine: 0, cursorCol: 21 });
+  assert.deepEqual(provider.applyCompletion(["$rel"], 0, 4, suggestions!.items[0]!, "$rel"),
+    { lines: ["/skill:release-notes "], cursorLine: 0, cursorCol: 21 });
+  assert.equal(await provider.getSuggestions(["$ "], 0, 2, options), null);
+  assert.equal(await provider.getSuggestions(["Use $rel "], 0, 9, options), null);
   assert.equal((await provider.getSuggestions(["$"], 0, 1, options))?.items.length, 2);
   assert.equal(await provider.getSuggestions(["$sec"], 0, 4, options), null);
   assert.equal((await provider.getSuggestions(["cost$rel"], 0, 8, options))?.prefix, "f");

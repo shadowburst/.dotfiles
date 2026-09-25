@@ -23,7 +23,8 @@ export function skillAutocomplete(current: AutocompleteProvider, getSkills: GetS
     async getSuggestions(lines, cursorLine, cursorCol, options) {
       const before = (lines[cursorLine] ?? "").slice(0, cursorCol);
       const match = before.match(skillToken);
-      if (!match) return current.getSuggestions(lines, cursorLine, cursorCol, options);
+      if (!match) return before.endsWith(" ") && skillToken.test(before.slice(0, -1))
+        ? null : current.getSuggestions(lines, cursorLine, cursorCol, options);
       const query = match[1]!.toLowerCase();
       const items = getSkills()
         .filter((command) => command.source === "skill")
@@ -36,12 +37,13 @@ export function skillAutocomplete(current: AutocompleteProvider, getSkills: GetS
       const line = lines[cursorLine] ?? "";
       const start = cursorCol - prefix.length;
       const suffix = /^[a-z0-9-]*/i.exec(line.slice(cursorCol))?.[0] ?? "";
+      const after = line.slice(cursorCol + suffix.length);
       return {
         lines: lines.map((text, index) => index === cursorLine
-          ? text.slice(0, start) + item.value + text.slice(cursorCol + suffix.length)
+          ? text.slice(0, start) + item.value + (after.startsWith(" ") ? "" : " ") + after
           : text),
         cursorLine,
-        cursorCol: start + item.value.length,
+        cursorCol: start + item.value.length + 1,
       };
     },
     shouldTriggerFileCompletion: (lines, cursorLine, cursorCol) =>
