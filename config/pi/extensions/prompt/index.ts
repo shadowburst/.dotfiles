@@ -1,8 +1,9 @@
 import {
   CustomEditor,
   type ExtensionAPI,
+  type ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import type { EditorTheme, TUI } from "@earendil-works/pi-tui";
+import { matchesKey, Text, type EditorTheme, type TUI } from "@earendil-works/pi-tui";
 import { renderPrompt, skillAutocomplete } from "./editor.ts";
 
 type KeybindingsManager = ConstructorParameters<typeof CustomEditor>[2];
@@ -28,11 +29,16 @@ class PromptEditor extends CustomEditor {
     keybindings: KeybindingsManager,
     private readonly pi: ExtensionAPI,
     private readonly getTheme: () => Parameters<typeof renderPrompt>[2],
+    private readonly toggleStash: () => void,
   ) {
     super(tui, theme, keybindings, { paddingX: 1 });
   }
 
   handleInput(data: string): void {
+    if (matchesKey(data, "ctrl+s")) {
+      this.toggleStash();
+      return;
+    }
     let input = this.pendingFocusInput + data;
     this.pendingFocusInput = "";
     let handledFocus = false;
@@ -82,21 +88,72 @@ class PromptEditor extends CustomEditor {
 }
 
 export default function (pi: ExtensionAPI) {
-  pi.on("session_start", (_event, ctx) => {
-    if (!process.stdout.isTTY) {
+  let stash: string | undefined;
+  let restoreAfterSubmit = false;
+
+  function setWidget(ctx: ExtensionContext, show: boolean) {
+    ctx.ui.setWidget("prompt-stash", show
+      ? (_tui, theme) => new Text(theme.fg("muted", stash ?? ""), 1, 0)
+      : undefined);
+  }
+
+  function restore(ctx: ExtensionContext) {
+    if (stash === undefined || !ctx.hasUI) return;
+    ctx.ui.setEditorText(stash);
+    stash = undefined;
+    restoreAfterSubmit = false;
+    setWidget(ctx, false);
+  }
+
+  function tryRestore(ctx: ExtensionContext) {
+    try {
+      if (stash !== undefined && restoreAfterSubmit && ctx.isIdle()) restore(ctx);
+    } catch {
+      // /reload invalidates this ctx; isIdle() throws if we still run after submit
+    }
+  }
+
+  function toggle(ctx: ExtensionContext) {
+    const text = ctx.ui.getEditorText();
+    if (!text) {
+      restore(ctx);
       return;
     }
+    stash = text;
+    restoreAfterSubmit = false;
+    ctx.ui.setEditorText("");
+    setWidget(ctx, true);
+  }
 
-    process.stdout.write(KITTY_SET_PI_FOCUS_AWARE);
+  pi.on("session_start", (_event, ctx) => {
+    if (ctx.mode !== "tui") return;
+    if (process.stdout.isTTY) process.stdout.write(KITTY_SET_PI_FOCUS_AWARE);
     ctx.ui.addAutocompleteProvider((current) => skillAutocomplete(current, () => pi.getCommands()));
-    ctx.ui.setEditorComponent(
-      (tui, theme, keybindings) => new PromptEditor(tui, theme, keybindings, pi, () => ctx.ui.theme),
-    );
+    ctx.ui.setEditorComponent((tui, theme, keybindings) => {
+      const editor = new PromptEditor(tui, theme, keybindings, pi, () => ctx.ui.theme, () => toggle(ctx));
+      return new Proxy(editor, {
+        set(target, prop, value) {
+          if (prop === "onSubmit" && typeof value === "function") {
+            return Reflect.set(target, prop, (text: string) => {
+              if (stash !== undefined && text.trim()) restoreAfterSubmit = true;
+              const result = value(text);
+              void Promise.resolve(result).then(() => tryRestore(ctx));
+              return result;
+            });
+          }
+          return Reflect.set(target, prop, value);
+        },
+      });
+    });
   });
 
+  pi.on("before_agent_start", () => {
+    if (stash !== undefined) restoreAfterSubmit = true;
+  });
+
+  pi.on("agent_settled", (_event, ctx) => tryRestore(ctx));
+
   pi.on("session_shutdown", () => {
-    if (process.stdout.isTTY) {
-      process.stdout.write(KITTY_CLEAR_PI_FOCUS_AWARE);
-    }
+    if (process.stdout.isTTY) process.stdout.write(KITTY_CLEAR_PI_FOCUS_AWARE);
   });
 }
