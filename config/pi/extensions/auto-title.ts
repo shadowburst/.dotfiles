@@ -5,7 +5,7 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 
 const TITLE_PROVIDER = "openai-codex";
-const TITLE_MODEL = "gpt-5.6-luna";
+const TITLE_MODEL = "gpt-6-luna";
 const TITLE_MAX_WORDS = 4;
 const TITLE_MAX_CHARS = 28;
 const PROMPT_MAX = 2000;
