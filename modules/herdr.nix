@@ -33,7 +33,6 @@ _: {
           ui.confirm_close = false;
           ui.prompt_new_tab_name = false;
           ui.agent_panel_sort = "priority";
-          ui.pane_gaps = false;
           ui.show_agent_labels_on_pane_borders = true;
           ui.sidebar.agents.rows = [
             [
