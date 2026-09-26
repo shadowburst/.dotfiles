@@ -11,5 +11,6 @@ Snacks.keymap.set("n", "<leader>gD", "<cmd>CodeDiff<cr>", { desc = "Diff project
 Snacks.keymap.set("n", "<leader>gf", "<cmd>CodeDiff history %<cr>", { desc = "File history" })
 Snacks.keymap.set("n", "<leader>gF", "<cmd>CodeDiff history<cr>", { desc = "Commit history" })
 
--- Shows the bound tuicr review session's comments inside the diff windows.
-require("codediff_tuicr").setup()
+-- Shows a pull request's GitHub review comments inside its diff windows, and
+-- holds back what you write until you send the review. <leader>rr picks one.
+require("codediff_pr").setup()
