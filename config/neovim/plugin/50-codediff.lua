@@ -10,3 +10,6 @@ Snacks.keymap.set("n", "<leader>gd", "<cmd>CodeDiff file HEAD<cr>", { desc = "Di
 Snacks.keymap.set("n", "<leader>gD", "<cmd>CodeDiff<cr>", { desc = "Diff project" })
 Snacks.keymap.set("n", "<leader>gf", "<cmd>CodeDiff history %<cr>", { desc = "File history" })
 Snacks.keymap.set("n", "<leader>gF", "<cmd>CodeDiff history<cr>", { desc = "Commit history" })
+
+-- Shows the bound tuicr review session's comments inside the diff windows.
+require("codediff_tuicr").setup()

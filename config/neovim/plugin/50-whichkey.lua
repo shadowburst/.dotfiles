@@ -26,6 +26,7 @@ require("which-key").setup({
       { "<leader>n", group = "+notifications" },
       { "<leader>a", group = "+ai" },
       { "<leader>q", group = "+quit" },
+      { "<leader>r", group = "+review" },
       { "<leader>s", group = "+search" },
       { "<leader>t", group = "+toggle" },
       { "<leader>v", group = "+neovim" },
