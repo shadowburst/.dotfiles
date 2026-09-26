@@ -41,6 +41,7 @@ require("snacks").setup({
     },
   },
   debug = {},
+  gh = {},
   gitbrowse = {},
   image = {
     doc = { inline = false },
@@ -70,6 +71,15 @@ require("snacks").setup({
       files = picker_config,
       grep = picker_config,
       recent = picker_config,
+      gh_pr = {
+        layout = {
+          layout = vim.tbl_extend(
+            "force",
+            vim.deepcopy(require("snacks.picker.config.layouts").default.layout),
+            { fullscreen = true }
+          ),
+        },
+      },
     },
     layout = { preset = "default" },
     layouts = {
@@ -89,7 +99,7 @@ require("snacks").setup({
           {
             win = "list",
             border = "top",
-            height = 0.4,
+            height = 0.2,
           },
         },
       },
@@ -99,12 +109,21 @@ require("snacks").setup({
         keys = {
           ["<C-u>"] = { "preview_scroll_up", mode = { "i", "n" } },
           ["<C-d>"] = { "preview_scroll_down", mode = { "i", "n" } },
+          ["<Tab>"] = { "cycle_win", mode = { "i", "n" } },
         },
       },
       list = {
         keys = {
           ["<C-u>"] = { "preview_scroll_up", mode = { "i", "n" } },
           ["<C-d>"] = { "preview_scroll_down", mode = { "i", "n" } },
+          ["<Tab>"] = { "cycle_win", mode = { "i", "n" } },
+        },
+      },
+      preview = {
+        keys = {
+          ["<C-u>"] = { "preview_scroll_up", mode = { "n" } },
+          ["<C-d>"] = { "preview_scroll_down", mode = { "n" } },
+          ["<Tab>"] = { "cycle_win", mode = { "n" } },
         },
       },
     },
@@ -206,6 +225,8 @@ Snacks.keymap.set("n", "<leader>ff", function() Snacks.picker.files() end, { des
 Snacks.keymap.set("n", "<leader>fg", function() Snacks.picker.grep() end, { desc = "Grep files" })
 Snacks.keymap.set("n", "<leader>fr", function() Snacks.picker.recent() end, { desc = "Recent files" })
 Snacks.keymap.set("n", "<leader>gc", function() Snacks.picker.git_log() end, { desc = "Commit history" })
+Snacks.keymap.set("n", "<leader>gi", function() Snacks.picker.gh_issue() end, { desc = "Github issues" })
+Snacks.keymap.set("n", "<leader>gp", function() Snacks.picker.gh_pr() end, { desc = "Github PRs" })
 Snacks.keymap.set("n", "<leader>gl", function() Snacks.picker.git_log_line() end, { desc = "Line history" })
 Snacks.keymap.set("n", "<leader>gs", function() Snacks.picker.git_status() end, { desc = "Git status" })
 Snacks.keymap.set("n", "<leader>nn", function() Snacks.picker.notifications() end, { desc = "All notifications" })
