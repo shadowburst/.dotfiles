@@ -9,10 +9,7 @@ _: {
         '';
         settings = {
           lsp = false;
-          permission = {
-            "*" = "allow";
-            question = "deny";
-          };
+          permission = "allow";
           plugin = [
             "@dietrichgebert/ponytail"
           ];
