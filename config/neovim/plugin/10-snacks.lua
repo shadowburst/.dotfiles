@@ -63,6 +63,14 @@ require("snacks").setup({
     width = { max = 0.25 },
   },
   picker = {
+    actions = {
+      -- Tab cycles input <-> preview; the list is never focused.
+      -- Falls back to the input when the preview is hidden.
+      tab_win = function(picker)
+        local on_input = picker.input.win.win == vim.api.nvim_get_current_win()
+        picker:focus(on_input and "preview" or "input")
+      end,
+    },
     sources = {
       buffers = vim.tbl_extend("force", picker_config, {
         current = false,
@@ -109,21 +117,21 @@ require("snacks").setup({
         keys = {
           ["<C-u>"] = { "preview_scroll_up", mode = { "i", "n" } },
           ["<C-d>"] = { "preview_scroll_down", mode = { "i", "n" } },
-          ["<Tab>"] = { "cycle_win", mode = { "i", "n" } },
+          ["<Tab>"] = { "tab_win", mode = { "i", "n" } },
         },
       },
       list = {
         keys = {
           ["<C-u>"] = { "preview_scroll_up", mode = { "i", "n" } },
           ["<C-d>"] = { "preview_scroll_down", mode = { "i", "n" } },
-          ["<Tab>"] = { "cycle_win", mode = { "i", "n" } },
+          ["<Tab>"] = { "tab_win", mode = { "i", "n" } },
         },
       },
       preview = {
         keys = {
           ["<C-u>"] = { "preview_scroll_up", mode = { "n" } },
           ["<C-d>"] = { "preview_scroll_down", mode = { "n" } },
-          ["<Tab>"] = { "cycle_win", mode = { "n" } },
+          ["<Tab>"] = { "tab_win", mode = { "n" } },
         },
       },
     },
