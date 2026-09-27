@@ -13,6 +13,9 @@ local Herdr = require("sidekick-herdr")
 
 Herdr.setup()
 
+-- Lets `{file}` / `{position}` name CodeDiff's revision buffers.
+require("sidekick-codediff").setup()
+
 -- `pane run` sessions have no Neovim window, so sidekick's own toggle is a
 -- no-op once one is running. Toggle attachment ourselves instead.
 Snacks.keymap.set("n", "<leader>aa", function()
@@ -35,7 +38,11 @@ local function send(opts)
   Herdr.focus_after_send()
 end
 
-Snacks.keymap.set({ "n", "x" }, "<leader>at", function() send({ msg = "{this}" }) end, { desc = "Send this" })
+-- `{this}` only ever resolved to `{position}` in a file buffer, and a revision
+-- buffer is not one: it would come out as the word "this" plus a selection, and
+-- discard the send in normal mode. `{position}` is the same thing where it
+-- worked, and goes through the codediff context where it did not.
+Snacks.keymap.set({ "n", "x" }, "<leader>at", function() send({ msg = "{position}" }) end, { desc = "Send this" })
 Snacks.keymap.set("n", "<leader>af", function() send({ msg = "{file}" }) end, { desc = "Send file" })
 Snacks.keymap.set("x", "<leader>av", function() send({ msg = "{selection}" }) end, { desc = "Send selection" })
 
