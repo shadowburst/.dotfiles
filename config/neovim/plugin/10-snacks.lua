@@ -79,15 +79,6 @@ require("snacks").setup({
       files = picker_config,
       grep = picker_config,
       recent = picker_config,
-      gh_pr = {
-        layout = {
-          layout = vim.tbl_extend(
-            "force",
-            vim.deepcopy(require("snacks.picker.config.layouts").default.layout),
-            { fullscreen = true }
-          ),
-        },
-      },
     },
     layout = { preset = "default" },
     layouts = {
