@@ -17,6 +17,7 @@ _: {
           enable_audio_bell = false;
           font_size = 10.0;
           hide_window_decorations = true;
+          remember_window_size = false;
           scrollback_pager = "nvim --cmd 'set eventignore=FileType' +'nnoremap q ZQ' +'call nvim_open_term(0, {})' +'set nomodified nolist' +'$' -";
           scrollback_lines = 10000;
           url_style = "curly";
