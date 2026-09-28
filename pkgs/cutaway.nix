@@ -11,6 +11,7 @@
   };
 
   npmDepsHash = "sha256-ZXfninDfajBqwXMTxgw/k0GgYeVDs+W8WbmWfSTGE2U=";
+  patches = [ ./cutaway-screencast.patch ];
   dontNpmBuild = true;
   npmInstallFlags = [ "--ignore-scripts" ];
   npmRebuildFlags = [ "--ignore-scripts" ];
@@ -19,12 +20,14 @@
   postPatch = ''
     substituteInPlace src/ffmpeg.mjs \
       --replace-fail "export const ffmpeg = bundled() ?? 'ffmpeg';" "export const ffmpeg = '${pkgs.ffmpeg}/bin/ffmpeg';"
+    substituteInPlace src/capture/record.mjs \
+      --replace-fail 'args: [`--force-device-scale-factor=' 'args: ["--class=pi-browser-tools", `--force-device-scale-factor='
   '';
 
   installPhase = ''
     runHook preInstall
     mkdir -p $out/lib/cutaway $out/bin
-    cp -r assets package.json node_modules src $out/lib/cutaway/
+    cp -r assets examples README.md package.json node_modules src $out/lib/cutaway/
     makeWrapper ${pkgs.nodejs_22}/bin/node $out/bin/cutaway \
       --add-flags "$out/lib/cutaway/src/cli.mjs" \
       --set PLAYWRIGHT_BROWSERS_PATH ${pkgs.playwright-driver.browsers}

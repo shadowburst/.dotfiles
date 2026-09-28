@@ -107,7 +107,7 @@ const { default: browserExtension } = await import(new URL("./index.ts", import.
 
 type ExecResult = { code: number; stdout: string; stderr: string };
 function extension(exec: (command: string, args: string[]) => Promise<ExecResult>) {
-  const tools = new Map<string, { execute: (...args: any[]) => Promise<any>; promptGuidelines?: string[] }>();
+  const tools = new Map<string, { execute: (...args: any[]) => Promise<any>; promptGuidelines?: string[]; parameters?: any }>();
   const handlers = new Map<string, (...args: any[]) => unknown>();
   let active = ["read", "browser_record"];
   browserExtension({
@@ -135,11 +135,20 @@ test.beforeEach(() => { mock.calls.length = 0; });
 
 test("registers the compact catalog and recommends native Cutaway plans", () => {
   const { tools, handlers, active } = extension(async () => ({ code: 0, stdout: "", stderr: "" }));
-  assert.deepEqual([...tools.keys()], ["browser_tools", "browser_open", "browser_action", "browser_screenshot", "browser_record", "browser_handoff"]);
-  assert.match(tools.get("browser_tools")!.promptGuidelines![0], /explore.*Cutaway.*plan.*browser_record/i);
+  assert.deepEqual([...tools.keys()], ["browser_tools", "browser_open", "browser_action", "browser_screenshot", "browser_record", "browser_record_live", "browser_handoff"]);
+  assert.match(tools.get("browser_tools")!.promptGuidelines![0], /explore.*Cutaway JSON plan.*cutaway validate.*submit only once/i);
   handlers.get("session_start")?.();
   assert.deepEqual(active(), ["read", "browser_tools"]);
 });
+
+test("scripted recording is plan-only; live recording uses an explicit tool", async () => withHome(async () => {
+  const { tools } = extension(async () => { throw new Error("a live take must not invoke Cutaway"); });
+  assert.equal(tools.get("browser_record")!.parameters?.value?.action, undefined);
+  const started = await tools.get("browser_record_live")!.execute("1", { action: "start", name: "opt-in" });
+  assert.match(started.content[0].text, /Recording started/);
+  const stopped = await tools.get("browser_record_live")!.execute("2", { action: "stop" });
+  assert.equal(await readFile(stopped.details.path, "utf8"), "live-webm");
+}));
 
 test("drives one headed Playwright page with snapshots, refs, locators, and screenshots", async () => {
   const { tools } = extension(async () => { throw new Error("external process must not run"); });
@@ -154,7 +163,7 @@ test("drives one headed Playwright page with snapshots, refs, locators, and scre
   assert.equal(shot.content[1].data, Buffer.from("png").toString("base64"));
   await tools.get("browser_action")!.execute("6", { args: ["set", "device", "Test Phone"] });
   assert(mock.calls.some(call => call[0] === "newContext" && call[1].includes('"width":390')));
-  assert(mock.calls.some(call => call[0] === "launch" && call[1].includes('"headless":false')));
+  assert(mock.calls.some(call => call[0] === "launch" && call[1].includes('"headless":false') && call[1].includes('"--class=pi-browser-tools"')));
   assert.deepEqual(mock.calls.filter(call => ["goto", "click", "fill", "type"].includes(call[0])), [
     ["goto", "https://example.com/"], ["click", "#save"], ["fill", "role=textbox[name=Title]", "Demo"], ["type", "input[name=title]", " plus"],
   ]);
@@ -173,6 +182,8 @@ test("runs a native Cutaway plan at standard 720p and leaves one WebM", async ()
       await mkdir(outputDirectory, { recursive: true });
       const output = join(outputDirectory, "video.mp4");
       await writeFile(output, "mp4");
+      await writeFile(join(outputDirectory, "render.json"), JSON.stringify({ motion: { zoomEpisodes: 2 } }));
+      await writeFile(join(outputDirectory, "timeline.json"), JSON.stringify({ status: "complete", steps: [{ action: "click" }], points: [{ t: 0 }, { t: 1 }] }));
       return { code: 0, stdout: JSON.stringify({ output }), stderr: "" };
     }
     if (command === "ffmpeg") {
@@ -185,9 +196,65 @@ test("runs a native Cutaway plan at standard 720p and leaves one WebM", async ()
   const path = join(home, "Videos", "Recordings", "checkout.webm");
   assert.equal(result.details.path, path);
   assert.equal(await readFile(path, "utf8"), "journey-webm");
-  assert.deepEqual(result.content, [{ type: "text", text: path }]);
+  assert.match(result.content[0].text, /cursor points: 2.*zoom episodes: 2/i);
+  assert.deepEqual(result.details.motion, { cursorPoints: 2, zoomEpisodes: 2 });
   assert.deepEqual(calls[0], ["cutaway", ["record", plan, "--out", calls[0][1][3], "--headed", "--storage-state", storageState, "--width", "1280", "--height", "720", "--quality", "standard"]]);
   await assert.rejects(stat(calls[0][1][3]), /ENOENT/, "successful Cutaway intermediates are deleted");
+}));
+
+test("does not claim a cinematic take when interactive steps have no cursor or zoom", async () => withHome(async home => {
+  const plan = join(home, "journey.json");
+  await writeFile(plan, JSON.stringify({ url: "https://example.com", steps: [{ action: "click", selector: "#save" }] }));
+  const { tools } = extension(async (command, args) => {
+    if (command === "cutaway") {
+      const dir = args[args.indexOf("--out") + 1];
+      await mkdir(dir, { recursive: true });
+      const output = join(dir, "video.mp4");
+      await writeFile(output, "mp4");
+      await writeFile(join(dir, "render.json"), JSON.stringify({ motion: { zoomEpisodes: 0 } }));
+      await writeFile(join(dir, "timeline.json"), JSON.stringify({ status: "complete", steps: [{ action: "click" }], points: [{ t: 0 }] }));
+      return { code: 0, stdout: JSON.stringify({ output }), stderr: "" };
+    }
+    await writeFile(args.at(-1)!, "webm");
+    return { code: 0, stdout: "", stderr: "" };
+  });
+  await assert.rejects(tools.get("browser_record")!.execute("1", { plan }), /cinematic motion.*work directory/i);
+}));
+
+test("does not report an empty render as a finished video", async () => withHome(async home => {
+  const plan = join(home, "journey.json");
+  await writeFile(plan, JSON.stringify({ url: "https://example.com", steps: [{ action: "click", selector: "#save" }] }));
+  const { tools } = extension(async (command, args) => {
+    if (command === "cutaway") {
+      const output = join(args[args.indexOf("--out") + 1], "video.mp4");
+      await mkdir(args[args.indexOf("--out") + 1], { recursive: true });
+      await writeFile(output, "mp4");
+      await writeFile(join(args[args.indexOf("--out") + 1], "render.json"), JSON.stringify({ motion: { zoomEpisodes: 1 } }));
+      await writeFile(join(args[args.indexOf("--out") + 1], "timeline.json"), JSON.stringify({ status: "complete", steps: [{ action: "wait" }], points: [{ t: 0 }] }));
+      return { code: 0, stdout: JSON.stringify({ output }), stderr: "" };
+    }
+    assert.equal(command, "ffmpeg");
+    await writeFile(args.at(-1)!, "");
+    return { code: 0, stdout: "", stderr: "" };
+  });
+  await assert.rejects(tools.get("browser_record")!.execute("1", { plan }), /empty recording.*work directory/i);
+}));
+
+test("removes an incomplete WebM when conversion fails so its name is retryable", async () => withHome(async home => {
+  const plan = join(home, "journey.json");
+  await writeFile(plan, JSON.stringify({ url: "https://example.com", steps: [{ action: "click", selector: "#save" }] }));
+  const { tools } = extension(async (command, args) => {
+    if (command === "cutaway") {
+      const output = join(args[args.indexOf("--out") + 1], "video.mp4");
+      await mkdir(args[args.indexOf("--out") + 1], { recursive: true });
+      await writeFile(output, "mp4");
+      return { code: 0, stdout: JSON.stringify({ output }), stderr: "" };
+    }
+    await writeFile(args.at(-1)!, "partial");
+    return { code: 1, stdout: "", stderr: "conversion failed" };
+  });
+  await assert.rejects(tools.get("browser_record")!.execute("1", { plan, name: "retry" }), /conversion failed.*work directory/i);
+  await assert.rejects(stat(join(home, "Videos", "Recordings", "retry.webm")), /ENOENT/);
 }));
 
 test("preserves the Cutaway work directory when a journey fails", async () => withHome(async home => {
@@ -212,10 +279,10 @@ test("preserves the Cutaway work directory when a journey fails", async () => wi
 test("starts live recording in a fresh context and saves Playwright WebM", async () => withHome(async home => {
   const { tools } = extension(async () => { throw new Error("external process must not run"); });
   await tools.get("browser_open")!.execute("1", { url: "https://example.com" });
-  const started = await tools.get("browser_record")!.execute("2", { action: "start", name: "live" });
+  const started = await tools.get("browser_record_live")!.execute("2", { action: "start", name: "live" });
   assert.match(started.content[0].text, /Recording started/);
   await tools.get("browser_open")!.execute("3", { url: "https://example.com/demo" });
-  const stopped = await tools.get("browser_record")!.execute("4", { action: "stop" });
+  const stopped = await tools.get("browser_record_live")!.execute("4", { action: "stop" });
   const path = join(home, "Videos", "Recordings", "live.webm");
   assert.equal(stopped.details.path, path);
   assert.equal(await readFile(path, "utf8"), "live-webm");
@@ -225,17 +292,17 @@ test("starts live recording in a fresh context and saves Playwright WebM", async
 
 test("keeps a live recording retryable and rejects device changes while recording", async () => withHome(async () => {
   const { tools } = extension(async () => { throw new Error("external process must not run"); });
-  await tools.get("browser_record")!.execute("1", { action: "start", name: "retry" });
+  await tools.get("browser_record_live")!.execute("1", { action: "start", name: "retry" });
   await assert.rejects(tools.get("browser_action")!.execute("2", { args: ["set", "device", "Test Phone"] }), /active recording/i);
   mock.failCloseOnce = true;
-  await assert.rejects(tools.get("browser_record")!.execute("3", { action: "stop" }), /close failed/);
-  const stopped = await tools.get("browser_record")!.execute("4", { action: "stop" });
+  await assert.rejects(tools.get("browser_record_live")!.execute("3", { action: "stop" }), /close failed/);
+  const stopped = await tools.get("browser_record_live")!.execute("4", { action: "stop" });
   assert.equal(await readFile(stopped.details.path, "utf8"), "live-webm");
 }));
 
 test("auto-saves an unfinished live recording when the agent settles", async () => withHome(async home => {
   const { tools, handlers } = extension(async () => { throw new Error("external process must not run"); });
-  const started = await tools.get("browser_record")!.execute("1", { action: "start", name: "settled" });
+  const started = await tools.get("browser_record_live")!.execute("1", { action: "start", name: "settled" });
   await handlers.get("agent_settled")?.();
   assert.equal(await readFile(started.details.path, "utf8"), "live-webm");
   assert(mock.calls.some(call => call[0] === "browser.close"));

@@ -3,6 +3,7 @@ export const BROWSER_TOOL_NAMES = [
   "browser_action",
   "browser_screenshot",
   "browser_record",
+  "browser_record_live",
   "browser_handoff",
 ] as const;
 

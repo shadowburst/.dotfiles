@@ -3,7 +3,7 @@ import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, truncateHead } from "@earendil-wo
 import { StringEnum } from "@earendil-works/pi-ai";
 import { Type } from "typebox";
 import { randomUUID } from "node:crypto";
-import { access, mkdir, mkdtemp, rename, rm, stat } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rename, rm, stat } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { basename, extname, isAbsolute, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -59,7 +59,7 @@ class BrowserRuntime {
   private async launch(): Promise<Browser> {
     if (this.browser) return this.browser;
     const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
-    this.browser = await chromium.launch({ headless: false, ...(executablePath ? { executablePath } : {}) });
+    this.browser = await chromium.launch({ headless: false, args: ["--class=pi-browser-tools"], ...(executablePath ? { executablePath } : {}) });
     return this.browser;
   }
 
@@ -264,7 +264,7 @@ export default function browserTools(pi: ExtensionAPI) {
     label: "Browser Tools",
     description: "Activate Playwright browser tools by exact name",
     promptSnippet: "Activate the browser tools needed for a browser task",
-    promptGuidelines: ["Activate only the tools needed. Explore with browser_open/browser_action, inspect actual hrefs, then write a native Cutaway JSON plan with stable Playwright locators and pass it to browser_record. Scripted journeys run in a fresh isolated browser; use storageState for authentication. Use live action start/stop only when explicitly requested."],
+    promptGuidelines: ["Explore with browser_open/browser_action up to any irreversible action, then write a Cutaway JSON plan and run `cutaway validate <plan>` (schema only). Use stable selector strings, not snapshot refs; scope repeated forms and use `expect` on the actual visible success state. The script runs in a fresh browser and should submit only once. If recording fails, inspect the work directory and re-render completed captures instead of repeating side effects; never switch to live without an explicit user request."],
     parameters: Type.Object({ tools: Type.Array(StringEnum(BROWSER_TOOL_NAMES), { minItems: 1, uniqueItems: true }) }),
     async execute(_id, { tools }) {
       const result = activateBrowserTools(pi.getActiveTools(), tools);
@@ -289,7 +289,7 @@ export default function browserTools(pi: ExtensionAPI) {
   pi.registerTool({
     name: "browser_action",
     label: "Browser Action",
-    description: "Run a Playwright command: goto, snapshot, click, fill/type, press, eval, get url, wait, set viewport, console, network, or tab list. Snapshot refs and Playwright locator strings are accepted.",
+    description: "Run args such as ['snapshot'], ['get','url'], ['click',selector], ['fill',selector,value], ['press',selector,key], ['eval',expression], ['wait',selector]. Also supports goto, type, set viewport/device, console, network, tab list. Selectors are Playwright selector strings (CSS, text=, role=), not getByRole(...) expressions; @eN snapshot refs are session-only.",
     parameters: Type.Object({ args: Type.Array(Type.String(), { minItems: 1 }) }),
     async execute(_id, { args }) {
       return runtime.run(async () => {
@@ -320,26 +320,15 @@ export default function browserTools(pi: ExtensionAPI) {
   pi.registerTool({
     name: "browser_record",
     label: "Browser Record",
-    description: "Record a native Cutaway JSON plan to WebM, or start/stop a live Playwright WebM recording. Scripted journeys run isolated at 1280x720 standard quality.",
+    description: "Render a native Cutaway JSON journey with cinematic cursor and zoom to WebM. Plans need url and steps (click, type, press, wait, focus, scroll, upload); see the installed Cutaway README/examples. Validate with `cutaway validate <plan>` before recording. Isolated 1280x720 standard render.",
     parameters: Type.Object({
-      action: Type.Optional(StringEnum(["start", "stop"] as const)),
-      plan: Type.Optional(Type.String({ description: "Absolute path to a native Cutaway JSON plan" })),
+      plan: Type.String({ description: "Absolute path to JSON: {\"url\":\"https://...\",\"steps\":[{\"action\":\"click\",\"selector\":\"#submit\",\"expect\":\"#success\"}]}. Cutaway uses type/text, not fill; selectors must be stable and unique." }),
       name: Type.Optional(Type.String({ description: "Plain output filename with optional .webm suffix" })),
       storageState: Type.Optional(Type.String({ description: "Absolute Playwright storage-state JSON path" })),
     }),
-    async execute(_id, { action, plan, name, storageState }, signal) {
+    async execute(_id, { plan, name, storageState }, signal) {
       return runtime.run(async () => {
-        if (action && (plan || storageState)) throw new Error("Use action for live recording or plan/storageState for a scripted journey");
-        if (action === "start") {
-          const path = await outputPath(name);
-          await runtime.startRecording(path);
-          return { content: [{ type: "text", text: `Recording started: ${path}` }], details: { path } };
-        }
-        if (action === "stop") {
-          const path = await runtime.stopRecording();
-          return { content: [{ type: "text", text: path }], details: { path } };
-        }
-        if (!plan) throw new Error("Use action start/stop or provide a plan");
+        if (!plan) throw new Error("Provide a Cutaway plan");
         if (!isAbsolute(plan)) throw new Error("Plan must be an absolute path");
         if (storageState && !isAbsolute(storageState)) throw new Error("storageState must be an absolute path");
         await access(plan);
@@ -349,6 +338,7 @@ export default function browserTools(pi: ExtensionAPI) {
         const temporaryRoot = await mkdtemp(join(tmpdir(), "pi-cutaway-"));
         const work = join(temporaryRoot, "recording");
         const args = ["record", plan, "--out", work, "--headed", ...(storageState ? ["--storage-state", storageState] : []), "--width", "1280", "--height", "720", "--quality", "standard"];
+        let motion: { cursorPoints: number; zoomEpisodes: number };
         try {
           const result = await pi.exec("cutaway", args, { signal, timeout: 600_000 });
           if (result.code !== 0) throw new Error(result.stderr.trim() || result.stdout.trim() || `Cutaway exited ${result.code}`);
@@ -356,10 +346,42 @@ export default function browserTools(pi: ExtensionAPI) {
           if (typeof mp4 !== "string") throw new Error("Cutaway returned invalid output");
           const converted = await pi.exec("ffmpeg", ["-v", "error", "-y", "-i", mp4, "-an", "-c:v", "libvpx-vp9", "-crf", "30", "-b:v", "0", path], { signal, timeout: 600_000 });
           if (converted.code !== 0) throw new Error(converted.stderr.trim() || `FFmpeg exited ${converted.code}`);
+          if (!(await stat(path)).size) {
+            await rm(path);
+            throw new Error("Empty recording");
+          }
+          const timeline = JSON.parse(await readFile(join(work, "timeline.json"), "utf8"));
+          const render = JSON.parse(await readFile(join(work, "render.json"), "utf8"));
+          if (timeline.status !== "complete") throw new Error("Cutaway capture is incomplete");
+          motion = { cursorPoints: timeline.points.length, zoomEpisodes: render.motion.zoomEpisodes };
+          if (timeline.steps.some((step: { action: string }) => step.action === "click" || step.action === "type")
+            && (motion.cursorPoints < 2 || motion.zoomEpisodes < 1)) throw new Error("Cinematic motion missing from interactive journey");
         } catch (error) {
-          throw new Error(`${error instanceof Error ? error.message : String(error)}; work directory: ${work}`);
+          await rm(path, { force: true }).catch(() => undefined);
+          throw new Error(`${error instanceof Error ? error.message : String(error)}; work directory: ${work}; output path: ${path}`);
         }
         await rm(temporaryRoot, { recursive: true, force: true });
+        return { content: [{ type: "text", text: `${path}\nCursor points: ${motion.cursorPoints}; zoom episodes: ${motion.zoomEpisodes}` }], details: { path, motion } };
+      });
+    },
+  });
+
+  pi.registerTool({
+    name: "browser_record_live",
+    label: "Browser Record Live",
+    description: "Opt-in live Playwright WebM recording without cinematic cursor or zoom. Use only when the user explicitly requests a live take.",
+    parameters: Type.Object({
+      action: StringEnum(["start", "stop"] as const),
+      name: Type.Optional(Type.String({ description: "Plain output filename with optional .webm suffix" })),
+    }),
+    async execute(_id, { action, name }) {
+      return runtime.run(async () => {
+        if (action === "start") {
+          const path = await outputPath(name);
+          await runtime.startRecording(path);
+          return { content: [{ type: "text", text: `Recording started: ${path}` }], details: { path } };
+        }
+        const path = await runtime.stopRecording();
         return { content: [{ type: "text", text: path }], details: { path } };
       });
     },
