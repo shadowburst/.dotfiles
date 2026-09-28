@@ -150,16 +150,6 @@
       "installedAt": "2026-07-13T07:48:39.877Z",
       "updatedAt": "2026-09-07T07:07:07.411Z"
     },
-    "resolving-merge-conflicts": {
-      "source": "mattpocock/skills",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/mattpocock/skills.git",
-      "skillPath": "skills/engineering/resolving-merge-conflicts/SKILL.md",
-      "skillFolderHash": "77f0d7de3143abbf03e55a63522d30bff31ae908",
-      "pluginName": "mattpocock-skills",
-      "installedAt": "2026-08-06T21:22:13.525Z",
-      "updatedAt": "2026-08-26T19:48:52.315Z"
-    },
     "wizard": {
       "source": "mattpocock/skills",
       "sourceType": "github",
