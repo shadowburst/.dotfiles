@@ -279,6 +279,30 @@ local offered = State.get({ name = Herdr.TOOL })
 assert(#offered == 1, "one running agent must be the only candidate, got " .. #offered)
 assert(offered[1].session ~= nil, "that candidate must be the running agent")
 
+-- panes in another workspace are invisible even when they share the same cwd
+reset()
+vim.env.HERDR_ENV = "1"
+vim.env.HERDR_WORKSPACE_ID = "w1"
+Herdr.setup()
+pane_list({
+  list = {
+    { pane = PANE, terminal = TERMINAL, workspace = "w1" },
+    { pane = "w2:p1", terminal = "term_foreign", workspace = "w2" },
+  },
+})
+local local_offers = State.get({ name = Herdr.TOOL })
+assert(#local_offers == 1, "only agents in this workspace should be offered, got " .. #local_offers)
+assert(local_offers[1].session.id == "herdr " .. TERMINAL, "the offered agent must be local")
+
+-- a foreign agent alone must not suppress the option to start a local agent
+reset()
+vim.env.HERDR_ENV = "1"
+vim.env.HERDR_WORKSPACE_ID = "w1"
+Herdr.setup()
+pane_list({ workspace = "w2" })
+local empty_workspace = State.get({ name = Herdr.TOOL })
+assert(#empty_workspace == 1 and empty_workspace[1].session == nil, "foreign agents must not be offered")
+
 -- an agent in another directory is still a separate offer
 reset()
 vim.env.HERDR_ENV = "1"

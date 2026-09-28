@@ -65,7 +65,7 @@ function M.pane_from(raw)
   }
 end
 
---- List the panes of the ambient herdr session. Panes without a `terminal_id` are
+--- List panes in Neovim's workspace. Panes without a `terminal_id` are
 --- dropped: it is the session identity, and a pane we cannot name is a pane we
 --- cannot keep attached.
 ---@return sidekick.herdr.Pane[]
@@ -74,7 +74,7 @@ function M.panes()
   local panes = {} ---@type sidekick.herdr.Pane[]
   for _, raw in ipairs(ret and ret.result and ret.result.panes or {}) do
     local pane = M.pane_from(raw)
-    if pane then
+    if pane and pane.workspace_id == vim.env.HERDR_WORKSPACE_ID then
       panes[#panes + 1] = pane
     end
   end
