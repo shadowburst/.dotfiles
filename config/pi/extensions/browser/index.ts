@@ -3,7 +3,7 @@ import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, truncateHead } from "
 import { StringEnum } from "@earendil-works/pi-ai";
 import { Type } from "typebox";
 import { randomUUID } from "node:crypto";
-import { readFile, mkdir, stat, unlink, writeFile } from "node:fs/promises";
+import { readFile, mkdir, rename, stat, unlink, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -73,12 +73,12 @@ export default function browserTools(pi: ExtensionAPI) {
     if (await stat(path).then(() => true, () => false)) throw new Error(`Recording already exists: ${path}`);
     return path;
   };
-  const checkVideo = async (path: string) => {
+  const checkVideo = async (path: string, minimum = 1) => {
     const result = await pi.exec("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", path]);
     const duration = Number(result.stdout.trim());
     if (result.code !== 0 || !Number.isFinite(duration)) throw new Error(`Recording saved but video could not be checked: ${path}`);
-    // ponytail: a 1s floor catches empty takes; inspect frames if content-level false positives matter.
-    if (duration < 1) throw new Error(`Video is only ${duration}s, too short to show the journey; inspect partial take: ${path}`);
+    // ponytail: a duration floor catches lost capture; inspect frames for visually wrong takes.
+    if (duration < minimum) throw new Error(`Video is only ${duration}s, ${minimum > 1 ? `scripted holds need at least ${minimum}s` : "too short to show the journey"}; inspect partial take: ${path}`);
     return duration;
   };
   const lastFrame = async (path: string) => {
@@ -99,7 +99,7 @@ export default function browserTools(pi: ExtensionAPI) {
     label: "Browser Tools",
     description: "Activate terminal-browser tools by exact name",
     promptSnippet: "Activate the browser tools needed for a Herdr browser task",
-    promptGuidelines: ["Activate only the browser tools needed. For a recorded browsing journey, call browser_record with action start, use browser_open/browser_action in that tab, then call browser_record with action stop and inspect the saved video. Scripts are optional for repeatable takes."],
+    promptGuidelines: ["Activate only the browser tools needed. For a recorded journey, explore with browser_open/browser_action without recording; write a JSON script of stable argv steps (use CSS selectors, not snapshot refs) with ['wait','2000'] between interactions; call browser_record with script and expectUrl, then inspect the full video. The JSON is saved beside the MP4. Use live action start/stop only when explicitly asked for live recording."],
     parameters: Type.Object({ tools: Type.Array(StringEnum(BROWSER_TOOL_NAMES), { minItems: 1, uniqueItems: true }) }),
     async execute(_id, { tools }) {
       const result = activateBrowserTools(pi.getActiveTools(), tools);
@@ -164,11 +164,11 @@ export default function browserTools(pi: ExtensionAPI) {
   pi.registerTool({
     name: "browser_record",
     label: "Browser Record",
-    description: `Record Pi's browser tab while using browser_open and browser_action: call with action "start", navigate and interact, then call with action "stop". Alternatively, provide a script file containing a bare JSON array of agent-browser argv arrays to replay in a new tab. Supply expectUrl on stop or with a script for a requested destination; wrong destinations preserve a partial take. Script waits take CSS selectors or milliseconds, not accessibility-tree roles or text; snapshot refs (@e...) do not transfer to a new tab. Output: ~/Videos/Recordings/<name>.mp4. Always inspect the saved video before using it as evidence.`,
+    description: `Record a scripted journey: first explore with browser_open/browser_action, then write a bare JSON array of agent-browser argv arrays (e.g. [["goto","https://example.com"],["wait","2000"],["click","a[href='/issues']"],["wait","2000"]]). Pass its absolute path as script; replay saves <name>.mp4 and <name>.json in ~/Videos/Recordings. Mid-script goto steps are joined as hard cuts (native recording loses frames on full navigations). Use expectUrl to verify the destination. Waits take CSS selectors or milliseconds, not accessibility-tree roles or text; snapshot refs (@e...) do not transfer to a new tab. Inspect the full video before using it as evidence. Live action start/stop remains opt-in only for explicitly requested live recording.`,
 
     parameters: Type.Object({
       action: Type.Optional(StringEnum(["start", "stop"] as const)),
-      script: Type.Optional(Type.String({ description: "Absolute path to a temporary JSON script of agent-browser argv arrays" })),
+      script: Type.Optional(Type.String({ description: "Absolute path to an agent-authored JSON script of agent-browser argv arrays; copied beside the MP4" })),
       name: Type.Optional(Type.String({ description: "Plain output filename, with optional .mp4 suffix, without directories" })),
       expectUrl: Type.Optional(Type.String({ description: "Exact destination URL to verify before finishing the take" })),
 
@@ -188,7 +188,7 @@ export default function browserTools(pi: ExtensionAPI) {
           if (expectUrl && actual !== expectUrl) throw new Error(`expected URL: ${expectUrl}; actual: ${actual}; partial take: ${path}`);
           const bytes = (await stat(path)).size;
           await checkVideo(path);
-          return { content: [{ type: "text", text: `${path} (${formatSize(bytes)}); inspect the video before using it as evidence` }, await lastFrame(path)], details: { path, bytes } };
+          return { content: [{ type: "text", text: `${path} (${formatSize(bytes)}); inspect the video before using it as evidence` }, await lastFrame(path)], details: { path, bytes: bytes as number | undefined, script: undefined as string | undefined } };
         }
         if (recording) throw new Error(`Recording already active: ${recording.path}`);
         if (mode === "start") {
@@ -196,12 +196,13 @@ export default function browserTools(pi: ExtensionAPI) {
           const take = await target(signal);
           await cli(["action", "--browser", take.browser, "--tab", String(take.tab), "--follow", "--", "record", "restart", path], signal);
           recording = { path, ...take };
-          return { content: [{ type: "text", text: `Recording started: ${path}` }], details: { path, bytes: undefined as number | undefined } };
+          return { content: [{ type: "text", text: `Recording started: ${path}` }], details: { path, bytes: undefined as number | undefined, script: undefined as string | undefined } };
         }
         if (!script) throw new Error("Use action start/stop or provide a script");
         if (!isAbsolute(script)) throw new Error("Script must be an absolute path");
         let steps: unknown;
-        try { steps = JSON.parse(await readFile(script, "utf8")); }
+        let source: string;
+        try { source = await readFile(script, "utf8"); steps = JSON.parse(source); }
         catch (error) { throw new Error(`Script step 0: cannot read JSON: ${error instanceof Error ? error.message : String(error)}`); }
         if (!Array.isArray(steps)) throw new Error("Script step 0: expected an array of argv arrays");
         const blocked = new Set(["close", "quit", "exit", "install", "launch", "connect", "disconnect", "record", "open", "tab"]);
@@ -223,6 +224,7 @@ export default function browserTools(pi: ExtensionAPI) {
         try { if (firstUrl) host = new URL(firstUrl).hostname.replace(/[^A-Za-z0-9._-]/g, "-").replace(/^[^A-Za-z0-9]+/, "") || "take"; }
         catch { /* A relative/local goto uses the fallback name. */ }
         const path = await recordingPath(name, `${host}-${new Date().toISOString().slice(11, 19).replaceAll(":", "")}-${randomUUID().slice(0, 8)}`);
+        const scriptPath = path.replace(/\.mp4$/, ".json");
 
         let take: { browser: string; tab: number };
         if (tab === undefined) {
@@ -243,18 +245,39 @@ export default function browserTools(pi: ExtensionAPI) {
         const native = await run(["eval", "[innerWidth, innerHeight].join('x')"], signal).catch(() => "");
         const size = /^"?(\d+)x(\d+)"?$/.exec(native);
         const customViewport = steps.some((step: string[]) => step[0] === "set" && (step[1] === "viewport" || step[1] === "device"));
+        let preloadCount = 0;
+        while (steps[preloadCount]?.[0] === "set") preloadCount++;
+        if (steps[preloadCount]?.[0] === "goto") preloadCount++;
+        else preloadCount = 0;
+        const runStep = async (step: string[], index: number) => {
+          try { await run(step, signal); }
+          catch (error) {
+            const url = await run(["get", "url"], signal).catch(() => "");
+            throw new Error(`step ${index + 1}/${steps.length} failed: ${JSON.stringify(step)}: ${error instanceof Error ? error.message : String(error)}${url ? `; current URL: ${url}` : ""}`);
+          }
+        };
         let failure: Error | undefined;
+        const clips = [path];
         try {
           if (!customViewport) await run(["set", "viewport", "1280", "720"], signal);
+          // terminal-browser clicks can miss after goto during capture; preload the first page before recording.
+          for (let index = 0; index < preloadCount; index++) await runStep(steps[index], index);
           // agent-browser's start creates a browser context, which Electron rejects; restart records the current tab.
           await run(["record", "restart", path], signal);
           recording = { path, ...take };
-          for (const [index, step] of steps.entries()) {
-            try { await run(step, signal); }
-            catch (error) {
-              const url = await run(["get", "url"], signal).catch(() => "");
-              throw new Error(`step ${index + 1}/${steps.length} failed: ${JSON.stringify(step)}: ${error instanceof Error ? error.message : String(error)}${url ? `; current URL: ${url}` : ""}`);
-            }
+          await writeFile(scriptPath, source, { flag: "wx" });
+          for (let index = preloadCount; index < steps.length; index++) {
+            const step = steps[index];
+            if (step[0] === "goto" && index > 0) {
+              // ponytail: cut between navigations while terminal-browser loses capture on full-page loads; remove once fixed upstream.
+              await run(["record", "stop"]);
+              recording = undefined;
+              await runStep(step, index);
+              const clip = join(tmpdir(), `browser-clip-${randomUUID()}.mp4`);
+              await run(["record", "restart", clip], signal);
+              clips.push(clip);
+              recording = { path: clip, ...take };
+            } else await runStep(step, index);
           }
           await run(["wait", "1500"], signal);
           if (expectUrl) {
@@ -274,13 +297,30 @@ export default function browserTools(pi: ExtensionAPI) {
             catch (error) { failure ??= error instanceof Error ? error : new Error(String(error)); }
           }
         }
-        if (failure) throw new Error(`${failure.message}${await stat(path).then(() => `; partial take: ${path}`, () => "")}`);
+        if (clips.length > 1) {
+          const manifest = join(tmpdir(), `browser-clips-${randomUUID()}.txt`);
+          const joined = path.replace(/\.mp4$/, `.joined-${randomUUID()}.mp4`);
+          try {
+            await writeFile(manifest, clips.map((clip) => `file '${clip.replaceAll("'", "'\\''")}'`).join("\n"));
+            const result = await pi.exec("ffmpeg", ["-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", manifest, "-c", "copy", joined], { timeout: 120_000 });
+            if (result.code !== 0) throw new Error(result.stderr.trim() || "ffmpeg concat failed");
+            await rename(joined, path);
+            await Promise.all(clips.slice(1).map((clip) => unlink(clip).catch(() => undefined)));
+          } catch (error) {
+            failure ??= new Error(`Joining scripted clips failed: ${error instanceof Error ? error.message : String(error)}; clips: ${clips.join(", ")}`);
+          } finally {
+            await unlink(manifest).catch(() => undefined);
+            await unlink(joined).catch(() => undefined);
+          }
+        }
+        if (failure) throw new Error(`${failure.message}${await stat(path).then(() => `; partial take: ${path}`, () => "")}${await stat(scriptPath).then(() => `; script: ${scriptPath}`, () => "")}`);
         const bytes = await stat(path).then((file) => file.size, () => { throw new Error(`Recording finished but video was not saved: ${path}`); });
-        await checkVideo(path);
+        const holdSeconds = steps.reduce((sum: number, step: string[]) => sum + (step[0] === "wait" && /^\d+$/.test(step[1]) ? Number(step[1]) / 1000 : 0), 0);
+        await checkVideo(path, Math.max(1, holdSeconds));
         const probe = await pi.exec("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0", path]).catch(() => undefined);
         const dimensions = probe?.code === 0 && /^\d+x\d+$/.test(probe.stdout.trim()) ? `, ${probe.stdout.trim()}` : "";
         const note = bytes > VIDEO_LIMIT ? "; exceeds 10 MB PR attachment limit" : "";
-        return { content: [{ type: "text", text: `${path} (${formatSize(bytes)})${dimensions}${note}; inspect the full video before using it as evidence` }, await lastFrame(path)], details: { path, bytes } };
+        return { content: [{ type: "text", text: `${path} (${formatSize(bytes)}); script: ${scriptPath}${dimensions}${note}; inspect the full video before using it as evidence` }, await lastFrame(path)], details: { path, script: scriptPath, bytes } };
       });
     },
   });

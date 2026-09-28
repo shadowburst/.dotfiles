@@ -62,9 +62,12 @@ function extension(exec: (args: string[], command: string) => Promise<{ code: nu
 }
 const ok = (value: unknown) => ({ code: 0, stdout: JSON.stringify(value), stderr: "" });
 
-test("registers a smaller deferred catalog", () => {
+test("registers a smaller deferred catalog and recommends scripted recording", () => {
   const { tools, handlers, active } = extension(async () => ok({}));
   assert.deepEqual([...tools.keys()], ["browser_tools", "browser_open", "browser_action", "browser_screenshot", "browser_record", "browser_handoff"]);
+  const guidance = String((tools.get("browser_tools") as any).promptGuidelines?.[0]);
+  assert.match(guidance, /explore.*JSON.*script.*browser_record.*inspect/i);
+  assert.doesNotMatch(guidance, /action start.*action stop/i);
   handlers.get("session_start")?.();
   assert.deepEqual(active(), ["read", "browser_tools"]);
 });
@@ -133,7 +136,7 @@ test("failed live browser action reports the current URL", async () => {
 test("replays a script into a fresh Electron tab and restores its viewport", async () => {
   const directory = await mkdtemp(join(tmpdir(), "pi-browser-test-"));
   const script = join(directory, "take.json");
-  await writeFile(script, JSON.stringify([["goto", "https://example.com"], ["wait", "#ready"], ["click", "#save"]]));
+  await writeFile(script, JSON.stringify([["goto", "https://example.com"], ["wait", "2000"], ["wait", "#ready"], ["click", "#save"]]));
   const calls: string[][] = [];
   let path = "";
   let latestTab = 1;
@@ -160,20 +163,69 @@ test("replays a script into a fresh Electron tab and restores its viewport", asy
     const result = await tools.get("browser_record")!.execute("1", { script, name: "demo" });
     assert.equal(result.details.path, join(directory, "Videos", "Recordings", "demo.mp4"));
     assert.equal(result.details.bytes, 3);
-    assert.match(result.content[0].text, /1280x720/);
+    assert.equal(result.details.script, join(directory, "Videos", "Recordings", "demo.json"));
+    assert.equal(await readFile(result.details.script, "utf8"), await readFile(script, "utf8"));
+    assert.match(result.content[0].text, /demo\.json.*1280x720/);
     assert.equal(result.content[1].type, "image", "show the last frame so a false success is visible without another tool call");
     assert.deepEqual(calls.map((args) => args[0] === "action" ? args.slice(args.indexOf("--") + 1) : args), [
       ["ls", "--json"], ["new-tab", "about:blank", "--browser", "human"],
       ["eval", "[innerWidth, innerHeight].join('x')"],
       ["set", "viewport", "1280", "720"],
+      ["goto", "https://example.com"],
       ["record", "restart", result.details.path],
-      ["goto", "https://example.com"], ["wait", "#ready"], ["click", "#save"],
+      ["wait", "2000"], ["wait", "#ready"], ["click", "#save"],
       ["wait", "1500"], ["record", "stop"], ["set", "viewport", "900", "600"],
     ]);
     assert(calls.filter((args) => args[0] === "action").every((args) => args[4] === "2"));
     await tools.get("browser_record")!.execute("2", { script, name: "second.mp4" });
     assert.equal(latestTab, 3);
     assert(calls.filter((args) => args[0] === "action").slice(-8).every((args) => args[4] === "3"));
+  } finally {
+    for (const [key, value] of ["HERDR_ENV", "HERDR_PANE_ID", "HOME"].map((key, i) => [key, old[i]] as const)) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("joins separate scripted clips across navigations without recording the loading gap", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "pi-browser-test-"));
+  const script = join(directory, "take.json");
+  await writeFile(script, JSON.stringify([["goto", "https://example.com"], ["wait", "2000"], ["goto", "https://example.com/issues"], ["wait", "2000"]]));
+  const calls: string[][] = [];
+  const clips: string[] = [];
+  const { tools } = extension(async (args, command) => {
+    if (command === "ffprobe") return { code: 0, stdout: args.includes("format=duration") ? "4.8\n" : "1280x720\n", stderr: "" };
+    if (command === "ffmpeg") {
+      if (args.includes("concat")) await writeFile(args.at(-1)!, (await Promise.all(clips.map((clip) => readFile(clip, "utf8")))).join(""));
+      else await writeFile(args.at(-1)!, Buffer.from("89504e470d0a1a0a", "hex"));
+      return { code: 0, stdout: "", stderr: "" };
+    }
+    calls.push(args);
+    if (args[0] === "ls") return ok({ browsers: [{ key: "human", inCurrentTab: true, tabs: [{ id: 7 }] }] });
+    const argv = args.slice(args.indexOf("--") + 1);
+    if (argv[0] === "eval") return { code: 0, stdout: "900x600", stderr: "" };
+    if (argv[0] === "record" && argv[1] === "restart") clips.push(argv[2]);
+    if (argv[0] === "record" && argv[1] === "stop") await writeFile(clips.at(-1)!, String(clips.length));
+    if (argv[0] === "get" && argv[1] === "url") return { code: 0, stdout: "https://example.com/issues", stderr: "" };
+    return { code: 0, stdout: "done", stderr: "" };
+  });
+  const old = [process.env.HERDR_ENV, process.env.HERDR_PANE_ID, process.env.HOME];
+  process.env.HERDR_ENV = "1";
+  process.env.HERDR_PANE_ID = "p1";
+  process.env.HOME = directory;
+  try {
+    const result = await tools.get("browser_record")!.execute("1", { script, tab: 7, expectUrl: "https://example.com/issues" });
+    assert.equal(clips.length, 2);
+    assert.equal(clips[0], result.details.path);
+    assert.equal(await readFile(result.details.path, "utf8"), "12");
+    assert.deepEqual(calls.filter((args) => args[0] === "action").map((args) => args.slice(args.indexOf("--") + 1)), [
+      ["eval", "[innerWidth, innerHeight].join('x')"], ["set", "viewport", "1280", "720"],
+      ["goto", "https://example.com"], ["record", "restart", clips[0]], ["wait", "2000"], ["record", "stop"],
+      ["goto", "https://example.com/issues"], ["record", "restart", clips[1]], ["wait", "2000"],
+      ["wait", "1500"], ["get", "url"], ["record", "stop"], ["set", "viewport", "900", "600"],
+    ]);
+    await assert.rejects(readFile(clips[1]), /ENOENT/, "temporary clip must be cleaned up after joining");
   } finally {
     for (const [key, value] of ["HERDR_ENV", "HERDR_PANE_ID", "HOME"].map((key, i) => [key, old[i]] as const)) {
       if (value === undefined) delete process.env[key]; else process.env[key] = value;
@@ -265,12 +317,14 @@ test("rejects a saved take too short to show the requested journey", async () =>
   const script = join(directory, "take.json");
   await writeFile(script, JSON.stringify([["goto", "https://example.com"], ["goto", "https://example.com/final"]]));
   let path = "";
+  let active = "";
   const { tools } = extension(async (args, command) => {
     if (command === "ffprobe") return { code: 0, stdout: "0.8\n", stderr: "" };
+    if (command === "ffmpeg") { await writeFile(args.at(-1)!, "joined"); return { code: 0, stdout: "", stderr: "" }; }
     if (args[0] === "ls") return ok({ browsers: [{ key: "human", inCurrentTab: true, tabs: [{ id: 7 }] }] });
     const argv = args.slice(args.indexOf("--") + 1);
-    if (argv[0] === "record" && argv[1] === "restart") path = argv[2];
-    if (argv[0] === "record" && argv[1] === "stop") await writeFile(path, "mp4");
+    if (argv[0] === "record" && argv[1] === "restart") { active = argv[2]; path ||= active; }
+    if (argv[0] === "record" && argv[1] === "stop") await writeFile(active, "mp4");
     return { code: 0, stdout: "done", stderr: "" };
   });
   const old = [process.env.HERDR_ENV, process.env.HERDR_PANE_ID, process.env.HOME];
@@ -282,6 +336,37 @@ test("rejects a saved take too short to show the requested journey", async () =>
       assert.match(error.message, /0\.8s.*too short.*take.*mp4/i);
       return true;
     });
+  } finally {
+    for (const [key, value] of ["HERDR_ENV", "HERDR_PANE_ID", "HOME"].map((key, i) => [key, old[i]] as const)) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("rejects a video that omits scripted two-second holds", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "pi-browser-test-"));
+  const script = join(directory, "take.json");
+  await writeFile(script, JSON.stringify([["goto", "https://example.com"], ["wait", "2000"], ["goto", "https://example.com/final"], ["wait", "2000"]]));
+  let path = "";
+  let active = "";
+  const { tools } = extension(async (args, command) => {
+    if (command === "ffprobe") return { code: 0, stdout: "2.7\n", stderr: "" };
+    if (command === "ffmpeg") { await writeFile(args.at(-1)!, "joined"); return { code: 0, stdout: "", stderr: "" }; }
+    if (args[0] === "ls") return ok({ browsers: [{ key: "human", inCurrentTab: true, tabs: [{ id: 7 }] }] });
+    const argv = args.slice(args.indexOf("--") + 1);
+    if (argv[0] === "record" && argv[1] === "restart") { active = argv[2]; path ||= active; }
+    if (argv[0] === "record" && argv[1] === "stop") await writeFile(active, "truncated");
+    return { code: 0, stdout: "done", stderr: "" };
+  });
+  const old = [process.env.HERDR_ENV, process.env.HERDR_PANE_ID, process.env.HOME];
+  process.env.HERDR_ENV = "1";
+  process.env.HERDR_PANE_ID = "p1";
+  process.env.HOME = directory;
+  try {
+    await assert.rejects(tools.get("browser_record")!.execute("1", { script, tab: 7 }), /only 2\.7s.*scripted holds need at least 4s.*partial take: .*mp4/);
+    assert.equal(await readFile(path, "utf8"), "joined");
+    assert.equal(await readFile(path.replace(/\.mp4$/, ".json"), "utf8"), await readFile(script, "utf8"));
   } finally {
     for (const [key, value] of ["HERDR_ENV", "HERDR_PANE_ID", "HOME"].map((key, i) => [key, old[i]] as const)) {
       if (value === undefined) delete process.env[key]; else process.env[key] = value;
@@ -311,6 +396,7 @@ test("does not claim a partial take when recording never starts", async () => {
       assert.doesNotMatch(error.message, /partial take/);
       return true;
     });
+    await assert.rejects(readFile(join(directory, "Videos", "Recordings", "broken.json")), /ENOENT/, "an unstarted recording must leave no stale sidecar");
   } finally {
     for (const [key, value] of ["HERDR_ENV", "HERDR_PANE_ID", "HOME"].map((key, i) => [key, old[i]] as const)) {
       if (value === undefined) delete process.env[key]; else process.env[key] = value;
@@ -370,6 +456,7 @@ test("keeps a partial take after a failed step in an existing tab", async () => 
     });
     assert.deepEqual(commands.slice(-4), [["click", "#missing"], ["get", "url"], ["record", "stop"], ["set", "viewport", "800", "500"]]);
     assert.equal(await readFile(path, "utf8"), "partial");
+    assert.equal(await readFile(path.replace(/\.mp4$/, ".json"), "utf8"), await readFile(script, "utf8"));
   } finally {
     for (const [key, value] of ["HERDR_ENV", "HERDR_PANE_ID", "HOME"].map((key, i) => [key, old[i]] as const)) {
       if (value === undefined) delete process.env[key]; else process.env[key] = value;
