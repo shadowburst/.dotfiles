@@ -10,6 +10,7 @@ _: {
       home.packages = with pkgs; [
         act
         curl
+        cutaway
         devbox
         fd
         ffmpeg
@@ -20,7 +21,6 @@ _: {
         ripgrep
         sqlit-tui
         sshfs
-        terminal-browser
         tldr
         trash-cli
         tree
