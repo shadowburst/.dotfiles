@@ -2,10 +2,10 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, truncateHead } from "@earendil-works/pi-coding-agent";
 import { StringEnum } from "@earendil-works/pi-ai";
 import { Type } from "typebox";
-import { randomUUID } from "node:crypto";
-import { access, mkdir, mkdtemp, readFile, rename, rm, stat } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import { access, chmod, mkdir, mkdtemp, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
-import { basename, extname, isAbsolute, join, resolve } from "node:path";
+import { basename, dirname, extname, isAbsolute, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { chromium, devices, type Browser, type BrowserContext, type Page, type Video } from "playwright";
 import { activateBrowserTools, BROWSER_TOOL_NAMES, initializeBrowserTools } from "./state.ts";
@@ -15,6 +15,7 @@ const INTERACTIVE_SELECTOR = "a[href],button,input,select,textarea,[role],[tabin
 
 type ElementDescription = { selector: string; role: string; name: string };
 type Recording = { path: string; temporaryDirectory: string; video: Video };
+type StorageState = Awaited<ReturnType<BrowserContext["storageState"]>>;
 
 type EventSummary = { type: string; text: string };
 
@@ -49,6 +50,16 @@ class BrowserRuntime {
   private consoleEvents: EventSummary[] = [];
   private networkEvents: EventSummary[] = [];
   private queue = Promise.resolve();
+  private projectDirectory = process.cwd();
+  private statePath?: Promise<string>;
+
+  constructor(private readonly gitCommonDirectory: (cwd: string) => Promise<string | undefined>) {}
+
+  setProjectDirectory(directory: string): void {
+    if (directory === this.projectDirectory) return;
+    this.projectDirectory = directory;
+    this.statePath = undefined;
+  }
 
   run<T>(operation: () => Promise<T>): Promise<T> {
     const result = this.queue.then(operation, operation);
@@ -70,8 +81,48 @@ class BrowserRuntime {
     page.on("requestfailed", request => this.networkEvents.push({ type: "failed", text: `${request.url()}: ${request.failure()?.errorText ?? "request failed"}` }));
   }
 
+  private projectStatePath(): Promise<string> {
+    return this.statePath ??= (async () => {
+      const cwd = await realpath(this.projectDirectory).catch(() => resolve(this.projectDirectory));
+      const commonDirectory = await this.gitCommonDirectory(cwd);
+      const identity = commonDirectory
+        ? await realpath(isAbsolute(commonDirectory) ? commonDirectory : resolve(cwd, commonDirectory)).catch(() => resolve(cwd, commonDirectory))
+        : cwd;
+      const stateHome = process.env.XDG_STATE_HOME || join(homedir(), ".local", "state");
+      return join(stateHome, "pi", "browser", `${createHash("sha256").update(identity).digest("hex")}.json`);
+    })();
+  }
+
+  private async storedState(): Promise<StorageState | undefined> {
+    const path = await this.projectStatePath();
+    let contents: string;
+    try {
+      contents = await readFile(path, "utf8");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+      throw error;
+    }
+    try {
+      const state = JSON.parse(contents);
+      if (!state || !Array.isArray(state.cookies) || !Array.isArray(state.origins)) throw new Error("Invalid browser storage state");
+      return state;
+    } catch {
+      await rm(path, { force: true });
+      return undefined;
+    }
+  }
+
   private async newPage(options: Parameters<Browser["newContext"]>[0] = {}): Promise<Page> {
-    this.context = await (await this.launch()).newContext({ viewport: VIEWPORT, ...options });
+    const browser = await this.launch();
+    const storageState = await this.storedState();
+    try {
+      this.context = await browser.newContext({ viewport: VIEWPORT, ...(storageState ? { storageState } : {}), ...options });
+    } catch (error) {
+      if (!storageState) throw error;
+      const freshContext = await browser.newContext({ viewport: VIEWPORT, ...options });
+      await rm(await this.projectStatePath(), { force: true });
+      this.context = freshContext;
+    }
     this.page = await this.context.newPage();
     this.attach(this.page);
     this.refs.clear();
@@ -87,10 +138,35 @@ class BrowserRuntime {
     return this.page.locator('input[type="password"]:visible').first().isVisible();
   }
 
-  async saveStorageState(path: string): Promise<boolean> {
+  async savedProjectStatePath(): Promise<string | undefined> {
+    const path = await this.projectStatePath();
+    return await stat(path).then(() => path, () => undefined);
+  }
+
+  async saveProjectState(): Promise<boolean> {
     if (!this.context) return false;
-    await this.context.storageState({ path });
+    const path = await this.projectStatePath();
+    const directory = dirname(path);
+    const temporary = `${path}.${process.pid}.${randomUUID()}.tmp`;
+    const state = await this.context.storageState({ indexedDB: true });
+    await mkdir(directory, { recursive: true, mode: 0o700 });
+    await chmod(directory, 0o700);
+    try {
+      await writeFile(temporary, JSON.stringify(state), { encoding: "utf8", mode: 0o600 });
+      await chmod(temporary, 0o600);
+      await rename(temporary, path);
+    } finally {
+      await rm(temporary, { force: true });
+    }
     return true;
+  }
+
+  private async closeContext(persist = true): Promise<void> {
+    if (!this.context) return;
+    if (persist) await this.saveProjectState();
+    await this.context.close();
+    this.context = undefined;
+    this.page = undefined;
   }
 
   async navigate(raw: string): Promise<{ url: string; status?: number }> {
@@ -199,9 +275,7 @@ class BrowserRuntime {
       const device = devices[values[1]];
       if (!device) throw new Error(`Unknown Playwright device: ${values[1]}`);
       const { defaultBrowserType: _defaultBrowserType, ...options } = device;
-      await this.context?.close();
-      this.context = undefined;
-      this.page = undefined;
+      await this.closeContext();
       await this.newPage(options);
       return `device set: ${values[1]}`;
     }
@@ -223,9 +297,7 @@ class BrowserRuntime {
 
   async startRecording(path: string): Promise<void> {
     if (this.recording) throw new Error(`Recording already active: ${this.recording.path}`);
-    if (this.context) await this.context.close();
-    this.context = undefined;
-    this.page = undefined;
+    await this.closeContext();
     const temporaryDirectory = await mkdtemp(join(tmpdir(), "pi-browser-video-"));
     try {
       const page = await this.newPage({ recordVideo: { dir: temporaryDirectory, size: VIEWPORT } });
@@ -241,19 +313,23 @@ class BrowserRuntime {
   async stopRecording(): Promise<string> {
     const recording = this.recording;
     if (!recording) throw new Error("No recording active in this Pi session");
-    await this.context?.close();
-    this.context = undefined;
-    this.page = undefined;
+    await this.closeContext();
     await rename(await recording.video.path(), recording.path);
     this.recording = undefined;
     await rm(recording.temporaryDirectory, { recursive: true, force: true });
     return recording.path;
   }
 
+  async clearProjectState(): Promise<void> {
+    if (this.recording) throw new Error("Cannot clear browser state during an active recording");
+    await this.closeContext(false);
+    await rm(await this.projectStatePath(), { force: true });
+  }
+
   async stop(): Promise<void> {
     try {
       if (this.recording) await this.stopRecording();
-      else await this.context?.close();
+      else await this.closeContext();
     } finally {
       this.context = undefined;
       this.page = undefined;
@@ -268,10 +344,14 @@ class BrowserRuntime {
 }
 
 export default function browserTools(pi: ExtensionAPI) {
-  const runtime = new BrowserRuntime();
+  const runtime = new BrowserRuntime(async (cwd) => {
+    const result = await pi.exec("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], { cwd, timeout: 30_000 });
+    return result.code === 0 ? result.stdout.trim() || undefined : undefined;
+  });
   const handoffLoginIfNeeded = async (ctx?: { hasUI: boolean; ui: { confirm(title: string, message: string): Promise<boolean> } }): Promise<void> => {
     if (!ctx?.hasUI || !await runtime.hasVisiblePasswordField()) return;
-    await ctx.ui.confirm("Login required", "Log in using the visible browser, then choose Yes to continue.");
+    const confirmed = await ctx.ui.confirm("Login required", "Log in using the visible browser, then choose Yes to continue.");
+    if (confirmed) await runtime.saveProjectState();
     runtime.invalidateSnapshot();
   };
 
@@ -357,14 +437,13 @@ export default function browserTools(pi: ExtensionAPI) {
         const path = await outputPath(name ?? `${fallback}-${randomUUID().slice(0, 8)}`);
         const temporaryRoot = await mkdtemp(join(tmpdir(), "pi-cutaway-"));
         const work = join(temporaryRoot, "recording");
-        const temporaryStorageState = join(temporaryRoot, "storage-state.json");
-        let effectiveStorageState = storageState;
         try {
-          if (!effectiveStorageState && await runtime.saveStorageState(temporaryStorageState)) effectiveStorageState = temporaryStorageState;
+          await runtime.saveProjectState();
         } catch (error) {
           await rm(temporaryRoot, { recursive: true, force: true });
           throw error;
         }
+        const effectiveStorageState = storageState ?? await runtime.savedProjectStatePath();
         const args = ["record", plan, "--out", work, ...(effectiveStorageState ? ["--storage-state", effectiveStorageState] : []), "--width", "1280", "--height", "720", "--quality", "standard"];
         let motion: { cursorPoints: number; zoomEpisodes: number };
         try {
@@ -387,8 +466,6 @@ export default function browserTools(pi: ExtensionAPI) {
         } catch (error) {
           await rm(path, { force: true }).catch(() => undefined);
           throw new Error(`${error instanceof Error ? error.message : String(error)}; work directory: ${work}; output path: ${path}`);
-        } finally {
-          if (!storageState) await rm(temporaryStorageState, { force: true });
         }
         await rm(temporaryRoot, { recursive: true, force: true });
         return { content: [{ type: "text", text: `${path}\nCursor points: ${motion.cursorPoints}; zoom episodes: ${motion.zoomEpisodes}` }], details: { path, motion } };
@@ -418,6 +495,22 @@ export default function browserTools(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
+    name: "browser_clear_state",
+    label: "Browser Clear State",
+    description: "Delete the current project's saved browser authentication after confirmation",
+    parameters: Type.Object({}),
+    async execute(_id, _params, _signal, _update, ctx) {
+      return runtime.run(async () => {
+        if (!ctx.hasUI) throw new Error("Clearing browser state requires interactive Pi UI");
+        const confirmed = await ctx.ui.confirm("Clear browser login?", "Delete saved browser authentication for this project and close its browser context?");
+        if (!confirmed) return { content: [{ type: "text", text: "Browser state was not cleared" }], details: { cleared: false } };
+        await runtime.clearProjectState();
+        return { content: [{ type: "text", text: "Browser state cleared for this project" }], details: { cleared: true } };
+      });
+    },
+  });
+
+  pi.registerTool({
     name: "browser_handoff",
     label: "Browser Handoff",
     description: "Pause while the human operates the visible Playwright browser, then resume on confirmation",
@@ -427,13 +520,25 @@ export default function browserTools(pi: ExtensionAPI) {
         if (!ctx.hasUI) throw new Error("Browser handoff requires interactive Pi UI");
         await runtime.selectedPage();
         const confirmed = await ctx.ui.confirm("Your turn in the browser", `${message}\n\nChoose Yes when finished, No to cancel.`);
+        if (confirmed) await runtime.saveProjectState();
         runtime.invalidateSnapshot();
         return { content: [{ type: "text", text: confirmed ? "User finished; continue in the visible browser" : "User cancelled browser handoff" }], details: { confirmed } };
       });
     },
   });
 
-  pi.on("session_start", () => pi.setActiveTools(initializeBrowserTools(pi.getActiveTools())));
-  pi.on("agent_settled", () => runtime.run(() => runtime.stop()));
-  pi.on("session_shutdown", () => runtime.run(() => runtime.stop()));
+  const stopForLifecycle = async (ctx?: { hasUI: boolean; ui: { notify(message: string, level?: "info" | "warning" | "error"): void } }): Promise<void> => {
+    try {
+      await runtime.run(() => runtime.stop());
+    } catch (error) {
+      if (ctx?.hasUI) ctx.ui.notify(`Could not save browser authentication: ${error instanceof Error ? error.message : String(error)}`, "error");
+    }
+  };
+
+  pi.on("session_start", (_event, ctx) => {
+    if (ctx?.cwd) runtime.setProjectDirectory(ctx.cwd);
+    pi.setActiveTools(initializeBrowserTools(pi.getActiveTools()));
+  });
+  pi.on("agent_settled", (_event, ctx) => stopForLifecycle(ctx));
+  pi.on("session_shutdown", (_event, ctx) => stopForLifecycle(ctx));
 }

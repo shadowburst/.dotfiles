@@ -62,7 +62,13 @@ const packageSources = {
       }
       async newPage() { const page = new Page(this); this.pagesList.push(page); return page; }
       pages() { return this.pagesList; }
-      async storageState({ path }) { mock().calls.push(["storageState", path]); await writeFile(path, JSON.stringify({ cookies: [] })); }
+      async storageState(options = {}) {
+        if (mock().failStorageStateOnce) { mock().failStorageStateOnce = false; throw new Error("state write failed"); }
+        const state = { cookies: [{ name: "session", value: "token", domain: "example.com", path: "/", expires: -1, httpOnly: true, secure: true, sameSite: "Lax" }], origins: [{ origin: "https://example.com", localStorage: [], indexedDB: [{ name: "auth", version: 1, stores: [] }] }] };
+        mock().calls.push(["storageState", JSON.stringify(options)]);
+        if (options.path) await writeFile(options.path, JSON.stringify(state));
+        return state;
+      }
       async close() {
         mock().calls.push(["context.close"]);
         if (mock().failCloseOnce) { mock().failCloseOnce = false; throw new Error("close failed"); }
@@ -70,7 +76,12 @@ const packageSources = {
       }
     }
     class Browser {
-      async newContext(options = {}) { mock().calls.push(["newContext", JSON.stringify(options)]); return new Context(options); }
+      async newContext(options = {}) {
+        mock().calls.push(["newContext", JSON.stringify(options)]);
+        if (mock().failContexts) { mock().failContexts--; throw new Error("browser unavailable"); }
+        if (options.storageState && mock().rejectStoredStateOnce) { mock().rejectStoredStateOnce = false; throw new Error("invalid storage state"); }
+        return new Context(options);
+      }
       async close() { mock().calls.push(["browser.close"]); }
     }
     export const chromium = { launch: async options => { mock().calls.push(["launch", JSON.stringify(options)]); return new Browser(); } };
@@ -97,7 +108,7 @@ const loaderSource = `
 `;
 register(`data:text/javascript,${encodeURIComponent(loaderSource)}`, import.meta.url);
 
-type Mock = { calls: string[][]; snapshot: Array<Record<string, string>>; failCloseOnce?: boolean; passwordVisible?: boolean };
+type Mock = { calls: string[][]; snapshot: Array<Record<string, string>>; failCloseOnce?: boolean; failContexts?: number; failStorageStateOnce?: boolean; rejectStoredStateOnce?: boolean; passwordVisible?: boolean };
 (globalThis as typeof globalThis & { __playwrightMock: Mock }).__playwrightMock = {
   calls: [],
   snapshot: [
@@ -109,12 +120,14 @@ const mock = (globalThis as typeof globalThis & { __playwrightMock: Mock }).__pl
 const { default: browserExtension } = await import(new URL("./index.ts", import.meta.url).href);
 
 type ExecResult = { code: number; stdout: string; stderr: string };
-function extension(exec: (command: string, args: string[]) => Promise<ExecResult>) {
+function extension(exec: (command: string, args: string[]) => Promise<ExecResult>, gitCommonDirectory?: string) {
   const tools = new Map<string, { execute: (...args: any[]) => Promise<any>; promptGuidelines?: string[]; parameters?: any }>();
   const handlers = new Map<string, (...args: any[]) => unknown>();
   let active = ["read", "browser_record"];
   browserExtension({
-    exec,
+    exec: (command: string, args: string[]) => command === "git"
+      ? Promise.resolve(gitCommonDirectory ? { code: 0, stdout: `${gitCommonDirectory}\n`, stderr: "" } : { code: 1, stdout: "", stderr: "not a repository" })
+      : exec(command, args),
     getActiveTools: () => active,
     on: (name: string, handler: (...args: any[]) => unknown) => handlers.set(name, handler),
     registerTool: (tool: any) => tools.set(tool.name, tool),
@@ -125,11 +138,14 @@ function extension(exec: (command: string, args: string[]) => Promise<ExecResult
 
 async function withHome(run: (home: string) => Promise<void>) {
   const directory = await mkdtemp(join(tmpdir(), "pi-browser-test-"));
-  const previous = process.env.HOME;
+  const previousHome = process.env.HOME;
+  const previousStateHome = process.env.XDG_STATE_HOME;
   process.env.HOME = directory;
+  process.env.XDG_STATE_HOME = join(directory, "state");
   try { await run(directory); }
   finally {
-    if (previous === undefined) delete process.env.HOME; else process.env.HOME = previous;
+    if (previousHome === undefined) delete process.env.HOME; else process.env.HOME = previousHome;
+    if (previousStateHome === undefined) delete process.env.XDG_STATE_HOME; else process.env.XDG_STATE_HOME = previousStateHome;
     await rm(directory, { recursive: true, force: true });
   }
 }
@@ -137,15 +153,116 @@ async function withHome(run: (home: string) => Promise<void>) {
 test.beforeEach(() => {
   mock.calls.length = 0;
   mock.passwordVisible = false;
+  mock.failContexts = 0;
+  mock.failStorageStateOnce = false;
+  mock.rejectStoredStateOnce = false;
 });
 
 test("registers the compact catalog and recommends native Cutaway plans", () => {
   const { tools, handlers, active } = extension(async () => ({ code: 0, stdout: "", stderr: "" }));
-  assert.deepEqual([...tools.keys()], ["browser_tools", "browser_open", "browser_action", "browser_screenshot", "browser_record", "browser_record_live", "browser_handoff"]);
+  assert.deepEqual([...tools.keys()], ["browser_tools", "browser_open", "browser_action", "browser_screenshot", "browser_record", "browser_record_live", "browser_clear_state", "browser_handoff"]);
   assert.match(tools.get("browser_tools")!.promptGuidelines![0], /explore.*Cutaway JSON plan.*cutaway validate.*submit only once/i);
   handlers.get("session_start")?.();
   assert.deepEqual(active(), ["read", "browser_tools"]);
 });
+
+test("persists browser authentication for the local repository family", async () => withHome(async home => {
+  const gitCommonDirectory = join(home, "repo", ".git");
+  const exec = async () => { throw new Error("external process must not run"); };
+
+  const first = extension(exec, gitCommonDirectory);
+  await first.handlers.get("session_start")?.({}, { cwd: join(home, "repo"), hasUI: false, ui: {} });
+  await first.tools.get("browser_open")!.execute("1", { url: "https://example.com" });
+  await first.handlers.get("agent_settled")?.({}, { hasUI: false, ui: {} });
+
+  const stateDirectory = join(home, "state", "pi", "browser");
+  const files = await readdir(stateDirectory);
+  assert.equal(files.length, 1);
+  const statePath = join(stateDirectory, files[0]);
+  assert.equal((await stat(stateDirectory)).mode & 0o777, 0o700);
+  assert.equal((await stat(statePath)).mode & 0o777, 0o600);
+  assert.equal(JSON.parse(await readFile(statePath, "utf8")).cookies[0].value, "token");
+  assert(mock.calls.some(call => call[0] === "storageState" && call[1].includes('"indexedDB":true')));
+
+  mock.calls.length = 0;
+  const second = extension(exec, gitCommonDirectory);
+  await second.handlers.get("session_start")?.({}, { cwd: join(home, "repo", "worktree"), hasUI: false, ui: {} });
+  await second.tools.get("browser_open")!.execute("2", { url: "https://example.com/account" });
+  assert(mock.calls.some(call => call[0] === "newContext" && call[1].includes('"value":"token"')));
+}));
+
+test("discards malformed project state and starts fresh", async () => withHome(async home => {
+  const first = extension(async () => { throw new Error("external process must not run"); });
+  await first.tools.get("browser_open")!.execute("1", { url: "https://example.com" });
+  await first.handlers.get("agent_settled")?.({}, { hasUI: false, ui: {} });
+  const stateDirectory = join(home, "state", "pi", "browser");
+  const [stateFile] = await readdir(stateDirectory);
+  await writeFile(join(stateDirectory, stateFile), "null");
+
+  const second = extension(async () => { throw new Error("external process must not run"); });
+  await second.tools.get("browser_open")!.execute("2", { url: "https://example.com" });
+  assert.deepEqual(await readdir(stateDirectory), []);
+}));
+
+test("discards project state rejected by Playwright and starts fresh", async () => withHome(async home => {
+  const first = extension(async () => { throw new Error("external process must not run"); });
+  await first.tools.get("browser_open")!.execute("1", { url: "https://example.com" });
+  await first.handlers.get("agent_settled")?.({}, { hasUI: false, ui: {} });
+  const stateDirectory = join(home, "state", "pi", "browser");
+
+  mock.calls.length = 0;
+  mock.rejectStoredStateOnce = true;
+  const second = extension(async () => { throw new Error("external process must not run"); });
+  await second.tools.get("browser_open")!.execute("2", { url: "https://example.com" });
+
+  assert.equal(mock.calls.filter(call => call[0] === "newContext").length, 2);
+  assert.deepEqual(await readdir(stateDirectory), []);
+}));
+
+test("keeps valid project state when browser context creation fails independently", async () => withHome(async home => {
+  const first = extension(async () => { throw new Error("external process must not run"); });
+  await first.tools.get("browser_open")!.execute("1", { url: "https://example.com" });
+  await first.handlers.get("agent_settled")?.({}, { hasUI: false, ui: {} });
+  const stateDirectory = join(home, "state", "pi", "browser");
+  const [stateFile] = await readdir(stateDirectory);
+
+  mock.failContexts = 2;
+  const second = extension(async () => { throw new Error("external process must not run"); });
+  await assert.rejects(second.tools.get("browser_open")!.execute("2", { url: "https://example.com" }), /browser unavailable/);
+  assert.equal(JSON.parse(await readFile(join(stateDirectory, stateFile), "utf8")).cookies[0].value, "token");
+}));
+
+test("reports lifecycle persistence failures without blocking settlement", async () => withHome(async () => {
+  const notices: string[] = [];
+  const { tools, handlers } = extension(async () => { throw new Error("external process must not run"); });
+  await tools.get("browser_open")!.execute("1", { url: "https://example.com" });
+  mock.failStorageStateOnce = true;
+  await handlers.get("agent_settled")?.({}, {
+    hasUI: true,
+    ui: { notify: (message: string) => notices.push(message) },
+  });
+  assert.deepEqual(notices, ["Could not save browser authentication: state write failed"]);
+}));
+
+test("clears only the current project's saved browser state after confirmation", async () => withHome(async home => {
+  const first = extension(async () => { throw new Error("external process must not run"); });
+  await first.tools.get("browser_open")!.execute("1", { url: "https://example.com" });
+  await first.handlers.get("agent_settled")?.({}, { hasUI: false, ui: {} });
+
+  const second = extension(async () => { throw new Error("external process must not run"); });
+  await second.tools.get("browser_open")!.execute("2", { url: "https://example.com/account" });
+  const result = await second.tools.get("browser_clear_state")!.execute("3", {}, undefined, undefined, {
+    hasUI: true,
+    ui: { confirm: async () => true },
+  });
+
+  assert.match(result.content[0].text, /cleared/i);
+  assert.deepEqual(await readdir(join(home, "state", "pi", "browser")), []);
+  assert(mock.calls.some(call => call[0] === "context.close"));
+  mock.calls.length = 0;
+  await second.tools.get("browser_open")!.execute("4", { url: "https://example.com" });
+  assert(mock.calls.some(call => call[0] === "newContext" && !call[1].includes("storageState")));
+}));
 
 test("scripted recording is plan-only; live recording uses an explicit tool", async () => withHome(async () => {
   const { tools } = extension(async () => { throw new Error("a live take must not invoke Cutaway"); });
@@ -189,6 +306,17 @@ test("hands a visible login page to the user", async () => {
     ["Login required", "Log in using the visible browser, then choose Yes to continue."],
   ]);
 });
+
+test("saves authentication immediately after a successful browser handoff", async () => withHome(async home => {
+  const { tools } = extension(async () => { throw new Error("external process must not run"); });
+  await tools.get("browser_open")!.execute("1", { url: "https://example.com/login" });
+  await tools.get("browser_handoff")!.execute("2", { message: "Log in" }, undefined, undefined, {
+    hasUI: true,
+    ui: { confirm: async () => true },
+  });
+  const files = await readdir(join(home, "state", "pi", "browser"));
+  assert.equal(files.length, 1);
+}));
 
 test("rejects invalid Cutaway plans before opening a browser", async () => withHome(async home => {
   const plan = join(home, "journey.json");
@@ -236,19 +364,21 @@ test("runs a native Cutaway plan at standard 720p and leaves one WebM", async ()
   assert.deepEqual(result.details.motion, { cursorPoints: 2, zoomEpisodes: 2 });
   assert.deepEqual(calls[0], ["cutaway", ["validate", plan]]);
   assert.deepEqual(calls[1], ["cutaway", ["record", plan, "--out", calls[1][1][3], "--storage-state", storageState, "--width", "1280", "--height", "720", "--quality", "standard"]]);
-  assert.equal(mock.calls.some(call => call[0] === "storageState"), false, "explicit storage state wins");
+  assert(mock.calls.some(call => call[0] === "storageState"), "visible project state is refreshed");
+  const [projectStateFile] = await readdir(join(home, "state", "pi", "browser"));
+  assert.equal(JSON.parse(await readFile(join(home, "state", "pi", "browser", projectStateFile), "utf8")).cookies[0].value, "token", "explicit state is not imported");
   await assert.rejects(stat(calls[1][1][3]), /ENOENT/, "successful Cutaway intermediates are deleted");
 }));
 
-test("reuses the visible browser session for Cutaway and deletes the temporary state", async () => withHome(async home => {
+test("refreshes persistent project state before Cutaway", async () => withHome(async home => {
   const plan = join(home, "journey.json");
   await writeFile(plan, JSON.stringify({ url: "https://example.com", steps: [{ action: "click", selector: "#save" }] }));
-  let temporaryStorageState = "";
+  let projectStorageState = "";
   const { tools } = extension(async (command, args) => {
     if (command === "cutaway" && args[0] === "validate") return { code: 0, stdout: "", stderr: "" };
     if (command === "cutaway") {
-      temporaryStorageState = args[args.indexOf("--storage-state") + 1];
-      assert.equal(JSON.parse(await readFile(temporaryStorageState, "utf8")).cookies.length, 0);
+      projectStorageState = args[args.indexOf("--storage-state") + 1];
+      assert.equal(JSON.parse(await readFile(projectStorageState, "utf8")).cookies.length, 1);
       const outputDirectory = args[args.indexOf("--out") + 1];
       await mkdir(outputDirectory, { recursive: true });
       const output = join(outputDirectory, "video.mp4");
@@ -262,8 +392,9 @@ test("reuses the visible browser session for Cutaway and deletes the temporary s
   });
   await tools.get("browser_open")!.execute("1", { url: "https://example.com" });
   await tools.get("browser_record")!.execute("2", { plan });
-  assert(mock.calls.some(call => call[0] === "storageState" && call[1] === temporaryStorageState));
-  await assert.rejects(stat(temporaryStorageState), /ENOENT/);
+  assert(mock.calls.some(call => call[0] === "storageState" && call[1].includes('"indexedDB":true')));
+  assert.match(projectStorageState, new RegExp(`${join(home, "state", "pi", "browser").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/[a-f0-9]{64}\\.json`));
+  assert.equal(JSON.parse(await readFile(projectStorageState, "utf8")).cookies[0].value, "token");
 }));
 
 test("does not claim a cinematic take when interactive steps have no cursor or zoom", async () => withHome(async home => {
@@ -328,12 +459,12 @@ test("preserves the Cutaway work directory when a journey fails", async () => wi
   const plan = join(home, "journey.json");
   await writeFile(plan, JSON.stringify({ url: "https://example.com", steps: [{ action: "click", selector: "#missing" }] }));
   let outputDirectory = "";
-  let temporaryStorageState = "";
+  let projectStorageState = "";
   const { tools } = extension(async (command, args) => {
     assert.equal(command, "cutaway");
     if (args[0] === "validate") return { code: 0, stdout: "", stderr: "" };
     outputDirectory = args[args.indexOf("--out") + 1];
-    temporaryStorageState = args[args.indexOf("--storage-state") + 1];
+    projectStorageState = args[args.indexOf("--storage-state") + 1];
     await mkdir(outputDirectory, { recursive: true });
     await writeFile(join(outputDirectory, "manifest.json"), "partial");
     return { code: 1, stdout: "", stderr: "Step 1: selector missing" };
@@ -345,7 +476,7 @@ test("preserves the Cutaway work directory when a journey fails", async () => wi
     return true;
   });
   assert.equal(await readFile(join(outputDirectory, "manifest.json"), "utf8"), "partial");
-  await assert.rejects(stat(temporaryStorageState), /ENOENT/, "temporary auth state is removed on failure");
+  assert.equal(JSON.parse(await readFile(projectStorageState, "utf8")).cookies[0].value, "token", "project auth survives a failed recording");
 }));
 
 test("starts live recording in a fresh context and saves Playwright WebM", async () => withHome(async home => {
@@ -366,6 +497,10 @@ test("keeps a live recording retryable and rejects device changes while recordin
   const { tools } = extension(async () => { throw new Error("external process must not run"); });
   await tools.get("browser_record_live")!.execute("1", { action: "start", name: "retry" });
   await assert.rejects(tools.get("browser_action")!.execute("2", { args: ["set", "device", "Test Phone"] }), /active recording/i);
+  await assert.rejects(tools.get("browser_clear_state")!.execute("2b", {}, undefined, undefined, {
+    hasUI: true,
+    ui: { confirm: async () => true },
+  }), /active recording/i);
   mock.failCloseOnce = true;
   await assert.rejects(tools.get("browser_record_live")!.execute("3", { action: "stop" }), /close failed/);
   const stopped = await tools.get("browser_record_live")!.execute("4", { action: "stop" });
