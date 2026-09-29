@@ -9,19 +9,19 @@ icons=('✅' '❌' '⚪' '⚠️' '⏱️' '🔄')
 marker='<!-- local-ci-report -->'
 context='local-ci/report'
 
-usage() { printf 'Usage: %s [--timeout MINUTES] [--secret-file FILE] [--no-post] https://github.com/OWNER/REPO/pull/NUMBER\n' "$0" >&2; exit 2; }
+usage() { printf 'Usage: %s [--timeout MINUTES] [--secret-file FILE] [--submit] https://github.com/OWNER/REPO/pull/NUMBER\n' "$0" >&2; exit 2; }
 (( BASH_VERSINFO[0] >= 4 )) || { echo 'Bash 4+ required' >&2; exit 3; }
 for tool in jq flock timeout gh act git docker mktemp stat realpath; do
     command -v "$tool" >/dev/null || { printf 'Missing required command: %s\n' "$tool" >&2; exit 3; }
 done
 timeout --version | grep -q 'GNU coreutils' || { echo 'GNU coreutils timeout required' >&2; exit 3; }
 timeout 10 docker info >/dev/null 2>&1 || { echo 'Docker daemon is unavailable' >&2; exit 3; }
-timeout_minutes=60 secret_file= no_post=0 url=
+timeout_minutes=60 secret_file= submit=0 url=
 while (($#)); do
     case $1 in
         --timeout) (($# >= 2)) || usage; timeout_minutes=$2; shift 2 ;;
         --secret-file) (($# >= 2)) || usage; secret_file=$2; shift 2 ;;
-        --no-post) no_post=1; shift ;;
+        --submit) submit=1; shift ;;
         --*) usage ;;
         *) [[ ! $url ]] || usage; url=$1; shift ;;
     esac
@@ -219,7 +219,7 @@ if [[ $sha && $code != "$STALE" ]]; then
 fi
 body=$(report)
 printf '%s\n' "$body"
-if (( ! no_post )); then
+if (( submit )); then
     login=$(api api user --jq '.login') || { echo '⚠️ CI report not posted: GitHub login failed' >&2; exit "$ERROR"; }
     comments=$(api api "repos/$owner/$repo/issues/$number/comments?per_page=100" --paginate --slurp) || { echo '⚠️ CI report not posted: comment lookup failed' >&2; exit "$ERROR"; }
     previous=$(jq -r --arg marker "$marker" --arg login "$login" '[.[][] | select((.body // "" | contains($marker)) and (.user.login | ascii_downcase) == ($login | ascii_downcase))] | max_by(.id) | .id // empty' <<<"$comments") || exit "$ERROR"

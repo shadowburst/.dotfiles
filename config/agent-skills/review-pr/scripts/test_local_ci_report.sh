@@ -89,67 +89,67 @@ check() {
     bash "$script" "$url" "$@" >"$root/out" 2>"$root/err" || actual=$?
     if ((actual != expected)); then printf 'expected %s got %s\n' "$expected" "$actual"; grep . "$root/out" "$root/err"; exit 1; fi
 }
-check 0 --no-post
+check 0
 grep -q 'Local checks passed' "$root/out"
 ! grep -Eq 'PR: |Local `act` result' "$root/out"
 [[ ! -e $root/comment && ! -e $root/status ]]
-check 0
+check 0 --submit
 jq -e '.body | contains("Local checks passed") and contains("<!-- local-ci-report -->")' "$root/comment" >/dev/null
-TEST_NO_OWN=1 check 0
+TEST_NO_OWN=1 check 0 --submit
 jq -e '.body | contains("Local checks passed")' "$root/comment" >/dev/null
 jq -e '.state == "success" and .target_url == "https://github.com/Example/project/pull/7#issuecomment-12"' "$root/status" >/dev/null
 echo fail >"$root/mode"
-check 1
+check 1 --submit
 grep -q 'Job test, step Run' "$root/out"
 jq -e '.state == "failure"' "$root/status" >/dev/null
 echo unsafe >"$root/mode"
-check 1 --no-post
+check 1
 ! grep -q '<bad' "$root/out"
 echo error >"$root/mode"
-check 3 --no-post
+check 3
 echo skipped >"$root/mode"
-check 2 --no-post
+check 2
 echo triggered >"$root/mode"
-check 2 --no-post
+check 2
 grep -q 'No local-only jobs' "$root/out"
 echo timeout >"$root/mode"
-TEST_OWNED=1 check 4 --no-post
+TEST_OWNED=1 check 4
 [[ -e $root/removed ]]
 echo pass >"$root/mode"
-TEST_OWNED=1 check 0 --no-post
+TEST_OWNED=1 check 0
 [[ -e $root/removed ]]
-TEST_OWNED=1 TEST_RM_FAIL=1 check 3 --no-post
+TEST_OWNED=1 TEST_RM_FAIL=1 check 3
 grep -q 'could not be removed' "$root/out"
 grep -q 'Run-owned Docker containers remain' "$root/err"
-TEST_PS_FAIL=1 check 3 --no-post
+TEST_PS_FAIL=1 check 3
 grep -q 'could not be removed' "$root/out"
-TEST_MOVED=1 check 5
+TEST_MOVED=1 check 5 --submit
 grep -q 'not current' "$root/out"
 [[ ! -e $root/status ]]
-TEST_NO_WORKFLOW=1 check 2 --no-post
+TEST_NO_WORKFLOW=1 check 2
 grep -Fq 'No `local-*.yaml` workflows configured.' "$root/out"
 ! grep -q '| Workflow |' "$root/out"
-TEST_FORK=1 check 2 --no-post
+TEST_FORK=1 check 2
 grep -q 'Fork heads are not trusted' "$root/out"
 ! grep -q '| Workflow |' "$root/out"
 ! grep -q 'workflows configured' "$root/out"
-TEST_NONMEMBER=1 check 2 --no-post
+TEST_NONMEMBER=1 check 2
 grep -q 'could not be verified' "$root/out"
-GH_TOKEN=private DATABASE_URL=private check 0 --no-post
-TEST_NO_DOCKER=1 check 3 --no-post
+GH_TOKEN=private DATABASE_URL=private check 0
+TEST_NO_DOCKER=1 check 3
 [[ ! -e $root/heads ]] && grep -q 'Docker daemon is unavailable' "$root/err"
-TEST_LOOKUP_TIMEOUT=1 check 4 --no-post
+TEST_LOOKUP_TIMEOUT=1 check 4
 grep -q 'GitHub lookup or checkout timed out' "$root/out"
 printf 'unchanged\n' >"$root/victim"
 lockdir="$TMPDIR/local-ci-$(id -u)"
 rm "$lockdir/lock"
 ln -s "$root/victim" "$lockdir/lock"
-check 3 --no-post
+check 3
 grep -q 'Unsafe local CI lock file' "$root/out"
 grep -qx unchanged "$root/victim"
 rm "$lockdir/lock"
 printf 'GITHUB_TOKEN=explicit\n' >"$root/secrets"
-check 0 --no-post --secret-file "$root/secrets"
+check 0 --secret-file "$root/secrets"
 actual=0
 bash "$script" --timeout 0 "$url" >/dev/null 2>&1 || actual=$?
 ((actual == 2)) || { echo 'invalid timeout accepted'; exit 1; }
