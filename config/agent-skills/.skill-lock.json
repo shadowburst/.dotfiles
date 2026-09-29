@@ -214,6 +214,15 @@
       "skillFolderHash": "335c1862a43da9d629abafdb79ca0c0de118be08",
       "installedAt": "2026-09-28T20:26:16.201Z",
       "updatedAt": "2026-09-28T20:26:16.201Z"
+    },
+    "fix-pr": {
+      "source": "Lynx-Business/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/Lynx-Business/skills.git",
+      "skillPath": "skills/fix-pr/SKILL.md",
+      "skillFolderHash": "7f55350795b3e12f78a1378f74ce22377c30a2e4",
+      "installedAt": "2026-09-29T09:44:15.861Z",
+      "updatedAt": "2026-09-29T09:54:06.514Z"
     }
   },
   "dismissed": {
