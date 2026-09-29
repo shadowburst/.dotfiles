@@ -20,7 +20,7 @@ Use a model in the current Pi session's scope (or available catalog if no scope 
 | Luna (`openai-codex/gpt-6-luna`)   | medium | Bounded lookups, clear briefs, well-specified edits |
 | Luna                               | high   | Harder coordinated updates with clear constraints   |
 | Luna                               | xhigh  | Constrained work spanning multiple contexts         |
-| Sol (`openai-codex/gpt-6-sol`)     | low    | Focused checking or editing                         |
+| Sol (`openai-codex/gpt-6.1-sol`)   | low    | Focused checking or editing                         |
 | Sol                                | medium | Everyday coding, research, or work needing judgment |
 | Sol                                | high   | Difficult debugging, design, or reasoning           |
 | Sol                                | xhigh  | Deep verification or demanding code/security review |
