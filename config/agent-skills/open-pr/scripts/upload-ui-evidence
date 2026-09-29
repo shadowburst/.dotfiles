@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: upload-ui-evidence --pr <number|url> [--clickup <task-id>] --file <path#description>...
+EOF
+}
+
+pr=
+clickup=
+files=()
+descriptions=()
+
+while (($#)); do
+  case "$1" in
+    --pr|--clickup|--file)
+      (($# >= 2)) || { echo "missing value for $1" >&2; usage >&2; exit 2; }
+      option=$1
+      value=$2
+      shift 2
+      case "$option" in
+        --pr) pr=$value ;;
+        --clickup) clickup=$value ;;
+        --file)
+          path=${value%#*}
+          description=${value##*#}
+          if [[ "$path" == "$value" || -z "$path" || -z "$description" ]]; then
+            echo "--file requires path#description" >&2
+            exit 2
+          fi
+          files+=("$path")
+          descriptions+=("$description")
+          ;;
+      esac
+      ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "unknown argument: $1" >&2; usage >&2; exit 2 ;;
+  esac
+done
+
+[[ -n "$pr" ]] || { echo "--pr is required" >&2; exit 2; }
+((${#files[@]})) || { echo "at least one --file is required" >&2; exit 2; }
+((${#files[@]} <= 50)) || { echo "GitHub accepts at most 50 attachments" >&2; exit 2; }
+command -v gh >/dev/null || { echo "gh is required" >&2; exit 2; }
+command -v python3 >/dev/null || { echo "python3 is required" >&2; exit 2; }
+if [[ -n "$clickup" ]]; then
+  command -v cup >/dev/null || { echo "cup is required with --clickup" >&2; exit 2; }
+fi
+
+for i in "${!files[@]}"; do
+  file=${files[$i]}
+  description=${descriptions[$i]}
+  [[ -f "$file" ]] || { echo "file not found: $file" >&2; exit 2; }
+  [[ "$description" =~ [^[:space:]] ]] || { echo "file descriptions cannot be blank" >&2; exit 2; }
+  [[ "$file$description" != *$'\n'* && "$file$description" != *$'\r'* ]] || {
+    echo "file paths and descriptions must be one line" >&2
+    exit 2
+  }
+  case "${file##*.}" in
+    png|PNG|jpg|JPG|jpeg|JPEG|gif|GIF|webp|WEBP|svg|SVG|mp4|MP4|mov|MOV|webm|WEBM) ;;
+    *) echo "unsupported GitHub attachment: $file" >&2; exit 2 ;;
+  esac
+done
+
+body=$(gh pr view "$pr" --json body --jq .body) || {
+  echo "github: could not read PR $pr" >&2
+  exit 1
+}
+
+block=$(mktemp)
+new_body=$(mktemp)
+trap 'rm -f "$block" "$new_body"' EXIT
+{
+  echo '<!-- upload-ui-evidence:start -->'
+  for i in "${!files[@]}"; do
+    file=${files[$i]}
+    description=${descriptions[$i]}
+    escaped=${description//\\/\\\\}
+    escaped=${escaped//]/\\]}
+    case "${file##*.}" in
+      mp4|MP4|mov|MOV|webm|WEBM)
+        printf '%s\n\n![](%s)\n' "$description" "$file"
+        ;;
+      *) printf '![%s](%s)\n' "$escaped" "$file" ;;
+    esac
+  done
+  echo '<!-- upload-ui-evidence:end -->'
+} >"$block"
+
+if ! GH_BODY=$body python3 - "$block" "$new_body" <<'PY'
+import os
+import re
+import sys
+from pathlib import Path
+
+start_marker = "<!-- upload-ui-evidence:start -->"
+end_marker = "<!-- upload-ui-evidence:end -->"
+body = os.environ["GH_BODY"]
+block = Path(sys.argv[1]).read_text().rstrip()
+headings = list(re.finditer(r"(?m)^## UI Changes[ \t]*$", body))
+if len(headings) != 1:
+    raise SystemExit("PR body must contain exactly one ## UI Changes section")
+
+heading = headings[0]
+section_end_match = re.search(r"(?m)^## .+$", body[heading.end():])
+section_end = heading.end() + section_end_match.start() if section_end_match else len(body)
+section = body[heading.end():section_end]
+start_count = section.count(start_marker)
+end_count = section.count(end_marker)
+if body.count(start_marker) != start_count or body.count(end_marker) != end_count:
+    raise SystemExit("managed evidence markers must be inside ## UI Changes")
+if (start_count, end_count) not in {(0, 0), (1, 1)}:
+    raise SystemExit("managed evidence markers are malformed")
+if start_count:
+    marker_start = section.index(start_marker)
+    marker_end = section.index(end_marker, marker_start) + len(end_marker)
+    section = section[:marker_start] + section[marker_end:]
+
+section = section.strip()
+replacement = f"\n\n{section}\n\n{block}\n\n" if section else f"\n\n{block}\n\n"
+Path(sys.argv[2]).write_text(body[:heading.end()] + replacement + body[section_end:].lstrip("\n"))
+PY
+then
+  exit 2
+fi
+
+status=0
+gh_args=(pr edit "$pr" --body-file "$new_body")
+for i in "${!files[@]}"; do
+  file=${files[$i]}
+  case "${file##*.}" in
+    mp4|MP4|mov|MOV|webm|WEBM) gh_args+=(--attach "$file") ;;
+    *) gh_args+=(--attach "$file#${descriptions[$i]}") ;;
+  esac
+done
+if gh "${gh_args[@]}"; then
+  echo "github: uploaded ${#files[@]} file(s)" >&2
+else
+  echo "github: upload failed" >&2
+  status=1
+fi
+
+if [[ -n "$clickup" ]]; then
+  for i in "${!files[@]}"; do
+    file=${files[$i]}
+    description=${descriptions[$i]}
+    if cup attach "$clickup" "$file"; then
+      echo "clickup: uploaded $file" >&2
+      if cup comment "$clickup" -m "$description"; then
+        echo "clickup: commented on $file" >&2
+      else
+        echo "clickup: comment failed for $file" >&2
+        status=1
+      fi
+    else
+      echo "clickup: upload failed for $file" >&2
+      status=1
+    fi
+  done
+fi
+
+exit "$status"
