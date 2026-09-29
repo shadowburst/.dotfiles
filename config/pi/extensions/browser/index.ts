@@ -82,6 +82,17 @@ class BrowserRuntime {
     return this.page ?? this.newPage();
   }
 
+  async hasVisiblePasswordField(): Promise<boolean> {
+    if (!this.page) return false;
+    return this.page.locator('input[type="password"]:visible').first().isVisible();
+  }
+
+  async saveStorageState(path: string): Promise<boolean> {
+    if (!this.context) return false;
+    await this.context.storageState({ path });
+    return true;
+  }
+
   async navigate(raw: string): Promise<{ url: string; status?: number }> {
     const page = await this.selectedPage();
     const response = await page.goto(pageUrl(raw), { waitUntil: "domcontentloaded", timeout: 30_000 });
@@ -258,6 +269,11 @@ class BrowserRuntime {
 
 export default function browserTools(pi: ExtensionAPI) {
   const runtime = new BrowserRuntime();
+  const handoffLoginIfNeeded = async (ctx?: { hasUI: boolean; ui: { confirm(title: string, message: string): Promise<boolean> } }): Promise<void> => {
+    if (!ctx?.hasUI || !await runtime.hasVisiblePasswordField()) return;
+    await ctx.ui.confirm("Login required", "Log in using the visible browser, then choose Yes to continue.");
+    runtime.invalidateSnapshot();
+  };
 
   pi.registerTool({
     name: "browser_tools",
@@ -278,9 +294,10 @@ export default function browserTools(pi: ExtensionAPI) {
     label: "Browser Open",
     description: "Open the turn's visible Playwright Chromium page or navigate it",
     parameters: Type.Object({ url: Type.Optional(Type.String({ description: "HTTP(S), file URL, or local HTML path" })) }),
-    async execute(_id, { url }) {
+    async execute(_id, { url }, _signal, _update, ctx) {
       return runtime.run(async () => {
         const result = url ? await runtime.navigate(url) : { url: (await runtime.selectedPage()).url() };
+        await handoffLoginIfNeeded(ctx);
         return { content: [{ type: "text", text: formatToolOutput(result) }], details: result };
       });
     },
@@ -291,10 +308,11 @@ export default function browserTools(pi: ExtensionAPI) {
     label: "Browser Action",
     description: "Run args such as ['snapshot'], ['get','url'], ['click',selector], ['fill',selector,value], ['press',selector,key], ['eval',expression], ['wait',selector]. Also supports goto, type, set viewport/device, console, network, tab list. Selectors are Playwright selector strings (CSS, text=, role=), not getByRole(...) expressions; @eN snapshot refs are session-only.",
     parameters: Type.Object({ args: Type.Array(Type.String(), { minItems: 1 }) }),
-    async execute(_id, { args }) {
+    async execute(_id, { args }, _signal, _update, ctx) {
       return runtime.run(async () => {
         try {
           const result = await runtime.action(args);
+          if (args[0] === "goto" || args[0] === "click") await handoffLoginIfNeeded(ctx);
           return { content: [{ type: "text", text: formatToolOutput(result) }], details: { result } };
         } catch (error) {
           const url = await runtime.selectedPage().then(page => page.url()).catch(() => "");
@@ -339,7 +357,15 @@ export default function browserTools(pi: ExtensionAPI) {
         const path = await outputPath(name ?? `${fallback}-${randomUUID().slice(0, 8)}`);
         const temporaryRoot = await mkdtemp(join(tmpdir(), "pi-cutaway-"));
         const work = join(temporaryRoot, "recording");
-        const args = ["record", plan, "--out", work, ...(storageState ? ["--storage-state", storageState] : []), "--width", "1280", "--height", "720", "--quality", "standard"];
+        const temporaryStorageState = join(temporaryRoot, "storage-state.json");
+        let effectiveStorageState = storageState;
+        try {
+          if (!effectiveStorageState && await runtime.saveStorageState(temporaryStorageState)) effectiveStorageState = temporaryStorageState;
+        } catch (error) {
+          await rm(temporaryRoot, { recursive: true, force: true });
+          throw error;
+        }
+        const args = ["record", plan, "--out", work, ...(effectiveStorageState ? ["--storage-state", effectiveStorageState] : []), "--width", "1280", "--height", "720", "--quality", "standard"];
         let motion: { cursorPoints: number; zoomEpisodes: number };
         try {
           const result = await pi.exec("cutaway", args, { signal, timeout: 600_000 });
@@ -361,6 +387,8 @@ export default function browserTools(pi: ExtensionAPI) {
         } catch (error) {
           await rm(path, { force: true }).catch(() => undefined);
           throw new Error(`${error instanceof Error ? error.message : String(error)}; work directory: ${work}; output path: ${path}`);
+        } finally {
+          if (!storageState) await rm(temporaryStorageState, { force: true });
         }
         await rm(temporaryRoot, { recursive: true, force: true });
         return { content: [{ type: "text", text: `${path}\nCursor points: ${motion.cursorPoints}; zoom episodes: ${motion.zoomEpisodes}` }], details: { path, motion } };

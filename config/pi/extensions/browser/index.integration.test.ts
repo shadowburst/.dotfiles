@@ -35,6 +35,8 @@ const packageSources = {
       async pressSequentially(value) { mock().calls.push(["type", this.selector, value]); }
       async press(value) { mock().calls.push(["press", this.selector, value]); }
       async waitFor(options) { mock().calls.push(["waitFor", this.selector, options?.state]); }
+      first() { return this; }
+      async isVisible() { return this.selector === 'input[type="password"]:visible' && mock().passwordVisible; }
       async evaluateAll() { return mock().snapshot; }
     }
     class Page {
@@ -60,6 +62,7 @@ const packageSources = {
       }
       async newPage() { const page = new Page(this); this.pagesList.push(page); return page; }
       pages() { return this.pagesList; }
+      async storageState({ path }) { mock().calls.push(["storageState", path]); await writeFile(path, JSON.stringify({ cookies: [] })); }
       async close() {
         mock().calls.push(["context.close"]);
         if (mock().failCloseOnce) { mock().failCloseOnce = false; throw new Error("close failed"); }
@@ -94,7 +97,7 @@ const loaderSource = `
 `;
 register(`data:text/javascript,${encodeURIComponent(loaderSource)}`, import.meta.url);
 
-type Mock = { calls: string[][]; snapshot: Array<Record<string, string>>; failCloseOnce?: boolean };
+type Mock = { calls: string[][]; snapshot: Array<Record<string, string>>; failCloseOnce?: boolean; passwordVisible?: boolean };
 (globalThis as typeof globalThis & { __playwrightMock: Mock }).__playwrightMock = {
   calls: [],
   snapshot: [
@@ -131,7 +134,10 @@ async function withHome(run: (home: string) => Promise<void>) {
   }
 }
 
-test.beforeEach(() => { mock.calls.length = 0; });
+test.beforeEach(() => {
+  mock.calls.length = 0;
+  mock.passwordVisible = false;
+});
 
 test("registers the compact catalog and recommends native Cutaway plans", () => {
   const { tools, handlers, active } = extension(async () => ({ code: 0, stdout: "", stderr: "" }));
@@ -166,6 +172,21 @@ test("drives one headed Playwright page with snapshots, refs, locators, and scre
   assert(mock.calls.some(call => call[0] === "launch" && call[1].includes('"headless":false') && call[1].includes('"--class=pi-browser-tools"')));
   assert.deepEqual(mock.calls.filter(call => ["goto", "click", "fill", "type"].includes(call[0])), [
     ["goto", "https://example.com/"], ["click", "#save"], ["fill", "role=textbox[name=Title]", "Demo"], ["type", "input[name=title]", " plus"],
+  ]);
+});
+
+test("hands a visible login page to the user", async () => {
+  mock.passwordVisible = true;
+  const prompts: string[][] = [];
+  const { tools } = extension(async () => { throw new Error("external process must not run"); });
+  const context = { hasUI: true, ui: { confirm: async (...args: string[]) => { prompts.push(args); return true; } } };
+  await tools.get("browser_open")!.execute("1", { url: "https://example.com/login" }, undefined, undefined, context);
+  await tools.get("browser_action")!.execute("2", { args: ["goto", "https://example.com/sign-in"] }, undefined, undefined, context);
+  await tools.get("browser_action")!.execute("3", { args: ["click", "#login"] }, undefined, undefined, context);
+  assert.deepEqual(prompts, [
+    ["Login required", "Log in using the visible browser, then choose Yes to continue."],
+    ["Login required", "Log in using the visible browser, then choose Yes to continue."],
+    ["Login required", "Log in using the visible browser, then choose Yes to continue."],
   ]);
 });
 
@@ -206,6 +227,7 @@ test("runs a native Cutaway plan at standard 720p and leaves one WebM", async ()
     }
     throw new Error(`unexpected command: ${command}`);
   });
+  await tools.get("browser_open")!.execute("0", { url: "https://example.com" });
   const result = await tools.get("browser_record")!.execute("1", { plan, name: "checkout", storageState });
   const path = join(home, "Videos", "Recordings", "checkout.webm");
   assert.equal(result.details.path, path);
@@ -214,7 +236,34 @@ test("runs a native Cutaway plan at standard 720p and leaves one WebM", async ()
   assert.deepEqual(result.details.motion, { cursorPoints: 2, zoomEpisodes: 2 });
   assert.deepEqual(calls[0], ["cutaway", ["validate", plan]]);
   assert.deepEqual(calls[1], ["cutaway", ["record", plan, "--out", calls[1][1][3], "--storage-state", storageState, "--width", "1280", "--height", "720", "--quality", "standard"]]);
+  assert.equal(mock.calls.some(call => call[0] === "storageState"), false, "explicit storage state wins");
   await assert.rejects(stat(calls[1][1][3]), /ENOENT/, "successful Cutaway intermediates are deleted");
+}));
+
+test("reuses the visible browser session for Cutaway and deletes the temporary state", async () => withHome(async home => {
+  const plan = join(home, "journey.json");
+  await writeFile(plan, JSON.stringify({ url: "https://example.com", steps: [{ action: "click", selector: "#save" }] }));
+  let temporaryStorageState = "";
+  const { tools } = extension(async (command, args) => {
+    if (command === "cutaway" && args[0] === "validate") return { code: 0, stdout: "", stderr: "" };
+    if (command === "cutaway") {
+      temporaryStorageState = args[args.indexOf("--storage-state") + 1];
+      assert.equal(JSON.parse(await readFile(temporaryStorageState, "utf8")).cookies.length, 0);
+      const outputDirectory = args[args.indexOf("--out") + 1];
+      await mkdir(outputDirectory, { recursive: true });
+      const output = join(outputDirectory, "video.mp4");
+      await writeFile(output, "mp4");
+      await writeFile(join(outputDirectory, "render.json"), JSON.stringify({ motion: { zoomEpisodes: 1 } }));
+      await writeFile(join(outputDirectory, "timeline.json"), JSON.stringify({ status: "complete", steps: [{ action: "click" }], points: [{ t: 0 }, { t: 1 }] }));
+      return { code: 0, stdout: JSON.stringify({ output }), stderr: "" };
+    }
+    await writeFile(args.at(-1)!, "webm");
+    return { code: 0, stdout: "", stderr: "" };
+  });
+  await tools.get("browser_open")!.execute("1", { url: "https://example.com" });
+  await tools.get("browser_record")!.execute("2", { plan });
+  assert(mock.calls.some(call => call[0] === "storageState" && call[1] === temporaryStorageState));
+  await assert.rejects(stat(temporaryStorageState), /ENOENT/);
 }));
 
 test("does not claim a cinematic take when interactive steps have no cursor or zoom", async () => withHome(async home => {
@@ -279,20 +328,24 @@ test("preserves the Cutaway work directory when a journey fails", async () => wi
   const plan = join(home, "journey.json");
   await writeFile(plan, JSON.stringify({ url: "https://example.com", steps: [{ action: "click", selector: "#missing" }] }));
   let outputDirectory = "";
+  let temporaryStorageState = "";
   const { tools } = extension(async (command, args) => {
     assert.equal(command, "cutaway");
     if (args[0] === "validate") return { code: 0, stdout: "", stderr: "" };
     outputDirectory = args[args.indexOf("--out") + 1];
+    temporaryStorageState = args[args.indexOf("--storage-state") + 1];
     await mkdir(outputDirectory, { recursive: true });
     await writeFile(join(outputDirectory, "manifest.json"), "partial");
     return { code: 1, stdout: "", stderr: "Step 1: selector missing" };
   });
+  await tools.get("browser_open")!.execute("0", { url: "https://example.com" });
   await assert.rejects(tools.get("browser_record")!.execute("1", { plan }), (error: Error) => {
     assert.match(error.message, /selector missing/);
     assert.match(error.message, new RegExp(outputDirectory.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     return true;
   });
   assert.equal(await readFile(join(outputDirectory, "manifest.json"), "utf8"), "partial");
+  await assert.rejects(stat(temporaryStorageState), /ENOENT/, "temporary auth state is removed on failure");
 }));
 
 test("starts live recording in a fresh context and saves Playwright WebM", async () => withHome(async home => {
