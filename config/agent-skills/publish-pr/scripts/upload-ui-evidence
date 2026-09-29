@@ -3,25 +3,23 @@ set -uo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: upload-ui-evidence --pr <number|url> [--clickup <task-id>] --file <path#description>...
+Usage: upload-ui-evidence --pr <number|url> --file <path#description>...
 EOF
 }
 
 pr=
-clickup=
 files=()
 descriptions=()
 
 while (($#)); do
   case "$1" in
-    --pr|--clickup|--file)
+    --pr|--file)
       (($# >= 2)) || { echo "missing value for $1" >&2; usage >&2; exit 2; }
       option=$1
       value=$2
       shift 2
       case "$option" in
         --pr) pr=$value ;;
-        --clickup) clickup=$value ;;
         --file)
           path=${value%#*}
           description=${value##*#}
@@ -44,9 +42,7 @@ done
 ((${#files[@]} <= 50)) || { echo "GitHub accepts at most 50 attachments" >&2; exit 2; }
 command -v gh >/dev/null || { echo "gh is required" >&2; exit 2; }
 command -v python3 >/dev/null || { echo "python3 is required" >&2; exit 2; }
-if [[ -n "$clickup" ]]; then
-  command -v cup >/dev/null || { echo "cup is required with --clickup" >&2; exit 2; }
-fi
+command -v sha256sum >/dev/null || { echo "sha256sum is required" >&2; exit 2; }
 
 for i in "${!files[@]}"; do
   file=${files[$i]}
@@ -63,16 +59,47 @@ for i in "${!files[@]}"; do
   esac
 done
 
+manifest_input=
+for i in "${!files[@]}"; do
+  manifest_input+="$(sha256sum "${files[$i]}" | cut -d' ' -f1)"$'\t'"${descriptions[$i]}"$'\n'
+done
+manifest=$(printf '%s' "$manifest_input" | sha256sum | cut -d' ' -f1)
+manifest_marker="<!-- upload-ui-evidence:manifest:$manifest -->"
+
 body=$(gh pr view "$pr" --json body --jq .body) || {
   echo "github: could not read PR $pr" >&2
   exit 1
 }
+if GH_BODY=$body MANIFEST_MARKER=$manifest_marker python3 - <<'PY'
+import os
+import re
+
+body = os.environ["GH_BODY"]
+marker = os.environ["MANIFEST_MARKER"]
+start = "<!-- upload-ui-evidence:start -->"
+end = "<!-- upload-ui-evidence:end -->"
+if body.count(start) == body.count(end) == body.count(marker) == 1:
+    block = body[body.index(start):body.index(end)]
+    links = re.findall(r"]\(([^)]+)\)", block)
+    reusable = (
+        body.index(start) < body.index(marker) < body.index(end)
+        and links
+        and all(link.startswith("https://github.com/user-attachments/assets/") for link in links)
+    )
+    raise SystemExit(not reusable)
+raise SystemExit(1)
+PY
+then
+  echo "github: evidence unchanged; reused existing uploads" >&2
+  exit 0
+fi
 
 block=$(mktemp)
 new_body=$(mktemp)
 trap 'rm -f "$block" "$new_body"' EXIT
 {
   echo '<!-- upload-ui-evidence:start -->'
+  echo "$manifest_marker"
   for i in "${!files[@]}"; do
     file=${files[$i]}
     description=${descriptions[$i]}
@@ -96,8 +123,14 @@ from pathlib import Path
 
 start_marker = "<!-- upload-ui-evidence:start -->"
 end_marker = "<!-- upload-ui-evidence:end -->"
+ci_start = "<!-- local-ci-report:start -->"
+ci_end = "<!-- local-ci-report:end -->"
 body = os.environ["GH_BODY"]
 block = Path(sys.argv[1]).read_text().rstrip()
+ci_starts = [match.start() for match in re.finditer(re.escape(ci_start), body)]
+ci_ends = [match.start() for match in re.finditer(re.escape(ci_end), body)]
+if (len(ci_starts), len(ci_ends)) not in {(0, 0), (1, 1)} or (ci_starts and ci_starts[0] >= ci_ends[0]):
+    raise SystemExit("managed Local CI markers are malformed")
 headings = list(re.finditer(r"(?m)^## UI Changes[ \t]*$", body))
 if len(headings) != 1:
     raise SystemExit("PR body must contain exactly one ## UI Changes section")
@@ -139,25 +172,6 @@ if gh "${gh_args[@]}"; then
 else
   echo "github: upload failed" >&2
   status=1
-fi
-
-if [[ -n "$clickup" ]]; then
-  for i in "${!files[@]}"; do
-    file=${files[$i]}
-    description=${descriptions[$i]}
-    if cup attach "$clickup" "$file"; then
-      echo "clickup: uploaded $file" >&2
-      if cup comment "$clickup" -m "$description"; then
-        echo "clickup: commented on $file" >&2
-      else
-        echo "clickup: comment failed for $file" >&2
-        status=1
-      fi
-    else
-      echo "clickup: upload failed for $file" >&2
-      status=1
-    fi
-  done
 fi
 
 exit "$status"
