@@ -2,32 +2,20 @@
 set -euo pipefail
 
 usage() {
-    printf 'Usage: %s collect PR_URL\n       %s apply PR_URL HEAD_SHA PLAN.json\n' "$0" "$0" >&2
+    printf 'Usage: %s PR_URL HEAD_SHA PLAN.json\n' "$0" >&2
     exit 2
 }
 
 for tool in gh jq sha256sum; do
     command -v "$tool" >/dev/null || { printf 'Missing required command: %s\n' "$tool" >&2; exit 3; }
 done
-(($# >= 2)) || usage
-action=$1 url=$2
+(($# == 3)) || usage
+url=$1 pinned=$2 plan=$3
+[[ $pinned =~ ^[0-9a-f]{40}$ && -f $plan ]] || usage
 [[ $url =~ ^https://github\.com/([^/]+)/([^/]+)/pull/([0-9]+)([/?#].*)?$ ]] || usage
 owner=${BASH_REMATCH[1]} repo=${BASH_REMATCH[2]} number=${BASH_REMATCH[3]}
-collector=${COLLECT_REVIEWS:-"$(dirname "$0")/collect-reviews.sh"}
+collector="$(dirname "$0")/collect-reviews.sh"
 [[ -x $collector ]] || { echo 'Review collector is unavailable' >&2; exit 3; }
-
-case $action in
-    collect)
-        (($# == 2)) || usage
-        exec "$collector" "$url"
-        ;;
-    apply)
-        (($# == 4)) || usage
-        pinned=$3 plan=$4
-        [[ $pinned =~ ^[0-9a-f]{40}$ && -f $plan ]] || usage
-        ;;
-    *) usage ;;
-esac
 
 data=$("$collector" "$url") || exit $?
 [[ $(jq -r '.pr.head_sha' <<<"$data") == "$pinned" ]] || { echo 'PR head moved before reconciliation' >&2; exit 5; }

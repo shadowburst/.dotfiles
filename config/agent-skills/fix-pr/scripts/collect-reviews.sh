@@ -13,10 +13,6 @@ url="https://github.com/$owner/$repo/pull/$number"
 tmp=$(mktemp -d -t collect-reviews-XXXXXXXX)
 trap 'rm -rf -- "$tmp"' EXIT
 
-if ! gh api user --jq '.login' >/dev/null; then
-    echo 'GitHub login lookup failed' >&2
-    exit 1
-fi
 if ! gh api "repos/$owner/$repo/pulls/$number" >"$tmp/pr.json"; then
     echo 'GitHub PR lookup failed' >&2
     exit 1

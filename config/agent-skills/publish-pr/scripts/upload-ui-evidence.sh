@@ -3,13 +3,68 @@ set -uo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: upload-ui-evidence --pr <number|url> --file <path#description>...
+Usage: upload-ui-evidence.sh --pr <number|url> --file <path#description>...
 EOF
 }
 
 pr=
 files=()
 descriptions=()
+layout_marker='<!-- upload-ui-evidence:layout:gallery-v1 -->'
+
+markdown_text() {
+  local text=$1
+  text=${text//\\/\\\\}; text=${text//\*/\\*}; text=${text//_/\\_}
+  text=${text//\[/\\[}; text=${text//\]/\\]}; text=${text//|/\\|}
+  printf '%s' "$text"
+}
+
+render_block() {
+  echo '<!-- upload-ui-evidence:start -->'
+  echo "$manifest_marker"
+  echo "$layout_marker"
+  local i caption alt all_images=1
+  for file in "${files[@]}"; do
+    case "${file##*.}" in mp4|MP4|mov|MOV|webm|WEBM) all_images=0 ;; esac
+  done
+  if ((all_images && ${#files[@]} > 1)); then
+    for ((i=0; i<${#files[@]}; i+=2)); do
+      caption=$(markdown_text "${descriptions[i]}")
+      alt=${descriptions[i]//\\/\\\\}; alt=${alt//]/\\]}
+      if ((i + 1 < ${#files[@]})); then
+        local next_caption next_alt
+        next_caption=$(markdown_text "${descriptions[i+1]}")
+        next_alt=${descriptions[i+1]//\\/\\\\}; next_alt=${next_alt//]/\\]}
+        printf '| %s | %s |\n| --- | --- |\n' "$caption" "$next_caption"
+        printf '| ![%s](%s) | ![%s](%s) |\n\n' "$alt" "${files[i]}" "$next_alt" "${files[i+1]}"
+      else
+        printf '**%s**\n\n![%s](%s)\n\n' "$caption" "$alt" "${files[i]}"
+      fi
+    done
+  else
+    for i in "${!files[@]}"; do
+      caption=$(markdown_text "${descriptions[i]}")
+      printf '**%s**\n\n' "$caption"
+      case "${files[i]##*.}" in
+        mp4|MP4|mov|MOV|webm|WEBM) printf '![](%s)\n\n' "${files[i]}" ;;
+        *) alt=${descriptions[i]//\\/\\\\}; alt=${alt//]/\\]}; printf '![%s](%s)\n\n' "$alt" "${files[i]}" ;;
+      esac
+    done
+  fi
+  echo '<!-- upload-ui-evidence:end -->'
+}
+
+if [[ ${1:-} == --self-test && $# == 1 ]]; then
+  files=(one.png two.png three.png); descriptions=('First view' 'Second | view' 'Third view')
+  manifest_marker='<!-- upload-ui-evidence:manifest:test -->'
+  output=$(render_block)
+  [[ $output == *'| First view | Second \| view |'* && $output == *'**Third view**'* && $output == *"$layout_marker"* ]] || exit 1
+  files=(demo.mp4); descriptions=('Demo')
+  output=$(render_block)
+  [[ $output == *'**Demo**'* && $output == *'![](demo.mp4)'* && $output != *'| --- |'* ]] || exit 1
+  echo 'upload-ui-evidence self-test passed'
+  exit 0
+fi
 
 while (($#)); do
   case "$1" in
@@ -76,9 +131,10 @@ import re
 
 body = os.environ["GH_BODY"]
 marker = os.environ["MANIFEST_MARKER"]
+layout = "<!-- upload-ui-evidence:layout:gallery-v1 -->"
 start = "<!-- upload-ui-evidence:start -->"
 end = "<!-- upload-ui-evidence:end -->"
-if body.count(start) == body.count(end) == body.count(marker) == 1:
+if body.count(start) == body.count(end) == body.count(marker) == body.count(layout) == 1:
     block = body[body.index(start):body.index(end)]
     links = re.findall(r"]\(([^)]+)\)", block)
     reusable = (
@@ -97,23 +153,7 @@ fi
 block=$(mktemp)
 new_body=$(mktemp)
 trap 'rm -f "$block" "$new_body"' EXIT
-{
-  echo '<!-- upload-ui-evidence:start -->'
-  echo "$manifest_marker"
-  for i in "${!files[@]}"; do
-    file=${files[$i]}
-    description=${descriptions[$i]}
-    escaped=${description//\\/\\\\}
-    escaped=${escaped//]/\\]}
-    case "${file##*.}" in
-      mp4|MP4|mov|MOV|webm|WEBM)
-        printf '%s\n\n![](%s)\n' "$description" "$file"
-        ;;
-      *) printf '![%s](%s)\n' "$escaped" "$file" ;;
-    esac
-  done
-  echo '<!-- upload-ui-evidence:end -->'
-} >"$block"
+render_block >"$block"
 
 if ! GH_BODY=$body python3 - "$block" "$new_body" <<'PY'
 import os
@@ -123,14 +163,14 @@ from pathlib import Path
 
 start_marker = "<!-- upload-ui-evidence:start -->"
 end_marker = "<!-- upload-ui-evidence:end -->"
-ci_start = "<!-- local-ci-report:start -->"
-ci_end = "<!-- local-ci-report:end -->"
+validation_start = "<!-- local-ci-report:start -->"
+validation_end = "<!-- local-ci-report:end -->"
 body = os.environ["GH_BODY"]
 block = Path(sys.argv[1]).read_text().rstrip()
-ci_starts = [match.start() for match in re.finditer(re.escape(ci_start), body)]
-ci_ends = [match.start() for match in re.finditer(re.escape(ci_end), body)]
-if (len(ci_starts), len(ci_ends)) not in {(0, 0), (1, 1)} or (ci_starts and ci_starts[0] >= ci_ends[0]):
-    raise SystemExit("managed Local CI markers are malformed")
+validation_starts = [match.start() for match in re.finditer(re.escape(validation_start), body)]
+validation_ends = [match.start() for match in re.finditer(re.escape(validation_end), body)]
+if (len(validation_starts), len(validation_ends)) not in {(0, 0), (1, 1)} or (validation_starts and validation_starts[0] >= validation_ends[0]):
+    raise SystemExit("managed Validation markers are malformed")
 headings = list(re.finditer(r"(?m)^## UI Changes[ \t]*$", body))
 if len(headings) != 1:
     raise SystemExit("PR body must contain exactly one ## UI Changes section")
