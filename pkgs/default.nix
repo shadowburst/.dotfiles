@@ -1,6 +1,5 @@
 _:
 let
-  mkClickupCli = import ./clickup-cli.nix;
   mkCutaway = import ./cutaway.nix;
   mkPiWebAccess = import ./pi-web-access.nix;
   mkPiMcpAdapter = import ./pi-mcp-adapter.nix;
@@ -8,7 +7,6 @@ let
   mkPonytail = import ./ponytail.nix;
 
   mkPackages = { lib, pkgs }: {
-    clickup-cli = mkClickupCli { inherit lib pkgs; };
     cutaway = mkCutaway { inherit lib pkgs; };
     pi-web-access = mkPiWebAccess { inherit pkgs; };
     pi-mcp-adapter = mkPiMcpAdapter { inherit pkgs; };

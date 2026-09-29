@@ -19,7 +19,6 @@
           self.homeModules.cli
           self.homeModules.gui
           self.homeModules.laravel
-          self.homeModules.work
           self.homeModules.lenovo-p14s
         ];
       }
