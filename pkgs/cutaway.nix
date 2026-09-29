@@ -11,18 +11,10 @@
   };
 
   npmDepsHash = "sha256-ZXfninDfajBqwXMTxgw/k0GgYeVDs+W8WbmWfSTGE2U=";
-  patches = [ ./cutaway-screencast.patch ];
   dontNpmBuild = true;
   npmInstallFlags = [ "--ignore-scripts" ];
   npmRebuildFlags = [ "--ignore-scripts" ];
   nativeBuildInputs = [ pkgs.makeWrapper ];
-
-  postPatch = ''
-    substituteInPlace src/ffmpeg.mjs \
-      --replace-fail "export const ffmpeg = bundled() ?? 'ffmpeg';" "export const ffmpeg = '${pkgs.ffmpeg}/bin/ffmpeg';"
-    substituteInPlace src/capture/record.mjs \
-      --replace-fail 'args: [`--force-device-scale-factor=' 'args: ["--class=pi-browser-tools", `--force-device-scale-factor='
-  '';
 
   installPhase = ''
     runHook preInstall
@@ -30,7 +22,8 @@
     cp -r assets examples README.md package.json node_modules src $out/lib/cutaway/
     makeWrapper ${pkgs.nodejs_22}/bin/node $out/bin/cutaway \
       --add-flags "$out/lib/cutaway/src/cli.mjs" \
-      --set PLAYWRIGHT_BROWSERS_PATH ${pkgs.playwright-driver.browsers}
+      --set PLAYWRIGHT_BROWSERS_PATH ${pkgs.playwright-driver.browsers} \
+      --prefix PATH : ${pkgs.ffmpeg}/bin
     runHook postInstall
   '';
 

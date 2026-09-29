@@ -169,6 +169,19 @@ test("drives one headed Playwright page with snapshots, refs, locators, and scre
   ]);
 });
 
+test("rejects invalid Cutaway plans before opening a browser", async () => withHome(async home => {
+  const plan = join(home, "journey.json");
+  await writeFile(plan, JSON.stringify({ url: "https://example.com", steps: [{ action: "fill", selector: "#save" }] }));
+  const commands: string[] = [];
+  const { tools } = extension(async (command, args) => {
+    commands.push(`${command} ${args[0]}`);
+    return { code: 1, stdout: "", stderr: "Step 1: unsupported action." };
+  });
+  await assert.rejects(tools.get("browser_record")!.execute("1", { plan }), /Step 1: unsupported action/);
+  assert.deepEqual(commands, ["cutaway validate"]);
+  await assert.rejects(stat(join(home, "Videos", "Recordings")), /ENOENT/);
+}));
+
 test("runs a native Cutaway plan at standard 720p and leaves one WebM", async () => withHome(async home => {
   const plan = join(home, "journey.json");
   const storageState = join(home, "auth.json");
@@ -177,6 +190,7 @@ test("runs a native Cutaway plan at standard 720p and leaves one WebM", async ()
   const calls: Array<[string, string[]]> = [];
   const { tools } = extension(async (command, args) => {
     calls.push([command, args]);
+    if (command === "cutaway" && args[0] === "validate") return { code: 0, stdout: "", stderr: "" };
     if (command === "cutaway") {
       const outputDirectory = args[args.indexOf("--out") + 1];
       await mkdir(outputDirectory, { recursive: true });
@@ -198,14 +212,16 @@ test("runs a native Cutaway plan at standard 720p and leaves one WebM", async ()
   assert.equal(await readFile(path, "utf8"), "journey-webm");
   assert.match(result.content[0].text, /cursor points: 2.*zoom episodes: 2/i);
   assert.deepEqual(result.details.motion, { cursorPoints: 2, zoomEpisodes: 2 });
-  assert.deepEqual(calls[0], ["cutaway", ["record", plan, "--out", calls[0][1][3], "--headed", "--storage-state", storageState, "--width", "1280", "--height", "720", "--quality", "standard"]]);
-  await assert.rejects(stat(calls[0][1][3]), /ENOENT/, "successful Cutaway intermediates are deleted");
+  assert.deepEqual(calls[0], ["cutaway", ["validate", plan]]);
+  assert.deepEqual(calls[1], ["cutaway", ["record", plan, "--out", calls[1][1][3], "--storage-state", storageState, "--width", "1280", "--height", "720", "--quality", "standard"]]);
+  await assert.rejects(stat(calls[1][1][3]), /ENOENT/, "successful Cutaway intermediates are deleted");
 }));
 
 test("does not claim a cinematic take when interactive steps have no cursor or zoom", async () => withHome(async home => {
   const plan = join(home, "journey.json");
   await writeFile(plan, JSON.stringify({ url: "https://example.com", steps: [{ action: "click", selector: "#save" }] }));
   const { tools } = extension(async (command, args) => {
+    if (command === "cutaway" && args[0] === "validate") return { code: 0, stdout: "", stderr: "" };
     if (command === "cutaway") {
       const dir = args[args.indexOf("--out") + 1];
       await mkdir(dir, { recursive: true });
@@ -225,6 +241,7 @@ test("does not report an empty render as a finished video", async () => withHome
   const plan = join(home, "journey.json");
   await writeFile(plan, JSON.stringify({ url: "https://example.com", steps: [{ action: "click", selector: "#save" }] }));
   const { tools } = extension(async (command, args) => {
+    if (command === "cutaway" && args[0] === "validate") return { code: 0, stdout: "", stderr: "" };
     if (command === "cutaway") {
       const output = join(args[args.indexOf("--out") + 1], "video.mp4");
       await mkdir(args[args.indexOf("--out") + 1], { recursive: true });
@@ -244,6 +261,7 @@ test("removes an incomplete WebM when conversion fails so its name is retryable"
   const plan = join(home, "journey.json");
   await writeFile(plan, JSON.stringify({ url: "https://example.com", steps: [{ action: "click", selector: "#save" }] }));
   const { tools } = extension(async (command, args) => {
+    if (command === "cutaway" && args[0] === "validate") return { code: 0, stdout: "", stderr: "" };
     if (command === "cutaway") {
       const output = join(args[args.indexOf("--out") + 1], "video.mp4");
       await mkdir(args[args.indexOf("--out") + 1], { recursive: true });
@@ -263,6 +281,7 @@ test("preserves the Cutaway work directory when a journey fails", async () => wi
   let outputDirectory = "";
   const { tools } = extension(async (command, args) => {
     assert.equal(command, "cutaway");
+    if (args[0] === "validate") return { code: 0, stdout: "", stderr: "" };
     outputDirectory = args[args.indexOf("--out") + 1];
     await mkdir(outputDirectory, { recursive: true });
     await writeFile(join(outputDirectory, "manifest.json"), "partial");

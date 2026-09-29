@@ -320,7 +320,7 @@ export default function browserTools(pi: ExtensionAPI) {
   pi.registerTool({
     name: "browser_record",
     label: "Browser Record",
-    description: "Render a native Cutaway JSON journey with cinematic cursor and zoom to WebM. Plans need url and steps (click, type, press, wait, focus, scroll, upload); see the installed Cutaway README/examples. Validate with `cutaway validate <plan>` before recording. Isolated 1280x720 standard render.",
+    description: "Render a native Cutaway JSON journey with cinematic cursor and zoom to WebM. Plans need url and steps (click, type, press, wait, focus, scroll, upload); see the installed Cutaway README/examples. Validate with `cutaway validate <plan>` before recording. Isolated headless 1280x720 standard render.",
     parameters: Type.Object({
       plan: Type.String({ description: "Absolute path to JSON: {\"url\":\"https://...\",\"steps\":[{\"action\":\"click\",\"selector\":\"#submit\",\"expect\":\"#success\"}]}. Cutaway uses type/text, not fill; selectors must be stable and unique." }),
       name: Type.Optional(Type.String({ description: "Plain output filename with optional .webm suffix" })),
@@ -333,11 +333,13 @@ export default function browserTools(pi: ExtensionAPI) {
         if (storageState && !isAbsolute(storageState)) throw new Error("storageState must be an absolute path");
         await access(plan);
         if (storageState) await access(storageState);
+        const validation = await pi.exec("cutaway", ["validate", plan], { signal, timeout: 30_000 });
+        if (validation.code !== 0) throw new Error(validation.stderr.trim() || validation.stdout.trim() || "Invalid Cutaway plan");
         const fallback = basename(plan, extname(plan)).replace(/[^A-Za-z0-9._-]/g, "-") || "journey";
         const path = await outputPath(name ?? `${fallback}-${randomUUID().slice(0, 8)}`);
         const temporaryRoot = await mkdtemp(join(tmpdir(), "pi-cutaway-"));
         const work = join(temporaryRoot, "recording");
-        const args = ["record", plan, "--out", work, "--headed", ...(storageState ? ["--storage-state", storageState] : []), "--width", "1280", "--height", "720", "--quality", "standard"];
+        const args = ["record", plan, "--out", work, ...(storageState ? ["--storage-state", storageState] : []), "--width", "1280", "--height", "720", "--quality", "standard"];
         let motion: { cursorPoints: number; zoomEpisodes: number };
         try {
           const result = await pi.exec("cutaway", args, { signal, timeout: 600_000 });
