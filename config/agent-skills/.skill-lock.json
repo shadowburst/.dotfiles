@@ -186,25 +186,25 @@
       "skillPath": "skills/open-pr/SKILL.md",
       "skillFolderHash": "2b1bfa9cfe4af8a501a83d0978daca79fd2a80e2",
       "installedAt": "2026-09-23T12:49:33.292Z",
-      "updatedAt": "2026-09-29T08:40:09.232Z"
+      "updatedAt": "2026-09-29T11:35:37.826Z"
     },
     "review-pr": {
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
       "skillPath": "skills/review-pr/SKILL.md",
-      "skillFolderHash": "edaa53a328f732d28c19701b110fd1f450a03874",
+      "skillFolderHash": "026cd6339d6d4b0a0ff97e16678a8c83a64e1215",
       "installedAt": "2026-09-23T12:49:33.294Z",
-      "updatedAt": "2026-09-29T07:23:51.266Z"
+      "updatedAt": "2026-09-29T11:35:37.834Z"
     },
     "review-prs": {
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
       "skillPath": "skills/review-prs/SKILL.md",
-      "skillFolderHash": "43a704584e1e68e0c167ee478c7823c59da00eeb",
+      "skillFolderHash": "c381fc4245ef27cfa7a575a0560bfebea5208868",
       "installedAt": "2026-09-23T12:49:33.303Z",
-      "updatedAt": "2026-09-29T07:23:52.954Z"
+      "updatedAt": "2026-09-29T11:35:37.835Z"
     },
     "retro": {
       "source": "mattpocock/skills",
@@ -220,9 +220,18 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
       "skillPath": "skills/fix-pr/SKILL.md",
-      "skillFolderHash": "7f55350795b3e12f78a1378f74ce22377c30a2e4",
+      "skillFolderHash": "3190235094dd8863c2706e608fb2794c0e175373",
       "installedAt": "2026-09-29T09:44:15.861Z",
-      "updatedAt": "2026-09-29T09:54:06.514Z"
+      "updatedAt": "2026-09-29T11:35:37.825Z"
+    },
+    "sync-pr": {
+      "source": "Lynx-Business/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/Lynx-Business/skills.git",
+      "skillPath": "skills/sync-pr/SKILL.md",
+      "skillFolderHash": "10c3b830995080f715bc0c4c8e94869060ceca3a",
+      "installedAt": "2026-09-29T11:35:37.835Z",
+      "updatedAt": "2026-09-29T11:35:37.835Z"
     }
   },
   "dismissed": {
