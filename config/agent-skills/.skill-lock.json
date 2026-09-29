@@ -156,15 +156,6 @@
       "installedAt": "2026-08-06T21:22:13.528Z",
       "updatedAt": "2026-08-26T19:48:52.317Z"
     },
-    "pr": {
-      "source": "mattpocock/skills",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/mattpocock/skills.git",
-      "skillPath": "skills/engineering/pr/SKILL.md",
-      "skillFolderHash": "00b896d811adffad747c7ca30078d909d60c7f93",
-      "installedAt": "2026-09-21T09:48:44.384Z",
-      "updatedAt": "2026-09-29T13:08:38.047Z"
-    },
     "review-pr": {
       "source": "Lynx-Business/skills",
       "sourceType": "github",
