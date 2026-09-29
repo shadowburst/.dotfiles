@@ -9,6 +9,7 @@ _: {
 
       home.packages = with pkgs; [
         act
+        bitwarden-cli
         curl
         cutaway
         devbox
