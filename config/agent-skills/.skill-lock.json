@@ -161,9 +161,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
       "skillPath": "skills/review-pr/SKILL.md",
-      "skillFolderHash": "5f73f51355aa32b944fb9e618c3b6bac2cd9fc14",
+      "skillFolderHash": "c061d95522dab0af4c685f7a3500ad15abfd7929",
       "installedAt": "2026-09-23T12:49:33.294Z",
-      "updatedAt": "2026-09-29T22:30:07.127Z"
+      "updatedAt": "2026-09-30T09:29:40.204Z"
     },
     "review-prs": {
       "source": "Lynx-Business/skills",
@@ -197,9 +197,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
       "skillPath": "skills/publish-pr/SKILL.md",
-      "skillFolderHash": "91fdf9f78833e3d1363280b5bfd60aadd5041ef9",
+      "skillFolderHash": "4adfccebd606973dc4f691000b22713be7b9ff54",
       "installedAt": "2026-09-29T13:09:13.926Z",
-      "updatedAt": "2026-09-30T09:12:31.523Z"
+      "updatedAt": "2026-09-30T09:29:42.201Z"
     }
   },
   "dismissed": {
