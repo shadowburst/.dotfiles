@@ -25,6 +25,7 @@ import {
   matchesKey,
   Text,
   truncateToWidth,
+  visibleWidth,
   wrapTextWithAnsi,
   type Component,
   type Focusable,
@@ -53,14 +54,16 @@ const NOTICE_TYPE = "subagent-completed";
 const AGENT_TOOL = "Agent";
 const RESULT_TOOL = "get_subagent_result";
 const STEER_TOOL = "steer_subagent";
-const SUBAGENT_TOOLS = new Set([AGENT_TOOL, RESULT_TOOL, STEER_TOOL]);
+const CANCEL_TOOL = "cancel_subagent";
+const SUBAGENT_TOOLS = new Set([AGENT_TOOL, RESULT_TOOL, STEER_TOOL, CANCEL_TOOL]);
 const SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 const NOTICE_DELAY_MS = 200;
 const CHILD_SHUTDOWN_TIMEOUT_MS = 3_000;
+const CANCEL_TIMEOUT_MS = 5_000;
 
 const childSessionContext = new AsyncLocalStorage<boolean>();
 
-type AgentStatus = "queued" | "running" | "completed" | "failed" | "cancelled";
+type AgentStatus = "queued" | "running" | "stopping" | "completed" | "failed" | "cancelled" | "unresponsive";
 type Deferred = { promise: Promise<void>; resolve: () => void };
 
 type AgentRecord = {
@@ -82,6 +85,8 @@ type AgentRecord = {
   responseText: string;
   activeTools: Map<string, string>;
   error?: string;
+  uiError?: string;
+  usage?: { tokens: number | null; contextWindow: number; percent: number | null };
   session?: AgentSession;
   history: AgentSession["messages"];
   unsubscribe?: () => void;
@@ -95,6 +100,7 @@ type AgentRecord = {
   done: Deferred;
   started: Deferred;
   settled: boolean;
+  settling: boolean;
   listOrder: number;
   runNumber: number;
   consumed: boolean;
@@ -164,6 +170,18 @@ function abortable<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
   });
 }
 
+async function withinDeadline(promise: Promise<unknown>, milliseconds: number): Promise<boolean> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise.then(() => true),
+      new Promise<false>((resolve) => { timer = setTimeout(() => resolve(false), milliseconds); }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function bounded(text: string): string {
   return truncateResponse(text, DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES);
 }
@@ -189,9 +207,56 @@ function replayHistory(sessionManager: SessionManager, messages: AgentSession["m
 }
 
 function panel(theme: Theme, width: number, content: string[]): string[] {
-  const renderWidth = Math.max(1, width);
-  const border = theme.fg("accent", "─".repeat(renderWidth));
-  return [border, ...content, border].map((line) => truncateToWidth(line, renderWidth, ""));
+  const inner = Math.max(0, width - 2);
+  const border = (text: string) => theme.fg("border", text);
+  return [
+    border(`╭${"─".repeat(inner)}╮`),
+    ...content.map((line) => {
+      const text = truncateToWidth(line, inner, "");
+      return border("│") + text + " ".repeat(Math.max(0, inner - visibleWidth(text))) + border("│");
+    }),
+    border(`╰${"─".repeat(inner)}╯`),
+  ].map((line) => truncateToWidth(line, Math.max(1, width), ""));
+}
+
+function columns(left: string, right: string, width: number): string {
+  const rightWidth = Math.min(visibleWidth(right), Math.max(0, Math.floor(width * 0.65)));
+  const lhs = truncateToWidth(left, Math.max(0, width - rightWidth - 2), "");
+  const rhs = truncateToWidth(right, rightWidth, "");
+  return truncateToWidth(lhs + " ".repeat(Math.max(1, width - visibleWidth(lhs) - visibleWidth(rhs))) + rhs, width, "");
+}
+
+function statusIcon(record: AgentRecord, theme: Theme, frame = 0): string {
+  if (record.status === "running") return theme.fg("accent", SPINNER[frame % SPINNER.length]!);
+  if (record.status === "queued") return theme.fg("muted", "◦");
+  if (record.status === "completed") return theme.fg("success", "✓");
+  if (record.status === "cancelled") return theme.fg("dim", "■");
+  if (record.status === "stopping") return theme.fg("warning", "■");
+  return theme.fg("error", "✗");
+}
+
+function statusLabel(record: AgentRecord, theme: Theme): string {
+  const color = record.status === "completed" ? "success"
+    : ["failed", "unresponsive"].includes(record.status) ? "error"
+    : ["running", "stopping"].includes(record.status) ? "warning" : "muted";
+  return theme.fg(color, `■ ${record.status}`);
+}
+
+function agentMetadata(record: AgentRecord, width: number, fullContext = false): string {
+  const usage = record.usage;
+  const context = usage ? `ctx ${usage.percent === null ? "?" : `${usage.percent.toFixed(1)}%`}${fullContext ? ` (${usage.tokens ?? "?"}/${usage.contextWindow})` : ""}` : "ctx ?";
+  const suffix = `${record.effort} · ${context} · ${elapsed(record)}`;
+  const label = record.model.slice(record.model.indexOf("/") + 1);
+  const model = truncateToWidth(label, Math.max(0, width - visibleWidth(suffix) - 3), "");
+  return model ? `${model} · ${suffix}` : suffix;
+}
+
+function agentLocation(record: AgentRecord): string {
+  return [record.status === "queued" ? "waiting for a slot" : "", record.worktreePath ?? record.worktree?.workPath, record.worktreeBranch ?? record.worktree?.branch, record.isolation === "worktree" ? "worktree" : ""].filter(Boolean).join(" · ");
+}
+
+function canStop(record: AgentRecord): boolean {
+  return ["queued", "running"].includes(record.status);
 }
 
 function activity(record: AgentRecord): string {
@@ -199,6 +264,7 @@ function activity(record: AgentRecord): string {
     const names = [...new Set(record.activeTools.values())];
     return names.length === 1 ? `${names[0]}…` : `${names.join(", ")}…`;
   }
+  if (record.status !== "running") return `${record.status}…`;
   const line = record.responseText.split("\n").find((value) => value.trim())?.trim();
   return line ? `${line.slice(0, 80)}${line.length > 80 ? "…" : ""}` : "thinking…";
 }
@@ -221,25 +287,22 @@ class AgentWidget implements Component {
 
   render(width: number): string[] {
     const records = this.records();
-    const running = records.filter((record) => record.status === "running");
+    const running = records.filter((record) => ["running", "stopping"].includes(record.status));
     const queued = records.filter((record) => record.status === "queued");
-    const finished = records.filter((record) => !["queued", "running"].includes(record.status) && record.lingerTurns > 0);
+    const finished = records.filter((record) => !["queued", "running", "stopping"].includes(record.status) && record.lingerTurns > 0);
     if (!running.length && !queued.length && !finished.length) return [];
 
     const runningLines = running.map((record) => [
-      `${this.theme.fg("dim", "├─")} ${this.theme.fg("accent", SPINNER[this.frame % SPINNER.length]!)} ${this.theme.bold(record.description)} ${this.theme.fg("muted", `· ${record.model} · ${record.effort}`)} ${this.theme.fg("dim", `· ${elapsed(record)}`)}`,
-      `${this.theme.fg("dim", "│")}    ${this.theme.fg("dim", `⎿  ${activity(record)}`)}`,
+      `${this.theme.fg("dim", "├─")} ${statusIcon(record, this.theme, this.frame)} ${this.theme.bold(record.description)} ${this.theme.fg("muted", `· ${record.model} · ${record.effort}`)} ${this.theme.fg("dim", `· ${elapsed(record)}`)}`,
+      `${this.theme.fg("dim", "│")}    ${this.theme.fg(record.uiError || record.error ? "error" : "dim", `⎿  ${record.uiError ?? record.error ?? activity(record)}`)}`,
     ]);
     const queuedLine = queued.length
       ? `${this.theme.fg("dim", "├─")} ${this.theme.fg("muted", "◦")} ${this.theme.fg("dim", `${queued.length} queued`)}`
       : undefined;
     const finishedLines = finished.map((record) => {
-      const icon = record.status === "completed"
-        ? this.theme.fg("success", "✓")
-        : record.status === "cancelled"
-          ? this.theme.fg("dim", "■")
-          : this.theme.fg("error", "✗");
-      const suffix = record.error ? ` · ${record.error.slice(0, 60)}` : "";
+      const icon = statusIcon(record, this.theme);
+      const error = record.uiError ?? record.error;
+      const suffix = `${record.status === "unresponsive" ? " · unresponsive" : ""}${error ? ` · ${error.slice(0, 60)}` : ""}`;
       return `${this.theme.fg("dim", "├─")} ${icon} ${this.theme.fg("dim", record.description)} ${this.theme.fg("dim", `· ${elapsed(record)}${suffix}`)}`;
     });
 
@@ -286,6 +349,9 @@ class AgentList implements Component {
   private selectedId?: string;
   private frame = 0;
   private pageSize = 1;
+  private stopArmedId?: string;
+  private stoppingId?: string;
+  private feedback = "";
   private timer: ReturnType<typeof setInterval>;
 
   constructor(
@@ -294,7 +360,10 @@ class AgentList implements Component {
     private readonly keybindings: KeybindingsManager,
     private readonly records: () => AgentRecord[],
     private readonly done: (id?: string) => void,
+    private readonly cancel: (record: AgentRecord) => Promise<void> | void,
+    private readonly selection: { id?: string } = {},
   ) {
+    this.selectedId = selection.id;
     this.timer = setInterval(() => {
       if (this.records().some((record) => record.status === "running")) {
         this.frame++;
@@ -307,13 +376,36 @@ class AgentList implements Component {
   handleInput(data: string): void {
     const records = this.orderedRecords();
     const selected = this.selectedIndex(records);
+    if (keyMatches(this.keybindings, data, "tui.select.cancel") && this.stopArmedId) {
+      this.stopArmedId = undefined;
+      this.tui.requestRender();
+      return;
+    }
     if (keyMatches(this.keybindings, data, "tui.select.cancel") || matchesKey(data, "q") || matchesKey(data, Key.ctrl("c"))) return this.done();
     if (!records.length) return;
+    const record = records[selected]!;
+    if (matchesKey(data, "x")) {
+      if (canStop(record) && !this.stoppingId) {
+        if (this.stopArmedId === record.id) {
+          this.stopArmedId = undefined;
+          this.stoppingId = record.id;
+          this.feedback = `Stop requested: ${record.description}`;
+          void Promise.resolve().then(() => this.cancel(record)).catch((failure) => {
+            record.uiError = `Stop failed: ${String(failure)}`;
+            this.feedback = record.uiError;
+          }).finally(() => { this.stoppingId = undefined; this.tui.requestRender(); });
+        } else this.stopArmedId = record.id;
+        this.tui.requestRender();
+      }
+      return;
+    }
+    this.stopArmedId = undefined;
     if (keyMatches(this.keybindings, data, "tui.select.up") || matchesKey(data, "k")) this.selectedId = records[(selected - 1 + records.length) % records.length]!.id;
     else if (keyMatches(this.keybindings, data, "tui.select.down") || matchesKey(data, "j")) this.selectedId = records[(selected + 1) % records.length]!.id;
     else if (keyMatches(this.keybindings, data, "tui.select.pageUp")) this.selectedId = records[Math.max(0, selected - this.pageSize)]!.id;
     else if (keyMatches(this.keybindings, data, "tui.select.pageDown")) this.selectedId = records[Math.min(records.length - 1, selected + this.pageSize)]!.id;
     else if (keyMatches(this.keybindings, data, "tui.select.confirm")) return this.done(records[selected]!.id);
+    this.selection.id = this.selectedId;
     this.tui.requestRender();
   }
 
@@ -324,22 +416,12 @@ class AgentList implements Component {
     const lines: Array<{ text: string; recordId?: string }> = [];
     const addRecord = (record: AgentRecord) => {
       const selected = record.id === this.selectedId;
-      const icon = record.status === "running"
-        ? this.theme.fg("accent", SPINNER[this.frame % SPINNER.length]!)
-        : record.status === "queued"
-          ? this.theme.fg("muted", "◦")
-          : record.status === "completed"
-            ? this.theme.fg("success", "✓")
-            : record.status === "cancelled"
-              ? this.theme.fg("dim", "■")
-              : this.theme.fg("error", "✗");
-      const marker = selected ? this.theme.fg("accent", "→") : " ";
-      const title = record.completedAt === undefined
-        ? this.theme.bold(record.description)
-        : this.theme.fg("dim", record.description);
-      const metadata = this.theme.fg("dim", `    ${record.status} · ${record.effort} · ${record.model} · ${elapsed(record)}`);
-      lines.push({ text: `${marker} ${icon} ${title}`, recordId: record.id });
-      lines.push({ text: metadata, recordId: record.id });
+      const marker = selected ? this.theme.fg("accent", "❯") : " ";
+      const title = this.theme.fg(selected ? "accent" : "text", record.description);
+      const left = ` ${marker} ${statusIcon(record, this.theme, this.frame)} ${title} ${this.theme.fg("dim", record.id)}`;
+      lines.push({ text: columns(left, this.theme.fg("muted", agentMetadata(record, Math.floor((width - 2) * 0.65))), Math.max(1, width - 2)), recordId: record.id });
+      const metadata = [agentLocation(record), record.uiError ?? record.error].filter(Boolean).join(" · ");
+      if (metadata) lines.push({ text: this.theme.fg(record.uiError || record.error ? "error" : "dim", `    ${metadata}`), recordId: record.id });
     };
 
     if (active.length) {
@@ -353,7 +435,7 @@ class AgentList implements Component {
     }
     if (!records.length) lines.push({ text: this.theme.fg("muted", "No agents in this session.") });
 
-    const height = Math.max(1, this.tui.terminal.rows - 6);
+    const height = Math.max(1, (this.tui.terminal.rows || 30) - 6);
     const selectedLine = lines.findIndex((line) => line.recordId === this.selectedId);
     const maxStart = Math.max(0, lines.length - height);
     let start = selectedLine < 0 ? 0 : height === 1
@@ -362,14 +444,16 @@ class AgentList implements Component {
     if (selectedLine >= 0 && height > 1 && selectedLine + 2 > start + height) start = Math.min(maxStart, selectedLine + 2 - height);
     const visible = lines.slice(start, start + height);
     this.pageSize = Math.max(1, new Set(visible.flatMap((line) => line.recordId ? [line.recordId] : [])).size - 1);
-    const content = [
-      this.theme.fg("accent", this.theme.bold("Agents")),
-      "",
-      ...visible.map(({ text }) => truncateToWidth(text, width, "")),
-      "",
-      this.theme.fg("dim", "navigate · Enter open · Esc/q back"),
+    const selected = records.find((record) => record.id === this.selectedId);
+    if (this.stopArmedId && (this.stopArmedId !== selected?.id || !selected || !canStop(selected))) this.stopArmedId = undefined;
+    const hints = this.stopArmedId ? "x again to STOP · Esc reset"
+      : "↑↓/jk select · Enter open · x stop · Esc/q close";
+    return [
+      columns(this.theme.fg("accent", this.theme.bold("Subagents")), this.theme.fg("muted", `${records.length} agents · ${active.length} active`), width),
+      ...panel(this.theme, width, [...visible.map(({ text }) => text), ...Array(Math.max(0, height - visible.length)).fill("")]),
+      truncateToWidth(this.theme.fg("warning", this.feedback), width, ""),
+      truncateToWidth(this.theme.fg("dim", hints), width, ""),
     ];
-    return panel(this.theme, width, content);
   }
 
   invalidate(): void {}
@@ -386,14 +470,19 @@ class AgentList implements Component {
       this.selectedId = records[0]!.id;
       index = 0;
     }
+    this.selection.id = this.selectedId;
     return index;
   }
 }
 
 class AgentDetail implements Component, Focusable {
-  private composer?: Input;
+  private readonly composer = new Input();
+  private composing = false;
   private _focused = false;
   private stopArmed = false;
+  private stopping = false;
+  private feedback = "";
+  private readonly timer: ReturnType<typeof setInterval>;
   private scrollOffset = 0;
   private autoScroll = true;
   private width = 80;
@@ -404,45 +493,84 @@ class AgentDetail implements Component, Focusable {
     private readonly keybindings: KeybindingsManager,
     private readonly record: AgentRecord,
     private readonly done: () => void,
-    private readonly steer: (message: string) => void,
-    private readonly cancel: () => void,
-  ) {}
+    private readonly steer: (message: string) => Promise<void> | void,
+    private readonly cancel: () => Promise<void> | void,
+  ) {
+    this.timer = setInterval(() => tui.requestRender(), 1000);
+    this.timer.unref();
+    this.composer.onSubmit = (value) => {
+      const message = value.trim();
+      if (!message) return;
+      if (record.status !== "running") {
+        this.feedback = "Only running agents can be steered.";
+        tui.requestRender();
+        return;
+      }
+      this.composer.setValue("");
+      this.feedback = "Sending instruction…";
+      void Promise.resolve().then(() => this.steer(message)).then(() => {
+        this.feedback = "Instruction sent.";
+        this.autoScroll = true;
+      }).catch((failure) => {
+        record.uiError = `Steer failed: ${String(failure)}`;
+        this.feedback = record.uiError;
+        if (!this.composer.getValue()) this.composer.setValue(value);
+      }).finally(() => tui.requestRender());
+    };
+  }
 
   get focused(): boolean { return this._focused; }
   set focused(value: boolean) {
     this._focused = value;
-    if (this.composer) this.composer.focused = value;
+    this.composer.focused = value && this.composing;
   }
 
   handleInput(data: string): void {
-    if (this.composer) {
-      this.composer.handleInput(data);
+    if (matchesKey(data, Key.escape) || keyMatches(this.keybindings, data, "tui.select.cancel")) {
+      if (this.stopArmed) this.stopArmed = false;
+      else if (this.composing) { this.composing = false; this.composer.focused = false; }
+      else return this.done();
       this.tui.requestRender();
       return;
     }
-    if (matchesKey(data, Key.escape) || matchesKey(data, Key.ctrl("c")) || matchesKey(data, "q")) return this.done();
-    if (matchesKey(data, Key.enter) && this.record.status === "running") {
-      this.stopArmed = false;
-      this.openComposer();
-      return;
-    }
-    if (matchesKey(data, "x")) {
-      if (this.record.status === "queued" || this.record.status === "running") {
-        if (this.stopArmed) { this.stopArmed = false; this.cancel(); }
-        else this.stopArmed = true;
+    if (matchesKey(data, Key.ctrl("c")) || (!this.composing && matchesKey(data, "q"))) return this.done();
+    if (matchesKey(data, Key.ctrl("x")) || (!this.composing && matchesKey(data, "x"))) {
+      if (canStop(this.record) && !this.stopping) {
+        if (this.stopArmed) {
+          this.stopArmed = false;
+          this.stopping = true;
+          this.feedback = "Stop requested…";
+          void Promise.resolve().then(() => this.cancel()).catch((failure) => {
+            this.record.uiError = `Stop failed: ${String(failure)}`;
+            this.feedback = this.record.uiError;
+          }).finally(() => { this.stopping = false; this.tui.requestRender(); });
+        } else this.stopArmed = true;
         this.tui.requestRender();
       }
       return;
     }
     this.stopArmed = false;
+    if (!this.composing && matchesKey(data, Key.enter) && this.record.status === "running") {
+      this.composing = true;
+      this.composer.focused = this.focused;
+      this.tui.requestRender();
+      return;
+    }
+    // Paging stays available while composing; ordinary letters (including x)
+    // and cursor keys belong to Input, not transcript navigation.
+    const pageUp = keyMatches(this.keybindings, data, "tui.select.pageUp") || matchesKey(data, "shift+up");
+    const pageDown = keyMatches(this.keybindings, data, "tui.select.pageDown") || matchesKey(data, "shift+down");
+    if (this.composing && !pageUp && !pageDown) {
+      this.composer.handleInput(data);
+      this.tui.requestRender();
+      return;
+    }
 
     const total = this.history(this.width).length;
     const viewport = this.viewportHeight();
     const max = Math.max(0, total - viewport);
     const up = keyMatches(this.keybindings, data, "tui.select.up") || matchesKey(data, "k");
     const down = keyMatches(this.keybindings, data, "tui.select.down") || matchesKey(data, "j");
-    const pageUp = keyMatches(this.keybindings, data, "tui.select.pageUp") || matchesKey(data, "shift+up");
-    const pageDown = keyMatches(this.keybindings, data, "tui.select.pageDown") || matchesKey(data, "shift+down");
     if (up) { this.scrollOffset = Math.max(0, this.scrollOffset - 1); this.autoScroll = false; }
     else if (down) { this.scrollOffset = Math.min(max, this.scrollOffset + 1); this.autoScroll = this.scrollOffset === max; }
     else if (pageUp) { this.scrollOffset = Math.max(0, this.scrollOffset - viewport); this.autoScroll = false; }
@@ -458,71 +586,64 @@ class AgentDetail implements Component, Focusable {
     if (this.autoScroll) this.scrollOffset = max;
     this.scrollOffset = Math.min(this.scrollOffset, max);
     const visible = history.slice(this.scrollOffset, this.scrollOffset + viewport);
-    const header = `${this.theme.bold(this.record.description)} ${this.theme.fg("muted", `(${this.record.id} · ${this.record.status} · ${this.record.model} · ${this.record.effort})`)}`;
-    const actions = this.record.status === "running"
-      ? `${this.stopArmed ? "x again to STOP" : "Enter steer · x stop"} · `
-      : this.record.status === "queued"
-        ? `${this.stopArmed ? "x again to STOP" : "x stop"} · `
-        : "";
-    const composer = this.composer ? this.composer.render(width) : [];
-    return panel(this.theme, width, [
-      header,
-      this.theme.fg("borderMuted", "─".repeat(width)),
-      ...visible,
-      ...Array.from({ length: Math.max(0, viewport - visible.length) }, () => ""),
-      this.theme.fg("borderMuted", "─".repeat(width)),
-      ...composer,
-      this.theme.fg("dim", `${actions}↑↓/jk scroll · PgUp/PgDn or Shift+↑↓ · Esc/ctrl+c/q close`),
-    ]);
+    const theme = this.theme;
+    const border = theme.fg("borderAccent", "─".repeat(this.width));
+    if (!canStop(this.record)) this.stopArmed = false;
+    const header = columns(`${statusLabel(this.record, theme)} ${theme.fg("accent", theme.bold(this.record.description))} ${theme.fg("dim", this.record.id)}`, theme.fg("muted", agentMetadata(this.record, Math.floor(this.width * 0.65), true)), this.width);
+    const error = this.record.uiError ?? this.record.error;
+    const status = this.stopArmed ? theme.fg("warning", `${this.composing ? "Ctrl+X" : "x"} again to STOP · Esc reset`)
+      : error ? theme.fg("error", `error: ${error}`)
+      : theme.fg("muted", [this.feedback, agentLocation(this.record), !this.autoScroll ? "scrolled · ↓/PgDn to follow" : ""].filter(Boolean).join(" · "));
+    const hints = this.composing
+      ? "Enter send · Ctrl+X twice stop · Esc transcript · PgUp/PgDn scroll · Ctrl+C close"
+      : `${this.record.status === "running" ? "Enter steer · " : ""}${canStop(this.record) ? "x twice stop · " : ""}↑↓/jk scroll · PgUp/PgDn · Esc/q close`;
+    return [border, header, border, ...visible,
+      ...Array(Math.max(0, viewport - visible.length)).fill(""),
+      status, border, ...this.composer.render(this.width), theme.fg("dim", hints), border,
+    ].map((line) => truncateToWidth(line, this.width, ""));
   }
 
-  invalidate(): void {}
+  invalidate(): void { this.composer.invalidate(); }
+  dispose(): void { clearInterval(this.timer); }
 
   private viewportHeight(): number {
-    return Math.max(3, this.tui.terminal.rows - (this.composer ? 8 : 7));
+    return Math.max(1, (this.tui.terminal.rows || 30) - 8 - this.composer.render(this.width).length);
   }
 
   private history(width: number): string[] {
     const lines: string[] = [];
-    for (const entry of transcriptForView(this.record.prompt, this.record.transcript)) {
+    const entries: TranscriptEntry[] = [...transcriptForView(this.record.prompt, []), ...this.record.transcript];
+    for (const entry of entries) {
+      if (!entry.text && !entry.thinking) continue;
       if (lines.length) lines.push(this.theme.fg("dim", "───"));
-      lines.push(entry.role === "user" ? this.theme.fg("accent", "[User]") : this.theme.bold("[Assistant]"));
+      lines.push(entry.role === "user" ? this.theme.fg("accent", "[User]")
+        : entry.role === "tool" ? this.theme.fg("toolTitle", "[Tool]") : this.theme.bold("[Assistant]"));
+      if (entry.thinking) lines.push(...wrapTextWithAnsi(entry.thinking, width).map((line) => this.theme.fg("thinkingText", line)));
       try {
         lines.push(...new Markdown(entry.text, 0, 0, getMarkdownTheme()).render(width));
       } catch {
         lines.push(...wrapTextWithAnsi(entry.text, width));
       }
     }
-    if (this.record.status === "running") {
-      const live = this.record.responseText.split("\n").find((value) => value.trim())?.trim() || "working…";
-      lines.push("", truncateToWidth(this.theme.fg("accent", "▍ ") + this.theme.fg("dim", live), width, ""));
+    // Older saved sessions may have live text without a transcript entry.
+    if (this.record.responseText && !this.record.transcript.some((entry) => entry.role === "assistant" && entry.text === this.record.responseText)) {
+      lines.push(...new Markdown(this.record.responseText, 0, 0, getMarkdownTheme()).render(width));
+    }
+    if (this.record.activeTools.size) {
+      lines.push("", this.theme.fg("toolTitle", `Tools: ${activity(this.record)}`));
+    } else if (["running", "stopping", "unresponsive", "queued"].includes(this.record.status)) {
+      lines.push("", this.theme.fg("dim", this.record.status === "running" ? "working…" : this.record.status));
     }
     return lines.length ? lines.map((line) => truncateToWidth(line, width, "")) : [this.theme.fg("muted", "(waiting for first message...)")];
   }
 
-  private openComposer(): void {
-    const input = new Input();
-    input.focused = this.focused;
-    input.onSubmit = (value) => {
-      const message = value.trim();
-      this.composer = undefined;
-      if (message) this.steer(message);
-      this.tui.requestRender();
-    };
-    input.onEscape = () => { this.composer = undefined; this.tui.requestRender(); };
-    this.composer = input;
-    this.tui.requestRender();
-  }
 }
 
 async function shutdownChildSession(session?: AgentSession): Promise<void> {
   try {
     const runner = session?.extensionRunner;
     if (runner?.hasHandlers("session_shutdown")) {
-      await Promise.race([
-        runner.emit({ type: "session_shutdown", reason: "quit" }),
-        new Promise<void>((resolve) => setTimeout(resolve, CHILD_SHUTDOWN_TIMEOUT_MS).unref()),
-      ]);
+      await withinDeadline(runner.emit({ type: "session_shutdown", reason: "quit" }), CHILD_SHUTDOWN_TIMEOUT_MS);
     }
   } catch {
     // A child extension cannot block shutdown of the parent.
@@ -548,7 +669,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
 
   const allRecords = () => [...records.values()];
   const widgetRecords = () => allRecords().filter((record) =>
-    record.status === "queued" || record.status === "running" || record.lingerTurns > 0);
+    record.status === "queued" || record.status === "running" || record.status === "stopping" || record.lingerTurns > 0);
 
   const refresh = () => {
     for (const tui of openTuis) tui.requestRender();
@@ -592,6 +713,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
   };
 
   const startQueued = (ids: string[]) => {
+    if (shuttingDown) return;
     for (const id of ids) {
       const record = records.get(id);
       if (record) void run(record, record.runNumber);
@@ -599,49 +721,73 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     refresh();
   };
 
-  async function settle(
-    record: AgentRecord,
-    runNumber: number,
-    proposed: Exclude<AgentStatus, "queued" | "running">,
-    error?: string,
-  ): Promise<void> {
-    if (record.runNumber !== runNumber || record.settled) return;
+  function finish(record: AgentRecord, status: AgentStatus, error?: string): void {
+    if (record.settled) return;
     record.settled = true;
     record.acceptingSteer = false;
-    const finalStatus = record.status === "cancelled" ? "cancelled" : proposed;
+    record.status = status;
     record.error = error;
-
-    if (record.session) record.history = [...record.session.messages];
-    if (record.worktree) {
-      const worktree = record.worktree;
-      const session = record.session;
-      record.worktree = undefined;
-      record.unsubscribe?.();
-      record.unsubscribe = undefined;
-      record.session = undefined;
-      await shutdownChildSession(session);
-      const result = await cleanupWorktree(pi, record.context.cwd, worktree, record.description);
-      if (result.branch) record.worktreeBranch = result.branch;
-      if (result.path) record.worktreePath = result.path;
-      if (result.error) {
-        record.error = `Worktree cleanup failed; edits were preserved at ${result.path}: ${result.error}`;
-      }
-    }
-
-    record.status = record.worktreePath ? "failed" : finalStatus;
+    record.activeTools.clear();
     record.completedAt = Date.now();
     bumpListOrder(record);
-    record.lingerTurns = record.status === "completed" ? 1 : 2;
+    record.lingerTurns = status === "completed" ? 1 : 2;
     if (!record.background) record.consumed = true;
     scheduleNotice(record);
     record.started.resolve();
     record.done.resolve();
-    startQueued(pool.finish(record.id));
+    startQueued(pool.cancel(record.id));
     refresh();
+  }
+
+  function detachSession(record: AgentRecord): AgentSession | undefined {
+    const session = record.session;
+    if (session) record.history = [...session.messages];
+    record.unsubscribe?.();
+    record.unsubscribe = undefined;
+    record.session = undefined;
+    return session;
+  }
+
+  function forceStop(record: AgentRecord, error: string): void {
+    record.abortController.abort();
+    if (record.worktree) record.worktreePath = record.worktree.path;
+    const session = detachSession(record);
+    try { session?.dispose(); } catch { /* A broken tool must not block recovery. */ }
+    finish(record, "unresponsive", error);
+  }
+
+  async function settle(
+    record: AgentRecord,
+    runNumber: number,
+    proposed: "completed" | "failed" | "cancelled",
+    error?: string,
+  ): Promise<void> {
+    if (record.runNumber !== runNumber || record.settled || record.settling) return;
+    record.settling = true;
+    record.acceptingSteer = false;
+    if (record.session) record.history = [...record.session.messages];
+    if (record.worktree || proposed !== "completed" || record.abortController.signal.aborted) {
+      await shutdownChildSession(detachSession(record));
+    }
+    if (record.settled) return;
+    if (record.worktree) {
+      const worktree = record.worktree;
+      // Keep the path available if cancellation/shutdown times out during cleanup.
+      const result = await cleanupWorktree(pi, record.context.cwd, worktree, record.description);
+      record.worktree = undefined;
+      record.worktreeBranch = result.branch ?? record.worktreeBranch;
+      record.worktreePath = result.path;
+      if (result.error) error = `Worktree cleanup failed; edits were preserved at ${result.path}: ${result.error}`;
+    }
+    if (record.settled) { refresh(); return; }
+    const status = record.abortController.signal.aborted ? "cancelled" : proposed;
+    finish(record, record.worktreePath ? "failed" : status, error);
   }
 
   function watchSession(record: AgentRecord, session: AgentSession): void {
     record.unsubscribe = session.subscribe((event: AgentSessionEvent) => {
+      if (record.settled) return;
+      record.usage = session.getContextUsage();
       if (event.type === "message_start" && event.message.role === "assistant") {
         record.responseText = "";
         record.transcript.push({ role: "assistant", text: "" });
@@ -649,6 +795,9 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
         record.responseText += event.assistantMessageEvent.delta;
         const latest = record.transcript.at(-1);
         if (latest?.role === "assistant") latest.text += event.assistantMessageEvent.delta;
+      } else if (event.type === "message_update" && event.assistantMessageEvent.type === "thinking_delta") {
+        const latest = record.transcript.at(-1);
+        if (latest?.role === "assistant") latest.thinking = (latest.thinking ?? "") + event.assistantMessageEvent.delta;
       } else if (event.type === "message_end") {
         if (event.message.role === "user") {
           const text = extractTextContent(event.message.content).trim();
@@ -664,6 +813,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
         record.activeTools.set(event.toolCallId, event.toolName);
       } else if (event.type === "tool_execution_end") {
         record.activeTools.delete(event.toolCallId);
+        record.transcript.push({ role: "tool", text: `${event.toolName}${event.isError ? " failed" : ""}:\n${bounded(extractTextContent(event.result?.content))}` });
       }
       refresh();
     });
@@ -691,11 +841,16 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       settingsManager,
       sessionManager,
     }));
-    await session.bindExtensions({
-      mode: "print",
-      onError: (failure) => { record.responseText = `extension error: ${failure.extensionPath}`; refresh(); },
-    });
-    return session;
+    try {
+      await session.bindExtensions({
+        mode: "print",
+        onError: (failure) => { record.uiError = `extension error: ${failure.extensionPath}: ${failure.error}`; refresh(); },
+      });
+      return session;
+    } catch (failure) {
+      await shutdownChildSession(session);
+      throw failure;
+    }
   }
 
   async function run(record: AgentRecord, runNumber: number): Promise<void> {
@@ -717,38 +872,49 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
         if (!worktree) {
           throw new Error('Cannot run with isolation: "worktree": git worktree creation failed. Initialize and commit the repository, or omit isolation.');
         }
+        if (record.settled) {
+          record.worktreePath = worktree.path;
+          refresh();
+          return;
+        }
         record.worktree = worktree;
         cwd = worktree.workPath;
       }
-      if ((record.status as AgentStatus) === "cancelled" || shuttingDown) {
+      if (record.abortController.signal.aborted || shuttingDown) {
         await settle(record, runNumber, "cancelled");
         return;
       }
 
       if (!record.session) {
-        record.session = await createChild(record, cwd);
-        watchSession(record, record.session);
+        const session = await createChild(record, cwd);
+        if (record.settled) { await shutdownChildSession(session); return; }
+        record.session = session;
+        watchSession(record, session);
       }
-      if ((record.status as AgentStatus) === "cancelled" || shuttingDown) {
+      if (record.abortController.signal.aborted || shuttingDown) {
         await settle(record, runNumber, "cancelled");
         return;
       }
 
-      const startIndex = record.session.messages.length;
-      const prompt = record.session.prompt(record.nextPrompt);
+      const session = record.session;
+      const startIndex = session.messages.length;
+      const prompt = session.prompt(record.nextPrompt);
       record.acceptingSteer = true;
       record.started.resolve();
-      for (const message of record.pendingSteers.splice(0)) await record.session.steer(message);
+      for (const message of record.pendingSteers.splice(0)) {
+        try { await session.steer(message); }
+        catch (failure) { record.uiError = `Steering failed: ${String(failure)}`; refresh(); }
+      }
       await prompt;
-
-      const response = latestAssistantResponse(record.session.messages, startIndex);
+      if (record.settled) return;
+      const response = latestAssistantResponse(session.messages, startIndex);
       record.latestFinalText = response.text;
-      if ((record.status as AgentStatus) === "cancelled" || record.abortController.signal.aborted) await settle(record, runNumber, "cancelled");
+      if (record.abortController.signal.aborted) await settle(record, runNumber, "cancelled");
       else if (response.error) await settle(record, runNumber, "failed", response.error);
       else await settle(record, runNumber, "completed");
     } catch (failure) {
       const error = failure instanceof Error ? failure.message : String(failure);
-      const cancelled = (record.status as AgentStatus) === "cancelled";
+      const cancelled = record.abortController.signal.aborted;
       await settle(record, runNumber, cancelled ? "cancelled" : "failed", cancelled ? undefined : error);
     } finally {
       record.abortController.signal.removeEventListener("abort", abort);
@@ -756,31 +922,16 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
   }
 
   async function cancel(record: AgentRecord): Promise<void> {
-    if (record.status === "queued") {
-      record.status = "cancelled";
-      record.settled = true;
-      record.completedAt = Date.now();
-      bumpListOrder(record);
-      record.lingerTurns = 2;
-      record.started.resolve();
-      record.done.resolve();
-      scheduleNotice(record);
-      startQueued(pool.cancel(record.id));
-      refresh();
-      return;
-    }
+    if (record.status === "queued") { finish(record, "cancelled"); return; }
+    if (record.status === "stopping") { await record.done.promise; return; }
     if (record.status !== "running") return;
-    if (record.settled) {
-      await record.done.promise;
-      return;
-    }
-    record.status = "cancelled";
-    record.completedAt = Date.now();
-    bumpListOrder(record);
+    record.status = "stopping";
     record.acceptingSteer = false;
     record.abortController.abort();
-    await record.session?.abort().catch(() => {});
     refresh();
+    if (!await withinDeadline(record.done.promise, CANCEL_TIMEOUT_MS)) {
+      forceStop(record, "Cancellation exceeded 5s; execution may still be unwinding. Scheduler slot released; inspect preserved work before continuing.");
+    }
   }
 
   async function steer(record: AgentRecord, message: string): Promise<void> {
@@ -804,22 +955,25 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
         keybindings,
         record,
         done,
-        (message) => { void steer(record, message).catch((failure) => { record.responseText = String(failure); refresh(); }); },
-        () => { void cancel(record); },
+        (message) => steer(record, message),
+        () => cancel(record),
       );
-      return Object.assign(component, { dispose: () => openTuis.delete(tui) });
-    });
+      const dispose = component.dispose.bind(component);
+      return Object.assign(component, { dispose: () => { dispose(); openTuis.delete(tui); } });
+    }, { overlay: true, overlayOptions: { anchor: "center", width: "100%", maxHeight: "100%" } });
   };
 
   const showManager = async () => {
     const ctx = context;
     if (!ctx || ctx.mode !== "tui") return;
+    const selection: { id?: string } = {};
     for (;;) {
       const id = await ctx.ui.custom<string | undefined>((tui, theme, keybindings, done) => {
         openTuis.add(tui);
-        const component = new AgentList(tui, theme, keybindings, allRecords, done);
-        return Object.assign(component, { dispose: () => { component.dispose(); openTuis.delete(tui); } });
-      });
+        const component = new AgentList(tui, theme, keybindings, allRecords, done, cancel, selection);
+        const dispose = component.dispose.bind(component);
+        return Object.assign(component, { dispose: () => { dispose(); openTuis.delete(tui); } });
+      }, { overlay: true, overlayOptions: { anchor: "center", width: "100%", maxHeight: "100%" } });
       if (!id) return;
       await showDetail(id);
     }
@@ -869,6 +1023,8 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       record.status = "queued";
       bumpListOrder(record);
       record.error = undefined;
+      record.uiError = undefined;
+      record.usage = undefined;
       record.latestFinalText = "";
       record.responseText = "";
       record.activeTools.clear();
@@ -879,6 +1035,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       record.done = deferred();
       record.started = deferred();
       record.settled = false;
+      record.settling = false;
       record.runNumber++;
       record.consumed = false;
       record.lingerTurns = 0;
@@ -908,6 +1065,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
         done: deferred(),
         started: deferred(),
         settled: false,
+        settling: false,
         listOrder: ++listOrder,
         runNumber: 1,
         consumed: false,
@@ -1013,10 +1171,10 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     async execute(_toolCallId, params: Static<typeof ResultSchema>, signal) {
       const record = records.get(params.agent_id);
       if (!record) throw new Error(`Unknown agent: ${params.agent_id}`);
-      if (params.wait && (record.status === "queued" || record.status === "running")) {
+      if (params.wait && !record.settled) {
         await abortable(record.done.promise, signal);
       }
-      if (record.status !== "queued" && record.status !== "running") cancelNotice(record);
+      if (record.settled) cancelNotice(record);
       const parts = [`Status: ${record.status}`];
       if (record.error) parts.push(`Error: ${record.error}`);
       const summary = worktreeSummary(record);
@@ -1024,6 +1182,25 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
       parts.push(record.latestFinalText || "No final assistant response.");
       return {
         content: [{ type: "text", text: bounded(parts.join("\n\n")) }],
+        details: { agent_id: record.id, status: record.status, branch: record.worktreeBranch, worktree_path: record.worktreePath },
+      };
+    },
+  });
+
+  pi.registerTool({
+    name: CANCEL_TOOL,
+    label: "Cancel subagent",
+    description: "Stop a queued or running subagent, preserving its transcript and file edits. Unresponsive means stopping was not confirmed within 5 seconds; execution may still be unwinding.",
+    parameters: Type.Object({ agent_id: Type.String({ description: "Agent ID to cancel." }) }),
+    executionMode: "parallel",
+    async execute(_toolCallId, params: { agent_id: string }) {
+      const record = records.get(params.agent_id);
+      if (!record) throw new Error(`Unknown agent: ${params.agent_id}`);
+      await cancel(record);
+      cancelNotice(record);
+      const summary = worktreeSummary(record);
+      return {
+        content: [{ type: "text", text: bounded([`Agent ${record.id}: ${record.status}`, record.error, summary].filter(Boolean).join("\n\n")) }],
         details: { agent_id: record.id, status: record.status, branch: record.worktreeBranch, worktree_path: record.worktreePath },
       };
     },
@@ -1063,7 +1240,7 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
 
   pi.on("tool_execution_start", () => {
     for (const record of records.values()) {
-      if (record.status !== "queued" && record.status !== "running" && record.lingerTurns > 0) record.lingerTurns--;
+      if (record.settled && record.lingerTurns > 0) record.lingerTurns--;
     }
     refresh();
   });
@@ -1072,37 +1249,17 @@ export default function subagentsExtension(pi: ExtensionAPI): void {
     shuttingDown = true;
     for (const timer of notices.values()) clearTimeout(timer);
     notices.clear();
-    for (const record of records.values()) {
-      if (record.status === "queued" || record.status === "running") void cancel(record);
+    const children = allRecords();
+    await withinDeadline(Promise.allSettled(children.map(async (record) => {
+      if (!record.settled) await cancel(record);
+      await shutdownChildSession(detachSession(record));
+    })), CHILD_SHUTDOWN_TIMEOUT_MS);
+    // Never await cleanup a second time after the total shutdown deadline.
+    for (const record of children) {
+      if (!record.settled) forceStop(record, "Parent shutdown deadline exceeded; execution may still be unwinding.");
+      const session = detachSession(record);
+      try { session?.dispose(); } catch { /* best effort after deadline */ }
     }
-    await Promise.race([
-      Promise.allSettled(allRecords().map((record) => record.done.promise)),
-      new Promise<void>((resolve) => setTimeout(resolve, CHILD_SHUTDOWN_TIMEOUT_MS).unref()),
-    ]);
-    await Promise.all(allRecords().map(async (record) => {
-      const forced = !record.settled;
-      if (forced) {
-        record.settled = true;
-        record.status = "cancelled";
-        record.acceptingSteer = false;
-        record.started.resolve();
-        record.done.resolve();
-        pool.cancel(record.id);
-      }
-      const session = record.session;
-      if (session) record.history = [...session.messages];
-      record.unsubscribe?.();
-      record.unsubscribe = undefined;
-      record.session = undefined;
-      await shutdownChildSession(session);
-      if (record.worktree) {
-        const worktree = record.worktree;
-        record.worktree = undefined;
-        if (forced) record.worktreePath = worktree.path;
-        else await cleanupWorktree(pi, record.context.cwd, worktree, record.description);
-      }
-    }));
-    await Promise.allSettled(allRecords().map((record) => record.done.promise));
     if (context?.mode === "tui") context.ui.setWidget(WIDGET_KEY, undefined);
     widgetRegistered = false;
     widgetTui = undefined;
