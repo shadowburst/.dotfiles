@@ -1,8 +1,0 @@
-{
-  "metadataGeneration": {
-    "branchName": {
-      "instructions": "Use the format <type>/<scope>-<short-desc>."
-    },
-    "commitMessage": { "instructions": "Follow Conventional Commits." }
-  }
-}
