@@ -7,21 +7,27 @@ local function run_pi_git_action(skill)
   local neogit = require("neogit")
   local notification_id = "neogit-pi-" .. skill
   local progress = assert(vim.uv.new_timer())
-  progress:start(0, 80, vim.schedule_wrap(function()
-    Snacks.notify.info("Pi " .. skill .. " running", {
-      id = notification_id,
-      icon = Snacks.util.spinner(),
-      timeout = false,
-      title = "Neogit",
-    })
-  end))
+  progress:start(
+    0,
+    80,
+    vim.schedule_wrap(
+      function()
+        Snacks.notify.info("Pi " .. skill .. " running", {
+          id = notification_id,
+          icon = Snacks.util.spinner(),
+          timeout = false,
+          title = "Neogit",
+        })
+      end
+    )
+  )
 
   vim.system({
     "pi",
     "--print",
     "--no-session",
     "--model",
-    "openai-codex/gpt-5.6-luna",
+    "openai-codex/gpt-6-luna",
     "--thinking",
     "low",
     "Use the `" .. skill .. "` skill.",
@@ -39,7 +45,10 @@ local function run_pi_git_action(skill)
         end
         Snacks.notify.info("Pi " .. skill .. " completed", { title = "Neogit" })
       else
-        Snacks.notify.error(output ~= "" and output or "Pi exited with code " .. result.code, { title = "Pi " .. skill })
+        Snacks.notify.error(
+          output ~= "" and output or "Pi exited with code " .. result.code,
+          { title = "Pi " .. skill }
+        )
       end
     end)
   end)
