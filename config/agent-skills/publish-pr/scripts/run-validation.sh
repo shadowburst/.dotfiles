@@ -14,13 +14,18 @@ format_duration() {
 started=$SECONDS
 failed=0
 for script in "${scripts[@]}"; do
-    printf '\nRunning %s\n' "$script" >&2
-    check_started=$SECONDS
-    if bash "$script" >&2; then result='✅'
-    else result='❌'; failed=1; fi
-    elapsed=$((SECONDS - check_started))
+    if ((failed)); then
+        result='⏭️'
+        duration='—'
+    else
+        printf '\nRunning %s\n' "$script" >&2
+        check_started=$SECONDS
+        if bash "$script" >&2; then result='✅'
+        else result='❌'; failed=1; fi
+        duration=$(format_duration "$((SECONDS - check_started))")
+    fi
     name=$(printf '%s' "${script##*/}" | tr '\r\n|`<>' '______')
-    printf '| `%s` | %s | %s |\n' "$name" "$result" "$(format_duration "$elapsed")"
+    printf '| `%s` | %s | %s |\n' "$name" "$result" "$duration"
 done
 if [[ $(git rev-parse HEAD) != "$sha" ]] || ! git diff --quiet HEAD --; then
     printf '| Checkout changed during checks | ❌ | — |\n'

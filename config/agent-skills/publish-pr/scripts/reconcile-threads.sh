@@ -23,8 +23,6 @@ jq -e '
   type == "array" and length > 0 and
   all(.[];
     (.thread_id | type == "string" and length > 0) and
-    (.path | type == "string" and length > 0) and
-    (.comment_url | type == "string" and startswith("https://github.com/")) and
     (.disposition == "addressed" or .disposition == "obsolete") and
     (.evidence | type == "string" and length > 0))
 ' "$plan" >/dev/null || { echo 'Invalid reconciliation plan' >&2; exit 2; }

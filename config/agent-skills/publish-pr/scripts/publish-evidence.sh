@@ -1,9 +1,41 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
+case "${1:-}" in
+  clickup)
+    shift
+    set -e
+    usage() { printf 'Usage: %s clickup UPLOAD_URL TICKET_FILE MULTIPART_FIELD LOCAL_FILE REMOTE_FILENAME\n' "$0" >&2; exit 2; }
+    (($# == 5)) || usage
+    url=$1 ticket_file=$2 field=$3 file=$4 filename=$5
+    [[ -f $ticket_file && ! -L $ticket_file && -O $ticket_file ]] || usage
+    config=
+    trap '[[ -z "$config" ]] || rm -f -- "$config"; if [[ -f $ticket_file && ! -L $ticket_file && -O $ticket_file ]]; then rm -f -- "$ticket_file"; fi' EXIT
+    [[ $url == https://mcp.clickup.com/upload ]] || { echo 'Unexpected ClickUp upload URL' >&2; exit 2; }
+    [[ $field =~ ^[A-Za-z0-9_-]+$ ]] || usage
+    [[ $filename =~ ^[A-Za-z0-9._-]+$ ]] || usage
+    [[ -f $file && -f $ticket_file ]] || usage
+    [[ $(stat -c %a "$ticket_file") == 600 ]] || { echo 'Ticket file must have mode 600' >&2; exit 2; }
+    ticket=$(<"$ticket_file")
+    [[ $ticket =~ ^[A-Za-z0-9._-]+$ ]] || { echo 'Invalid upload ticket' >&2; exit 2; }
+
+    config=$(mktemp)
+    chmod 600 "$config"
+    printf 'header = "X-Upload-Ticket: %s"\n' "$ticket" >"$config"
+    rm -f -- "$ticket_file"
+    curl --config "$config" --fail --silent --show-error -X POST "$url" -F "$field=@$file;filename=$filename"
+    exit
+    ;;
+  github) shift ;;
+  *)
+    printf 'Usage: %s github --pr PR --file path#description...\n       %s clickup UPLOAD_URL TICKET_FILE MULTIPART_FIELD LOCAL_FILE REMOTE_FILENAME\n' "$0" "$0" >&2
+    case "${1:-}" in -h|--help) exit 0 ;; *) exit 2 ;; esac
+    ;;
+esac
+
 usage() {
   cat <<'EOF'
-Usage: upload-ui-evidence.sh --pr <number|url> --file <path#description>...
+Usage: publish-evidence.sh github --pr <number|url> --file <path#description>...
 EOF
 }
 
@@ -62,7 +94,7 @@ if [[ ${1:-} == --self-test && $# == 1 ]]; then
   files=(demo.mp4); descriptions=('Demo')
   output=$(render_block)
   [[ $output == *'**Demo**'* && $output == *'![](demo.mp4)'* && $output != *'| --- |'* ]] || exit 1
-  echo 'upload-ui-evidence self-test passed'
+  echo 'publish-evidence github self-test passed'
   exit 0
 fi
 
@@ -125,37 +157,12 @@ body=$(gh pr view "$pr" --json body --jq .body) || {
   echo "github: could not read PR $pr" >&2
   exit 1
 }
-if GH_BODY=$body MANIFEST_MARKER=$manifest_marker python3 - <<'PY'
-import os
-import re
-
-body = os.environ["GH_BODY"]
-marker = os.environ["MANIFEST_MARKER"]
-layout = "<!-- upload-ui-evidence:layout:gallery-v1 -->"
-start = "<!-- upload-ui-evidence:start -->"
-end = "<!-- upload-ui-evidence:end -->"
-if body.count(start) == body.count(end) == body.count(marker) == body.count(layout) == 1:
-    block = body[body.index(start):body.index(end)]
-    links = re.findall(r"]\(([^)]+)\)", block)
-    reusable = (
-        body.index(start) < body.index(marker) < body.index(end)
-        and links
-        and all(link.startswith("https://github.com/user-attachments/assets/") for link in links)
-    )
-    raise SystemExit(not reusable)
-raise SystemExit(1)
-PY
-then
-  echo "github: evidence unchanged; reused existing uploads" >&2
-  exit 0
-fi
-
 block=$(mktemp)
 new_body=$(mktemp)
 trap 'rm -f "$block" "$new_body"' EXIT
 render_block >"$block"
 
-if ! GH_BODY=$body python3 - "$block" "$new_body" <<'PY'
+GH_BODY=$body MANIFEST_MARKER=$manifest_marker ASSET_COUNT=${#files[@]} python3 - "$block" "$new_body" <<'PY'
 import os
 import re
 import sys
@@ -171,9 +178,9 @@ validation_starts = [match.start() for match in re.finditer(re.escape(validation
 validation_ends = [match.start() for match in re.finditer(re.escape(validation_end), body)]
 if (len(validation_starts), len(validation_ends)) not in {(0, 0), (1, 1)} or (validation_starts and validation_starts[0] >= validation_ends[0]):
     raise SystemExit("managed Validation markers are malformed")
-headings = list(re.finditer(r"(?m)^## UI Changes[ \t]*$", body))
+headings = list(re.finditer(r"(?m)^## UI Evidence[ \t]*$", body))
 if len(headings) != 1:
-    raise SystemExit("PR body must contain exactly one ## UI Changes section")
+    raise SystemExit("PR body must contain exactly one ## UI Evidence section")
 
 heading = headings[0]
 section_end_match = re.search(r"(?m)^## .+$", body[heading.end():])
@@ -182,21 +189,37 @@ section = body[heading.end():section_end]
 start_count = section.count(start_marker)
 end_count = section.count(end_marker)
 if body.count(start_marker) != start_count or body.count(end_marker) != end_count:
-    raise SystemExit("managed evidence markers must be inside ## UI Changes")
+    raise SystemExit("managed evidence markers must be inside ## UI Evidence")
 if (start_count, end_count) not in {(0, 0), (1, 1)}:
     raise SystemExit("managed evidence markers are malformed")
 if start_count:
     marker_start = section.index(start_marker)
-    marker_end = section.index(end_marker, marker_start) + len(end_marker)
+    marker_end = section.index(end_marker)
+    if marker_start >= marker_end:
+        raise SystemExit("managed evidence markers are malformed")
+    existing_block = section[marker_start:marker_end]
+    marker = os.environ["MANIFEST_MARKER"]
+    layout = "<!-- upload-ui-evidence:layout:gallery-v1 -->"
+    links = re.findall(r"]\(([^)]+)\)", existing_block)
+    if (
+        body.count(marker) == existing_block.count(marker) == 1
+        and body.count(layout) == existing_block.count(layout) == 1
+        and len(links) == int(os.environ["ASSET_COUNT"])
+        and all(link.startswith("https://github.com/user-attachments/assets/") for link in links)
+    ):
+        raise SystemExit(3)
+    marker_end += len(end_marker)
     section = section[:marker_start] + section[marker_end:]
 
 section = section.strip()
 replacement = f"\n\n{section}\n\n{block}\n\n" if section else f"\n\n{block}\n\n"
 Path(sys.argv[2]).write_text(body[:heading.end()] + replacement + body[section_end:].lstrip("\n"))
 PY
-then
-  exit 2
-fi
+case $? in
+  0) ;;
+  3) echo "github: evidence unchanged; reused existing uploads" >&2; exit 0 ;;
+  *) exit 2 ;;
+esac
 
 status=0
 gh_args=(pr edit "$pr" --body-file "$new_body")
