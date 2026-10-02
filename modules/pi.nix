@@ -78,6 +78,7 @@ _: {
         ".pi/agent/extensions/prompt" = mkPiConfigSymlink "config/pi/extensions/prompt";
         ".pi/agent/extensions/auto-title.ts" = mkPiConfigSymlink "config/pi/extensions/auto-title.ts";
         ".pi/agent/extensions/footer" = mkPiConfigSymlink "config/pi/extensions/footer";
+        ".pi/agent/extensions/herdr" = mkPiConfigSymlink "config/pi/extensions/herdr";
         ".pi/agent/extensions/question" = mkPiConfigSymlink "config/pi/extensions/question";
         ".pi/agent/extensions/subagents" = mkPiConfigSymlink "config/pi/extensions/subagents";
         ".pi/agent/extensions/tasks".source = pkgs.pi-tasks;
