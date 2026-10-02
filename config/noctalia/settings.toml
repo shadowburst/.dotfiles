@@ -111,6 +111,9 @@ auto_locate = true
 
 [lockscreen]
 blurred_desktop = true
+tint_intensity = 0.59999998658895493
+transition = [ "fade" ]
+transition_duration = 500
 
 [lockscreen_widgets]
 enabled = false
@@ -421,7 +424,7 @@ source = "community"
 
 [wallpaper]
 fill_color = "surface"
-transition = [ "disc", "fade", "honeycomb", "stripes", "wipe", "zoom" ]
+transition_duration = 500
 transition_on_startup = true
 
     [wallpaper.default]
