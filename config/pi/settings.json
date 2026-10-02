@@ -3,7 +3,9 @@
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-6.1-sol",
   "defaultThinkingLevel": "medium",
-  "defaultTools": ["+codemode"],
+  "defaultTools": [
+    "+codemode"
+  ],
   "theme": "catppuccin-mocha",
   "doubleEscapeAction": "tree",
   "quietStartup": true,
@@ -13,7 +15,7 @@
   "terminal": {
     "showTerminalProgress": true
   },
-  "treeFilterMode": "user-only",
+  "treeFilterMode": "default",
   "showHardwareCursor": true,
   "enabledModels": [
     "openai-codex/gpt-6-astra",
@@ -28,7 +30,12 @@
   "modelThinkingLevels": {
     "openai-codex/gpt-6-luna": "high",
     "openai-codex/gpt-6-astra": "medium",
-    "openai-codex/gpt-5.6-sol": "medium",
     "openai-codex/gpt-6.1-sol": "medium"
-  }
+  },
+  "steeringMode": "all",
+  "followUpMode": "all",
+  "markdown": {
+    "mermaid": "streaming"
+  },
+  "showCacheMissNotices": true
 }
