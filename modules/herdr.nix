@@ -62,6 +62,34 @@ _: {
               "state_text"
             ]
           ];
+          ui.sidebar.spaces.rows = [
+            [
+              {
+                token = "workspace";
+                fg = config.catppuccin.palette.colors.text.hex;
+                bold = true;
+                dim = false;
+              }
+            ]
+            [
+              {
+                token = "branch";
+                fg = config.catppuccin.palette.colors.overlay0.hex;
+                bold = false;
+                dim = true;
+              }
+              {
+                token = "git_status";
+                fg = config.catppuccin.palette.colors.overlay0.hex;
+                bold = false;
+                dim = true;
+              }
+            ]
+            [
+              "state_icon"
+              "state_text"
+            ]
+          ];
           advanced.scrollback_limit_bytes = 10485760;
 
           keys = {
