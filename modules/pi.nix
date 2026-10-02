@@ -82,7 +82,6 @@ _: {
         ".pi/agent/extensions/subagents" = mkPiConfigSymlink "config/pi/extensions/subagents";
         ".pi/agent/extensions/tasks".source = pkgs.pi-tasks;
         ".pi/agent/extensions/usage" = mkPiConfigSymlink "config/pi/extensions/usage";
-        ".pi/agent/extensions/pi-mcp-adapter".source = pkgs.pi-mcp-adapter;
         ".pi/agent/extensions/pi-web-access".source = pkgs.pi-web-access;
         ".pi/agent/extensions/browser".source = browserTools;
         ".pi/agent/extensions/ponytail".source = pkgs.ponytail;
