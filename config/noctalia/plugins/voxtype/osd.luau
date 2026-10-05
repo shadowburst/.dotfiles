@@ -34,11 +34,28 @@ local function levelHeight(value)
   return math.max(3, math.min(18, math.floor(value * 200)))
 end
 
+local function renderCard(children)
+  local osd = noctalia.getSetting("osd")
+  local radiusScale = noctalia.getSetting("shell.corner_radius_scale")
+  -- ponytail: cancel Noctalia's 14px host inset; use a decoration API if one is added.
+  panel.render(ui.column({ padding = -14 }, { ui.row({
+    width = 190,
+    height = 48,
+    gap = 10,
+    align = "center",
+    justify = "center",
+    fill = "surface/" .. tostring(osd.background_opacity),
+    radius = math.min(24, 12 * radiusScale),
+    border = osd.border and osd.border_color or nil,
+    borderWidth = osd.border and osd.border_width or 0,
+  }, children) }))
+end
+
 local function render()
   if isProcessing() then
-    panel.render(ui.row({ height = 20, align = "center", justify = "center" }, {
+    renderCard({
       ui.label({ text = spinnerFrames[spinnerFrame], fontSize = 18, color = "primary" }),
-    }))
+    })
     return
   end
 
@@ -53,16 +70,11 @@ local function render()
     }))
   end
 
-  panel.render(ui.row({
-    gap = 10,
-    height = 20,
-    align = "center",
-    justify = "center",
-  }, {
+  renderCard({
     ui.glyph({ name = "microphone", size = 18, color = "primary" }),
     ui.row({ gap = 2, height = 18, align = "center" }, levelBars),
     ui.label({ text = elapsedText(), width = 44, fontSize = 14, color = "on_surface" }),
-  }))
+  })
 end
 
 local function setState(jsonLine)

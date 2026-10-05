@@ -16,14 +16,11 @@ entry = "widget.luau"
 [[panel]]
 id = "osd"
 entry = "osd.luau"
-# Attached, not floating. A floating panel inherits [shell.panel] transparency_mode
-# ("soft" here), which renders it translucent - that is what made the OSD look
-# see-through instead of like the native volume/brightness OSD. Attached panels use
-# the attached styling (an opaque card) and anchor to the bar's inward edge, so the
-# OSD can no longer sit on top of the bar. Reading `placement` requires dropping
-# `persistent`, which the docs restrict to floating panels.
+# Persistent panels float independently of the bar and other panels.
 width = 190
 height = 48
-placement = "attached"
+position = "top_center"
+layer = "overlay"
+persistent = true
 dismiss_on_outside_click = false
 keyboard_focus = "none"

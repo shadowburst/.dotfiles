@@ -102,7 +102,7 @@ offset_y = 8
 
 [osd.kinds]
 lock_keys = true
-keyboard_layout = true
+keyboard_layout = false
 
 [system.monitor]
 enabled = true
