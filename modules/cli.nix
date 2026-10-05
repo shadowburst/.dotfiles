@@ -19,6 +19,7 @@ _: {
         gnumake
         jq
         pnpm
+        python3
         ripgrep
         sqlit-tui
         sshfs

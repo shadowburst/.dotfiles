@@ -3,22 +3,9 @@ _: {
   flake.homeModules.cli =
     {
       config,
-      lib,
-      pkgs,
       ...
     }:
     {
-      home.packages = with pkgs; [
-        python3 # Needed for claude integration
-      ];
-
-      home.activation.herdrIntegrations = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-        run mkdir -p ${lib.escapeShellArg "${config.home.homeDirectory}/.pi/agent/extensions"}
-        run ${pkgs.herdr}/bin/herdr integration install pi
-        run ${pkgs.herdr}/bin/herdr integration install opencode
-        run ${pkgs.herdr}/bin/herdr integration install claude
-      '';
-
       programs.herdr = {
         enable = true;
         settings = {
