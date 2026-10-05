@@ -1,16 +1,16 @@
 { lib, pkgs }:
 (pkgs.buildNpmPackage.override { nodejs = pkgs.nodejs_22; }) (finalAttrs: {
   pname = "cutaway";
-  version = "0.1.0-c3e7d01";
+  version = "0.2.0";
 
   src = pkgs.fetchFromGitHub {
     owner = "half144";
     repo = "cutaway";
-    rev = "c3e7d01416edaa1d6287bc7864e9b96aa09a5975";
-    hash = "sha256-ffvUxos//9a9I+a3LkTGVuo9YvUSvC8dYGogj91nGIE=";
+    rev = "v0.2.0";
+    hash = "sha256-DLHrbOCPe5uPa11/QRUCkStwlICFf5C/R9+t5J2afRQ=";
   };
 
-  npmDepsHash = "sha256-ZXfninDfajBqwXMTxgw/k0GgYeVDs+W8WbmWfSTGE2U=";
+  npmDepsHash = "sha256-Srq0y94q3fMRi1OMFYKHh/tb2jrlqozrEVlzj/9eUq8=";
   dontNpmBuild = true;
   npmInstallFlags = [ "--ignore-scripts" ];
   npmRebuildFlags = [ "--ignore-scripts" ];
