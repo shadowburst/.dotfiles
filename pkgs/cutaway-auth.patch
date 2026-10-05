@@ -1,0 +1,498 @@
+--- a/src/cli/options.mjs
++++ b/src/cli/options.mjs
+@@ -15,6 +15,8 @@
+            (phone recordings default to 1080x1920 and --window device)
+            --pacing balanced|original --quality high|standard
+ Capture:   --storage-state <auth.json> (existing Playwright storage state)
++           --auth-verifier '{"origin":"https://app.example","selector":"#workspace"}'
++           Authentication is human-only; a marker cannot override a visible gate.
+ Frame:     a viewport screenshot, framed like the video; --preset, --padding and --window apply
+ 
+ Plans and local demo: examples/demo.json. Full usage: README.md.
+@@ -40,6 +42,7 @@
+       headed: { type: 'boolean' },
+       'capture-only': { type: 'boolean' },
+       'storage-state': { type: 'string' },
++      'auth-verifier': { type: 'string' },
+       width: { type: 'string' },
+       height: { type: 'string' },
+       fps: { type: 'string' },
+@@ -77,5 +80,17 @@
+   if (values.keys) renderOptions.keys = values.keys;
+   if (values.output) renderOptions.output = values.output;
+ 
+-  return { command, input, values, renderOptions, showHelp: false };
++  let authVerifier;
++  if (values['auth-verifier'] !== undefined) {
++    try {
++      authVerifier = JSON.parse(values['auth-verifier']);
++      const origin = new URL(authVerifier.origin);
++      if (!['http:', 'https:'].includes(origin.protocol) || origin.origin !== authVerifier.origin
++        || typeof authVerifier.selector !== 'string' || !authVerifier.selector.trim()
++        || Object.keys(authVerifier).some(key => !['origin', 'selector'].includes(key))) throw new Error();
++    } catch {
++      throw new Error('--auth-verifier requires JSON with an exact HTTP(S) origin and a nonempty selector.');
++    }
++  }
++  return { command, input, values, renderOptions, authVerifier, showHelp: false };
+ }
+--- a/src/cli.mjs
++++ b/src/cli.mjs
+@@ -9,7 +9,7 @@
+ async function main() {
+   const parsed = parseCliArgs();
+   if (parsed.showHelp) return console.log(help);
+-  const { command, input, values, renderOptions } = parsed;
++  const { command, input, values, renderOptions, authVerifier } = parsed;
+   if (command === 'doctor') {
+     const report = await doctor();
+     if (!report.ready) process.exitCode = 1;
+@@ -49,7 +49,7 @@
+     process.stderr.write('Opening browser and capturing workflow…\n');
+     const start = performance.now();
+     const timeline = await record(resolve(input), directory, {
+-      headed: values.headed, storageState: values['storage-state'],
++      headed: values.headed, storageState: values['storage-state'], authVerifier,
+     });
+     timings.recordSeconds = (performance.now() - start) / 1000;
+     timings.browserSetupSeconds = timeline.setupSeconds;
+@@ -77,6 +77,9 @@
+ try {
+   await main();
+ } catch (error) {
+-  console.error(error.message);
++  // Never echo Playwright call logs, selectors, typed text or credential-bearing URLs.
++  console.error(error.code === 'auth_required'
++    ? 'Authentication required. Inspect the retained timeline.json; do not repeat record.'
++    : 'Cutaway failed. Inspect retained artifacts and application state before retrying.');
+   process.exitCode = 1;
+ }
+--- a/src/capture/record.mjs
++++ b/src/capture/record.mjs
+@@ -7,6 +7,12 @@
+ import { hideElements, invalidSelectors, isQuietSpot, waitForSettled, watchChanges } from './page-state.mjs';
+ import { ScreencastRecorder } from './screencast.mjs';
+ import { TouchRunner } from './touch.mjs';
++import { assertSafeUrl, observeAuth } from './auth.mjs';
++
++async function assertReady(page, options) {
++  const auth = await observeAuth(page, options);
++  if (auth.state !== 'ready') throw Object.assign(new Error(`Authentication required: ${auth.reason}`), { code: 'auth_required', reason: auth.reason });
++}
+ 
+ // Where the pointer waits before the first gesture: a spot that reacts to nothing on hover.
+ async function restingPoint(page, viewport) {
+@@ -35,7 +41,7 @@
+   };
+ }
+ 
+-export async function record(planPath, directory, { headed = false, storageState } = {}) {
++export async function record(planPath, directory, { headed = false, storageState, authVerifier } = {}) {
+   const beginning = performance.now();
+   const plan = await loadPlan(planPath);
+   await mkdir(directory, { recursive: true });
+@@ -45,8 +51,11 @@
+   const browser = await chromium.launch({ headless: !headed, args: [`--force-device-scale-factor=${plan.captureScale}`] });
+   const timeline = createTimeline(plan.viewport);
+   timeline.capture = { scale: plan.captureScale, format: 'png' };
+-  // The toolbar shows the page address; query strings and fragments may hold secrets.
+-  const address = new URL(plan.url);
++  // Retained metadata and the rendered toolbar must not carry URL credentials.
++  const navigation = new URL(plan.url);
++  navigation.username = '';
++  navigation.password = '';
++  const address = new URL(navigation.href);
+   address.search = '';
+   address.hash = '';
+   timeline.url = address.href;
+@@ -64,6 +73,7 @@
+   }
+ 
+   try {
++    assertSafeUrl(plan.url);
+     // A phone is emulated in Playwright's Chromium, which the CDP screencast needs, rather than the WebKit
+     // its descriptor names: user agent, touch input and mobile layout come from the descriptor.
+     const { defaultBrowserType, viewport, deviceScaleFactor, ...phone } = plan.device ? devices[plan.device.name] : {};
+@@ -71,6 +81,18 @@
+       ...phone, screen: plan.device?.screen, viewport: plan.viewport, deviceScaleFactor: plan.captureScale, storageState,
+       colorScheme: plan.colorScheme,
+     });
++    let protectedFailure = false;
++    context.on('response', response => {
++      const status = response.status();
++      const request = response.request();
++      const type = request.resourceType();
++      const origin = new URL(response.url()).origin;
++      // A public asset's isolated 403 is not authentication evidence.
++      if ((status === 401 && type === 'document')
++        || (authVerifier && origin === authVerifier.origin && ['document', 'xhr', 'fetch'].includes(type)
++          && [401, 403].includes(status))) protectedFailure = true;
++    });
++    const authOptions = () => ({ verifier: authVerifier, protectedFailure });
+     const page = await context.newPage();
+     page.setDefaultTimeout(plan.timeout ?? 10000);
+     context.on('page', popup => {
+@@ -78,7 +100,9 @@
+     });
+ 
+     if (plan.hide) await page.addInitScript(hideElements, plan.hide);
+-    await page.goto(plan.url, { waitUntil: 'load' });
++    // URL userinfo must not become automated HTTP authentication.
++    await page.goto(navigation.href, { waitUntil: 'load' });
++    await assertReady(page, authOptions());
+     const invalid = plan.hide ? await page.evaluate(invalidSelectors, plan.hide) : [];
+     if (invalid.length) throw new Error(`hide takes CSS selectors; the browser rejected: ${invalid.join(', ')}`);
+     await page.evaluate(() => document.fonts.ready);
+@@ -87,7 +111,10 @@
+     await page.evaluate(waitForSettled, { limit: 3000, quiet: 400 });
+ 
+     const initialPointer = plan.device ? null : await restingPoint(page, plan.viewport);
+-    if (initialPointer) await page.mouse.move(initialPointer.x, initialPointer.y);
++    if (initialPointer) {
++      await assertReady(page, authOptions());
++      await page.mouse.move(initialPointer.x, initialPointer.y);
++    }
+     const session = await context.newCDPSession(page);
+     startedAt = Date.now();
+     timeline.setupSeconds = (performance.now() - beginning) / 1000;
+@@ -96,6 +123,7 @@
+       timeline.device = plan.device;
+       timeline.input = 'touch';
+     }
++    await assertReady(page, authOptions());
+     const initial = await page.screenshot({ type: 'png' });
+     await writeFile(join(directory, 'frames', '000000.png'), initial);
+     timeline.frames.push({ t: 0, file: 'frames/000000.png' });
+@@ -104,27 +132,35 @@
+       width: Math.round(plan.viewport.width * plan.captureScale),
+       height: Math.round(plan.viewport.height * plan.captureScale),
+     }, startedAt);
++    await assertReady(page, authOptions());
+     await capture.start();
+     // A calm opening beat before the first gesture.
+     await sleep(600);
+ 
+     const actions = plan.device ? new TouchRunner(page, timeline, now, session) : new ActionRunner(page, timeline, now, initialPointer);
++    actions.authOptions = authOptions;
+     for (const [index, step] of plan.steps.entries()) {
+       assertHealthy();
+       process.stderr.write(`Recording ${index + 1}/${plan.steps.length}: ${step.action}\n`);
+       const recordStep = { action: step.action, start: now() };
+       timeline.steps.push(recordStep);
++      await assertReady(page, authOptions());
+       const timing = await actions.run(step, index, plan.steps[index + 1]);
+       Object.assign(recordStep, timing);
+       recordStep.end = now();
+     }
+ 
+     await sleep(2600);
++    await assertReady(page, authOptions());
+     assertHealthy();
+     timeline.status = 'complete';
+   } catch (error) {
+     timeline.status = 'failed';
+-    timeline.error = error.message;
++    timeline.errorCode = ['auth_required', 'expectation_failed'].includes(error.code) ? error.code : 'capture_failed';
++    timeline.reason = error.code === 'auth_required' ? error.reason ?? 'Authentication inspection failed.'
++      : error.code === 'expectation_failed' ? error.reason : 'Capture operation did not complete; application outcome may be unknown.';
++    timeline.error = error.code === 'auth_required' ? `Authentication required: ${timeline.reason}` : timeline.reason;
++    timeline.failedStep = timeline.steps.length || null;
+     throw error;
+   } finally {
+     timeline.duration = startedAt ? now() : 0;
+@@ -132,9 +168,17 @@
+       await capture?.stop();
+       assertHealthy();
+     } catch (error) {
+-      timeline.status = 'failed';
+-      timeline.error = error.message;
+-      throw error;
++      if (timeline.status === 'failed') {
++        // Preserve the primary failure (especially sanitized auth evidence) over teardown errors.
++        timeline.cleanupFailed = true;
++      } else {
++        timeline.status = 'failed';
++        timeline.error = 'Capture finalization failed; application outcome may be unknown.';
++        timeline.reason = timeline.error;
++        timeline.errorCode = 'capture_failed';
++        timeline.failedStep = timeline.steps.length || null;
++        throw error;
++      }
+     } finally {
+       timeline.frames.sort((a, b) => a.t - b.t);
+       try {
+--- a/src/capture/actions.mjs
++++ b/src/capture/actions.mjs
+@@ -1,4 +1,5 @@
+ import { setTimeout as sleep } from 'node:timers/promises';
++import { assertSafeInput, observeAuth } from './auth.mjs';
+ import { ease, pointerPath, targetPoint, unitNoise } from '../motion.mjs';
+ import {
+   clickHold, clickSettleDelay, gaussian, homingDelay, movementDuration, pauseAfter, pointingDifficulty, typingDelays,
+@@ -15,6 +16,10 @@
+ export const scrollSlowdown = 4;
+ const commitLabel = /\b(save|salvar|done|concluir|submit|enviar|send|delete|excluir|remove|remover|confirm|confirmar|publish|publicar|apply|aplicar|create|criar|pay|pagar)\b/i;
+ 
++function expectationFailure(reason) {
++  return Object.assign(new Error(reason), { code: 'expectation_failed', reason });
++}
++
+ function containsPoint(box, point) {
+   return point && point.x >= box.x && point.x <= box.x + box.width
+     && point.y >= box.y && point.y <= box.y + box.height;
+@@ -34,6 +39,40 @@
+     this.animationSlowdown = 1;
+   }
+ 
++  async safeInput(target) {
++    await assertSafeInput(this.page, target, this.authOptions?.() ?? {});
++    if (this.pendingExpectation && !this.inputDispatched) {
++      const result = this.page.locator(this.pendingExpectation);
++      const count = await result.count();
++      if (count > 1) throw expectationFailure('Input expectation must match exactly one fresh result.');
++      // ponytail: require a new/hidden receipt; scope a new operation-specific selector for in-place receipts.
++      if (count === 1 && await result.isVisible()) throw expectationFailure('Input expectation is not fresh: result was already visible before input.');
++      await assertSafeInput(this.page, target, this.authOptions?.() ?? {});
++    }
++  }
++
++  async safePage() {
++    const auth = await observeAuth(this.page, this.authOptions?.() ?? {});
++    if (auth.state !== 'ready') throw Object.assign(new Error(`Authentication required: ${auth.reason}`),
++      { code: 'auth_required', reason: auth.reason });
++  }
++
++  async safePointer(point = this.pointer) {
++    const handle = await this.page.evaluateHandle(({ x, y }) => {
++      let element = document.elementFromPoint(x, y);
++      while (element?.shadowRoot) {
++        const child = element.shadowRoot.elementFromPoint(x, y);
++        if (!child || child === element) break;
++        element = child;
++      }
++      return element;
++    }, point);
++    try {
++      if (!handle.asElement()) throw Object.assign(new Error('Authentication required: Cannot inspect pointer target.'), { code: 'auth_required' });
++      await this.safeInput(handle.asElement());
++    } finally { await handle.dispose(); }
++  }
++
+   async captureCursor(force = false) {
+     const t = this.now();
+     if (!force && t - this.cursorSampleAt < 0.1) return;
+@@ -54,6 +93,7 @@
+       while (i + 1 < path.length && path[i + 1].t * 1000 < performance.now() - beginning) i++;
+       const point = path[i];
+       await sleep(Math.max(0, point.t * 1000 - (performance.now() - beginning)));
++      await this.safePage();
+       await this.page.mouse.move(point.x, point.y);
+       this.pointer = { x: point.x, y: point.y };
+       await this.captureCursor();
+@@ -121,6 +161,7 @@
+       throw new Error(`Step ${index + 1}: selector must match exactly one element.`);
+     }
+ 
++    if (step.action !== 'focus') await this.safeInput(locator);
+     const needsScroll = await locator.evaluate(targetNeedsScroll);
+     if (needsScroll) {
+       const scroll = { start: this.now(), automatic: true };
+@@ -159,7 +200,7 @@
+ 
+     const context = await locator.evaluate(targetContext);
+     const label = step.action === 'click'
+-      ? await locator.evaluate(element => (element.innerText || element.value || element.getAttribute('aria-label') || '').slice(0, 60))
++      ? await locator.evaluate(element => (element.innerText || element.getAttribute('aria-label') || '').slice(0, 60))
+       : '';
+ 
+     const focus = {
+@@ -184,13 +225,17 @@
+   }
+ 
+   async press(seconds) {
++    await this.safePointer();
++    this.inputDispatched = true;
+     await this.page.mouse.down();
+     await sleep(seconds * 1000);
++    await this.safePointer();
+     await this.page.mouse.up();
+   }
+ 
+   async click(locator, focus, index, landing, watch, commit, hold) {
+     await sleep(clickSettleDelay(index, this.difficulty, commit) * 1000);
++    await this.safeInput(locator);
+     await locator.click({ trial: true });
+     const box = await locator.boundingBox();
+     if (!box) throw new Error(`Step ${index + 1}: target has no bounding box.`);
+@@ -209,13 +254,20 @@
+ 
+   async type(locator, text, focus, index) {
+     const focused = await locator.evaluate(element => element === document.activeElement || element.contains(document.activeElement));
+-    if (!focused) await locator.focus();
++    await this.safeInput(locator);
++    if (!focused) {
++      // No Playwright auto-wait between the final check and focus dispatch.
++      this.inputDispatched = true;
++      await locator.evaluate(element => element.focus());
++    }
++    this.typingTarget = locator;
+     await sleep(homingDelay(index) * 1000);
++    await this.safeTyping();
+     focus.typingStart = this.now();
+     const filled = await locator.evaluate(element => (element.isContentEditable ? element.textContent : element.value ?? '').length > 0);
+     if (filled) {
+       // Select the old text and type over it: the highlight shows for a moment, as when a person does it.
+-      await this.page.keyboard.press('ControlOrMeta+A');
++      await this.pressKey('ControlOrMeta+A');
+       await sleep(180 + 100 * unitNoise(index * 379 + 9));
+     }
+     focus.carets = [];
+@@ -229,20 +281,43 @@
+       await this.typeCharacter(character, focus);
+       // Word boundaries are enough for the camera to follow text across a wide field.
+       if (/\s/.test(character) || index === characters.length - 1) {
++        await this.safeTyping();
+         const caret = await locator.evaluate(caretPoint);
+         if (caret) focus.carets.push({ t: this.now(), ...caret });
+       }
+     }
+   }
+ 
+-  pressKey(key) {
++  async safeTyping() {
++    await this.safeInput();
++    if (!await this.typingTarget.evaluate(element => element === element.getRootNode().activeElement)) {
++      throw new Error('Typing focus changed; capture stopped before further input.');
++    }
++    await this.safeInput(this.typingTarget);
++  }
++
++  async pressKey(key) {
++    if (this.typingTarget) await this.safeTyping();
++    else await this.safeInput();
++    if (this.requireEnterReceipt && /^(?:Enter|Return)$/.test(key)) {
++      const select = await this.page.evaluate(() => {
++        let active = document.activeElement;
++        while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
++        return active?.tagName === 'SELECT';
++      });
++      if (!select) throw expectationFailure('A committing Enter input requires a fresh success expectation.');
++      await this.safeInput();
++    }
++    this.inputDispatched = true;
+     return this.page.keyboard.press(key);
+   }
+ 
+   // The interface has settled after an action.
+   async settled() {}
+ 
+-  typeCharacter(character) {
++  async typeCharacter(character) {
++    await this.safeTyping();
++    this.inputDispatched = true;
+     return this.page.keyboard.type(character);
+   }
+ 
+@@ -259,6 +334,8 @@
+       progress = duration > 0 ? Math.min(1, (performance.now() - beginning) / (duration * scrollSlowdown * 1000)) : 1;
+       // A wheel flick departs quickly and glides to rest rather than easing symmetrically.
+       const next = step.y * ease(progress ** 0.75);
++      await this.safePointer();
++      this.inputDispatched = true;
+       await this.page.mouse.wheel(0, next - previous);
+       previous = next;
+       tick = Math.max(tick + 1, Math.ceil((performance.now() - beginning) * 60 / 1000));
+@@ -280,7 +357,7 @@
+     try {
+       const next = await this.uniqueHandle(nextStep?.selector);
+       if (!next) return false;
+-      const result = await this.page.locator(selector).first().elementHandle();
++      const result = await this.page.locator(selector).elementHandle();
+       const inside = await result.evaluate((element, other) => element.contains(other), next);
+       await Promise.all([next.dispose(), result.dispose()]);
+       return inside;
+@@ -290,9 +367,20 @@
+   }
+ 
+   async run(step, index, nextStep) {
++    this.typingTarget = null;
++    this.requireEnterReceipt = step.action === 'press' && !step.expect;
++    this.inputDispatched = false;
++    this.pendingExpectation = !['wait', 'focus'].includes(step.action) ? step.expect : null;
++    if (!['wait', 'focus'].includes(step.action)) {
++      await this.safeInput(step.selector ? this.page.locator(step.selector)
++        : step.action === 'scroll' ? this.page.locator(':root') : undefined);
++    }
+     const afterTyping = step.action === 'type' || (step.action === 'press' && this.previousFocus?.action === 'type');
+     const { locator, focus, landing, commit } = await this.resolveTarget(step, index, nextStep);
+     const actionStart = this.now();
++    if (commit && !step.expect) {
++      throw expectationFailure(`Step ${index + 1}: a committing input requires a fresh success expectation.`);
++    }
+ 
+     if (step.action === 'click' || step.action === 'type') {
+       const alreadyFocused = step.action === 'type' && await locator.evaluate(element => element === document.activeElement);
+@@ -302,7 +390,11 @@
+       if (!alreadyFocused) await this.click(locator, focus, index, landing, step.action === 'click' && !step.expect, commit, step.hold);
+       if (chooser) {
+         const fileChooser = await chooser.catch(() => { throw new Error(`Step ${index + 1}: the click did not open a file chooser.`); });
+-        await fileChooser.setFiles(step.file);
++        const input = fileChooser.element();
++        try {
++          await this.safeInput(input);
++          await fileChooser.setFiles(step.file);
++        } finally { await input.dispose(); }
+       }
+       await this.captureCursor(true);
+     }
+@@ -324,8 +416,14 @@
+     let resultWords = 0;
+     let inside = false;
+     if (step.expect) {
+-      const result = this.page.locator(step.expect).first();
+-      await result.waitFor({ state: 'visible' });
++      const result = this.page.locator(step.expect);
++      try {
++        await result.waitFor({ state: 'visible' });
++        if (await result.count() !== 1) throw new Error();
++      } catch {
++        await this.safePage();
++        throw expectationFailure('Success expectation must match exactly one visible result.');
++      }
+       // Measure once it stops moving: a drawer or toast that slides in is first seen off to the side.
+       await result.evaluate(waitForStableTarget, 2000 * this.animationSlowdown);
+       const info = await result.evaluate(resultInfo);
+--- a/src/capture/touch.mjs
++++ b/src/capture/touch.mjs
+@@ -31,7 +31,10 @@
+   // A phone has no pointer to show.
+   async captureCursor() {}
+ 
+-  touch(type, point) {
++  async touch(type, point) {
++    await this.safePointer(point ?? this.lastTouchPoint ?? this.pointer);
++    if (point) this.lastTouchPoint = point;
++    this.inputDispatched = true;
+     return this.session.send('Input.dispatchTouchEvent', {
+       type, touchPoints: point ? [{ x: point.x, y: point.y, radiusX: fingertip, radiusY: fingertip }] : [],
+     });
+@@ -100,7 +103,8 @@
+     await super.type(locator, text, focus, index);
+   }
+ 
+-  typeCharacter(character, focus) {
++  async typeCharacter(character, focus) {
++    await this.safeTyping();
+     focus.keys.push({ t: this.now(), key: this.secret ? null : character });
+     return super.typeCharacter(character);
+   }
+--- a/src/capture/page-state.mjs
++++ b/src/capture/page-state.mjs
+@@ -259,6 +259,7 @@
+ // One rule per selector, so a selector the browser rejects cannot void the others.
+ export function hideElements(selectors) {
+   const style = document.createElement('style');
++  style.setAttribute('data-cutaway-hide', '');
+   style.textContent = selectors.map(selector => `${selector} { display: none !important; }`).join('\n');
+   const attach = () => document.documentElement.append(style);
+   if (document.documentElement) attach();

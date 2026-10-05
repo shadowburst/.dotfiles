@@ -11,10 +11,30 @@
   };
 
   npmDepsHash = "sha256-Srq0y94q3fMRi1OMFYKHh/tb2jrlqozrEVlzj/9eUq8=";
+  patches = [ ./cutaway-auth.patch ];
+  postPatch = ''
+    cp ${../config/pi/extensions/browser/auth.mjs} src/capture/auth.mjs
+  '';
+
   dontNpmBuild = true;
   npmInstallFlags = [ "--ignore-scripts" ];
   npmRebuildFlags = [ "--ignore-scripts" ];
   nativeBuildInputs = [ pkgs.makeWrapper ];
+  nativeCheckInputs = [ pkgs.ffmpeg ];
+  PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
+    export FONTCONFIG_FILE=${pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; }}
+    export HOME="$TMPDIR/cutaway-check-home"
+    export XDG_STATE_HOME="$HOME/state"
+    mkdir -p "$XDG_STATE_HOME" "$TMPDIR/capture-auth-checks"
+    chmod 700 "$HOME" "$XDG_STATE_HOME"
+    cp ${../config/pi/extensions/browser/capture-auth.test.mjs} "$TMPDIR/capture-auth-checks/capture-auth.test.mjs"
+    cp ${../config/pi/extensions/browser/capture-auth-fixtures.mjs} "$TMPDIR/capture-auth-checks/capture-auth-fixtures.mjs"
+    CUTAWAY_SOURCE="$PWD" node --test "$TMPDIR/capture-auth-checks/capture-auth.test.mjs"
+    runHook postCheck
+  '';
 
   installPhase = ''
     runHook preInstall
