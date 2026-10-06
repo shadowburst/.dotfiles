@@ -12,6 +12,7 @@ import { chromium, devices, type Browser, type BrowserContext, type Page, type L
 import { observeAuth, assertSafeInput, assertSafeUrl, verifyAuthenticated } from "./auth.mjs";
 import { finishExport, publishLive, validateCapture } from "./export.ts";
 import { activateBrowserTools, BROWSER_TOOL_NAMES, initializeBrowserTools } from "./state.ts";
+import { showConfirmation, type ConfirmationDetails } from "./confirmation.ts";
 
 const VIEWPORT = { width: 1280, height: 720 };
 const LIMIT = 12_000;
@@ -45,6 +46,7 @@ const outputSchema = Type.Object({
   auth: Type.Object({ state: StringEnum(["ready", "auth-blocked", "cancelled"]), reason: Type.String() }),
   snapshotFresh: Type.Boolean(), dispatch: StringEnum(["not-attempted", "attempted"]), completion: StringEnum(["verified", "unknown"]),
   url: Type.Optional(Type.String()), title: Type.Optional(Type.String()), result: Type.Optional(Type.Unknown()),
+  confirmation: Type.Optional(Type.Object({ answers: Type.Array(Type.Array(Type.String())), additionalNote: Type.Optional(Type.String()) }, { additionalProperties: false })),
   phase: Type.Optional(Type.String()), artifacts: Type.Optional(Type.Unknown()), captureStatus: Type.Optional(Type.String()), failedStep: Type.Optional(Type.Integer({ minimum: 1 })),
   businessOutcome: Type.Optional(Type.Unknown()), businessEvidence: Type.Optional(Type.Unknown()), motion: Type.Optional(Type.Unknown()), renderMetrics: Type.Optional(Type.Unknown()), timings: Type.Optional(Type.Unknown()), omission: Type.Optional(Type.Unknown()),
 }, { additionalProperties: false });
@@ -131,14 +133,15 @@ class BrowserRuntime {
   verifier?: Verifier;
   dispatch: "not-attempted" | "attempted" = "not-attempted";
   completion: "verified" | "unknown" = "unknown";
+  confirmation?: ConfirmationDetails;
 
-  constructor(private readonly gitCommonDirectory: (cwd: string) => Promise<string | undefined>, private readonly exec: ExtensionAPI["exec"]) {}
+  constructor(private readonly gitCommonDirectory: (cwd: string) => Promise<string | undefined>, private readonly exec: ExtensionAPI["exec"], private readonly pi: ExtensionAPI) {}
   setProjectDirectory(directory: string): void { if (directory !== this.projectDirectory) { this.projectDirectory = directory; this.statePath = undefined; } }
   cancel(reason = "Human cancelled or operation aborted"): void { this.workflow = { state: "cancelled", reason }; this.completion = "unknown"; this.invalidateSnapshot(); }
   checkSignal(signal?: AbortSignal): void { if (signal?.aborted) { this.cancel(); throw failure("cancelled", "Operation cancelled; do not retry uncertain writes"); } }
   run<T>(operation: () => Promise<T>, signal?: AbortSignal, mutation = false, onError?: (error: unknown) => Promise<T>): Promise<T> {
     const result = this.queue.then(async () => {
-      this.dispatch = "not-attempted"; this.completion = "unknown";
+      this.dispatch = "not-attempted"; this.completion = "unknown"; this.confirmation = undefined;
       const abort = () => this.cancel();
       try {
         this.checkSignal(signal);
@@ -571,16 +574,17 @@ class BrowserRuntime {
     }
     await this.selectedPage(); await this.observe();
     this.checkSignal(signal);
-    if (!ctx?.hasUI) throw failure("auth_required", "Human handoff requires interactive UI");
+    if (!ctx?.hasUI || ctx.mode !== "tui") throw failure("auth_required", "Human handoff requires interactive TUI");
     if (verifier) {
       const origin = new URL(verifier.origin); if (origin.origin !== verifier.origin || !["http:", "https:"].includes(origin.protocol)) throw failure("invalid_input", "Verifier requires an exact HTTP(S) origin");
     }
     const previousState = this.workflow.state;
     const wasBlocked = previousState !== "ready";
     try {
-      const yes = await ctx.ui.confirm("Your turn in the browser", `${message}\n\nChoose Yes when finished, No to cancel.`, { signal });
+      const answer = await showConfirmation(this.pi, ctx, "Your turn in the browser", `${message}\n\nChoose Done when finished, Cancel to cancel.`, ["Done", "Cancel"], signal);
+      this.confirmation = answer?.details;
       this.checkSignal(signal);
-      if (!yes) { this.cancel("Human cancelled handoff"); throw failure("cancelled", this.workflow.reason); }
+      if (answer?.details.answers[0]?.[0] !== "Done") { this.cancel("Human cancelled handoff"); throw failure("cancelled", this.workflow.reason); }
       const observed = await observeAuth(await this.selectedPage());
       if (wasBlocked && (!verifier || !await verifyAuthenticated(await this.selectedPage(), verifier)) || observed.state !== "ready") {
         this.workflow = { state: previousState === "cancelled" ? "cancelled" : "auth-blocked", reason: "Human completion needs a unique authenticated-only marker on the expected origin, with no visible auth gate" };
@@ -606,7 +610,7 @@ export default function browserTools(pi: ExtensionAPI) {
   const runtime = new BrowserRuntime(async cwd => {
     const result = await pi.exec("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], { cwd, timeout: 30_000 });
     return result.code === 0 ? result.stdout.trim() || undefined : undefined;
-  }, pi.exec.bind(pi));
+  }, pi.exec.bind(pi), pi);
   let lastRecording: Record<string, unknown> | undefined;
   let lastWorkflow = "";
   const updateRecording = (facts: Record<string, unknown>) => lastRecording = { ...facts, needsVerification: typeof facts.needsVerification === "boolean" ? facts.needsVerification : lastRecording?.needsVerification ?? facts.captureStatus !== "complete" };
@@ -617,7 +621,7 @@ export default function browserTools(pi: ExtensionAPI) {
     const workflow = { auth: runtime.workflow, ...(runtime.verifier ? { verifier: runtime.verifier } : {}) };
     const stamp = JSON.stringify(workflow);
     if (stamp !== lastWorkflow) { pi.appendEntry("browser-workflow", workflow); lastWorkflow = stamp; }
-    const data = { status: error ? "error" : "ok", ...facts, ...(runtime.dispatch === "attempted" ? { businessOutcome: "unknown" } : {}), ...(result === undefined ? {} : { result }), ...extras,
+    const data = { status: error ? "error" : "ok", ...facts, ...(runtime.confirmation ? { confirmation: runtime.confirmation } : {}), ...(runtime.dispatch === "attempted" ? { businessOutcome: "unknown" } : {}), ...(result === undefined ? {} : { result }), ...extras,
       ...(error ? { errorCode: error.code ?? (error.name === "AbortError" ? "cancelled" : "operation_failed"), message: error.publicMessage ?? (error.name === "ExportFailure" ? error.message : "Browser operation failed; inspect diagnostics and application state before retrying writes"), ...(error.phase ? { phase: error.phase } : {}), ...(error.artifacts ? { artifacts: error.artifacts } : {}), ...(error.captureStatus ? { captureStatus: error.captureStatus } : {}), ...(Number.isInteger(error.failedStep) && error.failedStep > 0 ? { failedStep: error.failedStep } : {}), ...(error.businessOutcome ? { businessOutcome: error.businessOutcome } : {}), ...(error.timings ? { timings: error.timings } : {}), ...(error.motion ? { motion: error.motion } : {}), ...(error.businessEvidence ? { businessEvidence: error.businessEvidence } : {}), ...(error.renderMetrics ? { renderMetrics: error.renderMetrics } : {}) } : {}) };
     if (result && typeof result === "object") for (const key of ["phase", "artifacts", "captureStatus", "businessOutcome", "businessEvidence", "motion", "renderMetrics", "timings", "omission"] as const) {
       if (key in result) (data as Record<string, unknown>)[key] = (result as Record<string, unknown>)[key];
@@ -627,7 +631,8 @@ export default function browserTools(pi: ExtensionAPI) {
       // Bound every output surface; preserve only already-redacted data in a private artifact.
       const directory = await mkdtemp(join(tmpdir(), "pi-browser-output-")); await chmod(directory, 0o700);
       const path = join(directory, "output.json"); await writeFile(path, text, { mode: 0o600 });
-      data.result = { omitted: true };
+      if (data.confirmation?.additionalNote) data.confirmation = { ...data.confirmation, additionalNote: "Additional note omitted; read the full note at omission.path." };
+      if (JSON.stringify(data).length > LIMIT) data.result = { omitted: true };
       (data as Record<string, unknown>).omission = { truncated: true, totalBytes: Buffer.byteLength(text), path, reobserve: "Use a scoped snapshot or diagnostic cursor/filter" };
       text = JSON.stringify(data);
     }
@@ -753,14 +758,22 @@ export default function browserTools(pi: ExtensionAPI) {
   pi.registerTool({
     name: "browser_clear_state", label: "Browser Clear State", description: "Clear the project's saved authentication after human confirmation",
     parameters: Type.Object({}, { additionalProperties: false }), outputSchema,
-    async execute(_id, _params, signal, _update, ctx) { return execute(async () => { if (!ctx.hasUI) throw failure("ui_required", "Clearing state requires UI"); const confirmed = await ctx.ui.confirm("Clear browser login?", "Delete saved authentication and close this context?", { signal }); runtime.checkSignal(signal); if (confirmed) await runtime.clearProjectState(); return { cleared: confirmed }; }, signal, false, ctx, false); },
+    async execute(_id, _params, signal, _update, ctx) { return execute(async () => {
+      if (!ctx.hasUI || ctx.mode !== "tui") throw failure("ui_required", "Clearing state requires interactive TUI");
+      const answer = await showConfirmation(pi, ctx, "Clear browser login?", "Delete saved authentication and close this context?", ["Clear state", "Keep state"], signal);
+      runtime.confirmation = answer?.details;
+      runtime.checkSignal(signal);
+      const confirmed = answer?.details.answers[0]?.[0] === "Clear state";
+      if (confirmed) await runtime.clearProjectState();
+      return { cleared: confirmed };
+    }, signal, false, ctx, false); },
   });
   pi.registerTool({
-    name: "browser_handoff", label: "Browser Handoff", description: "Human browser interaction. An auth block or cancellation resumes only with Yes, no remaining gate, and a unique authenticated-only selector bound to the expected origin. No/abort latches cancellation.",
+    name: "browser_handoff", label: "Browser Handoff", description: "Human browser interaction. An auth block or cancellation resumes only with Done, no remaining gate, and a unique authenticated-only selector bound to the expected origin. Cancel/dismiss/abort latches cancellation.",
     parameters: Type.Object({ message: Type.String(), verifier: Type.Optional(verifierSchema) }, { additionalProperties: false }), outputSchema,
     async execute(_id, { message, verifier }, signal, _update, ctx) {
       return execute(async () => {
-        if (lastRecording?.needsVerification) message += "\nA previous capture may already have committed a write. Authentication alone does not verify its outcome. Verify application state first; choosing Yes explicitly permits new input/captures that may submit again. Choose No if you cannot determine the outcome or do not authorize another operation.";
+        if (lastRecording?.needsVerification) message += "\nA previous capture may already have committed a write. Authentication alone does not verify its outcome. Verify application state first; choosing Done explicitly permits new input/captures that may submit again. Choose Cancel if you cannot determine the outcome or do not authorize another operation.";
         const result = await runtime.handoff(message, verifier, ctx, signal);
         if (lastRecording?.needsVerification) remember({ ...lastRecording, needsVerification: false });
         return result;

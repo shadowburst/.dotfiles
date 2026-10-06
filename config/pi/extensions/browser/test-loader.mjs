@@ -6,6 +6,10 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const hostSources = {
   "@earendil-works/pi-coding-agent": `
+    export const getMarkdownTheme = () => Object.fromEntries(
+      ['heading', 'link', 'linkUrl', 'code', 'codeBlock', 'codeBlockBorder', 'quote', 'quoteBorder', 'hr', 'listBullet', 'bold', 'italic', 'underline', 'strikethrough'].map(key => [key, text => text])
+    );
+    export const stripFrontmatter = content => content.replace(/^---\\n[\\s\\S]*?\\n---\\n?/, '');
     export const DEFAULT_MAX_BYTES = 50000;
     export const DEFAULT_MAX_LINES = 2000;
     export const formatSize = String;
@@ -22,6 +26,18 @@ const hostSources = {
   "@earendil-works/pi-ai": `export const StringEnum = (values, options = {}) => ({ type: "string", enum: [...values], ...options });`,
 };
 
+/** @param {(component: any) => void | Promise<void>} interact */
+export function dialogUI(interact) {
+  return { hasUI: true, mode: "tui", cwd: process.cwd(), ui: {
+    custom: factory => new Promise((resolve, reject) => {
+      const theme = { fg: (_color, text) => text, bg: (_color, text) => text, bold: text => text };
+      const component = factory({ requestRender() {}, terminal: { rows: 40, columns: 100 } }, theme, {}, resolve);
+      component.focused = true;
+      Promise.resolve().then(() => interact(component)).catch(reject);
+    }),
+  } };
+}
+
 export function registerBrowserTestLoader({ playwrightSource } = {}) {
   // Resolve before tests replace HOME; use real package exports, including typebox/value.
   const roots = [
@@ -34,8 +50,10 @@ export function registerBrowserTestLoader({ playwrightSource } = {}) {
     pathToFileURL("/nix/store/4124kgrxxngakwm8nw2gkvzz7f6ad6cq-pi-coding-agent-1.0.0/lib/node_modules/pi-monorepo/package.json"),
   ].filter(Boolean);
   const modules = {};
-  for (const specifier of ["typebox", "typebox/value", ...(playwrightSource ? [] : ["playwright"])]) {
-    for (const root of roots) {
+  const hostRoot = roots.find(root => existsSync(join(dirname(fileURLToPath(root)), "dist/extensions/codemode/execute.js")));
+  for (const specifier of ["typebox", "typebox/value", "@earendil-works/pi-tui", ...(playwrightSource ? [] : ["playwright"])]) {
+    // Use the host's TUI version so real codemode imports see matching exports.
+    for (const root of specifier === "@earendil-works/pi-tui" && hostRoot ? [hostRoot, ...roots] : roots) {
       try {
         const resolved = createRequire(root).resolve(specifier);
         // Playwright's ESM entry explicitly exports chromium/devices; its CJS entry does not.
@@ -58,12 +76,16 @@ let modules = {};
 let sources = {};
 export function initialize(data) { ({ modules, sources } = data); }
 export function resolve(specifier, context, nextResolve) {
+  const browserRoot = new URL("./", import.meta.url).href;
+  if (context.parentURL?.startsWith(browserRoot) && specifier.startsWith(".") && !new URL(specifier, context.parentURL).href.startsWith(browserRoot)) {
+    throw new Error(`Browser extension must not import sibling extensions: ${specifier}`);
+  }
   if (sources[specifier]) return { url: `data:text/javascript,${encodeURIComponent(sources[specifier])}`, shortCircuit: true };
   if (modules[specifier]) return { url: modules[specifier], shortCircuit: true };
   return nextResolve(specifier, context);
 }
 export async function load(url, context, nextLoad) {
-  if (url.startsWith(new URL("./", import.meta.url).href) && url.endsWith(".ts")) {
+  if (url.startsWith(new URL("../", import.meta.url).href) && url.endsWith(".ts")) {
     return { format: "module", shortCircuit: true, source: stripTypeScriptTypes(await readFile(fileURLToPath(url), "utf8"), { mode: "transform" }) };
   }
   return nextLoad(url, context);

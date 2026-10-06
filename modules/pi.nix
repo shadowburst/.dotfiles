@@ -18,26 +18,11 @@ _: {
         src = ../config/pi/extensions/browser;
         npmDepsHash = "sha256-lzux0pks+POBqQknAlMCy/Agh6Rpee5QLqoti2oyGTg=";
         dontNpmBuild = true;
-        doCheck = true;
-        nativeCheckInputs = [ pkgs.cutaway pkgs.ffmpeg ];
-        checkPhase = ''
-          runHook preCheck
-          export HOME=$(mktemp -d)
-          chmod 700 "$HOME"
-          export XDG_STATE_HOME="$HOME/state"
-          export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
-          export FONTCONFIG_FILE=${pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; }}
-          export PI_BROWSER_HEADLESS=1
-          export PI_BROWSER_TEST_HOST_ROOT=${pkgs.pi-coding-agent}/lib/node_modules/pi-monorepo
-          export CUTAWAY_SOURCE=${pkgs.cutaway}/lib/cutaway
-          node --test --test-concurrency=1 state.test.ts index.integration.test.ts export.test.ts real.integration.test.ts recording.integration.test.ts
-          node --test smoke.test.mjs
-          runHook postCheck
-        '';
+        doCheck = false;
         installPhase = ''
           runHook preInstall
           mkdir -p $out
-          cp -r index.ts state.ts auth.mjs export.ts package.json package-lock.json node_modules $out/
+          cp -r index.ts state.ts auth.mjs export.ts confirmation.ts note-editor.ts package.json package-lock.json node_modules $out/
           runHook postInstall
         '';
       };

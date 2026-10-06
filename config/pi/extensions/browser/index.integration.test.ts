@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { crc32, deflateSync } from "node:zlib";
-import { registerBrowserTestLoader } from "./test-loader.mjs";
+import { dialogUI, registerBrowserTestLoader } from "./test-loader.mjs";
 
 // Only this lifecycle suite substitutes the Playwright boundary. Safety claims live in real.integration.test.ts.
 registerBrowserTestLoader({ playwrightSource: `
@@ -111,7 +111,7 @@ type ExecResult = { code: number; stdout: string; stderr: string };
 type Exec = (command: string, args: string[], options?: any) => Promise<ExecResult>;
 const noExec: Exec = async command => { throw new Error(`Unexpected external process: ${command}`); };
 const noUI = { hasUI: false, ui: {} };
-const yesUI = { hasUI: true, ui: { confirm: async () => true } };
+const yesUI = dialogUI(component => component.handleInput("\r"));
 let home: string;
 let previous: Record<string, string | undefined>;
 const sessions: Array<{ handlers: Map<string, any> }> = [];
@@ -138,6 +138,7 @@ function extension(exec: Exec = noExec, gitCommonDirectory?: string) {
   let active = ["read", "browser_record"];
   browserExtension({
     exec: (command: string, args: string[], options: any) => command === "git" ? Promise.resolve({ code: gitCommonDirectory ? 0 : 1, stdout: gitCommonDirectory ?? "", stderr: "" }) : exec(command, args, options),
+    events: { emit() {} }, getCommands: () => [],
     getActiveTools: () => active, setActiveTools: (next: string[]) => { active = next; },
     on: (name: string, handler: any) => handlers.set(name, handler), registerTool: (tool: any) => tools.set(tool.name, tool),
     appendEntry: (customType: string, data: any) => entries.push({ type: "custom", customType, data }),
@@ -257,12 +258,24 @@ test("persistence-error lifecycle cleanup still closes context and browser", asy
   assert(mock.calls.some(call => call[0] === "browser.close"));
 });
 
-test("clear-state is confirmation-only and deletes only the current project state", async () => {
+test("clear-state offers two fixed choices and returns the general note with either answer, deleting only its project", async () => {
   const session = extension(); await session.call("browser_open", { url: "https://example.com" }); await session.handlers.get("agent_settled")({}, noUI);
   const file = await stateFile(); const other = join(home, "state/pi/browser/other.json"); await writeFile(other, "other project");
-  assert.equal(ok(await session.call("browser_clear_state", {}, { hasUI: true, ui: { confirm: async () => false } })).cleared, false);
-  assert.ok(await stat(file));
-  assert.equal(ok(await session.call("browser_clear_state", {}, yesUI)).cleared, true);
+  for (const clear of [false, true]) {
+    const result = await session.call("browser_clear_state", {}, dialogUI(component => {
+      const rendered = component.render(100).join("\n");
+      assert.match(rendered, /→ 1\. Clear state/);
+      assert.match(rendered, /2\. Keep state/);
+      assert.doesNotMatch(rendered, /Type your own answer/);
+      component.handleInput("n"); component.handleInput("Keep the other project"); component.handleInput("\r");
+      if (!clear) component.handleInput("\x1b[B");
+      component.handleInput("\r");
+    }));
+    assert.equal(ok(result).cleared, clear);
+    assert.deepEqual(result.details.confirmation, { answers: [[clear ? "Clear state" : "Keep state"]], additionalNote: "Keep the other project" });
+    assert.match(result.content[0].text, /Keep the other project/);
+    if (!clear) assert.ok(await stat(file));
+  }
   await assert.rejects(stat(file), /ENOENT/); assert.equal(await readFile(other, "utf8"), "other project");
 });
 
@@ -308,10 +321,84 @@ test("unsafe auth handoff assumptions are rejected; safe observations remain ava
   assert.equal(mock.calls.filter(call => call[0] === "storageState").length, 0);
 });
 
+test("handoff submits Done and a general note through the browser-owned UI and retains it in browser results", async () => {
+  const session = extension(); await session.call("browser_open", { url: "https://example.com" });
+  const result = await session.call("browser_handoff", { message: "Review the editor" }, dialogUI(component => {
+    const initial = component.render(100).join("\n");
+    assert.match(initial, /Review the editor/);
+    assert.match(initial, /→ 1\. Done/);
+    assert.match(initial, /2\. Cancel/);
+    assert.doesNotMatch(initial, /Type your own answer/);
+    component.handleInput("n");
+    component.handleInput("Checked manually");
+    component.handleInput("\r");
+    assert.match(component.render(100).join("\n"), /GENERAL[\s\S]*Checked manually/);
+    component.handleInput("\r");
+  }));
+  assert.equal(ok(result).confirmed, true);
+  assert.deepEqual(result.details.confirmation, { answers: [["Done"]], additionalNote: "Checked manually" });
+  assert.match(result.content[0].text, /Checked manually/);
+  assert.equal((await session.call("browser_action", { action: "title" })).details.confirmation, undefined);
+});
+
+test("browser note editing preserves saved notes on discard, clears drafts, and fits narrow terminals", async () => {
+  const { visibleWidth } = await import("@earendil-works/pi-tui");
+  const session = extension();
+  const result = await session.call("browser_clear_state", {}, dialogUI(component => {
+    component.handleInput("n"); component.handleInput("  Saved 日本語 note  "); component.handleInput("\r");
+    component.handleInput("n"); component.handleInput("discard me"); component.handleInput("\x1b");
+    assert.match(component.render(100).join("\n"), /Saved 日本語 note/);
+    assert.doesNotMatch(component.render(100).join("\n"), /discard me/);
+    component.handleInput("n"); component.handleInput("\x03"); component.handleInput("Replacement 日本語");
+    for (const width of [1, 10, 40]) assert(component.render(width).every((line: string) => visibleWidth(line) <= width));
+    component.handleInput("\r");
+    component.handleInput("\x1b[D"); component.handleInput("\r");
+  }));
+  assert.equal(ok(result).cleared, false);
+  assert.deepEqual(result.details.confirmation, { answers: [["Keep state"]], additionalNote: "Replacement 日本語" });
+});
+
+test("oversized general notes retain the browser outcome and full note in a private artifact within output bounds", async () => {
+  const session = extension();
+  const note = "Context ".repeat(2000).trim();
+  const result = await session.call("browser_clear_state", {}, dialogUI(component => {
+    component.handleInput("n"); component.handleInput(note); component.handleInput("\r");
+    component.handleInput("\x1b[B"); component.handleInput("\r");
+  }));
+  assert.equal(ok(result).cleared, false);
+  assert(result.content[0].text.length <= 12_000);
+  assert.equal(result.details.omission.truncated, true);
+  const retained = JSON.parse(await readFile(result.details.omission.path, "utf8"));
+  assert.equal(retained.confirmation.additionalNote, note);
+  assert.equal(retained.result.cleared, false);
+  assert.equal((await stat(result.details.omission.path)).mode & 0o777, 0o600);
+  await rm(join(result.details.omission.path, ".."), { recursive: true, force: true });
+});
+
+test("abort closes a pending handoff note editor, discards drafts and blocks queued browser input", async () => {
+  const session = extension(); await session.call("browser_open", { url: "https://example.com" });
+  const controller = new AbortController();
+  let lateComponent: any;
+  const pending = session.call("browser_handoff", { message: "Review" }, dialogUI(component => {
+    lateComponent = component;
+    component.handleInput("n"); component.handleInput("Unsubmitted draft");
+    controller.abort();
+  }), controller.signal);
+  const sibling = session.call("browser_action", { action: "fill", selector: "#title", value: "never" });
+  let timer: ReturnType<typeof setTimeout>;
+  try {
+    const result = await Promise.race([pending, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("Confirmation did not close on abort")), 500); })]);
+    assert.equal(error(result, "cancelled").confirmation, undefined);
+    lateComponent.handleInput("\r"); lateComponent.handleInput("\r");
+    assert.equal(error(await sibling, "cancelled").dispatch, "not-attempted");
+    assert.doesNotMatch(JSON.stringify(result), /Unsubmitted draft/);
+  } finally { clearTimeout(timer!); }
+});
+
 test("general non-auth human handoffs remain usable and save private state", async () => {
   const session = extension(); await session.call("browser_open", { url: "https://example.com" });
   let prompt = "";
-  const result = ok(await session.call("browser_handoff", { message: "Review the editor" }, { hasUI: true, ui: { confirm: async (_title: string, message: string) => { prompt = message; return true; } } }));
+  const result = ok(await session.call("browser_handoff", { message: "Review the editor" }, dialogUI(component => { prompt = component.render(120).join("\n"); component.handleInput("\r"); })));
   assert.equal(result.confirmed, true); assert.match(prompt, /Review the editor/); assert.ok(await stat(await stateFile()));
 });
 
@@ -433,7 +520,7 @@ test("agent settlement publishes an unfinished live take and closes Chromium", a
 
 test("active-branch workflow reconstruction preserves cancellation, not live refs or browser objects", async () => {
   const first = extension(); await first.call("browser_open", { url: "https://example.com" });
-  error(await first.call("browser_handoff", { message: "Review" }, { hasUI: true, ui: { confirm: async () => false } }), "cancelled");
+  error(await first.call("browser_handoff", { message: "Review" }, dialogUI(component => { component.handleInput("\x1b[B"); component.handleInput("\r"); })), "cancelled");
   const workflow = first.entries.filter(entry => entry.customType === "browser-workflow");
   assert.equal(workflow.at(-1).data.auth.state, "cancelled");
   assert.doesNotMatch(JSON.stringify(workflow), /aria-ref|snapshotFresh|browserContext/);
@@ -502,7 +589,7 @@ test("human permission after an unknown capture explicitly warns about another p
   const session = extension();
   session.handlers.get("session_start")({}, { ...noUI, cwd: home, sessionManager: { getBranch: () => [{ type: "custom", customType: "browser-recording", data: { captureStatus: "failed", businessOutcome: "unknown", needsVerification: true } }] } });
   let prompt = "";
-  ok(await session.call("browser_handoff", { message: "Review the application" }, { hasUI: true, ui: { confirm: async (_title: string, message: string) => { prompt = message; return true; } } }));
+  ok(await session.call("browser_handoff", { message: "Review the application" }, dialogUI(component => { prompt = component.render(120).join("\n"); component.handleInput("\r"); })));
   assert.match(prompt, /may already have committed a write/); assert.match(prompt, /explicitly permits new input/);
   const retained = ok(await session.call("browser_tools", { tools: ["browser_record"] })).retainedRecording;
   assert.equal(retained.needsVerification, false); assert.equal(retained.businessOutcome, "unknown");

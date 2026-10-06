@@ -4,7 +4,7 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { registerBrowserTestLoader } from "./test-loader.mjs";
+import { dialogUI, registerBrowserTestLoader } from "./test-loader.mjs";
 
 // These tests call registered tools; fixture counters independently detect unsafe dispatch.
 
@@ -106,6 +106,7 @@ async function fixture(run: (session: any) => Promise<void>) {
   browserExtension({
     exec: async (command: string) => { assert.equal(command, "git"); return { code: 1, stdout: "", stderr: "not a repository" }; },
     appendEntry: () => {},
+    events: { emit() {} }, getCommands: () => [],
     registerTool: (tool: any) => tools.set(tool.name, tool),
     on: (name: string, handler: any) => handlers.set(name, handler),
     getActiveTools: () => [],
@@ -287,7 +288,7 @@ test("guarded primitives preserve native fill, typing, checkbox, select and form
 
 test("Cancel prompts once, blocks queued siblings, and survives lifecycle/context replacement", async () => fixture(async ({ call, origin, handlers, counts }) => {
   let prompts = 0;
-  const ctx = { hasUI: true, ui: { confirm: async () => { prompts++; return false; } } };
+  const ctx = dialogUI(component => { prompts++; component.handleInput("\x1b[B"); component.handleInput("\r"); });
   const replies = await Promise.all([
     call("browser_open", { url: `${origin}/login/email` }, ctx),
     call("browser_action", { action: "fill", selector: "#email", value: "no input" }, ctx),
@@ -299,8 +300,8 @@ test("Cancel prompts once, blocks queued siblings, and survives lifecycle/contex
     assert.equal(reply.isError, true);
   }
   assert.equal(prompts, 1);
-  const unverified = outcome(await call("browser_handoff", { message: "Resume" }, { hasUI: true, ui: { confirm: async () => true } }));
-  assert.equal(unverified.auth.state, "cancelled", "Yes alone cannot erase cancellation");
+  const unverified = outcome(await call("browser_handoff", { message: "Resume" }, dialogUI(component => component.handleInput("\r"))));
+  assert.equal(unverified.auth.state, "cancelled", "Done alone cannot erase cancellation");
   await handlers.get("agent_settled")?.({}, noUI);
   await call("browser_open", { url: `${origin}/contact` });
   const blocked = outcome(await call("browser_action", { action: "fill", selector: "#email", value: "no input" }));
@@ -309,9 +310,12 @@ test("Cancel prompts once, blocks queued siblings, and survives lifecycle/contex
   assert.deepEqual(counts(), { inputs: 0, submissions: 0 });
 }));
 
-test("Yes with a visible login, missing verifier, or missing marker never clears authentication", async () => fixture(async ({ call, origin, counts }) => {
+test("Done with a visible login, missing verifier, or missing marker never clears authentication", async () => fixture(async ({ call, origin, counts }) => {
   await call("browser_open", { url: `${origin}/login/password` });
-  const ctx = { hasUI: true, ui: { confirm: async () => true } };
+  const ctx = dialogUI(component => {
+    component.handleInput("n"); component.handleInput("Login still needs checking"); component.handleInput("\r");
+    component.handleInput("\r");
+  });
   for (const params of [
     { message: "Finish login" },
     { message: "Finish login", verifier: { origin, selector: "#authenticated" } },
@@ -320,6 +324,7 @@ test("Yes with a visible login, missing verifier, or missing marker never clears
     const blocked = outcome(await call("browser_handoff", params, ctx));
     assert.equal(blocked.status, "error");
     assert.equal(blocked.auth.state, "auth-blocked");
+    assert.deepEqual(blocked.confirmation, { answers: [["Done"]], additionalNote: "Login still needs checking" });
   }
   assert.equal(outcome(await call("browser_action", { action: "press", key: "Enter" })).dispatch, "not-attempted");
   assert.deepEqual(counts(), { inputs: 0, submissions: 0 });
@@ -328,7 +333,7 @@ test("Yes with a visible login, missing verifier, or missing marker never clears
 test("an origin-bound visible authenticated marker permits exactly one authorized submission", async () => fixture(async ({ call, origin, authenticateHuman, counts }) => {
   await call("browser_open", { url: `${origin}/login/email` });
   const oldRef = nativeRefs(await call("browser_action", { action: "snapshot" }), "Email")[0];
-  const ctx = { hasUI: true, ui: { confirm: async () => { await authenticateHuman(); return true; } } };
+  const ctx = dialogUI(async component => { await authenticateHuman(); component.handleInput("\r"); });
   const handoff = outcome(await call("browser_handoff", { message: "Complete login", verifier: { origin, selector: "#authenticated" } }, ctx));
   assert.equal(handoff.status, "ok");
   assert.equal(handoff.auth.state, "ready");
@@ -662,14 +667,13 @@ test("abort during a locator wait blocks the queued sibling and reports no dispa
   } finally { clearTimeout(timer); }
 }));
 
-test("handoff abort propagates its signal and cannot resume on a late Yes", async () => fixture(async ({ call, origin, counts }) => {
+test("handoff abort closes its dialog and cannot resume on a late Done", async () => fixture(async ({ call, origin, counts }) => {
   await call("browser_open", { url: `${origin}/login/email` });
   const controller = new AbortController();
-  const ctx = { hasUI: true, ui: { confirm: async (_title: string, _message: string, options: any) => {
-    assert.equal(options.signal, controller.signal);
+  const ctx = dialogUI(component => {
     controller.abort();
-    return true;
-  } } };
+    component.handleInput("\r");
+  });
   const cancelled = outcome(await call("browser_handoff", { message: "Complete login", verifier: { origin, selector: "#authenticated" } }, ctx, controller.signal));
   assert.equal(cancelled.auth.state, "cancelled");
   const blocked = outcome(await call("browser_action", { action: "press", key: "Enter" }));

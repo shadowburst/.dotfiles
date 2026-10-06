@@ -198,7 +198,7 @@ export function saveEdit(state: QuestionState): QuestionStep {
     const notes = state.notes.map((entry) => ({ ...entry }));
     if (value) notes[mode.questionIndex]![mode.optionIndex] = value;
     else delete notes[mode.questionIndex]![mode.optionIndex];
-    let next = { ...state, notes, editMode: { type: "browse" } as const, editDraft: "" };
+    let next: QuestionState = { ...state, notes, editMode: { type: "browse" }, editDraft: "" };
     if (!value || (mode.optionIndex === state.configuredCounts[mode.questionIndex] && !state.custom[mode.questionIndex])) {
       return { state: next, submit: false };
     }

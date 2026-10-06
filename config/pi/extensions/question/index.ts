@@ -78,6 +78,7 @@ class QuestionComponent implements Focusable {
     private readonly done: (result: DialogResult) => void,
     autocompleteProvider: AutocompleteProvider,
     private readonly getSkills: () => ReturnType<ExtensionAPI["getCommands"]>,
+    private readonly confirmation = false,
   ) {
     this.state = createQuestionState(questions);
     this.editor = new Editor(tui, editorTheme(theme));
@@ -155,6 +156,17 @@ class QuestionComponent implements Focusable {
       return;
     }
 
+    if (this.confirmation) {
+      const backwards = matchesKey(data, Key.up) || matchesKey(data, Key.left);
+      if (backwards || matchesKey(data, Key.down) || matchesKey(data, Key.right)) {
+        const total = this.questions[0]!.options.length;
+        this.state = { ...this.state, highlighted: (this.state.highlighted + (backwards ? -1 : 1) + total) % total };
+        this.refresh();
+      } else if (matchesKey(data, "n")) this.openEditor(beginAdditionalNoteEdit(this.state));
+      else if (matchesKey(data, Key.enter)) this.activate("enter");
+      return;
+    }
+
     if (matchesKey(data, Key.tab) || matchesKey(data, Key.right) || matchesKey(data, "l")) {
       this.state = setTab(this.state, this.questions, this.state.tab + 1);
       this.refresh();
@@ -210,6 +222,14 @@ class QuestionComponent implements Focusable {
   private renderEditor(width: number): string[] {
     return renderPrompt(this.editor.render(width), this.getSkills, this.theme,
       !!this.editor.getExpandedText().trim() && !this.editor.isShowingAutocomplete());
+  }
+
+  private renderAdditionalNote(width: number, title = "Additional note:"): string[] {
+    const lines = wrapTextWithAnsi(this.theme.fg("muted", title), width);
+    const content = this.state.editMode.type === "additionalNote"
+      ? this.renderEditor(Math.max(1, width - 2))
+      : wrapTextWithAnsi(this.theme.fg("text", this.state.additionalNote || "No additional note"), Math.max(1, width - 2));
+    return [...lines, ...content.map(line => `  ${line}`)];
   }
 
   render(width: number): string[] {
@@ -287,12 +307,7 @@ class QuestionComponent implements Focusable {
         }
       });
       lines.push("");
-      add(this.theme.fg("muted", "Additional note:"));
-      if (this.state.editMode.type === "additionalNote") {
-        for (const editorLine of this.renderEditor(Math.max(1, renderWidth - 2))) lines.push(`  ${editorLine}`);
-      } else {
-        addPrefixed("  ", this.theme.fg("text", this.state.additionalNote || "No additional note"));
-      }
+      lines.push(...this.renderAdditionalNote(renderWidth));
       lines.push("");
       add(this.theme.fg("dim", this.state.editMode.type === "browse"
         ? "Tab/←→/h/l navigate • Enter submit • n add note • Esc dismiss"
@@ -302,7 +317,7 @@ class QuestionComponent implements Focusable {
       if (question) {
         addMarkdown(`${question.question}${question.multiple === true ? " (select all that apply)" : ""}`, "text");
         lines.push("");
-        for (let optionIndex = 0; optionIndex <= question.options.length; optionIndex++) {
+        for (let optionIndex = 0; optionIndex < question.options.length + (this.confirmation ? 0 : 1); optionIndex++) {
           const custom = optionIndex === question.options.length;
           const highlighted = optionIndex === this.state.highlighted;
           const selected = this.state.answers[this.state.tab]?.includes(optionIndex) ?? false;
@@ -330,9 +345,13 @@ class QuestionComponent implements Focusable {
             for (const editorLine of this.renderEditor(Math.max(1, renderWidth - 4))) lines.push(`    ${editorLine}`);
           }
         }
+        if (this.confirmation) {
+          lines.push("");
+          lines.push(...this.renderAdditionalNote(renderWidth, "GENERAL (optional):"));
+        }
         lines.push("");
         const hint = this.state.editMode.type === "browse"
-          ? `${this.questions.length > 1 ? "Tab/←→/h/l tabs • " : ""}↑↓/jk select • ${question.multiple === true ? `Space toggle • Enter ${this.questions.length === 1 ? "submit" : "next"}` : "Enter/Space choose"} • n add note • Esc dismiss`
+          ? this.confirmation ? "↑↓/←→ select • Enter submit • n add note • Esc dismiss" : `${this.questions.length > 1 ? "Tab/←→/h/l tabs • " : ""}↑↓/jk select • ${question.multiple === true ? `Space toggle • Enter ${this.questions.length === 1 ? "submit" : "next"}` : "Enter/Space choose"} • n add note • Esc dismiss`
           : "Enter save • Ctrl+C clear • Esc discard";
         add(this.theme.fg("dim", hint));
       }
@@ -377,20 +396,40 @@ function resultText(
   return `User has answered your questions: ${formatted}.${additionalNote} You can now continue with the user's answers in mind.${unknown}${failed}`;
 }
 
-async function showDialog(pi: ExtensionAPI, params: QuestionParams, ctx: ExtensionContext): Promise<DialogResult> {
+export function showConfirmation(
+  pi: ExtensionAPI, ctx: ExtensionContext, header: string, question: string, choices: [string, string], signal?: AbortSignal,
+): Promise<DialogResult> {
+  return showDialog(pi, { questions: [{ header, question, options: choices.map(label => ({ label, description: "" })) }] }, ctx, true, signal);
+}
+
+async function showDialog(pi: ExtensionAPI, params: QuestionParams, ctx: ExtensionContext, confirmation = false, signal?: AbortSignal): Promise<DialogResult> {
+  if (signal?.aborted) return null;
   if (params.questions.length === 0) return { details: { answers: [] } };
+  let onAbort: (() => void) | undefined;
   pi.events.emit("herdr:blocked", { active: true, label: params.questions[0]!.header });
   try {
-    return await ctx.ui.custom<DialogResult>((tui, theme, _keybindings, done) =>
-      new QuestionComponent(
+    return await ctx.ui.custom<DialogResult>((tui, theme, _keybindings, done) => {
+      let finished = false;
+      const finish = (result: DialogResult) => {
+        if (finished) return;
+        finished = true;
+        done(signal?.aborted ? null : result);
+      };
+      onAbort = () => finish(null);
+      signal?.addEventListener("abort", onAbort, { once: true });
+      if (signal?.aborted) queueMicrotask(onAbort);
+      return new QuestionComponent(
         params.questions,
         tui,
         theme,
-        done,
+        finish,
         skillAutocomplete(new CombinedAutocompleteProvider(pi.getCommands(), ctx.cwd), () => pi.getCommands()),
         () => pi.getCommands(),
-      ));
+        confirmation,
+      );
+    });
   } finally {
+    if (onAbort) signal?.removeEventListener("abort", onAbort);
     pi.events.emit("herdr:blocked", { active: false });
   }
 }

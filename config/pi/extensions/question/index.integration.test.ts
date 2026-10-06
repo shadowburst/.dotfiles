@@ -114,7 +114,7 @@ const loaderSource = `
 `;
 register(`data:text/javascript,${encodeURIComponent(loaderSource)}`, import.meta.url);
 
-const { default: questionExtension } = await import(indexUrl);
+const { default: questionExtension, showConfirmation } = await import(indexUrl);
 
 type Send = {
   message: string;
@@ -212,6 +212,60 @@ function executeContext() {
     ui: { custom: async () => ({ details: { answers: [[]] } }) },
   };
 }
+
+const plainTheme = {
+  fg: (_color: string, text: string) => text,
+  bg: (_color: string, text: string) => text,
+  bold: (text: string) => text,
+};
+
+test("fixed confirmation has two choices, starts affirmative and submits only the highlighted choice", async () => {
+  const result = await showConfirmation({ events: { emit() {} }, getCommands: () => [] } as any, {
+    ...executeContext(),
+    ui: { custom: (factory: Function) => new Promise((resolve) => {
+      let submitted = false;
+      const component = factory({ requestRender() {} }, plainTheme, {}, (value: unknown) => { submitted = true; resolve(value); });
+      const initial = component.render(100).join("\n");
+      assert.match(initial, /→ 1\. Done/);
+      assert.match(initial, /2\. Cancel/);
+      assert.doesNotMatch(initial, /Type your own answer|^Review$| Confirm /m);
+      for (const key of ["space", "1", "2", "3", "tab"]) component.handleInput(key);
+      assert.equal(submitted, false);
+      for (const key of ["down", "down", "left", "up", "right"]) {
+        component.handleInput(key);
+        assert.doesNotMatch(component.render(100).join("\n"), /Type your own answer/);
+      }
+      assert.match(component.render(100).join("\n"), /→ 2\. Cancel/);
+      component.handleInput("enter");
+    }) },
+  } as any, "Browser", "Review the editor", ["Done", "Cancel"]);
+  assert.deepEqual(result, { details: { answers: [["Cancel"]] } });
+});
+
+test("fixed confirmation saves and edits a general note inline without submitting or binding it to a choice", async () => {
+  const result = await showConfirmation({ events: { emit() {} }, getCommands: () => [] } as any, {
+    ...executeContext(),
+    ui: { custom: (factory: Function) => new Promise((resolve) => {
+      let submitted = false;
+      const component = factory({ requestRender() {} }, plainTheme, {}, (value: unknown) => { submitted = true; resolve(value); });
+      component.focused = true;
+      component.handleInput("n");
+      component.handleInput("General follow-up");
+      assert.match(component.render(100).join("\n"), /GENERAL[\s\S]*General follow-up.*\x1b_pi:c\x07/);
+      component.handleInput("enter");
+      assert.equal(submitted, false);
+      assert.match(component.render(100).join("\n"), /GENERAL[\s\S]*General follow-up/);
+      component.handleInput("n");
+      component.handleInput(" discarded edit");
+      component.handleInput("escape");
+      assert.equal(submitted, false);
+      assert.doesNotMatch(component.render(100).join("\n"), /discarded edit/);
+      component.handleInput("down");
+      component.handleInput("enter");
+    }) },
+  } as any, "Browser", "Review the editor", ["Done", "Cancel"]);
+  assert.deepEqual(result, { details: { answers: [["Cancel"]], additionalNote: "General follow-up" } });
+});
 
 test("Ctrl+C clears a custom answer before saving", async () => {
   const harness = createHarness([]);
