@@ -5,7 +5,7 @@ _: {
       programs.opencode = {
         enable = true;
         context = ''
-          Only use subagents if explicitly asked to do so.
+          During grilling sessions, ask every round through the `question` tool, batching the whole frontier into one call.
         '';
         settings = {
           lsp = false;
