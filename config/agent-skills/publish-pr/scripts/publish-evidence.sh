@@ -178,9 +178,9 @@ validation_starts = [match.start() for match in re.finditer(re.escape(validation
 validation_ends = [match.start() for match in re.finditer(re.escape(validation_end), body)]
 if (len(validation_starts), len(validation_ends)) not in {(0, 0), (1, 1)} or (validation_starts and validation_starts[0] >= validation_ends[0]):
     raise SystemExit("managed Validation markers are malformed")
-headings = list(re.finditer(r"(?m)^## UI Evidence[ \t]*$", body))
+headings = list(re.finditer(r"(?m)^## Evidence[ \t]*$", body))
 if len(headings) != 1:
-    raise SystemExit("PR body must contain exactly one ## UI Evidence section")
+    raise SystemExit("PR body must contain exactly one ## Evidence section")
 
 heading = headings[0]
 section_end_match = re.search(r"(?m)^## .+$", body[heading.end():])
@@ -189,7 +189,7 @@ section = body[heading.end():section_end]
 start_count = section.count(start_marker)
 end_count = section.count(end_marker)
 if body.count(start_marker) != start_count or body.count(end_marker) != end_count:
-    raise SystemExit("managed evidence markers must be inside ## UI Evidence")
+    raise SystemExit("managed evidence markers must be inside ## Evidence")
 if (start_count, end_count) not in {(0, 0), (1, 1)}:
     raise SystemExit("managed evidence markers are malformed")
 if start_count:
