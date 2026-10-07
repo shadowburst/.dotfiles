@@ -12,21 +12,6 @@ _: {
       piNpmCache = "${config.xdg.cacheHome}/pi/npm";
       nodejsLts = pkgs.nodejs;
 
-      browserTools = pkgs.buildNpmPackage {
-        pname = "pi-browser-tools";
-        version = "1.0.0";
-        src = ../config/pi/extensions/browser;
-        npmDepsHash = "sha256-lzux0pks+POBqQknAlMCy/Agh6Rpee5QLqoti2oyGTg=";
-        dontNpmBuild = true;
-        doCheck = false;
-        installPhase = ''
-          runHook preInstall
-          mkdir -p $out
-          cp -r index.ts state.ts auth.mjs export.ts confirmation.ts note-editor.ts package.json package-lock.json node_modules $out/
-          runHook postInstall
-        '';
-      };
-
       piWithNpmExtensions = pkgs.symlinkJoin {
         name = "pi-coding-agent-with-npm-extensions";
         paths = [ pkgs.pi-coding-agent ];
@@ -36,8 +21,7 @@ _: {
           wrapProgram $out/bin/pi \
             --set NPM_CONFIG_PREFIX ${lib.escapeShellArg piNpmPrefix} \
             --set NPM_CONFIG_CACHE ${lib.escapeShellArg piNpmCache} \
-            --set PLAYWRIGHT_BROWSERS_PATH ${pkgs.playwright-driver.browsers} \
-            --prefix PATH : ${lib.escapeShellArg "${lib.makeBinPath [ nodejsLts pkgs.cutaway pkgs.ffmpeg ]}:${piNpmPrefix}/bin"}
+            --prefix PATH : ${lib.escapeShellArg "${lib.makeBinPath [ nodejsLts ]}:${piNpmPrefix}/bin"}
         '';
       };
 
@@ -79,7 +63,6 @@ _: {
         ".pi/agent/extensions/tasks".source = pkgs.pi-tasks;
         ".pi/agent/extensions/usage" = mkPiConfigSymlink "config/pi/extensions/usage";
         ".pi/agent/extensions/pi-web-access".source = pkgs.pi-web-access;
-        ".pi/agent/extensions/browser".source = browserTools;
         ".pi/agent/extensions/ponytail".source = pkgs.ponytail;
       };
     };

@@ -11,10 +11,6 @@
   };
 
   npmDepsHash = "sha256-Srq0y94q3fMRi1OMFYKHh/tb2jrlqozrEVlzj/9eUq8=";
-  patches = [ ./cutaway-auth.patch ];
-  postPatch = ''
-    cp ${../config/pi/extensions/browser/auth.mjs} src/capture/auth.mjs
-  '';
 
   dontNpmBuild = true;
   npmInstallFlags = [ "--ignore-scripts" ];

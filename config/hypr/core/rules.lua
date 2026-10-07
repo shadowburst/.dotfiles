@@ -32,12 +32,6 @@ hl.window_rule({
   size = "1000 600",
 })
 
-hl.window_rule({
-  name = "pi-browser-tools-workspace",
-  match = { initial_class = "pi-browser-tools" },
-  workspace = "7 silent",
-})
-
 hl.layer_rule({
   name = "selection-no-animation",
   match = { namespace = "selection" },
