@@ -1,6 +1,6 @@
 _: {
   flake.homeModules.cli =
-    { ... }:
+    { pkgs, ... }:
     {
       programs.git = {
         enable = true;
@@ -31,6 +31,7 @@ _: {
 
       programs.gh = {
         enable = true;
+        extensions = [ pkgs.gh-stack ];
         settings = {
           git_protocol = "ssh";
           prompt = "enabled";
