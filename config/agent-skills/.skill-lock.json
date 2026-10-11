@@ -203,6 +203,15 @@
       "skillFolderHash": "bcace588d5b440590954f255f5b82f54025393ce",
       "installedAt": "2026-10-07T09:06:00.312Z",
       "updatedAt": "2026-10-07T09:06:00.312Z"
+    },
+    "herdr": {
+      "source": "herdrdev/herdr",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/herdrdev/herdr.git",
+      "skillPath": "skills/herdr/SKILL.md",
+      "skillFolderHash": "67042ed7910d4177a9000e0679e78b0346060927",
+      "installedAt": "2026-10-11T21:38:13.410Z",
+      "updatedAt": "2026-10-11T21:38:13.410Z"
     }
   },
   "dismissed": {
@@ -219,6 +228,7 @@
     "kilo",
     "kimi-code-cli",
     "opencode",
+    "pi",
     "warp",
     "zed",
     "claude-code"
