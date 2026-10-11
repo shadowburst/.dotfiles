@@ -1,6 +1,6 @@
 _: {
   flake.homeModules.cli =
-    { lib, pkgs, ... }:
+    { ... }:
     {
       programs.fzf = {
         enable = true;
@@ -13,7 +13,6 @@ _: {
           "--layout=reverse"
           "--highlight-line"
         ];
-        tmux.enableShellIntegration = true;
       };
     };
 }

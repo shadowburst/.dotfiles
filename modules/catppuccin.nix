@@ -6,7 +6,9 @@ let
       options.catppuccin.palette = lib.mkOption {
         type = lib.types.attrs;
         readOnly = true;
-        default = (builtins.fromJSON (builtins.readFile "${config.catppuccin.sources.palette}/palette.json")).${config.catppuccin.flavor};
+        default =
+          (builtins.fromJSON (builtins.readFile "${config.catppuccin.sources.palette}/palette.json"))
+          .${config.catppuccin.flavor};
       };
     };
 in
@@ -66,7 +68,6 @@ in
         opencode.enable = true;
         starship.enable = true;
         television.enable = true;
-        tmux.enable = true;
         yazi.enable = true;
       };
     };
