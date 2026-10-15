@@ -1,5 +1,15 @@
 { self, ... }:
 {
+  flake.nixosModules.nas =
+    { config, lib, ... }:
+    {
+      # Only Tailscale's encrypted transport is exposed outside the tailnet.
+      networking.firewall = {
+        allowedTCPPorts = lib.mkForce [ ];
+        allowedUDPPorts = lib.mkForce [ config.services.tailscale.port ];
+      };
+    };
+
   flake.nixosModules.core =
     { lib, pkgs, ... }:
     {

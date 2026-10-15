@@ -1,5 +1,41 @@
 { self, ... }:
 {
+  flake.nixosModules.nas =
+    { lib, ... }:
+    {
+      services.transmission = {
+        enable = true;
+        home = "/srv/transmission";
+        group = "media";
+        credentialsFile = "/etc/nas/transmission.json";
+        openRPCPort = false;
+        openPeerPorts = false;
+        downloadDirPermissions = "2770";
+        settings = {
+          download-dir = "/srv/media/downloads";
+          incomplete-dir = "/srv/media/incomplete";
+          incomplete-dir-enabled = true;
+          umask = 7;
+          rpc-bind-address = "0.0.0.0";
+          rpc-authentication-required = true;
+          rpc-username = self.username;
+          rpc-whitelist-enabled = false;
+          rpc-host-whitelist-enabled = true;
+          rpc-host-whitelist = "nas,nas.*.ts.net";
+          port-forwarding-enabled = false;
+          lpd-enabled = false;
+        };
+      };
+
+      systemd.services.transmission = {
+        requires = [ "transmission-setup.service" ];
+        serviceConfig.UMask = lib.mkForce "0007";
+      };
+
+      systemd.tmpfiles.rules = [ "d /srv/transmission 0750 transmission media -" ];
+      networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 9091 ];
+    };
+
   flake.homeModules.gui =
     {
       config,
