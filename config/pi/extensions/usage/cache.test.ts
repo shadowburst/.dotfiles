@@ -16,10 +16,10 @@ test("shares refreshed usage snapshots between Pi processes", async () => {
   try {
     let resolveObserved!: (snapshot: UsageSnapshot) => void;
     const observed = new Promise<UsageSnapshot>((resolve) => { resolveObserved = resolve; });
-    await reader.start(["openai"], (_provider, snapshot) => resolveObserved(snapshot));
+    await reader.start(["openai-codex"], (_provider, snapshot) => resolveObserved(snapshot));
     await writer.start([], () => {});
 
-    await writer.write("openai", expected);
+    await writer.write("openai-codex", expected);
     const timeout = setTimeout(() => resolveObserved({ windows: [] }), 2_000);
     assert.deepEqual(await observed, expected);
     clearTimeout(timeout);

@@ -62,10 +62,10 @@ async function fetchCodexUsage(token: string, id: string, headers: Record<string
 }
 
 async function loadCodexUsage(ctx: ExtensionContext, signal: AbortSignal): Promise<UsageSnapshot> {
-  const resolved = await ctx.modelRegistry.getProviderAuth("openai");
+  const resolved = await ctx.modelRegistry.getProviderAuth("openai-codex");
   const token = resolved?.auth.apiKey;
   const id = token ? accountId(token) : undefined;
-  if (!token || !id) throw new Error("Codex is not logged in. Run /login openai.");
+  if (!token || !id) throw new Error("Codex is not logged in. Run /login openai-codex.");
   return fetchCodexUsage(token, id, resolved.auth.headers, signal);
 }
 
@@ -92,7 +92,7 @@ async function loadCopilotUsage(_ctx: ExtensionContext, signal: AbortSignal): Pr
 
 const PROVIDER_TABS: ProviderTab[] = [
   {
-    provider: "openai",
+    provider: "openai-codex",
     label: "Codex",
     load: loadCodexUsage,
     selectWindow: selectUsageWindow,

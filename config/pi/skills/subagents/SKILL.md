@@ -15,18 +15,18 @@ Delegate work that is self-contained, independent, and has a clear deliverable. 
 
 Use a model in the current Pi session's scope (or available catalog if no scope is configured), its full `provider/model` ID, and an effort it supports. `Agent` validates both. Choose the lightest pair likely to succeed in one pass, based on the task rather than the parent's effort:
 
-| Model (when available)       | Effort | Task fit                                            |
-| ---------------------------- | ------ | --------------------------------------------------- |
-| Luna (`openai/gpt-6-luna`)   | medium | Bounded lookups, clear briefs, well-specified edits |
-| Luna                         | high   | Harder coordinated updates with clear constraints   |
-| Luna                         | xhigh  | Constrained work spanning multiple contexts         |
-| Sol (`openai/gpt-6.1-sol`)   | low    | Focused checking or editing                         |
-| Sol                          | medium | Everyday coding, research, or work needing judgment |
-| Sol                          | high   | Difficult debugging, design, or reasoning           |
-| Sol                          | xhigh  | Deep verification or demanding code/security review |
-| Astra (`openai/gpt-6-astra`) | medium | Ambitious end-to-end work with broad context        |
-| Astra                        | high   | Especially difficult broad-context work             |
-| Astra                        | xhigh  | Exacting analysis or complex deliverables           |
+| Model (when available)             | Effort | Task fit                                            |
+| ---------------------------------- | ------ | --------------------------------------------------- |
+| Luna (`openai-codex/gpt-6-luna`)   | medium | Bounded lookups, clear briefs, well-specified edits |
+| Luna                               | high   | Harder coordinated updates with clear constraints   |
+| Luna                               | xhigh  | Constrained work spanning multiple contexts         |
+| Sol (`openai-codex/gpt-6.1-sol`)   | low    | Focused checking or editing                         |
+| Sol                                | medium | Everyday coding, research, or work needing judgment |
+| Sol                                | high   | Difficult debugging, design, or reasoning           |
+| Sol                                | xhigh  | Deep verification or demanding code/security review |
+| Astra (`openai-codex/gpt-6-astra`) | medium | Ambitious end-to-end work with broad context        |
+| Astra                              | high   | Especially difficult broad-context work             |
+| Astra                              | xhigh  | Exacting analysis or complex deliverables           |
 
 Prefer Sol when independent judgment is needed rather than escalating Luna just for more reasoning. Reserve xhigh for work where the extra cost and latency are worthwhile. These are defaults, not an exhaustive list: adjust within supported levels when the task justifies it. Use Luna low only on explicit request; never use `max` for a subagent.
 

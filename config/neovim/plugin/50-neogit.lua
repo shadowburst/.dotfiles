@@ -27,7 +27,7 @@ local function run_pi_git_action(skill)
     "--print",
     "--no-session",
     "--model",
-    "openai/gpt-6-luna",
+    "openai-codex/gpt-6-luna",
     "--thinking",
     "low",
     "Use the `" .. skill .. "` skill.",
