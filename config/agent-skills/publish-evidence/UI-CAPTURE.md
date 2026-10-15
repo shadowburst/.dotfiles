@@ -1,109 +1,81 @@
 # UI capture
 
-Capture runs inside Pest's in-process Laravel app: `actingAs` signs the user in and factories create the data in the project's test database. Confirm the project's browser tests refresh it (`RefreshDatabase` or similar), so every run starts clean. The project needs Pest 5 with `pestphp/pest-plugin-browser` and a working browser setup; when they are missing, ask before installing them, or report the gap.
+## Prepare
 
-## Temporary Browser tests
+Capture runs inside Pest's in-process Laravel app. Before running, confirm an isolated test database and browser-test refresh protection (`RefreshDatabase` or equivalent). Reuse the project's factories, states, seeders, `actingAs`, shared setup, and page wrappers; ask before adding reusable setup. Use synthetic data and keep secrets/personal data out of every asset.
 
-Create a uniquely named `*Test.php` under `tests/Browser/`, using the project's setup and page helpers. Leave existing tests unchanged. Run from the project root:
+Use the project's working Pest 5 browser stack with Playwright >=1.63 and installed browsers. Prefer installed `pestphp/pest-plugin-agent` for both screenshots and recordings. Missing prerequisites (including the Playwright executable or frontend build) are setup gaps: report them or ask before installs. Retain project configuration and TIA settings.
+
+- Run one `--agent` flow per process from the project root; teardown occurs at process termination. Do not batch capture paths in parallel or add unnecessary flags such as `--compact`.
+- Agent snippets inherit resolved TestCase classes/traits (Browser preferred), but not path-scoped hooks. Explicitly reuse any required setup from those hooks.
+- Keep `$page = visit(...)` as a visible statement in the snippet for browser discovery; wrap its result with the project's existing page wrapper when needed.
+- If an installed agent plugin fails, surface the error; do not switch runners. Only when it is missing, use the temporary Browser test below.
+
+Keep assets and diagnostics under `~/.cache/publish-evidence/<repository>/`; clean temporary capture files on success and failure. Replace example placeholders with absolute paths visible to PHP, including the helper path. Containers must see the project, helper, cache, and upload files at those paths. Lerd shares `$HOME` and the project, not host `/tmp` or arbitrary host environment variables.
+
+Use [Pest's browser API](https://pestphp.com/docs/browser-testing) and project conventions for selectors, interactions, and assertions. Prove each intended state with assertions before capturing it. For recordings, wait about two seconds after meaningful asserted states, including initial/final states when helpful. These waits belong in capture-only flows, not ordinary regression tests.
+
+## Screenshots
+
+Pest clears top-level files in `tests/Browser/Screenshots/` at run start; use a subfolder. Adapt this snippet's setup, route, and assertion to the project:
 
 ```sh
-CAPTURE_TEST=tests/Browser/PublishEvidenceCaptureTest.php
+mkdir -p tests/Browser/Screenshots/publish-evidence
+php vendor/bin/pest --agent '
+$user = \App\Models\User::factory()->create();
+$this->actingAs($user);
+$page = visit("/settings");
+$page->assertSee("Notifications")
+    ->screenshot(fullPage: false, filename: "publish-evidence/settings-after");
+'
+```
+
+After success, move the PNGs into the cache and remove the capture subfolder. For a before state, when the screen exists at the PR base, create a base-commit worktree through the environment's worktree tool, confirm its dependencies/assets are ready, and run the same flow there with `-before` filenames, then remove the worktree.
+
+## Recordings
+
+Record the PR head's focused changed interaction, with separate captures for materially changed error, validation, or alternate branches. Aim for a compact native WebM under 10 MB.
+
+Require `scripts/record.php` inside the Pest snippet/test. Its public helper is `\PublishEvidence\record(object $page, string $output, \Closure $flow): void`. Pass an already-visited, asserted Pest page (or the project's existing wrapper providing `page()`):
+
+```sh
+php vendor/bin/pest --agent '
+require_once "/absolute/path/to/publish-evidence/scripts/record.php";
+$user = \App\Models\User::factory()->create();
+$this->actingAs($user);
+$page = visit("/settings");
+$page->resize(1280, 720)->assertSee("Notifications");
+\PublishEvidence\record($page, "/absolute/path/to/.cache/publish-evidence/repository/settings.webm", function () use ($page) {
+    $page->wait(2);
+    $page->click("role=button[name=Save]")
+        ->assertSee("Settings saved")
+        ->wait(2);
+});
+'
+```
+
+The helper runs the closure **once**, recording the same page and interactions through native Playwright screencast via Pest internals. It creates directories and exports `OUTPUT.webm` plus sibling `OUTPUT-frames/` (PNG approximately once per second plus the last), decoded with the same existing browser/canvas. Use the frame folder for inspection; the WebM is the recording asset. No recording-specific package, FFmpeg install, or separate action plan is needed.
+
+Existing output or frame directories are refused; choose fresh paths. Errors surface, and a failed flow retains diagnostic WebM where possible: never publish a failed capture. Outputs over 10 MB are rejected without conversion; shorten the interaction and recapture.
+
+The bridge was verified with Pest browser 5.1.2 and Playwright 1.63. Run `php <skill-directory>/scripts/record-self-test.php` for its transport/file-lifecycle self-check; after package upgrades, also run one real capture to verify the private integration.
+
+## Only if the agent plugin is missing
+
+Put the same snippet body inside `it("captures evidence", function () { ... });` in a unique temporary `tests/Browser/*Test.php`, leaving existing tests unchanged. Run that file explicitly with unconditional cleanup, for example:
+
+```sh
+CAPTURE_DIR=$(mktemp -d tests/Browser/PublishEvidenceXXXXXX)
+CAPTURE_TEST="$CAPTURE_DIR/CaptureTest.php"
 (
-    trap 'rm -f -- "$CAPTURE_TEST"' EXIT
+    trap 'rm -rf -- "$CAPTURE_DIR"' EXIT
+    # Write the test into "$CAPTURE_TEST" here, then run it.
     php vendor/bin/pest "$CAPTURE_TEST"
 )
 ```
 
-`tests/Browser/` initializes Playwright even through project wrappers. Pass the capture file explicitly and retain the project's test/TIA settings; `--agent` recreates it in `/tmp`.
+Reuse the Browser setup and the same recording helper/flow.
 
-- Reuse existing factories, states, seeders, and authentication; ask before adding reusable test setup.
-- Generate plans and setup from the target project; cache them, logs, and assets under `~/.cache/publish-evidence/<repository>/`. No pre-existing evidence cache is required. In containers, the shell and PHP/Node must see the project, Cutaway, cache, and upload files at the same absolute paths; Lerd shares `$HOME` and the project, but not `/tmp` or arbitrary host environment variables.
-- First prove the expected page state with `assertSee()` or `assertVisible()`, then capture. Resolve selectors against the rendered page.
-- Remove temporary tests and capture-only files even on failure; retain diagnostics only in the cache.
+## Inspect and finish
 
-## Selectors
-
-Pest passes selector strings containing `#`, `.`, `[`, `=`, or `:` straight to Playwright, so the same string works in capture tests and recording plans: CSS, `role=button[name="Save"]`, `text=Save`, `@testid` (a `data-testid` or `data-test` match, Pest tests only). Prefer these over bare words, which Pest resolves by guessing id, name, then text. Each selector must match exactly one visible element.
-
-For nested labels, use `role=menuitem[name="Rename"]` or `[role="menuitem"]:has-text("Rename")`. `:text-is()` on a parent does not match text held only in a child element.
-
-## Screenshots
-
-Pest writes screenshots under `tests/Browser/Screenshots/` and deletes that folder's top-level files at the start of each run, so save into a subfolder created beforehand:
-
-```sh
-mkdir -p tests/Browser/Screenshots/publish-evidence
-```
-
-Adapt this test to the project's conventions:
-
-```php
-<?php
-
-it('captures settings evidence', function () {
-    $user = \App\Models\User::factory()->create();
-    $this->actingAs($user);
-    $page = visit('/settings');
-    $page->assertSee('Notifications')
-        ->screenshot(fullPage: false, filename: 'publish-evidence/settings-after');
-});
-```
-
-Pest's full browser API is available here (devices, dark mode, `hover`, `select`, `resize`). Move the PNGs to the cache folder and remove `tests/Browser/Screenshots/publish-evidence` afterwards.
-
-For a before state, when the changed screen exists at the PR's base: create a worktree at the base commit (through lerd's worktree tool on a lerd site, so dependencies are installed), run the same temporary test there with `-before` filenames, then remove the worktree.
-
-## Recordings
-
-Recordings show the PR head only. Smoke-test new selectors and state transitions in a short plan with the same setup. Extend to the end-to-end flow only when every expectation passes and its frames show the intended state. Run from the project root:
-
-```sh
-<skill-directory>/scripts/record.sh PLAN.json SETUP.php OUTPUT.webm
-```
-
-`SETUP.php` contains setup statements for a test closure; use fully qualified class names. The script runs a temporary Browser test and [cutaway](https://github.com/half144/cutaway) against Pest's in-process server, exporting 720p WebM and `OUTPUT-frames/` (one frame per second plus the last). The test is always removed; failures print errors and retain its copy and logs in the cache.
-
-The plan is a cutaway plan whose `url` is replaced by `path`:
-
-```json
-{
-  "path": "/operations",
-  "steps": [
-    { "action": "type", "selector": "input[type=\"search\"]", "text": "Tilleuls", "expect": "tr:has-text(\"allée des Tilleuls\")" },
-    { "action": "click", "selector": "role=link[name=\"12 allée des Tilleuls\"]", "expect": "role=heading[name=\"Résidence Les Tilleuls\"]" }
-  ]
-}
-```
-
-| `action` | Fields | Optional |
-| --- | --- | --- |
-| `click` / `tap` | `selector`, `expect` | `hold` (0.05–5 s) |
-| `press` | `key` (Playwright key, e.g. `ControlOrMeta+K`), `expect` | |
-| `upload` | `selector`, `file` (path or array, relative to the plan), `expect` | |
-| `type` | `selector`, `text` | `expect` |
-| `focus` | `selector` | `duration`, `expect` |
-| `scroll` / `swipe` | `y` (relative pixels) | `duration` |
-| `wait` | | `duration` |
-
-Every step also takes `pause` (seconds of rest after it). Plan options: `colorScheme`, `hide` (CSS selectors to hide), `timeout` (ms).
-
-To clear an input, Cutaway's empty `type` selects its existing text; follow with Backspace, then submit if the page requires it. For a search field with a placeholder:
-
-```json
-[
-  { "action": "type", "selector": "input[type=\"search\"]", "text": "" },
-  { "action": "press", "key": "Backspace", "expect": "input[type=\"search\"]:placeholder-shown" }
-]
-```
-
-- `expect` names a selector that becomes visible once the step took effect. Clicks, presses, and uploads require it: without it, a step that lands on an error page still records as a success.
-- The plan opens one page; reach every later page by clicking. Hover, select, and drag have no step.
-- Steps really happen against the test database.
-
-## Inspect
-
-Read every screenshot and every recording frame. Each must show the claimed state; an error page, debug output, or login screen means the capture failed, even when the run passed.
-
-## Keep as a test
-
-Offer to retain useful capture tests only with approval, following project conventions.
+Visually inspect **every** screenshot and generated recording frame, including the final state. Each must show the claimed state; error pages, debug output, login screens, or private data invalidate the asset even if assertions passed. Publish only successful, verified captures. Offer to retain useful tests only with approval and following project conventions.

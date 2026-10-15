@@ -136,9 +136,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/mattpocock/skills.git",
       "skillPath": "skills/engineering/wizard/SKILL.md",
-      "skillFolderHash": "47010ebd1f26c8263016f14cdba835355d278b9a",
+      "skillFolderHash": "e396d3ba97c723a78ffd350fb14a3c409137b306",
       "installedAt": "2026-08-06T21:22:13.528Z",
-      "updatedAt": "2026-10-07T12:22:53.966Z"
+      "updatedAt": "2026-10-15T12:04:23.548Z"
     },
     "writing-for-agents": {
       "source": "mattpocock/skills",
@@ -200,18 +200,18 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
       "skillPath": "skills/publish-evidence/SKILL.md",
-      "skillFolderHash": "3ada7922d478c91805f11b8021623b053bb99269",
+      "skillFolderHash": "0ffccf37fb0358eef688f143348e21ea7e3703af",
       "installedAt": "2026-10-07T09:06:00.312Z",
-      "updatedAt": "2026-10-11T21:38:13.410Z"
+      "updatedAt": "2026-10-15T12:05:25.791Z"
     },
     "herdr": {
       "source": "herdrdev/herdr",
       "sourceType": "github",
       "sourceUrl": "https://github.com/herdrdev/herdr.git",
       "skillPath": "skills/herdr/SKILL.md",
-      "skillFolderHash": "67042ed7910d4177a9000e0679e78b0346060927",
+      "skillFolderHash": "2be0d86d481d1bb29c62e11ef37b78d27d01b478",
       "installedAt": "2026-10-11T21:38:13.410Z",
-      "updatedAt": "2026-10-07T14:40:15.625Z"
+      "updatedAt": "2026-10-15T12:04:28.116Z"
     }
   },
   "dismissed": {
