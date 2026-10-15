@@ -15,7 +15,8 @@ case "${1:-}" in
     [[ $field =~ ^[A-Za-z0-9_-]+$ ]] || usage
     [[ $filename =~ ^[A-Za-z0-9._-]+$ ]] || usage
     [[ -f $file && -f $ticket_file ]] || usage
-    [[ $(stat -c %a "$ticket_file") == 600 ]] || { echo 'Ticket file must have mode 600' >&2; exit 2; }
+    mode=$(stat -c %a -- "$ticket_file" 2>/dev/null || stat -f %Lp -- "$ticket_file") || { echo 'Could not read ticket file mode' >&2; exit 2; }
+    [[ $mode == 600 ]] || { echo 'Ticket file must have mode 600' >&2; exit 2; }
     ticket=$(<"$ticket_file")
     [[ $ticket =~ ^[A-Za-z0-9._-]+$ ]] || { echo 'Invalid upload ticket' >&2; exit 2; }
 
@@ -129,7 +130,9 @@ done
 ((${#files[@]} <= 50)) || { echo "GitHub accepts at most 50 attachments" >&2; exit 2; }
 command -v gh >/dev/null || { echo "gh is required" >&2; exit 2; }
 command -v python3 >/dev/null || { echo "python3 is required" >&2; exit 2; }
-command -v sha256sum >/dev/null || { echo "sha256sum is required" >&2; exit 2; }
+hash_command=(sha256sum)
+command -v sha256sum >/dev/null || hash_command=(shasum -a 256)
+command -v "${hash_command[0]}" >/dev/null || { echo 'sha256sum or shasum is required' >&2; exit 2; }
 
 for i in "${!files[@]}"; do
   file=${files[$i]}
@@ -148,9 +151,9 @@ done
 
 manifest_input=
 for i in "${!files[@]}"; do
-  manifest_input+="$(sha256sum "${files[$i]}" | cut -d' ' -f1)"$'\t'"${descriptions[$i]}"$'\n'
+  manifest_input+="$("${hash_command[@]}" "${files[$i]}" | cut -d' ' -f1)"$'\t'"${descriptions[$i]}"$'\n'
 done
-manifest=$(printf '%s' "$manifest_input" | sha256sum | cut -d' ' -f1)
+manifest=$(printf '%s' "$manifest_input" | "${hash_command[@]}" | cut -d' ' -f1)
 manifest_marker="<!-- upload-ui-evidence:manifest:$manifest -->"
 
 body=$(gh pr view "$pr" --json body --jq .body) || {

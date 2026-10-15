@@ -37,8 +37,8 @@ resolved_plan() {
 
 php_string() { local s=${1//\\/\\\\}; printf "'%s'" "${s//\'/\\\'}"; }
 
-# Print the body of a `pest --agent` test that runs the setup, then records the plan against the in-process server.
-render_snippet() {
+# Print a Browser test that runs the setup, then records the plan against the in-process server.
+render_test() {
   local plan=$1 setup=$2 work=$3 cli=$4 json arg args=() command
   json=$(resolved_plan "$plan")
   for arg in node "$cli" record "$work/plan.json" --out "$work/recording" \
@@ -46,7 +46,8 @@ render_snippet() {
     args+=("$(php_string "$arg")")
   done
   printf -v command '%s, ' "${args[@]}"
-  sed '1{/^<?php/d}' "$setup"
+  printf '%s\n' '<?php' '' "it('records UI evidence', function () {"
+  sed '1{/^<?php/d;}' "$setup"
   cat <<PHP
 \$page = visit($(php_string "$(jq -r .path <<<"$json")"));
 \$plan = json_decode(<<<'PLAN'
@@ -64,6 +65,7 @@ while (\$process->isRunning()) {
 }
 file_put_contents($(php_string "$work/cutaway.log"), \$process->getOutput().\$process->getErrorOutput());
 expect(\$process->getExitCode())->toBe(0, $(php_string "cutaway failed; see $work/cutaway.log"));
+});
 PHP
 }
 
@@ -98,7 +100,7 @@ if [[ ${1:-} == --self-test && $# == 1 ]]; then
 JSON
   printf '%s\n' '$user = \App\Models\User::factory()->create();' '$this->actingAs($user);' >"$dir/setup.php"
   check_plan "$dir/plan/plan.json" || fail 'rejected a valid plan'
-  snippet=$(render_snippet "$dir/plan/plan.json" "$dir/setup.php" /home/u/work /home/u/.cutaway/src/cli.mjs)
+  test_code=$(render_test "$dir/plan/plan.json" "$dir/setup.php" /home/u/work /home/u/.cutaway/src/cli.mjs)
   for expected in \
     '$this->actingAs($user);' \
     "visit('/it\\'s')" \
@@ -107,9 +109,10 @@ JSON
     "'/home/u/.cutaway/src/cli.mjs', 'record', '/home/u/work/plan.json', '--out', '/home/u/work/recording'" \
     "'--fps', '30'" \
     '$page->wait(0.2)'; do
-    [[ $snippet == *"$expected"* ]] || fail "snippet lacks: $expected"
+    [[ $test_code == *"$expected"* ]] || fail "test lacks: $expected"
   done
-  [[ $snippet != *'<?php'* ]] || fail 'snippet must be a bare --agent body'
+  [[ $test_code == '<?php'* ]] || fail 'test must have a PHP opening tag'
+  [[ $test_code == *"it('records UI evidence', function () {"* && $test_code == *'});' ]] || fail 'test must wrap the capture in a Pest closure'
   echo 'record self-test passed'
   exit 0
 fi
@@ -120,7 +123,7 @@ plan=$1 setup=$2 output=$3
 for tool in jq node php; do
   command -v "$tool" >/dev/null || { echo "$tool is required" >&2; exit 2; }
 done
-[[ -x vendor/bin/pest ]] || { echo 'Run from the Laravel project root: vendor/bin/pest not found' >&2; exit 2; }
+[[ -x vendor/bin/pest && -d tests/Browser ]] || { echo 'Run from the Laravel project root with vendor/bin/pest and tests/Browser present' >&2; exit 2; }
 cutaway=${CUTAWAY_HOME:-$HOME/.cutaway}
 cli=$cutaway/src/cli.mjs
 [[ -f $cli ]] || { echo "cutaway not found at $cutaway; see the skills README" >&2; exit 2; }
@@ -132,12 +135,16 @@ check_plan "$plan" || exit 2
 cache=$HOME/.cache/publish-evidence
 mkdir -p "$cache"
 work=$(mktemp -d "$cache/record.XXXXXX")
-trap '(($? == 0)) || echo "record: failed; snippet and logs kept in $work" >&2' EXIT
+test_dir=
+trap 'status=$?; [[ -z $test_dir ]] || rm -rf -- "$test_dir"; ((status == 0)) || echo "record: failed; test copy and logs kept in $work" >&2' EXIT
 resolved_plan "$plan" | jq '.url = "http://localhost" + .path | del(.path)' >"$work/probe.json"
 node "$cli" validate "$work/probe.json" >/dev/null || exit 2
 
-render_snippet "$plan" "$setup" "$work" "$cli" >"$work/snippet.php"
-if ! php vendor/bin/pest --agent="$(<"$work/snippet.php")" >"$work/pest.log" 2>&1; then
+render_test "$plan" "$setup" "$work" "$cli" >"$work/CaptureTest.php"
+test_dir=$(mktemp -d "$PWD/tests/Browser/PublishEvidenceXXXXXX")
+test_file=$test_dir/CaptureTest.php
+cp "$work/CaptureTest.php" "$test_file"
+if ! php vendor/bin/pest "$test_file" >"$work/pest.log" 2>&1; then
   tail -n 40 "$work/pest.log" >&2
   [[ ! -f $work/cutaway.log ]] || tail -n 20 "$work/cutaway.log" >&2
   exit 1

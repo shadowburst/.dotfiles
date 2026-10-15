@@ -155,9 +155,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
       "skillPath": "skills/review-pr/SKILL.md",
-      "skillFolderHash": "3ebcce80fd1dacb899048bcd08d50023fa596816",
+      "skillFolderHash": "3c6a8d3aa7c87a33e84f81b3874128d46cef892e",
       "installedAt": "2026-09-23T12:49:33.294Z",
-      "updatedAt": "2026-10-07T09:06:00.321Z"
+      "updatedAt": "2026-10-07T12:38:31.276Z"
     },
     "review-prs": {
       "source": "Lynx-Business/skills",
@@ -182,27 +182,27 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
       "skillPath": "skills/fix-pr/SKILL.md",
-      "skillFolderHash": "624299bf4a8f607d3c42b065e8a5a1064375c616",
+      "skillFolderHash": "bc563737d6a3c776753de68ecb1941ad678bcfe4",
       "installedAt": "2026-09-29T09:44:15.861Z",
-      "updatedAt": "2026-10-07T09:06:00.312Z"
+      "updatedAt": "2026-10-07T12:38:33.107Z"
     },
     "publish-pr": {
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
       "skillPath": "skills/publish-pr/SKILL.md",
-      "skillFolderHash": "e7b8de0c8f7581f79906505f72993d7192a30159",
+      "skillFolderHash": "007ddad3f0ce569924f4908290788ee5098f991e",
       "installedAt": "2026-09-29T13:09:13.926Z",
-      "updatedAt": "2026-10-07T09:06:00.321Z"
+      "updatedAt": "2026-10-07T14:40:13.839Z"
     },
     "publish-evidence": {
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
       "skillPath": "skills/publish-evidence/SKILL.md",
-      "skillFolderHash": "bcace588d5b440590954f255f5b82f54025393ce",
+      "skillFolderHash": "3ada7922d478c91805f11b8021623b053bb99269",
       "installedAt": "2026-10-07T09:06:00.312Z",
-      "updatedAt": "2026-10-07T09:06:00.312Z"
+      "updatedAt": "2026-10-11T21:38:13.410Z"
     },
     "herdr": {
       "source": "herdrdev/herdr",
@@ -211,7 +211,7 @@
       "skillPath": "skills/herdr/SKILL.md",
       "skillFolderHash": "67042ed7910d4177a9000e0679e78b0346060927",
       "installedAt": "2026-10-11T21:38:13.410Z",
-      "updatedAt": "2026-10-11T21:38:13.410Z"
+      "updatedAt": "2026-10-07T14:40:15.625Z"
     }
   },
   "dismissed": {

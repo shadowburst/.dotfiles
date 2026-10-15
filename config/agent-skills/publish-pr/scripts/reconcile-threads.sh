@@ -6,9 +6,12 @@ usage() {
     exit 2
 }
 
-for tool in gh jq sha256sum; do
+for tool in gh jq; do
     command -v "$tool" >/dev/null || { printf 'Missing required command: %s\n' "$tool" >&2; exit 3; }
 done
+hash_command=(sha256sum)
+command -v sha256sum >/dev/null || hash_command=(shasum -a 256)
+command -v "${hash_command[0]}" >/dev/null || { echo 'sha256sum or shasum is required' >&2; exit 3; }
 (($# == 3)) || usage
 url=$1 pinned=$2 plan=$3
 [[ $pinned =~ ^[0-9a-f]{40}$ && -f $plan ]] || usage
@@ -54,12 +57,13 @@ for ((i = 0; i < count; i++)); do
     disposition=$(jq -r ".[${i}].disposition" "$plan")
     evidence=$(jq -r ".[${i}].evidence" "$plan")
     digest=$(jq -cnS --arg head "$pinned" --arg thread "$thread_id" --arg disposition "$disposition" --arg evidence "$evidence" \
-        '{head:$head,thread:$thread,disposition:$disposition,evidence:$evidence}' | sha256sum | cut -c1-16)
+        '{head:$head,thread:$thread,disposition:$disposition,evidence:$evidence}' | "${hash_command[@]}" | cut -c1-16)
     marker="<!-- publish-pr-reconciliation:$pinned:$digest -->"
 
     if ! jq -e --arg id "$thread_id" --arg marker "$marker" \
         'any(.feedback[]; .kind == "comment" and .thread_id == $id and ((.body // "") | contains($marker)))' <<<"$data" >/dev/null; then
-        label=${disposition^}
+        label=Addressed
+        [[ $disposition != obsolete ]] || label=Obsolete
         body="**$label** — $evidence
 
 $marker"
