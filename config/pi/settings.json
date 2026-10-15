@@ -3,9 +3,7 @@
   "defaultProvider": "openai",
   "defaultModel": "gpt-6.1-sol",
   "defaultThinkingLevel": "medium",
-  "defaultTools": [
-    "+codemode"
-  ],
+  "defaultTools": ["+codemode"],
   "theme": "catppuccin-mocha",
   "doubleEscapeAction": "tree",
   "quietStartup": true,
@@ -28,9 +26,9 @@
   "collapseChangelog": true,
   "fullscreenExitOutput": "transcript",
   "modelThinkingLevels": {
-    "openai-codex/gpt-6-luna": "high",
-    "openai-codex/gpt-6-astra": "medium",
-    "openai-codex/gpt-6.1-sol": "medium"
+    "openai/gpt-6-astra": "medium",
+    "openai/gpt-6.1-sol": "medium",
+    "openai/gpt-6-luna": "high"
   },
   "steeringMode": "all",
   "followUpMode": "all",
