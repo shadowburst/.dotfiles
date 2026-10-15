@@ -1,6 +1,6 @@
 {
   "lastChangelogVersion": "1.1.0",
-  "defaultProvider": "openai-codex",
+  "defaultProvider": "openai",
   "defaultModel": "gpt-6.1-sol",
   "defaultThinkingLevel": "medium",
   "defaultTools": [
@@ -18,9 +18,9 @@
   "treeFilterMode": "default",
   "showHardwareCursor": true,
   "enabledModels": [
-    "openai-codex/gpt-6-astra",
-    "openai-codex/gpt-6.1-sol",
-    "openai-codex/gpt-6-luna"
+    "openai/gpt-6-astra",
+    "openai/gpt-6.1-sol",
+    "openai/gpt-6-luna"
   ],
   "tuiMode": "fullscreen",
   "enableSkillCommands": true,
@@ -37,5 +37,6 @@
   "markdown": {
     "mermaid": "streaming"
   },
-  "showCacheMissNotices": true
+  "showCacheMissNotices": true,
+  "deviceId": "023f8d99-8411-41b3-bae9-0c8793692fa4"
 }
