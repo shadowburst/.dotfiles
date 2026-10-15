@@ -11,7 +11,6 @@ _: {
         act
         bitwarden-cli
         curl
-        cutaway
         devbox
         fd
         ffmpeg
