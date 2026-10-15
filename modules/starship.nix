@@ -5,6 +5,7 @@ _: {
       programs.starship = {
         enable = true;
         settings = {
+          command_timeout = 1000;
           right_format = "$time";
           time = {
             disabled = false;
