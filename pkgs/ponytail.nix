@@ -1,18 +1,18 @@
 { pkgs }:
 pkgs.buildNpmPackage {
   pname = "ponytail";
-  version = "5.1.0";
+  version = "5.3.2";
 
   forceEmptyCache = true;
 
   src = pkgs.fetchFromGitHub {
     owner = "DietrichGebert";
     repo = "ponytail";
-    rev = "v5.1.0";
-    hash = "sha256-diYM3gqcEboVi7OQff/SvlE0TKAIPTJDIggX7rZWslY=";
+    rev = "v5.3.2";
+    hash = "sha256-IJlhfkdXI6pMZZCZO7XBRg88LBiNfzc5Gnm4ofGybL8=";
   };
 
-  npmDepsHash = "sha256-19jnWojfOQnEd+kdNz8feUzh2HZkDrrlwcAr5aj99vo=";
+  npmDepsHash = "sha256-QC2JUD6EMHQ072W9aVrkVNC43wxLdwp+zq0rmjloPS4=";
 
   postPatch = ''
     ${pkgs.nodejs}/bin/npm pkg delete devDependencies

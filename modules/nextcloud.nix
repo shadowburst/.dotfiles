@@ -1,4 +1,4 @@
-{ self, ... }:
+_:
 {
   flake.nixosModules.nas =
     { pkgs, ... }:
@@ -13,8 +13,6 @@
         maxUploadSize = "16G";
         config = {
           dbtype = "pgsql";
-          adminuser = self.username;
-          adminpassFile = "/etc/nas/nextcloud-admin-password";
         };
         settings = {
           trusted_domains = [ "nas.*.ts.net" ];

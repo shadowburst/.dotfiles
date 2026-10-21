@@ -1,18 +1,18 @@
 { pkgs }:
 pkgs.buildNpmPackage {
   pname = "pi-tasks";
-  version = "0.9.0";
+  version = "0.9.1";
 
   forceEmptyCache = true;
 
   src = pkgs.fetchFromGitHub {
     owner = "tintinweb";
     repo = "pi-tasks";
-    rev = "29180d72498bdd77d5601dc77a9093d25da42102";
-    hash = "sha256-2Wa+lUHQP6qvnRERaqFNu1IkOD4d5etb+x6oTCqh6Vg=";
+    rev = "c820715be1bf05db36d0739e88061b97b8c2c9d3";
+    hash = "sha256-H+l6YII6IyYCBdTARP4W3MyYiHMANgjOJWrMHDZolJk=";
   };
 
-  npmDepsHash = "sha256-A1JP5lX9TApIlOT/IO+1IEpyX9WEn2hiDmPFFolbX1Y=";
+  npmDepsHash = "sha256-ZrfJPUSca80MT+T7mb5zP8yiWulD7hF8DInzDbza5fs=";
 
   postPatch = ''
     ${pkgs.nodejs}/bin/npm pkg delete devDependencies

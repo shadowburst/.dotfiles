@@ -33,10 +33,6 @@ and supplies host/hardware settings.
    sudo install -d -m 0700 -o root -g root /etc/nas
    ```
 
-   Create `/etc/nas/nextcloud-admin-password` with `sudoedit`: one strong password
-   on one line. This initializes the Nextcloud `pbaudry` administrator **once**;
-   later password changes happen in Nextcloud, not by changing this file.
-
    Create `/etc/nas/transmission.json` with `sudoedit`:
 
    ```json
@@ -44,11 +40,11 @@ and supplies host/hardware settings.
    ```
 
    ```sh
-   sudo chown root:root /etc/nas/nextcloud-admin-password /etc/nas/transmission.json
-   sudo chmod 0600 /etc/nas/nextcloud-admin-password /etc/nas/transmission.json
+   sudo chown root:root /etc/nas/transmission.json
+   sudo chmod 0600 /etc/nas/transmission.json
    ```
 
-   Keep both files outside this repository. Do not overwrite existing
+   Keep this file outside this repository. Do not overwrite existing
    credentials when repeating deployment.
 
 4. Include the new files in Git, then apply on the laptop:
@@ -60,8 +56,18 @@ and supplies host/hardware settings.
    ```
 
    Enable MagicDNS in your tailnet. No Tailscale auth key is committed; the login
-   persists across reboots. Missing Nextcloud credentials prevent its initial
-   setup; Transmission requires its JSON password file.
+   persists across reboots. Transmission requires its JSON password file.
+
+5. On a fresh installation, create the Nextcloud administrator after setup:
+
+   ```sh
+   sudo nextcloud-occ user:add pbaudry
+   sudo nextcloud-occ group:adduser admin pbaudry
+   ```
+
+   The first command prompts for a password. Skip this step if the account
+   already exists; existing users and passwords are preserved. The old
+   `/etc/nas/nextcloud-admin-password` file is no longer used.
 
 ## Access
 
