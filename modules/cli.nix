@@ -7,6 +7,8 @@ _: {
       programs.cava.enable = true;
       programs.direnv.enable = true;
 
+      home.sessionVariables.AGENT = "pi";
+
       home.packages = with pkgs; [
         act
         bitwarden-cli

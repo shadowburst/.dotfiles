@@ -76,6 +76,7 @@
           set fish_color_valid_path cyan
           set fish_pager_color_progress black --background=blue
           set -g fish_key_bindings fish_vi_key_bindings
+          bind -M insert ctrl-delete kill-word
         '';
       };
     };

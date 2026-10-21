@@ -406,7 +406,6 @@ async function showDialog(pi: ExtensionAPI, params: QuestionParams, ctx: Extensi
   if (signal?.aborted) return null;
   if (params.questions.length === 0) return { details: { answers: [] } };
   let onAbort: (() => void) | undefined;
-  pi.events.emit("herdr:blocked", { active: true, label: params.questions[0]!.header });
   try {
     return await ctx.ui.custom<DialogResult>((tui, theme, _keybindings, done) => {
       let finished = false;
@@ -430,7 +429,6 @@ async function showDialog(pi: ExtensionAPI, params: QuestionParams, ctx: Extensi
     });
   } finally {
     if (onAbort) signal?.removeEventListener("abort", onAbort);
-    pi.events.emit("herdr:blocked", { active: false });
   }
 }
 
