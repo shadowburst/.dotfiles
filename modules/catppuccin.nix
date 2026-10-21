@@ -56,7 +56,6 @@ in
         cursors.enable = true;
         cursors.accent = "dark";
         delta.enable = true;
-        fish.enable = true;
         fzf.enable = true;
         gh-dash.enable = true;
         ghostty.enable = true;
@@ -69,6 +68,7 @@ in
         starship.enable = true;
         television.enable = true;
         yazi.enable = true;
+        zsh-syntax-highlighting.enable = true;
       };
     };
 }

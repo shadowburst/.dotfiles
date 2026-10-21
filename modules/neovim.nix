@@ -64,7 +64,7 @@
         yamlfmt
       ];
 
-      programs.fish.shellAliases."neogit" = "nvim +Neogit";
+      programs.zsh.shellAliases."neogit" = "nvim +Neogit";
       programs.nushell.shellAliases."neogit" = "nvim +Neogit";
 
       xdg.configFile."nvim".source =

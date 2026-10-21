@@ -5,6 +5,16 @@ _: {
       colors = config.catppuccin.palette.colors;
     in
     {
+      programs.zsh.initContent = ''
+        if [[ -n $TMUX ]]; then
+          autoload -Uz add-zsh-hook
+          _tmux_title() { printf '\033]2;%s\007' "''${1//[[:cntrl:]]/}"; }
+          _tmux_title_precmd() { local directory=''${PWD:t}; _tmux_title "''${directory:-/}"; }
+          add-zsh-hook precmd _tmux_title_precmd
+          add-zsh-hook preexec _tmux_title
+        fi
+      '';
+
       programs.tmux = {
         enable = true;
         baseIndex = 1;
@@ -17,17 +27,20 @@ _: {
         historyLimit = 10000;
         extraConfig = ''
           set -s extended-keys on
+          set -s extended-keys-format csi-u
           set -as terminal-features ",xterm-kitty:RGB:extkeys,ghostty:RGB:extkeys,xterm-256color:RGB"
           set -ag update-environment " AGENT EDITOR"
           set -g status-position top
-          set -g status-style "fg=${colors.mauve.hex},bg=default"
+          set -g status-style "fg=${colors.overlay1.hex},bg=${colors.mantle.hex}"
           set -g status-left-length 100
-          set -g status-left "#[fg=${colors.lavender.hex},bold] #S #[default]│ "
+          set -g status-left " #S  "
           set -g status-right "#{?window_zoomed_flag, zoom ,}"
-          set -g window-status-format "#[fg=${colors.lavender.hex}] #I:#W#{?@workmux_status, #{@workmux_status},} "
-          set -g window-status-current-format "#[bg=${colors.surface0.hex},fg=${colors.mauve.hex}] #I:#W#{?@workmux_status, #{@workmux_status},} "
+          set -g window-status-separator ""
+          # Show app titles without renaming workmux's layout windows.
+          set -g window-status-format "#[fg=${colors.overlay1.hex},bg=${colors.surface0.hex},nobold]  #I #{?#{==:pane_title,#{host}},#W,#{pane_title}}#{?@workmux_status, #{@workmux_status},}  "
+          set -g window-status-current-format "#[fg=${colors.base.hex},bg=${colors.lavender.hex},bold]  #I #{?#{==:pane_title,#{host}},#W,#{pane_title}}#{?@workmux_status, #{@workmux_status},}  "
           set -g renumber-windows on
-          set -g automatic-rename off
+          set -g automatic-rename on
 
           setw -g pane-border-status top
           setw -g pane-border-format ""
@@ -84,16 +97,15 @@ _: {
           bind-key -n M-x confirm-before "kill-session"
           bind-key -n M-e display-popup -h 90% -w 90% -E 'tmux capture-pane -p -S - -t "#{pane_id}" | nvim -R -'
 
-          # Route navigation and resizing through Vim when it owns the pane.
-          is_vim="ps -o state= -o comm= -t '#{pane_tty}' | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|n?vim?x?)(diff)?$'"
-          bind-key -n C-h if-shell "$is_vim" "send-keys C-h" "select-pane -L"
-          bind-key -n C-j if-shell "$is_vim" "send-keys C-j" "select-pane -D"
-          bind-key -n C-k if-shell "$is_vim" "send-keys C-k" "select-pane -U"
-          bind-key -n C-l if-shell "$is_vim" "send-keys C-l" "select-pane -R"
-          bind-key -n M-h if-shell "$is_vim" "send-keys M-h" "resize-pane -L 3"
-          bind-key -n M-j if-shell "$is_vim" "send-keys M-j" "resize-pane -D 3"
-          bind-key -n M-k if-shell "$is_vim" "send-keys M-k" "resize-pane -U 3"
-          bind-key -n M-l if-shell "$is_vim" "send-keys M-l" "resize-pane -R 3"
+          # smart-splits' tmux backend marks the pane while Neovim owns it.
+          bind-key -n C-h if-shell -F '#{@pane-is-vim}' "send-keys C-h" "select-pane -L"
+          bind-key -n C-j if-shell -F '#{@pane-is-vim}' "send-keys C-j" "select-pane -D"
+          bind-key -n C-k if-shell -F '#{@pane-is-vim}' "send-keys C-k" "select-pane -U"
+          bind-key -n C-l if-shell -F '#{@pane-is-vim}' "send-keys C-l" "select-pane -R"
+          bind-key -n M-h if-shell -F '#{@pane-is-vim}' "send-keys M-h" "resize-pane -L 3"
+          bind-key -n M-j if-shell -F '#{@pane-is-vim}' "send-keys M-j" "resize-pane -D 3"
+          bind-key -n M-k if-shell -F '#{@pane-is-vim}' "send-keys M-k" "resize-pane -U 3"
+          bind-key -n M-l if-shell -F '#{@pane-is-vim}' "send-keys M-l" "resize-pane -R 3"
           bind-key -n M-H swap-pane -d -t "{left-of}"
           bind-key -n M-J swap-pane -d -t "{down-of}"
           bind-key -n M-K swap-pane -d -t "{up-of}"
