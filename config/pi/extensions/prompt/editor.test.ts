@@ -5,7 +5,7 @@ import { register } from "node:module";
 register(`data:text/javascript,${encodeURIComponent(`
   export function resolve(specifier, context, nextResolve) {
     if (specifier === "@earendil-works/pi-coding-agent") return {
-      url: "data:text/javascript," + encodeURIComponent("export const getMarkdownTheme = () => ({});"),
+      url: "data:text/javascript," + encodeURIComponent("export const getMarkdownTheme = () => ({ italic: (text) => '<italic>' + text + '</italic>' });"),
       shortCircuit: true,
     };
     return nextResolve(specifier, context);
@@ -46,6 +46,11 @@ test("only discovered skills complete at a dollar-word boundary", async () => {
   assert.equal(await provider.getSuggestions(["$sec"], 0, 4, options), null);
   assert.equal((await provider.getSuggestions(["cost$rel"], 0, 8, options))?.prefix, "f");
   assert.deepEqual(provider.applyCompletion(["f"], 0, 1, { value: "file", label: "file" }, "f").lines, ["fallback"]);
+});
+
+test("Markdown styling preserves Pi fake-cursor markers", () => {
+  const line = "i\x1b_pi:c\x07\x1b_pi:fc\x07 \x1b_pi:/fc\x07";
+  assert.equal(renderPrompt(["border", line, "border"], getSkills, theme, true)[1], line);
 });
 
 test("valid typed references are colored without changing cursor escapes or unknown tokens", () => {

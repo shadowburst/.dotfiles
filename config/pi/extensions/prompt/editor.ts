@@ -6,7 +6,7 @@ type GetSkills = () => SkillCommand[];
 
 const skillToken = /(?:^|[^\p{L}\p{N}_$])\$([a-z0-9-]*)$/u;
 const skillReference = /\/skill:([a-z0-9]+(?:-[a-z0-9]+)*)(?![\p{L}\p{N}_-])/gu;
-const ansi = /\x1b\[[0-9;]*m|\x1b_pi:c\x07/g;
+const ansi = /\x1b\[[0-9;]*m|\x1b_pi:(?:c|\/?fc)\x07/g;
 
 function stripFakeReverseCursor(line: string): string {
   // Pi draws a software cursor that flickers beneath the terminal cursor.
@@ -27,7 +27,7 @@ function styleMarkdownLine(line: string, style: ReturnType<typeof getMarkdownThe
   const positions: number[] = [];
   let plain = "";
   let last = 0;
-  for (const escape of line.matchAll(/\x1b\[[0-9;]*m|\x1b_pi:c\x07/g)) {
+  for (const escape of line.matchAll(ansi)) {
     for (let i = last; i < escape.index; i++) { positions.push(i); plain += line[i]; }
     last = escape.index + escape[0].length;
   }
@@ -118,7 +118,7 @@ export function highlightSkillReferences(lines: string[], getSkills: GetSkills, 
       const stop = positions[match.index + match[0].length] ?? line.length;
       result += line.slice(end, start);
       // Keep cursor ANSI sequences intact; color only text between them.
-      result += line.slice(start, stop).split(/(\x1b\[[0-9;]*m|\x1b_pi:c\x07)/g)
+      result += line.slice(start, stop).split(/(\x1b\[[0-9;]*m|\x1b_pi:(?:c|\/?fc)\x07)/g)
         .map((part) => part.startsWith("\x1b") ? part : theme.fg("accent", part)).join("");
       end = stop;
     }
