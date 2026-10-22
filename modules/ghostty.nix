@@ -40,7 +40,6 @@ _: {
 
             # Tmux bindings - Panes
             "ctrl+shift+b=text:\\x1bb" # M-b
-            "ctrl+shift+e=text:\\x1be" # M-e
             "ctrl+shift+f=text:\\x1bf" # M-f
             "ctrl+shift+h=text:\\x1bH" # M-H
             "ctrl+shift+j=text:\\x1bJ" # M-J

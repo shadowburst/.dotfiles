@@ -24,7 +24,7 @@ _: {
           set -g status-position top
           set -g status-style "fg=${colors.overlay1.hex},bg=${colors.mantle.hex}"
           set -g status-left-length 100
-          set -g status-left " #[fg=${colors.surface1.hex}]#[fg=${colors.lavender.hex},bg=${colors.surface1.hex},bold]#S#[fg=${colors.surface1.hex},bg=${colors.mantle.hex},nobold]#[default] "
+          set -g status-left " #[fg=${colors.surface0.hex}]#[fg=${colors.lavender.hex},bg=${colors.surface0.hex},bold]#S#[fg=${colors.surface0.hex},bg=${colors.mantle.hex},nobold]#[default] "
           set -g status-right "#{?window_zoomed_flag, zoom ,}"
           setw -g window-status-current-style none
           set -g renumber-windows on
@@ -85,7 +85,7 @@ _: {
             select-layout main-vertical
           }
           bind-key -n M-x confirm-before "kill-session"
-          bind-key -n M-e display-popup -h 90% -w 90% -E 'tmux capture-pane -p -S - -t "#{pane_id}" | nvim -R -'
+          bind-key -n M-Escape run-shell -C 'display-popup -B -h 100% -w 100% -e TMUX_PANE=#{pane_id} -E "nvim -c \"lua require[[tmux-scrollback]](vim.env.TMUX_PANE)\""'
 
           # smart-splits' tmux backend marks the pane while Neovim owns it.
           bind-key -n C-h if-shell -F '#{@pane-is-vim}' "send-keys C-h" "select-pane -L"
