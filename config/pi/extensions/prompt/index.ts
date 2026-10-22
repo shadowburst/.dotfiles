@@ -21,7 +21,8 @@ const PI_FOCUS_OUT = "\x1bPpi-focus=0\x1b\\";
 const FOCUS_SEQUENCES = [PI_FOCUS_IN, PI_FOCUS_OUT] as const;
 
 function isPartialFocusSequence(text: string): boolean {
-  return FOCUS_SEQUENCES.some((sequence) => sequence.startsWith(text));
+  // Pi's input buffer has already resolved a standalone Escape key.
+  return text !== "\x1b" && FOCUS_SEQUENCES.some((sequence) => sequence.startsWith(text));
 }
 
 class PromptEditor extends CustomEditor {

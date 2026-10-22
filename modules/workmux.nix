@@ -10,6 +10,8 @@
         agent = config.home.sessionVariables.AGENT;
         worktree_dir = "..";
         window_prefix = "";
+        status_format = false;
+        nerdfont = true;
         windows = [
           {
             name = "agent";

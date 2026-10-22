@@ -19,13 +19,6 @@ _: {
               windows = [ "editor" ];
             }
           ];
-          session = [
-            {
-              name = "_dotfiles";
-              path = "~/.dotfiles";
-              windows = [ "editor" ];
-            }
-          ];
           window = [
             {
               name = "editor";
@@ -35,6 +28,6 @@ _: {
         };
       };
 
-      home.shellAliases.s = "sesh picker";
+      home.shellAliases.s = "tv sesh";
     };
 }

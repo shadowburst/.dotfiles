@@ -20,6 +20,7 @@
     }:
     {
       home.shell.enableZshIntegration = true;
+      home.packages = [ pkgs.deja ];
 
       programs.zsh = {
         enable = true;
@@ -39,16 +40,9 @@
         };
         initContent = lib.mkMerge [
           (builtins.readFile ../config/zsh/functions.zsh)
-          # fzf-tab must be the last Tab binder, before autosuggestion wrappers.
-          (lib.mkOrder 1050 ''
-            zstyle ':completion:*' menu no
-            source ${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh
-            bindkey -M vicmd '^I' fzf-tab-complete
-          '')
           (lib.mkOrder 1060 ''
-            ZSH_AUTOSUGGEST_STRATEGY=(history)
-            ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=${config.catppuccin.palette.colors.overlay1.hex}'
-            source ${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+            DEJA_HIGHLIGHT_STYLE='fg=${config.catppuccin.palette.colors.overlay1.hex}'
+            eval "$(${pkgs.deja}/bin/deja init zsh)"
 
             bindkey -M viins '^R' tv-shell-history
             bindkey -M vicmd '^R' tv-shell-history

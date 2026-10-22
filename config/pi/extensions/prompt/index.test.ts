@@ -20,7 +20,8 @@ const packages = {
         this.tui = tui;
         this.borderColor = theme.borderColor ?? ((text) => text);
       }
-      handleInput(data) { this.text += data; }
+      inputs = [];
+      handleInput(data) { this.inputs.push(data); this.text += data; }
       getText() { return this.text; }
       getExpandedText() { return this.text; }
       getCursor() {
@@ -74,6 +75,36 @@ register(`data:text/javascript,${encodeURIComponent(`
 `)}`, import.meta.url);
 
 const { default: promptExtension } = await import("./index.ts");
+
+test("prompt forwards bare Escape presses separately and still handles split focus messages", () => {
+  let start: Function;
+  let editor: any;
+  promptExtension({
+    on: (event: string, handler: Function) => { if (event === "session_start") start = handler; },
+    getCommands: () => [],
+  } as any);
+  start!({}, {
+    mode: "tui",
+    ui: {
+      theme: {},
+      addAutocompleteProvider: () => {},
+      setEditorComponent: (factory: Function) => {
+        editor = factory({ requestRender: () => {} }, {}, {});
+      },
+    },
+  });
+  editor.handleInput("\x1b");
+  assert.deepEqual(editor.inputs, ["\x1b"]);
+  editor.handleInput("\x1b");
+  assert.deepEqual(editor.inputs, ["\x1b", "\x1b"]);
+
+  editor.handleInput("\x1bPpi-focus=");
+  editor.handleInput("0\x1b\\");
+  assert.equal(editor.focused, false);
+  editor.handleInput("\x1bPpi-focus=1\x1b\\");
+  assert.equal(editor.focused, true);
+  assert.deepEqual(editor.inputs, ["\x1b", "\x1b"]);
+});
 
 test("prompt styles source Markdown without changing rows or cursor and Ctrl+S restores stashed text", async () => {
   const handlers = new Map<string, Function>();

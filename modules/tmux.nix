@@ -5,16 +5,6 @@ _: {
       colors = config.catppuccin.palette.colors;
     in
     {
-      programs.zsh.initContent = ''
-        if [[ -n $TMUX ]]; then
-          autoload -Uz add-zsh-hook
-          _tmux_title() { printf '\033]2;%s\007' "''${1//[[:cntrl:]]/}"; }
-          _tmux_title_precmd() { local directory=''${PWD:t}; _tmux_title "''${directory:-/}"; }
-          add-zsh-hook precmd _tmux_title_precmd
-          add-zsh-hook preexec _tmux_title
-        fi
-      '';
-
       programs.tmux = {
         enable = true;
         baseIndex = 1;
@@ -26,6 +16,7 @@ _: {
         focusEvents = true;
         historyLimit = 10000;
         extraConfig = ''
+          set -g allow-passthrough on
           set -s extended-keys on
           set -s extended-keys-format csi-u
           set -as terminal-features ",xterm-kitty:RGB:extkeys,ghostty:RGB:extkeys,xterm-256color:RGB"
@@ -33,14 +24,11 @@ _: {
           set -g status-position top
           set -g status-style "fg=${colors.overlay1.hex},bg=${colors.mantle.hex}"
           set -g status-left-length 100
-          set -g status-left " #S  "
+          set -g status-left " #[fg=${colors.surface1.hex}]#[fg=${colors.lavender.hex},bg=${colors.surface1.hex},bold]#S#[fg=${colors.surface1.hex},bg=${colors.mantle.hex},nobold]#[default] "
           set -g status-right "#{?window_zoomed_flag, zoom ,}"
-          set -g window-status-separator ""
-          # Show app titles without renaming workmux's layout windows.
-          set -g window-status-format "#[fg=${colors.overlay1.hex},bg=${colors.surface0.hex},nobold]  #I #{?#{==:pane_title,#{host}},#W,#{pane_title}}#{?@workmux_status, #{@workmux_status},}  "
-          set -g window-status-current-format "#[fg=${colors.base.hex},bg=${colors.lavender.hex},bold]  #I #{?#{==:pane_title,#{host}},#W,#{pane_title}}#{?@workmux_status, #{@workmux_status},}  "
+          setw -g window-status-current-style none
           set -g renumber-windows on
-          set -g automatic-rename on
+          set -g automatic-rename off
 
           setw -g pane-border-status top
           setw -g pane-border-format ""
@@ -55,7 +43,7 @@ _: {
           bind-key -n M-a confirm-before "kill-session -a"
           bind-key -n M-d detach
           bind-key -n M-r source-file ~/.config/tmux/tmux.conf
-          bind-key -n M-Space display-popup -h 90% -w 80% -E "sesh picker"
+          bind-key -n M-Space display-popup -h 90% -w 80% -E "tv sesh"
           bind-key -n M-Tab run-shell "sesh last"
 
           # Windows
