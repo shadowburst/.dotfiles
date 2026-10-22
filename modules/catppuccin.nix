@@ -74,7 +74,6 @@ in
             set -g @catppuccin_window_current_number_color "#{@thm_lavender}"
           '';
         };
-        yazi.enable = true;
         zsh-syntax-highlighting.enable = true;
       };
     };

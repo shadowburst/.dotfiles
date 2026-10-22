@@ -50,7 +50,7 @@ hl.bind(mod .. " + d", function()
     [1] = browser,
     [2] = terminal .. " -e tv sesh",
     [3] = "discord",
-    [4] = terminal .. " -e yazi",
+    [4] = terminal .. " -e superfile",
     [5] = "steam",
     [6] = "gimp",
     [7] = terminal,
@@ -62,7 +62,7 @@ hl.bind(mod .. " + d", function()
     hl.exec_cmd("uwsm app -- " .. command)
   end
 end)
-hl.bind(mod .. " + e", hl.dsp.exec_cmd("uwsm app -- " .. terminal .. " -e yazi"))
+hl.bind(mod .. " + e", hl.dsp.exec_cmd("uwsm app -- " .. terminal .. " -e superfile"))
 hl.bind("CTRL + SHIFT + escape", hl.dsp.exec_cmd("uwsm app -- " .. terminal .. " -e btop"))
 hl.bind("XF86Calculator", hl.dsp.exec_cmd("uwsm app -- gnome-calculator"))
 
