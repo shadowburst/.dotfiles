@@ -45,6 +45,7 @@ _: {
           bind-key -n M-r source-file ~/.config/tmux/tmux.conf
           bind-key -n M-Space display-popup -h 90% -w 80% -E "tv sesh"
           bind-key -n M-Tab run-shell "sesh last"
+          bind-key -n M-w display-popup -B -h 100% -w 100% -d "#{pane_current_path}" -E "workmux dashboard"
 
           # Windows
           bind-key -n M-n next-window
@@ -75,7 +76,8 @@ _: {
           bind-key 'ç' select-window -t 9
 
           # Panes
-          bind-key -n M-b break-pane -d
+          bind-key -n M-b run-shell "workmux sidebar"
+          bind-key -n M-! break-pane -d
           bind-key -n M-f resize-pane -Z
           bind-key -n M-o confirm-before "kill-pane -a"
           bind-key -n M-q {
