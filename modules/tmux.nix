@@ -28,7 +28,6 @@ _: {
           set -g status-right "#{?window_zoomed_flag, zoom ,}"
           setw -g window-status-current-style none
           set -g renumber-windows on
-          set -g automatic-rename off
 
           setw -g pane-border-status top
           setw -g pane-border-format ""

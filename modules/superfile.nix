@@ -24,7 +24,10 @@ _: {
             "enter"
             "l"
           ];
-          quit = [ "ctrl+c" ];
+          quit = [
+            "q"
+            "ctrl+c"
+          ];
           cd_quit = [ "Q" ];
 
           list_up = [ "k" ];
@@ -33,7 +36,7 @@ _: {
           page_down = [ "pgdown" ];
 
           create_new_file_panel = [ "n" ];
-          close_file_panel = [ "q" ];
+          close_file_panel = [ "w" ];
           next_file_panel = [ "tab" ];
           previous_file_panel = [ "shift+tab" ];
           split_file_panel = [ "N" ];
