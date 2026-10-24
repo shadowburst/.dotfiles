@@ -24,7 +24,7 @@ _: {
           window_padding_width = "4 0";
         };
         keybindings = {
-          # Translate AZERTY's top row for tmux window shortcuts.
+          # Translate AZERTY's top row for Herdr's indexed shortcuts.
           "alt+&" = "send_key alt+1";
           "alt+é" = "send_key alt+2";
           "alt+\"" = "send_key alt+3";

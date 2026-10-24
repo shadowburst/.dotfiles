@@ -25,29 +25,19 @@ _: {
           window-padding-color = "extend";
           window-decoration = "none";
           keybind = [
-            # Tmux bindings - Sessions
-            "ctrl+shift+a=text:\\x1ba" # M-a
-            "ctrl+shift+d=text:\\x1bd" # M-d
-            "ctrl+shift+r=text:\\x1br" # M-r
+            # Herdr bindings - Workspaces
             "ctrl+shift+space=text:\\x1b\\x20" # M-Space
             "ctrl+shift+tab=text:\\x1b\\x09" # M-Tab
 
-            # Tmux bindings - Windows
+            # Herdr bindings - Tabs
             "ctrl+shift+n=text:\\x1bn" # M-n
             "ctrl+shift+p=text:\\x1bp" # M-p
             "ctrl+shift+t=text:\\x1bt" # M-t
-            "ctrl+shift+enter=text:\\x1b\\x0d" # M-Enter
 
-            # Tmux bindings - Panes
+            # Herdr bindings - Panes
             "ctrl+shift+b=text:\\x1bb" # M-b
             "ctrl+shift+f=text:\\x1bf" # M-f
-            "ctrl+shift+h=text:\\x1bH" # M-H
-            "ctrl+shift+j=text:\\x1bJ" # M-J
-            "ctrl+shift+k=text:\\x1bK" # M-K
-            "ctrl+shift+l=text:\\x1bL" # M-L
-            "ctrl+shift+o=text:\\x1bo" # M-o
             "ctrl+shift+q=text:\\x1bq" # M-q
-            "ctrl+shift+x=text:\\x1bx" # M-x
 
             # Other
             "ctrl+v=paste_from_clipboard"

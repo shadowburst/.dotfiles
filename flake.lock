@@ -383,8 +383,7 @@
         "nix-index-database": "nix-index-database",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_3",
-        "stylix": "stylix",
-        "workmux": "workmux"
+        "stylix": "stylix"
       }
     },
     "stylix": {
@@ -497,27 +496,6 @@
       "original": {
         "owner": "tinted-theming",
         "repo": "base16-zed",
-        "type": "github"
-      }
-    },
-    "workmux": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1791955856,
-        "narHash": "sha256-DzL/AoksffHT4JUgt2VDl7pbD5xUZauM2SaVFtXnozc=",
-        "owner": "raine",
-        "repo": "workmux",
-        "rev": "2502413833e72c8d3843e862949aae84f7e29793",
-        "type": "github"
-      },
-      "original": {
-        "owner": "raine",
-        "ref": "v0.1.276",
-        "repo": "workmux",
         "type": "github"
       }
     }

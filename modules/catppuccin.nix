@@ -67,13 +67,6 @@ in
         opencode.enable = true;
         starship.enable = true;
         television.enable = true;
-        tmux = {
-          enable = true;
-          extraConfig = ''
-            set -g @catppuccin_window_status_style "rounded"
-            set -g @catppuccin_window_current_number_color "#{@thm_lavender}"
-          '';
-        };
         zsh-syntax-highlighting.enable = true;
       };
     };

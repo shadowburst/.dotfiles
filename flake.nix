@@ -18,9 +18,6 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     import-tree.url = "github:vic/import-tree";
 
-    workmux.url = "github:raine/workmux/v0.1.276";
-    workmux.inputs.nixpkgs.follows = "nixpkgs";
-
     monique.url = "github:ToRvaLDz/monique";
     monique.inputs.nixpkgs.follows = "nixpkgs";
 
