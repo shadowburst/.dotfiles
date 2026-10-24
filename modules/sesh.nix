@@ -27,7 +27,5 @@ _: {
           ];
         };
       };
-
-      home.shellAliases.s = "tv sesh";
     };
 }
