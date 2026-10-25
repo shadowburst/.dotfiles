@@ -41,6 +41,7 @@
         initContent = lib.mkMerge [
           (builtins.readFile ../config/zsh/functions.zsh)
           (lib.mkOrder 1060 ''
+            export DEJA_EMPTY=off
             DEJA_HIGHLIGHT_STYLE='fg=${config.catppuccin.palette.colors.overlay1.hex}'
             eval "$(${pkgs.deja}/bin/deja init zsh)"
 
