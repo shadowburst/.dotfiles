@@ -3,11 +3,19 @@ _: {
   flake.homeModules.cli =
     {
       config,
+      pkgs,
       ...
     }:
     {
+      xdg.configFile."herdr/plugins/config/persiyanov.reviewr/config.toml".source =
+        (pkgs.formats.toml { }).generate "herdr-reviewr-config.toml" {
+          toggle_placement = "overlay";
+          editor = "nvim +{line} {file}";
+        };
+
       programs.herdr = {
         enable = true;
+        plugins.reviewr.package = pkgs.herdr-reviewr;
         settings = {
           onboarding = false;
 
@@ -103,6 +111,13 @@ _: {
             resize_mode = "alt+plus";
 
             copy_mode = "alt+esc";
+            command = [
+              {
+                key = "alt+r";
+                type = "plugin_action";
+                command = "persiyanov.reviewr.toggle";
+              }
+            ];
           };
         };
       };
