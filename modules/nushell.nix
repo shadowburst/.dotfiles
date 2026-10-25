@@ -1,11 +1,6 @@
 _: {
   flake.homeModules.cli =
-    {
-      config,
-      lib,
-      pkgs,
-      ...
-    }:
+    { ... }:
     {
       home.shell.enableNushellIntegration = true;
 
@@ -31,7 +26,6 @@ _: {
           flake-switch = ''sudo nixos-rebuild switch --flake "$HOME/.dotfiles#$(hostname)"'';
           flake-boot = ''sudo nixos-rebuild boot --flake "$HOME/.dotfiles#$(hostname)"'';
           flake-update = ''nix flake update --flake "$HOME/.dotfiles && flake-switch"'';
-          sail = "./vendor/bin/sail";
         };
       };
     };
