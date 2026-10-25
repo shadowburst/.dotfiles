@@ -70,10 +70,10 @@ widget_order = [ "desktop-widget-0000000000000001", "desktop-widget-000000000000
     visible = true
 
     [desktop_widgets.widget.desktop-widget-0000000000000001]
-    box_height = 144.0
-    box_width = 352.0
-    cx = 1696.0
-    cy = 104.0
+    box_height = 592.0
+    box_width = 1408.0
+    cx = 960.0
+    cy = 448.0
     output = "eDP-1"
     placement_height = 1200.0
     placement_width = 1920.0
@@ -84,6 +84,8 @@ widget_order = [ "desktop-widget-0000000000000001", "desktop-widget-000000000000
         background = false
         center_text = true
         clock_style = "digital"
+        color = "primary"
+        font_family = ""
         shadow = false
 
     [desktop_widgets.widget.desktop-widget-0000000000000002]
@@ -337,7 +339,7 @@ osd_position = "top_center"
 
 [plugins]
 auto_update = "all"
-enabled = [ "noctalia/screen_recorder", "noctalia/translator", "shadowburst/voxtype" ]
+enabled = [ "noctalia/screen_recorder", "noctalia/translator", "noctalia/wallpaper_depth", "shadowburst/voxtype" ]
 
     [[plugins.source]]
     kind = "git"

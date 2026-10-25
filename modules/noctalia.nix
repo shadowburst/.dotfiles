@@ -17,8 +17,26 @@ _: {
     };
 
   flake.homeModules.gui =
-    { config, lib, ... }:
     {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
+    {
+      # The depth plugin uses system libraries on NixOS instead of a pip virtualenv.
+      home.packages = [
+        (lib.hiPrio (
+          pkgs.python3.withPackages (
+            ps: with ps; [
+              numpy
+              onnxruntime
+              pillow
+            ]
+          )
+        ))
+      ];
+
       programs.noctalia = {
         enable = true;
         systemd.enable = true;
