@@ -67,6 +67,7 @@ in
         opencode.enable = true;
         starship.enable = true;
         television.enable = true;
+        yazi.enable = true;
         zsh-syntax-highlighting.enable = true;
       };
     };

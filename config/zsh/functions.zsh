@@ -1,18 +1,3 @@
-superfile() {
-  local lastdir exit_code
-  lastdir=$(command superfile path-list --lastdir-file) || return
-  # shortcut: Superfile shares this file across sessions; serialize launches if they overlap.
-  rm -f -- "$lastdir" || return
-
-  command superfile "$@"
-  exit_code=$?
-  if [[ -f $lastdir ]]; then
-    source "$lastdir"
-    rm -f -- "$lastdir"
-  fi
-  return "$exit_code"
-}
-
 ide() {
   "$TERMINAL" -e "$EDITOR" >/dev/null 2>&1 &!
 }
