@@ -37,6 +37,10 @@ thickness = 40
 [battery]
 warning_threshold = 30
 
+[brightness]
+minimum_brightness = 0.04999999888241291
+sync_all_monitors = true
+
 [calendar]
 enabled = true
 
