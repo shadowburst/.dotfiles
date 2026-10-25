@@ -1,6 +1,6 @@
 { inputs, self, ... }:
 {
-  flake.stateVersion = "26.05";
+  flake.stateVersion = "26.11";
 
   imports = [ inputs.home-manager.flakeModules.home-manager ];
 
