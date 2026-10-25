@@ -180,13 +180,6 @@ end, { desc = "Close other buffers" })
 Snacks.keymap.set("n", "<leader>go", function() Snacks.gitbrowse() end, { desc = "Open repo" })
 Snacks.keymap.set(
   "n",
-  "<leader>gt",
-  function() Snacks.terminal.toggle({ "tuicr" }, { win = { width = 0, height = 0 } }) end,
-  { desc = "Toggle tuicr" }
-)
-
-Snacks.keymap.set(
-  "n",
   "<leader>db",
   function()
     Snacks.terminal.toggle({ "sqlit", "--theme", "textual-ansi" }, {
