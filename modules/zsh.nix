@@ -51,7 +51,7 @@
             bindkey -M viins '^G' edit-command-line
             bindkey -M viins '^R' tv-shell-history
             bindkey -M viins '^T' tv-smart-autocomplete
-            bindkey -M viins '^[[3;5~' kill-word
+            bindkey -M viins '^[d' kill-word
             bindkey -M viins '^[[1;5D' backward-word
             bindkey -M viins '^[[1;5C' forward-word
           '')

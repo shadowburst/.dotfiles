@@ -35,6 +35,7 @@ _: {
           "alt+_" = "send_key alt+8";
           "alt+ç" = "send_key alt+9";
           "ctrl+backspace" = "send_key ctrl+w";
+          "ctrl+delete" = "send_key alt+d";
           "shift+enter" = "send_text all \\x1b[13;2u";
         };
       };
