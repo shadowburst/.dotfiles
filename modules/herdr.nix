@@ -8,16 +8,19 @@ _: {
     }:
     {
       xdg.configFile."herdr/plugins/config/persiyanov.reviewr/config.toml".source =
-        (pkgs.formats.toml { }).generate "herdr-reviewr-config.toml" {
-          toggle_placement = "overlay";
-          editor = "nvim +{line} {file}";
-        };
+        (pkgs.formats.toml { }).generate "herdr-reviewr-config.toml"
+          {
+            toggle_placement = "overlay";
+            editor = "nvim +{line} {file}";
+          };
 
       programs.herdr = {
         enable = true;
         plugins.reviewr.package = pkgs.herdr-reviewr;
         settings = {
           onboarding = false;
+
+          session.resume_agents_on_restore = false;
 
           terminal.new_cwd = "follow";
           terminal.shell_mode = "auto";
