@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="300" viewBox="0 0 480 300">
+  <rect width="480" height="300" rx="8" fill="#1e1e2e"/>
+  <g fill="#313244"><rect x="8" y="8" width="104" height="284" rx="4"/><rect x="120" y="8" width="352" height="26" rx="4"/><rect x="120" y="42" width="352" height="222" rx="4"/></g>
+  <g fill="#cdd6f4" font-family="sans-serif" font-size="12"><text x="20" y="30">Spaces</text><text x="20" y="160">Agents</text><text x="132" y="26">Terminal</text><text x="132" y="283">Codex · Claude usage</text><text x="350" y="283">Status</text></g>
+</svg>

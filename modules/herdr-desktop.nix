@@ -11,6 +11,17 @@ _: {
         pkgs.herdr-core
       ];
 
+      xdg.configFile."herdr-app/mods/usage-bar" = {
+        source = ../config/herdr/mods/usage-bar;
+        recursive = true;
+      };
+      xdg.configFile."herdr-app/mods/auto-tabs" = {
+        source = ../config/herdr/mods/auto-tabs;
+        recursive = true;
+      };
+      xdg.configFile."herdr-app/layouts/personal.json".source = ../config/herdr/layouts/personal.json;
+      xdg.configFile."herdr-app/layouts/personal.svg".source = ../config/herdr/layouts/personal.svg;
+
       # The app can read these files, but UI settings saves cannot change them.
       xdg.configFile."herdr-app/settings.json".source = json.generate "herdr-settings.json" {
         core = "${pkgs.herdr-core}/bin/hc";

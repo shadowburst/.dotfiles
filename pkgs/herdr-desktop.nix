@@ -78,6 +78,7 @@ pkgs.rustPlatform.buildRustPackage (finalAttrs: {
       --prefix PATH : ${
         pkgs.lib.makeBinPath [
           herdr-core
+          pkgs.python3
           pkgs.xdg-utils
         ]
       } \

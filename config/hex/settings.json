@@ -1,0 +1,23 @@
+{
+  "enable_on_launch": true,
+  "shortcut_mode": "hold",
+  "double_tap_lock": false,
+  "double_tap_only": false,
+  "indicator_position": "bottom",
+  "history_retention": "day",
+  "paste_with_shift": true,
+  "transcription": {
+    "model": "whisper_large_v3_turbo",
+    "language": "auto"
+  },
+  "capture": {
+    "enabled": false
+  },
+  "meetings": {
+    "enabled": false
+  },
+  "migrations": [
+    "streaming-english-model",
+    "annotate-on-by-default"
+  ]
+}
