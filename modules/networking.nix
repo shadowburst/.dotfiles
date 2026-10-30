@@ -36,13 +36,9 @@
         };
       };
 
-      # Avahi fails to start when a stale PID file is left over after a restart
-      # (e.g. during nixos-rebuild switch). It detects the old process is gone and
-      # attempts unlink(), but then fails to open the PID file with O_CREAT|O_EXCL.
-      # Forcibly removing the PID file before start (as root, before privilege drop)
-      # guarantees a clean slate. The "-" prefix silently ignores a missing file.
+      # The "+" prefix lets cleanup bypass Avahi's capability limits to remove its stale PID file.
       systemd.services.avahi-daemon.serviceConfig = {
-        ExecStartPre = [ "-${pkgs.coreutils}/bin/rm -f /run/avahi-daemon/pid" ];
+        ExecStartPre = [ "+${pkgs.coreutils}/bin/rm -f /run/avahi-daemon/pid" ];
         ReadWritePaths = [ "/run/avahi-daemon" ];
       };
     };

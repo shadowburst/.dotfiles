@@ -15,7 +15,8 @@ _: {
       xdg.configFile."herdr-app/settings.json".source = json.generate "herdr-settings.json" {
         core = "${pkgs.herdr-core}/bin/hc";
         font = config.stylix.fonts.monospace.name;
-        font_size = config.programs.kitty.settings.font_size * 4.0 / 3.0;
+        font_size = 11;
+        ui_font = config.stylix.fonts.sansSerif.name;
         theme = "catppuccin";
         telemetry = false;
       };

@@ -338,12 +338,9 @@ position = "top_center"
 video_codec = "av1"
 video_source = "focused"
 
-[plugin_settings."shadowburst/voxtype"]
-osd_position = "top_center"
-
 [plugins]
 auto_update = "all"
-enabled = [ "noctalia/screen_recorder", "noctalia/translator", "noctalia/wallpaper_depth", "shadowburst/voxtype" ]
+enabled = [ "noctalia/screen_recorder", "noctalia/translator", "noctalia/wallpaper_depth" ]
 
     [[plugins.source]]
     kind = "git"
@@ -354,11 +351,6 @@ enabled = [ "noctalia/screen_recorder", "noctalia/translator", "noctalia/wallpap
     kind = "git"
     location = "https://github.com/noctalia-dev/community-plugins"
     name = "community"
-
-    [[plugins.source]]
-    kind = "path"
-    location = "~/.dotfiles/config/noctalia/plugins"
-    name = "dotfiles"
 
 [shell]
 password_style = "random"
