@@ -6,17 +6,17 @@ require("sidekick").setup({
   nes = { enabled = false },
 })
 
--- Registers the herdr session backend and points sidekick's multiplexer at it.
--- Outside herdr this is a no-op and sidekick falls back to its own terminal backend.
+-- hc terminals use addresses, not the old TUI's pane IDs.
+-- Outside Herdr, setup leaves Sidekick's own terminal backend unchanged.
 local Cli = require("sidekick.cli")
-local Herdr = require("sidekick-herdr")
+local Herdr = require(vim.env.HC_TERMINAL_ID and vim.env.HC_TERMINAL_ID ~= "" and "sidekick-hc" or "sidekick-herdr")
 
 Herdr.setup()
 
 -- Lets `{file}` / `{position}` name CodeDiff's revision buffers.
 require("sidekick-codediff").setup()
 
--- `pane run` sessions have no Neovim window, so sidekick's own toggle is a
+-- Herdr sessions have no Neovim window, so sidekick's own toggle is a
 -- no-op once one is running. Toggle attachment ourselves instead.
 Snacks.keymap.set("n", "<leader>aa", function()
   if Herdr.attached() then

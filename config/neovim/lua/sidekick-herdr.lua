@@ -268,6 +268,12 @@ function M.setup()
     return false
   end
 
+  M.register(M, Backend)
+  return true
+end
+
+--- Share Sidekick registration and UI behavior with the hc backend.
+function M.register(module, backend)
   if not Config.herdr_validated then
     local validate = Config.validate
     Config.validate = function(key, t)
@@ -280,18 +286,18 @@ function M.setup()
     Config.herdr_validated = true
   end
 
-  Session.register(M.BACKEND, Backend)
+  Session.register(module.BACKEND, backend)
   Config.cli.mux.enabled = true
-  Config.cli.mux.backend = M.BACKEND
-  Config.cli.mux.create = M.CREATE
+  Config.cli.mux.backend = module.BACKEND
+  Config.cli.mux.create = module.CREATE
 
   vim.api.nvim_create_autocmd("User", {
-    group = vim.api.nvim_create_augroup("sidekick_herdr", { clear = true }),
+    group = vim.api.nvim_create_augroup("sidekick_" .. module.BACKEND, { clear = true }),
     pattern = "SidekickCliAttach",
     callback = function()
-      if M.armed then
-        M.armed = false
-        M.focus()
+      if module.armed then
+        module.armed = false
+        module.focus()
       end
     end,
   })
@@ -301,12 +307,12 @@ end
 --- The attached herdr session, if any. No side effects: `toggle` needs to know
 --- whether something is attached without attaching it.
 ---@return sidekick.cli.Session?
-function M.attached()
+function M.attached(backend)
   local cwd = Session.cwd()
   ---@type sidekick.cli.Session?
   local fallback
   for _, session in pairs(Session.attached()) do
-    if session.backend == M.BACKEND then
+    if session.backend == (backend or M.BACKEND) then
       if session.cwd == cwd then
         return session
       end
@@ -316,19 +322,18 @@ function M.attached()
   return fallback
 end
 
----@param session sidekick.cli.Session
 ---@return boolean
-local function focus_session(session)
-  local pane_id = session:pane_id()
+function Backend:focus()
+  local pane_id = self:pane_id()
   return pane_id ~= nil and M.json(M.cmd({ "agent", "focus", pane_id }), { notify = true }) ~= nil
 end
 
 --- Bring the terminal emulator to the attached agent. Silent when there is
 --- nothing to focus: this runs as the last step of a send keymap, not on its own.
 ---@return boolean
-function M.focus()
-  local session = M.attached()
-  return session ~= nil and focus_session(session)
+function M.focus(module)
+  local session = (module or M).attached()
+  return session ~= nil and session:focus()
 end
 --- Take the user to the agent a send keymap just sent to.
 ---
@@ -337,26 +342,28 @@ end
 --- emits `SidekickCliAttach` once that choice is made -- and not at all when the
 --- session was already attached, so riding that event alone would work exactly
 --- once.
-function M.focus_after_send()
-  local session = M.attached()
+function M.focus_after_send(module)
+  module = module or M
+  local session = module.attached()
   if session then
-    return focus_session(session)
+    return session:focus()
   end
-  M.armed = true
+  module.armed = true
   -- ponytail: dismissing the picker attaches nothing, so the arm has to expire
   -- on its own rather than firing on some later, unrelated attach
-  vim.defer_fn(function() M.armed = false end, 2000)
+  vim.defer_fn(function() module.armed = false end, 2000)
 end
 
 --- Callback for `Cli.prompt`. It is invoked as `(msg, text)` where `text` is the
 --- rendered `sidekick.Text[]` that `Cli.send` wants; `msg` is only the preview
 --- string, and handing that over instead sends an empty prompt.
 ---@return fun(msg?:string, text?:sidekick.Text[])
-function M.prompt_cb()
+function M.prompt_cb(module)
+  module = module or M
   return function(_, text)
     if text then
-      Cli.send({ text = text, filter = { name = M.TOOL } })
-      M.focus_after_send()
+      Cli.send({ text = text, filter = { name = module.TOOL } })
+      module.focus_after_send()
     end
   end
 end
