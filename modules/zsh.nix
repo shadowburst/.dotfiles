@@ -42,6 +42,7 @@
           (builtins.readFile ../config/zsh/functions.zsh)
           (lib.mkOrder 1060 ''
             export DEJA_EMPTY=off
+            DEJA_CYCLE_KEY="" # Keep Tab for completion, not suggestion cycling.
             DEJA_HIGHLIGHT_STYLE='fg=${config.catppuccin.palette.colors.overlay1.hex}'
             eval "$(${pkgs.deja}/bin/deja init zsh)"
 
