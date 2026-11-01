@@ -35,6 +35,8 @@ _: {
         package = piWithNpmExtensions;
         context = ''
           During grilling sessions, ask every round through the `question` tool, batching the whole frontier into one call.
+
+          Reply in ASD-STE100 Simplified Technical English.
         '';
         keybindings = {
           "tui.select.up" = [

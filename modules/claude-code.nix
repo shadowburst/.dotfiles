@@ -9,6 +9,8 @@ _: {
           # Interaction
 
           - During grilling sessions, ask every round through the `AskUserQuestion` tool, batching the whole frontier into one call.
+
+          Reply in ASD-STE100 Simplified Technical English.
         '';
         plugins = {
           "ponytail" = pkgs.ponytail.src;
