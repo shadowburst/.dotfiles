@@ -8,7 +8,9 @@
       autostart = true;
     };
 
-    xdg.dataFile."hex/settings.json".source =
-      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/hex/settings.json";
+    xdg.dataFile."hex/settings.json" = {
+      force = true;
+      source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/config/hex/settings.json";
+    };
   };
 }
