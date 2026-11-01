@@ -22,10 +22,7 @@ function enabledProviders() {
 const ERRORS = {
   not_signed_in: "Not signed in", expired: "Sign-in expired", forbidden: "Usage access refused",
   missing_scope: "Usage permission missing", no_quota: "No quota reported", offline: "Offline",
-  rate_limited: "Try again later", keychain_locked: "Keychain locked",
-  keychain_missing: "Sign-in key missing",
-  keychain_denied: "Keychain access denied", keychain_error: "Keychain unavailable",
-  cancelled: "Request cancelled", invalid_session: "Session not connected", reader_error: "Reader error",
+  rate_limited: "Try again later", reader_error: "Reader error",
 };
 
 function percent(n) {
@@ -82,7 +79,7 @@ export default class UsageBar extends View {
         if (command === "refresh") this.refreshAll(cx);
         const provider = command.replace("connect-", "");
         if (command.startsWith("connect-") && ORDER.includes(provider)) {
-          this.refresh(provider, cx, true);
+          this.refresh(provider, cx);
         }
       }
     });
@@ -92,16 +89,13 @@ export default class UsageBar extends View {
     for (const provider of enabledProviders()) this.refresh(provider, cx);
   }
 
-  refresh(provider, cx, allowKeychain = false, copiedSession = false) {
+  refresh(provider, cx) {
     if (this.busy[provider]) return;
     this.busy[provider] = true;
     cx.notify();
     cx.spawn(async cx => {
       try {
-        const args = [`${appHome()}/mods/usage-bar/collect.py`, provider];
-        if (allowKeychain) args.push("--allow-keychain-prompt");
-        if (copiedSession) args.push("--cursor-session-from-clipboard");
-        const result = await exec("python3", args);
+        const result = await exec("node", [`${appHome()}/mods/usage-bar/collect.mjs`, provider]);
         if (result.code !== 0) throw new Error("helper");
         const record = JSON.parse(result.stdout);
         if (record.provider !== provider || !Array.isArray(record.windows)) throw new Error("data");
@@ -109,7 +103,7 @@ export default class UsageBar extends View {
       } catch (_) {
         this.records[provider] = { provider, windows: [], updated: null,
           error: "The local usage helper did not finish successfully.", code: "reader_error",
-          action: "Check that Python 3 is available. A long-running permission dialog can also time out; close it and retry." };
+          action: "Check that Node.js 24 or later is available, then retry." };
       }
       this.busy[provider] = false;
       setShared(SNAPSHOT, { ...(shared(SNAPSHOT) || {}), [provider]: this.records[provider] });
@@ -233,19 +227,7 @@ export default class UsageBar extends View {
     const pending = ORDER.some(name => this.busy[name]);
     const actions = h_flex().gap(8).child(control("refresh-provider", pending ? "Refreshing…" : "Refresh all",
       (_event, cx) => this.refreshAll(cx), t).disabled(pending));
-    if (!connected && (provider === "claude" || provider === "cursor")) {
-      actions.child(control("connect-provider", this.busy[provider] ? "Connecting…" : "Retry Keychain",
-        (_event, cx) => this.refresh(provider, cx, true), t).disabled(Boolean(this.busy[provider]))
-        .tooltip("Ask macOS to allow Python to read this provider's sign-in item. Automatic refresh never prompts."));
-    }
     body.child(actions);
-    if (provider === "cursor" && !connected) {
-      body.child(div().h(1).bg(t.border)).child(div().font_semibold().child("Connect without Keychain"))
-        .child(div().text_size(11.5).text_color(t.muted).child("In a signed-in cursor.com tab: DevTools → Application → Cookies → WorkosCursorSessionToken. Copy only its value, then click below."))
-        .child(control("copied-session", this.busy.cursor ? "Connecting…" : "Use copied browser session",
-          (_event, cx) => this.refresh("cursor", cx, false, true), t).disabled(Boolean(this.busy.cursor)))
-        .child(div().text_size(11).text_color(t.dim).child("Reads the clipboard only on click. Saves the validated session privately on this Mac for automatic refresh. Do not paste it into chat."));
-    }
     return body;
   }
 

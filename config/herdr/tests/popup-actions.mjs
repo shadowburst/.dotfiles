@@ -1,4 +1,4 @@
-// Exercise real popup callbacks with a fake provider, without opening Keychain.
+// Exercise real popup callbacks with synthetic provider data.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
@@ -68,14 +68,14 @@ assert.equal(context.resetCountdown(null, now), null);
 const popup = new context.UsageBar();
 popup.init({}, cx);
 popup.details();
-controls.get("connect-provider").click({}, cx);
+controls.get("refresh-provider").click({}, cx);
 assert.equal(popup.busy.cursor, true, "connect should immediately report progress");
 await Promise.all(pending.splice(0));
-assert.equal(calls[0].program, "python3");
-assert.equal(calls[0].args[1], "cursor");
-assert.ok(calls[0].args.includes("--allow-keychain-prompt"), "connect must request the Keychain helper directly");
+assert.equal(calls[0].program, "node");
+assert.equal(calls[0].args[0], "/test/mods/usage-bar/collect.mjs");
+assert.ok(calls.some(call => call.args[1] === "cursor"));
 assert.equal(snapshots.get("usage-bar.snapshot").cursor.windows[0].used, 35);
-assert.equal(snapshots.get("usage-bar.snapshot").codex.windows[0].used, 22, "connecting must retain other providers");
+assert.equal(snapshots.get("usage-bar.snapshot").codex.windows[0].used, 35, "refresh updates all enabled providers");
 assert.equal(popup.busy.cursor, false);
 
 const bar = new context.UsageBar();
@@ -89,7 +89,7 @@ calls.length = 0;
 controls.get("refresh-provider").click({}, cx);
 await Promise.all(pending.splice(0));
 assert.equal(calls.length, 3, "Refresh all should call all three providers");
-assert.ok(calls.every(call => !call.args.includes("--allow-keychain-prompt")), "ordinary refresh must not prompt");
+assert.ok(calls.every(call => call.args.length === 2), "refresh passes only the collector path and provider");
 calls.length = 0;
 controls.clear();
 popup.details();
@@ -100,9 +100,8 @@ assert.equal(overlays.at(-1).height, 320, "connected Cursor should use a compact
 snapshots.get("usage-bar.snapshot").cursor = { provider: "cursor", windows: [], error: "missing login" };
 controls.clear();
 popup.details();
-controls.get("copied-session").click({}, cx);
-await Promise.all(pending.splice(0));
-assert.ok(calls[0].args.includes("--cursor-session-from-clipboard"), "browser connection is an explicit clipboard action");
+assert.equal(controls.has("copied-session"), false, "Linux must not offer a macOS clipboard action");
+assert.equal(controls.has("connect-provider"), false, "Linux must not offer a Keychain action");
 
 snapshots.get("usage-bar.snapshot").codex.windows = [{ label: "5h", used: 22, reset: (Date.now() + 135 * 60000) / 1000 }];
 bar.chip("codex", false, {});
@@ -164,4 +163,4 @@ for (const [credits, expected] of [
 }
 bar.open("codex");
 assert.equal(overlays.at(-1).height, 450, "Codex popup needs room for credits");
-console.log("Popup connect, progress, shared readings, and refresh callbacks passed (synthetic credentials).");
+console.log("Popup progress, shared readings, and refresh callbacks passed (synthetic credentials).");

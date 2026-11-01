@@ -9,16 +9,15 @@ _: {
       home.packages = [
         pkgs.herdr-desktop
         pkgs.herdr-core
+        pkgs.nodejs # The usage-bar collector uses built-in SQLite.
       ];
 
       xdg.configFile."herdr-app/mods/usage-bar" = {
         source = ../config/herdr/mods/usage-bar;
         recursive = true;
       };
-      xdg.configFile."herdr-app/mods/auto-tabs" = {
-        source = ../config/herdr/mods/auto-tabs;
-        recursive = true;
-      };
+      # Keep relative imports inside the resolved mod directory; restart after updates.
+      xdg.configFile."herdr-app/mods/auto-tabs".source = ../config/herdr/mods/auto-tabs;
       xdg.configFile."herdr-app/layouts/personal.json".source = ../config/herdr/layouts/personal.json;
       xdg.configFile."herdr-app/layouts/personal.svg".source = ../config/herdr/layouts/personal.svg;
 
