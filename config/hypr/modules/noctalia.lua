@@ -19,8 +19,8 @@ hl.bind(mod .. " + x", hl.dsp.exec_cmd("noctalia msg panel-toggle session"))
 hl.bind(mod .. " + v", hl.dsp.exec_cmd("noctalia msg panel-toggle clipboard"))
 
 -- Dictation.
-hl.bind("F8", hl.dsp.exec_cmd("noctalia msg plugin shadowburst/voxtype:status all toggle"))
-hl.bind("SHIFT + F8", hl.dsp.exec_cmd("noctalia msg plugin shadowburst/voxtype:status all cancel"))
+hl.bind(mod .. " + i", hl.dsp.exec_cmd("noctalia msg plugin shadowburst/voxtype:status all toggle"))
+hl.bind(mod .. " + SHIFT + i", hl.dsp.exec_cmd("noctalia msg plugin shadowburst/voxtype:status all cancel"))
 
 -- Audio/media.
 hl.bind("XF86AudioMute", hl.dsp.exec_cmd("noctalia msg volume-mute"))
