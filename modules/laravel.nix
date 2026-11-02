@@ -28,5 +28,7 @@
       ];
 
       home.file.".local/bin/lerd".source = lib.getExe lerd;
+
+      home.sessionPath = [ "$HOME/.local/share/lerd/bin" ];
     };
 }
