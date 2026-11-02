@@ -129,6 +129,7 @@ type Harness = {
   };
   handlers: Map<string, Handler>;
   sends: Send[];
+  events: Array<{ name: string; data: unknown }>;
 };
 
 const skillRoot = await mkdtemp(join(tmpdir(), "question-skills-"));
@@ -150,7 +151,8 @@ function createHarness(commands: unknown[]): Harness {
   const tools: Array<Harness["tool"]> = [];
   const handlers = new Map<string, Handler>();
   const sends: Send[] = [];
-  const events = { emit: () => undefined };
+  const emitted: Harness["events"] = [];
+  const events = { emit: (name: string, data: unknown) => { emitted.push({ name, data }); } };
 
   const pi = {
     events,
@@ -164,7 +166,7 @@ function createHarness(commands: unknown[]): Harness {
   const tool = tools.find((candidate) => candidate && (candidate as { name?: string }).name === "question");
   assert.ok(tool, "question tool should be registered");
 
-  return { tool, handlers, sends };
+  return { tool, handlers, sends, events: emitted };
 }
 
 const questions = {
@@ -218,6 +220,28 @@ const plainTheme = {
   bg: (_color: string, text: string) => text,
   bold: (text: string) => text,
 };
+
+for (const outcome of ["answer", "cancel", "error"]) {
+  test(`question reports blocked while open and clears it after ${outcome}`, async () => {
+    const harness = createHarness([]);
+    const pending = harness.tool.execute("call", questions, undefined, undefined, {
+      ...executeContext(),
+      ui: { custom: async () => {
+        assert.deepEqual(harness.events, [
+          { name: "herdr:blocked", data: { active: true, label: "Work" } },
+        ]);
+        if (outcome === "error") throw new Error("Dialog failed");
+        return outcome === "cancel" ? null : { details: { answers: [["Configured"]] } };
+      } },
+    });
+    if (outcome === "answer") await pending;
+    else await assert.rejects(pending, outcome === "cancel" ? /User cancelled/ : /Dialog failed/);
+    assert.deepEqual(harness.events, [
+      { name: "herdr:blocked", data: { active: true, label: "Work" } },
+      { name: "herdr:blocked", data: { active: false } },
+    ]);
+  });
+}
 
 test("fixed confirmation has two choices, starts affirmative and submits only the highlighted choice", async () => {
   const result = await showConfirmation({ events: { emit() {} }, getCommands: () => [] } as any, {
