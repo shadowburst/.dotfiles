@@ -445,20 +445,10 @@ show_label = true
 [widget.clock]
 format = "{:%H:%M %a %x}"
 
-[widget.cpu]
-display = "text"
-
-[widget.network_rx]
-display = "text"
-
-[widget.network_tx]
-display = "text"
-
 [widget.notifications]
 hide_when_no_unread = true
 
 [widget.ram]
-display = "text"
 stat = "ram_pct"
 
 [widget.recorder]

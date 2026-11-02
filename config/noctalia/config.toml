@@ -121,8 +121,6 @@ unit = "celsius"
 enable_overdrive = false
 enable_sounds = true
 sound_volume = 0.5
-volume_change_sound = ""
-notification_sound = ""
 
 [brightness]
 enable_ddcutil = false
@@ -179,7 +177,7 @@ shadow = true
 auto_hide = false
 reserve_space = true
 capsule = true
-capsule_fill = "surface_variant"
+capsule_fill = "surface_container"
 capsule_radius = 8.0
 capsule_opacity = 0.9
 start = ["clock", "media"]
