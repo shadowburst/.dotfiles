@@ -64,6 +64,7 @@ _: {
         ".pi/agent/extensions/tasks".source = pkgs.pi-tasks;
         ".pi/agent/extensions/usage" = mkPiConfigSymlink "config/pi/extensions/usage";
         ".pi/agent/extensions/pi-web-access".source = pkgs.pi-web-access;
+        ".pi/agent/extensions/pi-claude-code".source = pkgs.pi-claude-code;
         ".pi/agent/extensions/ponytail".source = pkgs.ponytail;
       };
     };

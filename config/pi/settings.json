@@ -3,9 +3,7 @@
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-6.1-sol",
   "defaultThinkingLevel": "medium",
-  "defaultTools": [
-    "+codemode"
-  ],
+  "defaultTools": ["+codemode"],
   "theme": "catppuccin-mocha",
   "doubleEscapeAction": "tree",
   "quietStartup": true,
@@ -20,7 +18,10 @@
   "enabledModels": [
     "openai-codex/gpt-6-astra",
     "openai-codex/gpt-6.1-sol",
-    "openai-codex/gpt-6-luna"
+    "openai-codex/gpt-6-luna",
+    "claude-code/claude-fable-5-1",
+    "claude-code/claude-opus-5-5",
+    "claude-code/claude-haiku-5-5"
   ],
   "tuiMode": "fullscreen",
   "enableSkillCommands": true,
