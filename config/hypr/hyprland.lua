@@ -8,6 +8,5 @@ require("host")
 
 require("layouts.scrolling")
 
-require("modules.hex")
 require("modules.monique")
 require("modules.noctalia")

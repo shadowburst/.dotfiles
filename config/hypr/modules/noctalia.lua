@@ -18,6 +18,25 @@ hl.bind(mod .. " + a", hl.dsp.exec_cmd("noctalia msg panel-toggle control-center
 hl.bind(mod .. " + x", hl.dsp.exec_cmd("noctalia msg panel-toggle session"))
 hl.bind(mod .. " + v", hl.dsp.exec_cmd("noctalia msg panel-toggle clipboard"))
 
+-- Dictation.
+local pending, timer
+
+local function tap(action)
+  if timer then
+    timer:set_enabled(false)
+  end
+  if pending == action then
+    pending = nil
+    hl.dispatch(hl.dsp.exec_cmd("noctalia msg plugin shadowburst/voxtype:status all " .. action))
+  else
+    pending = action
+    timer = hl.timer(function() pending = nil end, { timeout = 300, type = "oneshot" })
+  end
+end
+
+hl.bind("CTRL + Control_R", function() tap("toggle") end, { release = true })
+hl.bind("CTRL + SHIFT + Control_R", function() tap("cancel") end, { release = true })
+
 -- Audio/media.
 hl.bind("XF86AudioMute", hl.dsp.exec_cmd("noctalia msg volume-mute"))
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("noctalia msg volume-down"))

@@ -21,10 +21,6 @@
     monique.url = "github:ToRvaLDz/monique";
     monique.inputs.nixpkgs.follows = "nixpkgs";
 
-    hex.url = "github:anomalyco/hex/cfd490b9c7292c045a6b725d976a6d12b8202b08";
-    hex.inputs.nixpkgs.follows = "nixpkgs";
-    hex.inputs.home-manager.follows = "home-manager";
-
     lerd.url = "github:lerd-env/lerd-nixos";
     lerd.inputs.nixpkgs.follows = "nixpkgs";
   };
