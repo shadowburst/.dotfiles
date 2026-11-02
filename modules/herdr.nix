@@ -97,11 +97,13 @@ _: {
 
             next_workspace = "alt+tab";
             previous_workspace = "alt+shift+tab";
-            focus_agent = "alt+1..9";
+            previous_agent = "alt+up";
+            next_agent = "alt+down";
 
             next_tab = "alt+n";
             previous_tab = "alt+p";
             new_tab = "alt+t";
+            switch_tab = "alt+1..9";
 
             focus_pane_left = "alt+h";
             focus_pane_down = "alt+j";
