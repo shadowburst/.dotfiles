@@ -5,12 +5,14 @@ import { getAgentDir, readStoredCredential, type ExtensionAPI, type ExtensionCom
 import { Key, matchesKey, truncateToWidth, type TUI, visibleWidth } from "@earendil-works/pi-tui";
 
 import { SharedUsageCache } from "./cache.ts";
+import { loadClaudeUsage } from "./claude.ts";
 import {
   cycleIndex,
   maskEmail,
   parseCopilotUsagePayload,
   parseUsagePayload,
   resetCountdown,
+  selectClaudeUsageWindow,
   selectCopilotUsageWindow,
   selectUsageWindow,
   type UsageSnapshot,
@@ -102,6 +104,15 @@ const PROVIDER_TABS: ProviderTab[] = [
     label: "Copilot",
     load: loadCopilotUsage,
     selectWindow: selectCopilotUsageWindow,
+  },
+  {
+    provider: "claude-code",
+    label: "Claude",
+    load: async (ctx, signal) => {
+      const resolved = await ctx.modelRegistry.getProviderAuth("claude-code");
+      return loadClaudeUsage({ ...process.env, ...resolved?.env }, signal);
+    },
+    selectWindow: selectClaudeUsageWindow,
   },
 ];
 

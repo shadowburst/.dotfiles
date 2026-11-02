@@ -126,6 +126,44 @@ export function parseCopilotUsagePayload(value: unknown): UsageSnapshot {
   };
 }
 
+export function parseClaudeUsagePayload(value: unknown): UsageSnapshot {
+  const payload = object(value);
+  if (!payload) throw new Error("Claude returned an invalid usage response");
+
+  const windows: UsageWindow[] = [];
+  for (const [key, label, windowSeconds] of [
+    ["five_hour", "General · 5 hours", 18_000],
+    ["seven_day", "General · 1 week", 604_800],
+    ["seven_day_opus", "Opus · 1 week", 604_800],
+    ["seven_day_sonnet", "Sonnet · 1 week", 604_800],
+  ] as const) {
+    const raw = object(payload[key]);
+    const used = number(raw?.utilization);
+    if (used === undefined) continue;
+    const reset = typeof raw?.resets_at === "string" ? Date.parse(raw.resets_at) / 1000 : NaN;
+    windows.push({
+      label,
+      usedPercent: Math.max(0, Math.min(100, used)),
+      windowSeconds,
+      ...(Number.isFinite(reset) && reset > 0 ? { resetsAt: reset } : {}),
+    });
+  }
+  return { windows };
+}
+
+export function selectClaudeUsageWindow(snapshot: UsageSnapshot, modelId: string): UsageWindow | undefined {
+  const hourly = snapshot.windows.find((window) => window.label === "General · 5 hours");
+  if (hourly) return hourly;
+  const model = modelId.toLowerCase();
+  return snapshot.windows.filter((window) => window.label.startsWith("General · ")
+    || (model.includes("opus") && window.label.startsWith("Opus · "))
+    || (model.includes("sonnet") && window.label.startsWith("Sonnet · ")))
+    .reduce<UsageWindow | undefined>(
+      (lowest, window) => !lowest || window.usedPercent > lowest.usedPercent ? window : lowest,
+      undefined,
+    );
+}
+
 export function selectUsageWindow(snapshot: UsageSnapshot, modelId: string): UsageWindow | undefined {
   const modelKey = modelId.toLowerCase().replaceAll(/[^a-z0-9]/g, "");
   const specific = snapshot.windows.filter((window) => {
