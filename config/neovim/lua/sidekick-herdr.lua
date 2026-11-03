@@ -362,7 +362,7 @@ function M.prompt_cb(module)
   module = module or M
   return function(_, text)
     if text then
-      Cli.send({ text = text, filter = { name = module.TOOL } })
+      Cli.send({ text = text, filter = { cwd = true } })
       module.focus_after_send()
     end
   end

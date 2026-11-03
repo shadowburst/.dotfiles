@@ -22,19 +22,17 @@ Snacks.keymap.set("n", "<leader>aa", function()
   if Herdr.attached() then
     Cli.close()
   else
-    Cli.toggle({ name = Herdr.TOOL })
+    Cli.toggle({ filter = { cwd = true } })
   end
 end, { desc = "Toggle AI" })
 
 Snacks.keymap.set("n", "<leader>as", function() Cli.select() end, { desc = "Select CLI" })
 Snacks.keymap.set("n", "<leader>ad", function() Cli.close() end, { desc = "Detach CLI" })
 
--- sidekick already picks the agent: it auto-selects when exactly one matches the
--- filter and shows its own picker when several do. These only narrow it to pi and
--- ask to be taken to whichever agent receives the send.
+-- Use running agents in this directory: auto-select one, or ask when several match.
 ---@param opts sidekick.cli.Send
 local function send(opts)
-  Cli.send(vim.tbl_extend("force", opts, { filter = { name = Herdr.TOOL } }))
+  Cli.send(vim.tbl_extend("force", opts, { filter = { cwd = true } }))
   Herdr.focus_after_send()
 end
 

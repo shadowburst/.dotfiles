@@ -14,7 +14,7 @@ local select = vim.ui.select
 
 --- Record the picker instead of opening it, so a regression shows up as a failed
 --- assertion rather than a headless nvim waiting on input.
-vim.ui.select = function(items, opts) picks[#picks + 1] = { items = items, opts = opts } end
+vim.ui.select = function(items, opts, cb) picks[#picks + 1] = { items = items, opts = opts, cb = cb } end
 
 vim.notify = function(msg) notes[#notes + 1] = tostring(msg) end
 
@@ -372,5 +372,61 @@ vim.wait(100)
 assert(#issued("send-text") == 1, "a cancelled prompt must send nothing")
 assert(#issued("agent focus") == 1, "a cancelled prompt must not focus")
 
+-- 9. Exercise the actual keymaps: reuse any local agent, never start Pi.
+vim.cmd.packadd("codediff.nvim")
+local maps = {}
+local snacks, pack_add = _G.Snacks, vim.pack.add
+_G.Snacks = { keymap = { set = function(_, key, cb) maps[key] = cb end } }
+vim.pack.add = function() end
+local plugin = vim.fn.stdpath("config") .. "/plugin/50-sidekick.lua"
+local hc_terminal = vim.env.HC_TERMINAL_ID
+vim.env.HC_TERMINAL_ID = nil
+reset()
+dofile(plugin)
+pane_list()
+running({ cmd = "/nix/store/xxx/bin/claude" })
+local file = CWD .. "/example.lua"
+vim.cmd.edit(vim.fn.fnameescape(file))
+maps["<leader>af"]()
+vim.wait(100)
+assert(#issued("tab create") == 0, "send must reuse Claude rather than start Pi")
+assert(#picks == 0, "one local agent must be selected without a picker")
+assert(#issued("send-text") == 1, "file keymap must send to the existing agent")
+
+reset()
+dofile(plugin)
+pane_list({ list = { {}, { pane = "w1:p3", terminal = "term_second" } } })
+running({ pane = "w1:p3", cmd = "/nix/store/xxx/bin/claude" })
+maps["<leader>af"]()
+vim.wait(100)
+assert(#picks == 1 and #picks[1].items == 2, "multiple local agents must open a picker")
+for _, item in ipairs(picks[1].items) do
+  assert(item.session and item.session.cwd == CWD, "only running local agents may be offered")
+end
+picks[1].cb(picks[1].items[1])
+vim.wait(100)
+assert(#issued("send-text") == 1, "the selected agent must receive the file")
+assert(#issued("tab create") == 0, "the picker must not start a new agent")
+
+reset()
+dofile(plugin)
+pane_list({ cwd = "/somewhere/else" })
+Session.attach(discovered()[1])
+maps["<leader>af"]()
+vim.wait(100)
+assert(#issued("send-text") == 0, "must not send to an attached agent in another directory")
+assert(#issued("tab create") == 0, "no local agent must not start Pi")
+
+reset()
+dofile(plugin)
+pane_list()
+running({ cmd = "/nix/store/xxx/bin/claude" })
+require("sidekick-herdr").prompt_cb()("preview", rendered)
+vim.wait(100)
+assert(#issued("tab create") == 0, "prompts must reuse Claude rather than start Pi")
+assert(#issued("send-text") == 1, "prompt must reach the existing agent")
+
+_G.Snacks, vim.pack.add = snacks, pack_add
+vim.env.HC_TERMINAL_ID = hc_terminal
 vim.system, vim.notify, vim.ui.select = system, notify, select
 print("sidekick-herdr: all assertions passed")
