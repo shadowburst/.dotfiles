@@ -5,7 +5,7 @@ _: {
       services.voxtype = {
         enable = true;
         package = pkgs.voxtype-vulkan;
-        loadModels = [ "large-v3-turbo" ];
+        loadModels = [ "small" ];
         wayland.display = "wayland-1";
 
         settings = {
@@ -13,7 +13,7 @@ _: {
           hotkey.enabled = false;
 
           whisper = {
-            model = "large-v3-turbo";
+            model = "small";
             language = "auto";
             context_window_optimization = true;
           };
@@ -24,7 +24,7 @@ _: {
             mode = "type";
             wait_for_modifier_release = true;
             pre_type_delay_ms = 150;
-            type_delay_ms = 3;
+            type_delay_ms = 0;
             append_text = " ";
 
             notification = {
