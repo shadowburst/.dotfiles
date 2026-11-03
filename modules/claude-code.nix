@@ -19,9 +19,7 @@ _: {
         enable = true;
         mutableSettings = true;
         context = ''
-          # Interaction
-
-          - During grilling sessions, ask every round through the `AskUserQuestion` tool, batching the whole frontier into one call.
+          During grilling sessions, ask every round through the `AskUserQuestion` tool, batching the whole frontier into one call.
 
           Reply in ASD-STE100 Simplified Technical English.
         '';
