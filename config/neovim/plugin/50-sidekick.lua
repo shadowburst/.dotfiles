@@ -6,10 +6,9 @@ require("sidekick").setup({
   nes = { enabled = false },
 })
 
--- hc terminals use addresses, not the old TUI's pane IDs.
 -- Outside Herdr, setup leaves Sidekick's own terminal backend unchanged.
 local Cli = require("sidekick.cli")
-local Herdr = require(vim.env.HC_TERMINAL_ID and vim.env.HC_TERMINAL_ID ~= "" and "sidekick-hc" or "sidekick-herdr")
+local Herdr = require("sidekick-herdr")
 
 Herdr.setup()
 

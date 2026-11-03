@@ -5,8 +5,6 @@ let
   mkPiClaudeCode = import ./pi-claude-code.nix;
   mkPonytail = import ./ponytail.nix;
   mkHerdrReviewr = import ./herdr-reviewr.nix;
-  mkHerdrCore = import ./herdr-core.nix;
-  mkHerdrDesktop = import ./herdr-desktop.nix;
 
   mkPackages = { lib, pkgs }: rec {
     pi-web-access = mkPiWebAccess { inherit pkgs; };
@@ -14,8 +12,6 @@ let
     pi-claude-code = mkPiClaudeCode { inherit pkgs; };
     ponytail = mkPonytail { inherit pkgs; };
     herdr-reviewr = mkHerdrReviewr { inherit pkgs; };
-    herdr-core = mkHerdrCore { inherit pkgs; };
-    herdr-desktop = mkHerdrDesktop { inherit pkgs herdr-core; };
   };
 in
 {
