@@ -2,6 +2,19 @@ _: {
   flake.homeModules.cli =
     { pkgs, ... }:
     {
+      home.file.".claude/keybindings.json".text = builtins.toJSON {
+        "$schema" = "https://www.schemastore.org/claude-code-keybindings.json";
+        bindings = [
+          {
+            context = "Chat";
+            bindings = {
+              "shift+tab" = "command:effort";
+              "meta+m" = "chat:cycleMode";
+            };
+          }
+        ];
+      };
+
       programs.claude-code = {
         enable = true;
         mutableSettings = true;
