@@ -39,6 +39,8 @@ hl.config({
     focus_on_close = 1,
   },
 
+  render = { cm_auto_hdr = 0 },
+
   xwayland = { force_zero_scaling = true },
 
   misc = {
