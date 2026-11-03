@@ -6,9 +6,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/mattpocock/skills.git",
       "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
-      "skillFolderHash": "39bd9cc130f7dfcc4e3ea0b3613f6ebed0d0ad2b",
+      "skillFolderHash": "587147dd230da299cc5e84971cb0a33f6676f8a6",
       "installedAt": "2026-05-19T12:03:09.733Z",
-      "updatedAt": "2026-09-29T13:08:31.238Z"
+      "updatedAt": "2026-11-03T10:33:37.398Z"
     },
     "tdd": {
       "source": "mattpocock/skills",
@@ -53,9 +53,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/mattpocock/skills.git",
       "skillPath": "skills/engineering/codebase-design/SKILL.md",
-      "skillFolderHash": "07ba1cd60efc12d0d3a083005c1d9651cf15e39a",
+      "skillFolderHash": "4cbe1c131e1ea54109cb1e4e5f3c505810db6606",
       "installedAt": "2026-06-22T07:49:25.294Z",
-      "updatedAt": "2026-09-29T13:08:33.973Z"
+      "updatedAt": "2026-11-03T10:33:40.360Z"
     },
     "diagnosing-bugs": {
       "source": "mattpocock/skills",
@@ -90,9 +90,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/mattpocock/skills.git",
       "skillPath": "skills/productivity/grilling/SKILL.md",
-      "skillFolderHash": "28aceb4c9567b985cb47f7db88cf23c9f33af8b8",
+      "skillFolderHash": "f551b6e0d219fdda0b6abf277f8f915b3127d1e9",
       "installedAt": "2026-06-22T07:49:25.304Z",
-      "updatedAt": "2026-10-07T12:22:47.678Z"
+      "updatedAt": "2026-11-03T10:33:41.296Z"
     },
     "teach": {
       "source": "mattpocock/skills",
@@ -108,9 +108,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/mattpocock/skills.git",
       "skillPath": "skills/engineering/code-review/SKILL.md",
-      "skillFolderHash": "fee7bb5fdddc069d58cbea09b2c36b5a859eac05",
+      "skillFolderHash": "a8ef561571acbb611de8ff19ba6da75b197c63a8",
       "installedAt": "2026-07-08T19:31:14.301Z",
-      "updatedAt": "2026-10-07T12:22:51.756Z"
+      "updatedAt": "2026-11-03T10:33:42.539Z"
     },
     "implement": {
       "source": "mattpocock/skills",
@@ -126,10 +126,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/mattpocock/skills.git",
       "skillPath": "skills/engineering/research/SKILL.md",
-      "skillFolderHash": "0a6796c5667e95ed2301ba7381c123b4acb2ae1a",
-      "pluginName": "mattpocock-skills",
+      "skillFolderHash": "2f8f36af48796faed5c687c75bb650071631a984",
       "installedAt": "2026-07-08T19:31:14.316Z",
-      "updatedAt": "2026-08-26T19:48:52.314Z"
+      "updatedAt": "2026-11-03T10:33:43.927Z"
     },
     "wizard": {
       "source": "mattpocock/skills",
@@ -155,18 +154,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
       "skillPath": "skills/review-pr/SKILL.md",
-      "skillFolderHash": "3c6a8d3aa7c87a33e84f81b3874128d46cef892e",
+      "skillFolderHash": "c1ca8e56a26604a181769c1711db66b925cd295c",
       "installedAt": "2026-09-23T12:49:33.294Z",
-      "updatedAt": "2026-10-07T12:38:31.276Z"
-    },
-    "review-prs": {
-      "source": "Lynx-Business/skills",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "skillPath": "skills/review-prs/SKILL.md",
-      "skillFolderHash": "a2ad43fa49c6203fd6f2483d8f6bf734abf70dd9",
-      "installedAt": "2026-09-23T12:49:33.303Z",
-      "updatedAt": "2026-10-07T09:06:00.321Z"
+      "updatedAt": "2026-11-03T10:35:25.656Z"
     },
     "retro": {
       "source": "mattpocock/skills",
@@ -177,32 +167,50 @@
       "installedAt": "2026-09-28T20:26:16.201Z",
       "updatedAt": "2026-09-29T13:08:39.317Z"
     },
-    "fix-pr": {
-      "source": "Lynx-Business/skills",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "skillPath": "skills/fix-pr/SKILL.md",
-      "skillFolderHash": "bc563737d6a3c776753de68ecb1941ad678bcfe4",
-      "installedAt": "2026-09-29T09:44:15.861Z",
-      "updatedAt": "2026-10-07T12:38:33.107Z"
-    },
     "publish-pr": {
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
       "skillPath": "skills/publish-pr/SKILL.md",
-      "skillFolderHash": "007ddad3f0ce569924f4908290788ee5098f991e",
+      "skillFolderHash": "cc0ee8746f0114c07cb96a9d1f8df32065ca6258",
       "installedAt": "2026-09-29T13:09:13.926Z",
-      "updatedAt": "2026-10-07T14:40:13.839Z"
+      "updatedAt": "2026-11-03T11:28:25.508Z"
     },
-    "publish-evidence": {
+    "cross-review": {
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "skillPath": "skills/publish-evidence/SKILL.md",
-      "skillFolderHash": "0ffccf37fb0358eef688f143348e21ea7e3703af",
-      "installedAt": "2026-10-07T09:06:00.312Z",
-      "updatedAt": "2026-10-15T12:05:25.791Z"
+      "skillPath": "skills/cross-review/SKILL.md",
+      "skillFolderHash": "feaf3042c0e7c6f898398f9a9e819bc4c63ef0cb",
+      "installedAt": "2026-11-03T10:35:25.645Z",
+      "updatedAt": "2026-11-03T10:35:25.645Z"
+    },
+    "deliver-pr": {
+      "source": "Lynx-Business/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/Lynx-Business/skills.git",
+      "skillPath": "skills/deliver-pr/SKILL.md",
+      "skillFolderHash": "4dab74c3b1de2c0cc31d314fea600353ce022558",
+      "installedAt": "2026-11-03T10:35:25.647Z",
+      "updatedAt": "2026-11-03T11:28:27.089Z"
+    },
+    "github-pr": {
+      "source": "Lynx-Business/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/Lynx-Business/skills.git",
+      "skillPath": "skills/github-pr/SKILL.md",
+      "skillFolderHash": "79064cbd587a78bc3f3170459c4996960dbf78b1",
+      "installedAt": "2026-11-03T10:35:25.655Z",
+      "updatedAt": "2026-11-03T10:35:25.655Z"
+    },
+    "watch-pr": {
+      "source": "Lynx-Business/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/Lynx-Business/skills.git",
+      "skillPath": "skills/watch-pr/SKILL.md",
+      "skillFolderHash": "4230e6a35a03019e8b9f276d32d473169730576b",
+      "installedAt": "2026-11-03T10:35:25.656Z",
+      "updatedAt": "2026-11-03T10:35:25.656Z"
     }
   },
   "dismissed": {
@@ -214,6 +222,7 @@
     "codex",
     "cursor",
     "droid",
+    "fx",
     "gemini-cli",
     "github-copilot",
     "kilo",

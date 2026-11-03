@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    printf 'Usage: %s PR_URL HEAD_SHA PLAN.json\n' "$0" >&2
+    printf 'Usage: %s PR_URL HEAD_SHA PLAN.json ATTRIBUTION\n' "$0" >&2
     exit 2
 }
 
@@ -12,23 +12,23 @@ done
 hash_command=(sha256sum)
 command -v sha256sum >/dev/null || hash_command=(shasum -a 256)
 command -v "${hash_command[0]}" >/dev/null || { echo 'sha256sum or shasum is required' >&2; exit 3; }
-(($# == 3)) || usage
-url=$1 pinned=$2 plan=$3
-[[ $pinned =~ ^[0-9a-f]{40}$ && -f $plan ]] || usage
+(($# == 4)) || usage
+url=$1 pinned=$2 plan=$3 attribution=$4
+[[ $pinned =~ ^[0-9a-f]{40}$ && -f $plan && -n $attribution && $attribution != *$'\n'* ]] || usage
 [[ $url =~ ^https://github\.com/([^/]+)/([^/]+)/pull/([0-9]+)([/?#].*)?$ ]] || usage
 owner=${BASH_REMATCH[1]} repo=${BASH_REMATCH[2]} number=${BASH_REMATCH[3]}
 collector="$(dirname "$0")/collect-reviews.sh"
 [[ -x $collector ]] || { echo 'Review collector is unavailable' >&2; exit 3; }
 
 data=$("$collector" "$url") || exit $?
-[[ $(jq -r '.pr.head_sha' <<<"$data") == "$pinned" ]] || { echo 'PR head moved before reconciliation' >&2; exit 5; }
+[[ $(jq -r '.pr.head_sha' <<<"$data") == "$pinned" ]] || { echo 'PR head moved before resolution' >&2; exit 5; }
 jq -e '
   type == "array" and length > 0 and
   all(.[];
     (.thread_id | type == "string" and length > 0) and
     (.disposition == "addressed" or .disposition == "obsolete") and
     (.evidence | type == "string" and length > 0))
-' "$plan" >/dev/null || { echo 'Invalid reconciliation plan' >&2; exit 2; }
+' "$plan" >/dev/null || { echo 'Invalid resolution plan' >&2; exit 2; }
 
 # Every selected thread must have a collected root comment from this PR.
 while IFS= read -r thread_id; do
@@ -41,7 +41,7 @@ done < <(jq -r '.[].thread_id' "$plan")
 check_head() {
     local current
     current=$(gh api "repos/$owner/$repo/pulls/$number" --jq .head.sha) || { echo 'Could not recheck PR head' >&2; return 1; }
-    [[ $current == "$pinned" ]] || { echo 'PR head moved during reconciliation' >&2; return 5; }
+    [[ $current == "$pinned" ]] || { echo 'PR head moved during resolution' >&2; return 5; }
 }
 
 query='mutation($thread: ID!) { resolveReviewThread(input: {threadId: $thread}) { thread { id isResolved } } }'
@@ -58,13 +58,16 @@ for ((i = 0; i < count; i++)); do
     evidence=$(jq -r ".[${i}].evidence" "$plan")
     digest=$(jq -cnS --arg head "$pinned" --arg thread "$thread_id" --arg disposition "$disposition" --arg evidence "$evidence" \
         '{head:$head,thread:$thread,disposition:$disposition,evidence:$evidence}' | "${hash_command[@]}" | cut -c1-16)
-    marker="<!-- publish-pr-reconciliation:$pinned:$digest -->"
+    marker="<!-- github-pr-resolution:$pinned:$digest -->"
 
     if ! jq -e --arg id "$thread_id" --arg marker "$marker" \
         'any(.feedback[]; .kind == "comment" and .thread_id == $id and ((.body // "") | contains($marker)))' <<<"$data" >/dev/null; then
         label=Addressed
         [[ $disposition != obsolete ]] || label=Obsolete
-        body="**$label** — $evidence
+        body="> [!NOTE]
+> 🤖 **$attribution**
+
+**$label** — $evidence
 
 $marker"
         payload=$(jq -n --arg body "$body" '{body:$body}')

@@ -8,7 +8,7 @@ report=$(cat)
 pr=$(gh pr view "$url" --json body,headRefOid)
 [[ $(jq -r .headRefOid <<<"$pr") == "$sha" ]] || { echo 'PR head changed; report not published' >&2; exit 1; }
 body=$(jq -r --arg report "$report" '
-    "<!-- local-ci-report:start -->" as $start | "<!-- local-ci-report:end -->" as $end |
+    "<!-- pr-validation:start -->" as $start | "<!-- pr-validation:end -->" as $end |
     (.body // "") | (indices($start)) as $starts | (indices($end)) as $ends |
     if ($starts | length) == 0 and ($ends | length) == 0 then .
     elif ($starts | length) == 1 and ($ends | length) == 1 and $starts[0] < $ends[0] then

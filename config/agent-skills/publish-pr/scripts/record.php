@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PublishEvidence;
+namespace PublishPr;
 
 use Closure;
 use InvalidArgumentException;

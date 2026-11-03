@@ -43,7 +43,7 @@ EOF
 pr=
 files=()
 descriptions=()
-layout_marker='<!-- upload-ui-evidence:layout:gallery-v1 -->'
+layout_marker='<!-- pr-evidence:layout:gallery -->'
 
 markdown_text() {
   local text=$1
@@ -53,7 +53,7 @@ markdown_text() {
 }
 
 render_block() {
-  echo '<!-- upload-ui-evidence:start -->'
+  echo '<!-- pr-evidence:start -->'
   echo "$manifest_marker"
   echo "$layout_marker"
   local i caption alt all_images=1
@@ -84,12 +84,12 @@ render_block() {
       esac
     done
   fi
-  echo '<!-- upload-ui-evidence:end -->'
+  echo '<!-- pr-evidence:end -->'
 }
 
 if [[ ${1:-} == --self-test && $# == 1 ]]; then
   files=(one.png two.png three.png); descriptions=('First view' 'Second | view' 'Third view')
-  manifest_marker='<!-- upload-ui-evidence:manifest:test -->'
+  manifest_marker='<!-- pr-evidence:manifest:test -->'
   output=$(render_block)
   [[ $output == *'| First view | Second \| view |'* && $output == *'**Third view**'* && $output == *"$layout_marker"* ]] || exit 1
   files=(demo.mp4); descriptions=('Demo')
@@ -154,7 +154,7 @@ for i in "${!files[@]}"; do
   manifest_input+="$("${hash_command[@]}" "${files[$i]}" | cut -d' ' -f1)"$'\t'"${descriptions[$i]}"$'\n'
 done
 manifest=$(printf '%s' "$manifest_input" | "${hash_command[@]}" | cut -d' ' -f1)
-manifest_marker="<!-- upload-ui-evidence:manifest:$manifest -->"
+manifest_marker="<!-- pr-evidence:manifest:$manifest -->"
 
 body=$(gh pr view "$pr" --json body --jq .body) || {
   echo "github: could not read PR $pr" >&2
@@ -171,10 +171,10 @@ import re
 import sys
 from pathlib import Path
 
-start_marker = "<!-- upload-ui-evidence:start -->"
-end_marker = "<!-- upload-ui-evidence:end -->"
-validation_start = "<!-- local-ci-report:start -->"
-validation_end = "<!-- local-ci-report:end -->"
+start_marker = "<!-- pr-evidence:start -->"
+end_marker = "<!-- pr-evidence:end -->"
+validation_start = "<!-- pr-validation:start -->"
+validation_end = "<!-- pr-validation:end -->"
 body = os.environ["GH_BODY"]
 block = Path(sys.argv[1]).read_text().rstrip()
 validation_starts = [match.start() for match in re.finditer(re.escape(validation_start), body)]
@@ -202,7 +202,7 @@ if start_count:
         raise SystemExit("managed evidence markers are malformed")
     existing_block = section[marker_start:marker_end]
     marker = os.environ["MANIFEST_MARKER"]
-    layout = "<!-- upload-ui-evidence:layout:gallery-v1 -->"
+    layout = "<!-- pr-evidence:layout:gallery -->"
     links = re.findall(r"]\(([^)]+)\)", existing_block)
     if (
         body.count(marker) == existing_block.count(marker) == 1

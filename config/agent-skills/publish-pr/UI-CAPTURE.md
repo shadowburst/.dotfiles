@@ -11,7 +11,7 @@ Use the project's working Pest 5 browser stack with Playwright >=1.63 and instal
 - Keep `$page = visit(...)` as a visible statement in the snippet for browser discovery; wrap its result with the project's existing page wrapper when needed.
 - If an installed agent plugin fails, surface the error; do not switch runners. Only when it is missing, use the temporary Browser test below.
 
-Keep assets and diagnostics under `~/.cache/publish-evidence/<repository>/`; clean temporary capture files on success and failure. Replace example placeholders with absolute paths visible to PHP, including the helper path. Containers must see the project, helper, cache, and upload files at those paths. Lerd shares `$HOME` and the project, not host `/tmp` or arbitrary host environment variables.
+Keep assets and diagnostics under `~/.cache/publish-pr/<repository>/`; clean temporary capture files on success and failure. Replace example placeholders with absolute paths visible to PHP, including the helper path. Containers must see the project, helper, cache, and upload files at those paths. Lerd shares `$HOME` and the project, not host `/tmp` or arbitrary host environment variables.
 
 Use [Pest's browser API](https://pestphp.com/docs/browser-testing) and project conventions for selectors, interactions, and assertions. Prove each intended state with assertions before capturing it. For recordings, wait about two seconds after meaningful asserted states, including initial/final states when helpful. These waits belong in capture-only flows, not ordinary regression tests.
 
@@ -20,13 +20,13 @@ Use [Pest's browser API](https://pestphp.com/docs/browser-testing) and project c
 Pest clears top-level files in `tests/Browser/Screenshots/` at run start; use a subfolder. Adapt this snippet's setup, route, and assertion to the project:
 
 ```sh
-mkdir -p tests/Browser/Screenshots/publish-evidence
+mkdir -p tests/Browser/Screenshots/publish-pr
 php vendor/bin/pest --agent '
 $user = \App\Models\User::factory()->create();
 $this->actingAs($user);
 $page = visit("/settings");
 $page->assertSee("Notifications")
-    ->screenshot(fullPage: false, filename: "publish-evidence/settings-after");
+    ->screenshot(fullPage: false, filename: "publish-pr/settings-after");
 '
 ```
 
@@ -36,16 +36,16 @@ After success, move the PNGs into the cache and remove the capture subfolder. Fo
 
 Record the PR head's focused changed interaction, with separate captures for materially changed error, validation, or alternate branches. Aim for a compact native WebM under 10 MB.
 
-Require `scripts/record.php` inside the Pest snippet/test. Its public helper is `\PublishEvidence\record(object $page, string $output, \Closure $flow): void`. Pass an already-visited, asserted Pest page (or the project's existing wrapper providing `page()`):
+Require `<skill-directory>/scripts/record.php` inside the Pest snippet/test. Its public helper is `\PublishPr\record(object $page, string $output, \Closure $flow): void`. Pass an already-visited, asserted Pest page (or the project's existing wrapper providing `page()`):
 
 ```sh
 php vendor/bin/pest --agent '
-require_once "/absolute/path/to/publish-evidence/scripts/record.php";
+require_once "<skill-directory>/scripts/record.php";
 $user = \App\Models\User::factory()->create();
 $this->actingAs($user);
 $page = visit("/settings");
 $page->resize(1280, 720)->assertSee("Notifications");
-\PublishEvidence\record($page, "/absolute/path/to/.cache/publish-evidence/repository/settings.webm", function () use ($page) {
+\PublishPr\record($page, "/absolute/path/to/.cache/publish-pr/repository/settings.webm", function () use ($page) {
     $page->wait(2);
     $page->click("role=button[name=Save]")
         ->assertSee("Settings saved")
@@ -58,14 +58,14 @@ The helper runs the closure **once**, recording the same page and interactions t
 
 Existing output or frame directories are refused; choose fresh paths. Errors surface, and a failed flow retains diagnostic WebM where possible: never publish a failed capture. Outputs over 10 MB are rejected without conversion; shorten the interaction and recapture.
 
-The bridge was verified with Pest browser 5.1.2 and Playwright 1.63. Run `php <skill-directory>/scripts/record-self-test.php` for its transport/file-lifecycle self-check; after package upgrades, also run one real capture to verify the private integration.
+The bridge was verified with Pest browser 5.1.2 and Playwright 1.63. After package upgrades, run one real capture to verify the private integration.
 
 ## Only if the agent plugin is missing
 
 Put the same snippet body inside `it("captures evidence", function () { ... });` in a unique temporary `tests/Browser/*Test.php`, leaving existing tests unchanged. Run that file explicitly with unconditional cleanup, for example:
 
 ```sh
-CAPTURE_DIR=$(mktemp -d tests/Browser/PublishEvidenceXXXXXX)
+CAPTURE_DIR=$(mktemp -d tests/Browser/PublishPrXXXXXX)
 CAPTURE_TEST="$CAPTURE_DIR/CaptureTest.php"
 (
     trap 'rm -rf -- "$CAPTURE_DIR"' EXIT
