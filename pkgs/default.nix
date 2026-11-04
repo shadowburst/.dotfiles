@@ -5,6 +5,7 @@ let
   mkPiClaudeCode = import ./pi-claude-code.nix;
   mkPonytail = import ./ponytail.nix;
   mkHerdrReviewr = import ./herdr-reviewr.nix;
+  mkDbExport = import ./db-export.nix;
 
   mkPackages = { lib, pkgs }: rec {
     pi-web-access = mkPiWebAccess { inherit pkgs; };
@@ -12,6 +13,7 @@ let
     pi-claude-code = mkPiClaudeCode { inherit pkgs; };
     ponytail = mkPonytail { inherit pkgs; };
     herdr-reviewr = mkHerdrReviewr { inherit pkgs; };
+    db-export = mkDbExport { inherit pkgs; };
   };
 in
 {
