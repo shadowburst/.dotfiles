@@ -14,7 +14,7 @@ _: {
 
           whisper = {
             model = "small";
-            language = "auto";
+            language = [ "en" "fr" ];
             context_window_optimization = true;
           };
 
