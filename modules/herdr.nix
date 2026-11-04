@@ -14,9 +14,22 @@ _: {
             editor = "nvim +{line} {file}";
           };
 
+      # Runs before pr-status removes a merged worktree; cwd is the worktree.
+      xdg.configFile."herdr/plugins/config/pbaudry.pr-status/config.toml".source =
+        (pkgs.formats.toml { }).generate "herdr-pr-status-config.toml"
+          {
+            teardown = ''
+              if [ -f "$WORKTREE_PATH/.lerd.yaml" ]; then
+                cd "$REPO_ROOT"
+                lerd worktree remove "$WORKTREE_PATH"
+              fi
+            '';
+          };
+
       programs.herdr = {
         enable = true;
         plugins.reviewr.package = pkgs.herdr-reviewr;
+        plugins.pr-status.package = pkgs.herdr-pr-status;
         settings = {
           onboarding = false;
 
@@ -81,6 +94,17 @@ _: {
                 fg = config.catppuccin.palette.colors.overlay0.hex;
                 bold = false;
                 dim = true;
+              }
+              {
+                token = "$pr";
+                fg = config.catppuccin.palette.colors.green.hex;
+                rules = [
+                  { contains = ""; fg = config.catppuccin.palette.colors.red.hex; bold = false; } # changes requested
+                  { contains = ""; fg = config.catppuccin.palette.colors.green.hex; bold = true; } # approved
+                  { contains = ""; fg = config.catppuccin.palette.colors.overlay0.hex; bold = false; } # draft
+                  { contains = ""; fg = config.catppuccin.palette.colors.mauve.hex; bold = false; } # merged
+                  { contains = ""; hide = true; } # closed
+                ];
               }
             ]
             [
