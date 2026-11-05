@@ -33,8 +33,6 @@ _: {
         settings = {
           onboarding = false;
 
-          session.resume_agents_on_restore = false;
-
           terminal.new_cwd = "follow";
           terminal.shell_mode = "auto";
 
@@ -99,11 +97,30 @@ _: {
                 token = "$pr";
                 fg = config.catppuccin.palette.colors.green.hex;
                 rules = [
-                  { contains = ""; fg = config.catppuccin.palette.colors.red.hex; bold = false; } # changes requested
-                  { contains = ""; fg = config.catppuccin.palette.colors.green.hex; bold = true; } # approved
-                  { contains = ""; fg = config.catppuccin.palette.colors.overlay0.hex; bold = false; } # draft
-                  { contains = ""; fg = config.catppuccin.palette.colors.mauve.hex; bold = false; } # merged
-                  { contains = ""; hide = true; } # closed
+                  {
+                    contains = "";
+                    fg = config.catppuccin.palette.colors.red.hex;
+                    bold = false;
+                  } # changes requested
+                  {
+                    contains = "";
+                    fg = config.catppuccin.palette.colors.green.hex;
+                    bold = true;
+                  } # approved
+                  {
+                    contains = "";
+                    fg = config.catppuccin.palette.colors.overlay0.hex;
+                    bold = false;
+                  } # draft
+                  {
+                    contains = "";
+                    fg = config.catppuccin.palette.colors.mauve.hex;
+                    bold = false;
+                  } # merged
+                  {
+                    contains = "";
+                    hide = true;
+                  } # closed
                 ];
               }
             ]
