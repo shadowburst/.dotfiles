@@ -14,22 +14,82 @@ _: {
             editor = "nvim +{line} {file}";
           };
 
-      # Runs before pr-status removes a merged worktree; cwd is the worktree.
-      xdg.configFile."herdr/plugins/config/pbaudry.pr-status/config.toml".source =
-        (pkgs.formats.toml { }).generate "herdr-pr-status-config.toml"
+      xdg.configFile."herdr/plugins/config/pbaudry.worktree/config.toml".source =
+        (pkgs.formats.toml { }).generate "herdr-worktree-config.toml"
           {
+            # Runs before the plugin removes a merged worktree; cwd is the worktree.
             teardown = ''
               if [ -f "$WORKTREE_PATH/.lerd.yaml" ]; then
                 cd "$REPO_ROOT"
                 lerd worktree remove "$WORKTREE_PATH"
               fi
             '';
+
+            # Names the branch. It reads the request on stdin.
+            naming_command = [
+              "claude"
+              "-p"
+              "--model"
+              "haiku"
+              "--no-session-persistence"
+            ];
+
+            # The first value of each list is the default in the popup.
+            agents = {
+              claude = {
+                models = [
+                  "opus"
+                  "fable"
+                  "sonnet"
+                  "haiku"
+                ];
+                efforts = [
+                  "high"
+                  "medium"
+                  "low"
+                  "xhigh"
+                  "max"
+                ];
+              };
+              codex = {
+                models = [
+                  "gpt-6.1-sol"
+                  "gpt-6-astra"
+                  "gpt-6-luna"
+                ];
+                efforts = [
+                  "high"
+                  "medium"
+                  "low"
+                  "xhigh"
+                ];
+              };
+              pi = {
+                models = [
+                  "openai-codex/gpt-6.1-sol"
+                  "openai-codex/gpt-6-astra"
+                  "openai-codex/gpt-6-luna"
+                  "claude-code/claude-fable-5-1"
+                  "claude-code/claude-opus-5-5"
+                  "claude-code/claude-haiku-5-5"
+                ];
+                efforts = [
+                  "medium"
+                  "high"
+                  "low"
+                  "off"
+                  "minimal"
+                  "xhigh"
+                  "max"
+                ];
+              };
+            };
           };
 
       programs.herdr = {
         enable = true;
         plugins.reviewr.package = pkgs.herdr-reviewr;
-        plugins.pr-status.package = pkgs.herdr-pr-status;
+        plugins.worktree.package = pkgs.herdr-worktree;
         settings = {
           onboarding = false;
 
@@ -43,6 +103,7 @@ _: {
           ui.prompt_new_tab_name = false;
           ui.agent_panel_sort = "priority";
           ui.show_agent_labels_on_pane_borders = true;
+          ui.toast.delivery = "herdr";
           ui.sidebar.agents.rows = [
             [
               {
@@ -162,6 +223,11 @@ _: {
                 key = "alt+r";
                 type = "plugin_action";
                 command = "persiyanov.reviewr.toggle";
+              }
+              {
+                key = "alt+w";
+                type = "plugin_action";
+                command = "pbaudry.worktree.new";
               }
             ];
           };
