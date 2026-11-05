@@ -17,8 +17,9 @@ Publish only: do not implement feedback, rewrite history, merge, approve, or cha
 4. **Write the PR.** Use the retained complete-diff summary, including newly committed work, and [PR body content](#pr-body-content). Set a Conventional Commit title (`type(scope): summary` or `type: summary`); create a missing PR with `gh pr create --draft --base <base>`, or without `--draft` when the caller asks for ready for review; mark an existing draft ready with `gh pr ready` only on that request. Before replacing a body, require zero or one ordered `<!-- pr-validation:start -->` / `<!-- pr-validation:end -->` pair; stop without editing on unmatched or duplicate markers. Preserve its block byte-for-byte at the bottom, and preserve evidence assets/descriptions byte-for-byte unless the user requested an update. For existing PRs, inspect the incremental diff from the recorded head; comment only on material incremental changes.
 5. **Publish evidence.** Follow [`EVIDENCE.md`](EVIDENCE.md) with the PR URL, `PUBLISHED_SHA`, and any associated ClickUp task. On a publication exception, continue and report it. Verify title, body, and evidence before validation updates the report.
 6. **Validate.** Require a clean checkout at `PUBLISHED_SHA`. Run `<skill-directory>/scripts/run-validation.sh` with a 3600-second timeout; capture stdout as the report, stderr in a temporary log, and exit status even on failure. Inspect the report first, then bounded failed-check diagnostics (counts/messages rather than full JSON or stacks); report the log path on failure. If local `HEAD` still matches, pipe the unchanged report, including empty output, to `<skill-directory>/scripts/publish-validation.sh PR_URL PUBLISHED_SHA`. Empty output removes the managed block and means not applicable. Leave generated changes intact. Failed checks, moved heads, and publication errors are exceptions; keep successful mutations and continue remaining work where safe.
-7. **Resolve threads once.** Load the `github-pr` skill and run `<github-pr-skill-directory>/scripts/collect-reviews.sh PR_URL`. Inspect only unresolved inline threads: cited hunk, full discussion, current code, callers/tests, and published diff. Classify as **addressed** only when the head demonstrably implements the request, **obsolete** when the concern demonstrably no longer applies, otherwise **open**. Leave open threads untouched and report why. For addressed/obsolete threads, write a JSON array of `thread_id`, `disposition`, and concise `evidence`; run `<github-pr-skill-directory>/scripts/resolve-threads.sh PR_URL PUBLISHED_SHA PLAN.json '<model> on behalf of <login>'` only when nonempty. Use this helper for replies/resolution, never a global review or improvised API calls. Report failures; retry with the same plan.
-8. **Verify and report.** Re-fetch and require the PR head to remain `PUBLISHED_SHA`. Verify the managed report names that SHA, or is absent when validation is not applicable. Report commit/push, PR URL/state, metadata/evidence changes, validation, thread replies, open-thread reasons, and mutation failures. Say **Completed** only when validation and required publication operations succeeded without mutation failure; otherwise **Completed with exceptions**, naming each.
+7. **Summarize on ClickUp.** Skip when no ClickUp task is associated. Write the [ClickUp summary](#clickup-summary) from the final PR body and the validation outcome. Through the official ClickUp MCP server, fetch all task comments, update the newest exact heading match for `PR summary · <owner>/<repository>#<PR number>` with `clickup_update_comment`, or create one with `clickup_create_comment`. A failed ClickUp operation is a publication exception; retry only the comment lookup and write.
+8. **Resolve threads once.** Load the `github-pr` skill and run `<github-pr-skill-directory>/scripts/collect-reviews.sh PR_URL`. Inspect only unresolved inline threads: cited hunk, full discussion, current code, callers/tests, and published diff. Classify as **addressed** only when the head demonstrably implements the request, **obsolete** when the concern demonstrably no longer applies, otherwise **open**. Leave open threads untouched and report why. For addressed/obsolete threads, write a JSON array of `thread_id`, `disposition`, and concise `evidence`; run `<github-pr-skill-directory>/scripts/resolve-threads.sh PR_URL PUBLISHED_SHA PLAN.json '<model> on behalf of <login>'` only when nonempty. Use this helper for replies/resolution, never a global review or improvised API calls. Report failures; retry with the same plan.
+9. **Verify and report.** Re-fetch and require the PR head to remain `PUBLISHED_SHA`. Verify the managed report names that SHA, or is absent when validation is not applicable. Report commit/push, PR URL/state, metadata/evidence changes, validation, ClickUp summary, thread replies, open-thread reasons, and mutation failures. Say **Completed** only when validation and required publication operations succeeded without mutation failure; otherwise **Completed with exceptions**, naming each.
 
 ## PR body content
 
@@ -197,3 +198,25 @@ Affected accounts lose their archived session history.
 ### Validation
 
 The validation helpers generate and manage this section at the bottom, immediately after `Merge Danger`. Step 6 handles publication and omission. Preserve the generated `Check | Result | Time` table; do not add failure/skip prose.
+
+## ClickUp summary
+
+Write for the ticket's readers, who may not read code: plain domain language, no code, paths, or diagrams, and one or two sentences per part.
+
+- **Problem:** what was wrong or missing, from `Why`.
+- **Solution:** the user-visible change, from `What Changed`.
+- **Conclusion:** the outcome now, the PR state (draft or ready for review), and the validation result; name a `one-way` door with its consequence.
+
+**Example:**
+
+```markdown
+**PR summary · acme/notes#42**
+
+[fix(save): skip unchanged writes](https://github.com/acme/notes/pull/42)
+
+**Problem:** Saving a note that had not changed rewrote the file every time.
+
+**Solution:** Saves now detect unchanged content and return the cached result.
+
+**Conclusion:** Unchanged saves no longer write to disk. The PR is ready for review and validation passed.
+```
