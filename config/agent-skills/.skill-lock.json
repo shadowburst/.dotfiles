@@ -134,9 +134,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
       "skillPath": "skills/deliver-pr/SKILL.md",
-      "skillFolderHash": "a8b7a169d8689dfa252c157eefe6e42e8ade5462",
+      "skillFolderHash": "9f2eab4fcffdc2f67cbab5e40ea199a14e243585",
       "installedAt": "2026-11-03T10:35:25.647Z",
-      "updatedAt": "2026-11-05T08:48:15.847Z"
+      "updatedAt": "2026-11-05T13:57:07.036Z"
     },
     "github-pr": {
       "source": "Lynx-Business/skills",
@@ -173,6 +173,15 @@
       "skillFolderHash": "003ec8747c78ceb8e9da5d83f12523a06830093c",
       "installedAt": "2026-11-04T11:33:07.547Z",
       "updatedAt": "2026-11-04T11:33:07.547Z"
+    },
+    "modernize": {
+      "source": "t3dotgg/tstack",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/t3dotgg/tstack.git",
+      "skillPath": "skills/modernize/SKILL.md",
+      "skillFolderHash": "149f54a0835d2da770b564eb8624f1e3618a33a7",
+      "installedAt": "2026-11-05T13:57:29.205Z",
+      "updatedAt": "2026-11-05T13:57:29.205Z"
     }
   },
   "dismissed": {

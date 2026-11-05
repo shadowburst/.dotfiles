@@ -11,14 +11,14 @@ The user is not watching this thread. Updates and the final message go unread un
 
 A "deliver" request gives permission to:
 
-- Create a worktree and a branch, commit, push, rebase, fix conflicts, and use `--force-with-lease` on this task's branch.
+- Create a branch, commit, push, rebase, fix conflicts, and use `--force-with-lease` on this task's branch.
 - Use the test methods that evidence needs without asking first: running the app or a dev server, browser automation, screenshots, and visual checks. Rules that name *how* to test (the command, fixture, or check) still apply; only the ask-first step is lifted, and only for this task.
 
 Outside the grant, always: merging, auto-merge, merge queues, pushes to the default branch, branch-protection bypasses, deleting data, touching production, changing things outside the repo, closing a PR, force-pushing any other branch. Disable auto-merge and leave any merge queue before work begins and before each push; report it. When automatic merging cannot be prevented, report the blocker first.
 
 ## Steps
 
-1. **Finish the change.** Do all the work in a new worktree on a new task branch, so the **start directory** (where the request started) stays as the user and other sessions left it. Create the task branch from the **start branch** (the branch checked out in the start directory), or from the branch the user names: a named branch is the base, and the task branch is always new. Create the worktree and move into it the way the environment prefers (user and project instructions; in a lerd project, lerd's `worktree` tool), so every command runs with the worktree as its working directory. Record the base: `git config branch.<task-branch>.gh-merge-base <base>`. When user or project instructions transfer new worktrees to another agent, do it now, before any change, and end your turn: that agent owns all later steps. When the start directory is already a worktree made for this task, continue there. When the user rejects the worktree call, ask with the question tool how to isolate the work, and keep the start directory unchanged meanwhile. Complete the request with the smallest change that works; fix the case that happened, not every case that could.
+1. **Finish the change.** Do all the work in the current checkout, and treat all its uncommitted changes as part of the task, whoever made them, with no question. On the default branch, or when the user names a base, create a new **task branch** from the **base** (the branch the user names, or else the default branch) with `git switch -c <task-branch> <base>`, which carries the uncommitted changes. When Git refuses because a named base conflicts with those changes, add `--merge` and follow Git's output to fix the conflicts. On any other branch, for example in a new worktree made for this request, the checked-out branch is the task branch: continue there. Its base is its recorded `gh-merge-base`, or else the default branch. Record the base: `git config branch.<task-branch>.gh-merge-base <base>`. Complete the request with the smallest change that works; fix the case that happened, not every case that could.
 2. **Gather evidence.** Observe evidence for every change before it is pushed; see [Evidence](#evidence).
 3. **Cross-review.** Run the `cross-review` skill until it agrees or asks the user.
 4. **Publish.** Rebase onto the latest base (the recorded `gh-merge-base`), gather evidence again for what the rebase touched, then run the `publish-pr` skill and ask it for ready for review, so review bots see code that cross-review already approved. Keep the cross-review line in the PR body.
@@ -58,4 +58,4 @@ Fetch the base and check the live PR's head, base, checks, reviews, and mergeabi
 - **Waiting for approval:** only a required human approval remains, and that is the actual blocker.
 - **Blocked:** what prevents readiness, what you tried, and what is needed.
 
-Report the PR link, worktree path, final head, classification, evidence, cross-review outcome, decisions made for the user, and remaining risks. State that the PR is open and unmerged.
+Report the PR link, final head, classification, evidence, cross-review outcome, decisions made for the user, and remaining risks. State that the PR is open and unmerged.
