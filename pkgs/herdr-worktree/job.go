@@ -21,6 +21,8 @@ const (
 	agentWorkTimeout   = 25 * time.Second
 	agentDialogTimeout = 15 * time.Minute
 	lerdNotManaged     = 3
+	renameAttempts     = 3
+	renameRetryDelay   = time.Second
 )
 
 // JobSpec is the work that the popup gives to the detached job.
@@ -88,38 +90,74 @@ func notify(title, body, sound string) {
 
 // launch runs all the steps. It returns the agent and branch names.
 func launch(spec JobSpec) (string, string, error) {
-	cfg := loadConfig()
-	branch := spec.Branch
-	if branch == "" {
-		branch = uniqueName(generateBranch(cfg, spec.Prompt), func(name string) bool {
-			return branchTaken(spec, name)
-		})
+	if spec.Branch == "" {
+		return launchAutoNamed(spec)
 	}
-	slug := branchSlug(branch)
-
+	branch := spec.Branch
 	var wt openedWorktree
-	var err error
 	if branchHeld(spec.Repo, branch) {
 		// Git permits one worktree per branch, so use the worktree that has it.
-		_, err = herdrCall(2*time.Minute, &wt, "worktree", "open", "--cwd", spec.Repo, "--branch", branch, "--no-focus")
-		if err != nil {
+		if _, err := herdrCall(2*time.Minute, &wt, "worktree", "open", "--cwd", spec.Repo, "--branch", branch, "--no-focus"); err != nil {
 			return "", branch, step("open worktree", err)
 		}
-	} else if err = createWorktree(spec, branch, slug, &wt); err != nil {
-		return "", branch, err
+	} else {
+		if err := createWorktree(spec, branch, &wt); err != nil {
+			return "", branch, err
+		}
+		if err := setupLerd(spec, wt); err != nil {
+			return "", branch, err
+		}
+	}
+	name, err := runAgent(wt, branchSlug(branch), spec)
+	return name, branch, err
+}
+
+// launchAutoNamed uses Herdr's random branch and folder, so the agent does not
+// wait for the naming command. The branch gets its name in the background, and
+// the folder keeps the random name.
+//
+// lerd derives the domain and the database name from the branch, so a lerd
+// project gets the name before its setup. The setup takes much longer anyway.
+func launchAutoNamed(spec JobSpec) (string, string, error) {
+	var wt openedWorktree
+	if err := createWorktree(spec, "", &wt); err != nil {
+		return "", "", err
+	}
+	random := wt.Worktree.Branch
+	cfg := loadConfig()
+	renamed := make(chan string, 1)
+	go func() { renamed <- renameBranch(spec, wt, random, generateBranch(cfg, spec.Prompt)) }()
+
+	if isLerd(spec, wt) {
+		branch := <-renamed
+		if err := setupLerd(spec, wt); err != nil {
+			return "", branch, err
+		}
+		name, err := runAgent(wt, branchSlug(branch), spec)
+		return name, branch, err
 	}
 
+	name, err := runAgent(wt, branchSlug(random), spec)
+	branch := <-renamed
+	if err == nil && branch != random {
+		name = renameAgent(name, branchSlug(branch))
+	}
+	return name, branch, err
+}
+
+// runAgent starts the agent and gives it the prompt.
+func runAgent(wt openedWorktree, slug string, spec JobSpec) (string, error) {
 	name, err := startAgentIn(wt, slug, spec)
 	if err != nil {
-		return "", branch, step("start agent", err)
+		return "", step("start agent", err)
 	}
 	if _, err := herdrCall(defaultTimeout, nil, "agent", "prompt", name, spec.Prompt); err != nil {
-		return name, branch, step("send prompt", err)
+		return name, step("send prompt", err)
 	}
 	if err := waitForWork(name); err != nil {
-		return name, branch, step("wait for agent", err)
+		return name, step("wait for agent", err)
 	}
-	return name, branch, nil
+	return name, nil
 }
 
 // openedWorktree is the part of `worktree create` and `worktree open` that the
@@ -129,30 +167,105 @@ type openedWorktree struct {
 	RootPane    struct {
 		PaneID string `json:"pane_id"`
 	} `json:"root_pane"`
+	Workspace struct {
+		WorkspaceID string `json:"workspace_id"`
+	} `json:"workspace"`
 	Worktree struct {
-		Path string `json:"path"`
+		Branch string `json:"branch"`
+		Path   string `json:"path"`
 	} `json:"worktree"`
 }
 
-// createWorktree makes a checkout and sets it up. Only a new branch records the
-// base: Herdr ignores the base for an existing branch, which keeps its own.
-func createWorktree(spec JobSpec, branch, slug string, wt *openedWorktree) error {
-	_, existing := output(defaultTimeout, spec.Repo, "git", "show-ref", "--verify", "--quiet", "refs/heads/"+branch)
-	_, err := herdrCall(2*time.Minute, wt, "worktree", "create", "--cwd", spec.Repo,
-		"--branch", branch, "--base", spec.Base, "--label", slug, "--no-focus")
-	if err != nil {
+// createWorktree makes a checkout. An empty branch makes Herdr pick a random
+// branch and folder. Only a new branch records the base: Herdr ignores the base
+// for an existing branch, which keeps its own.
+func createWorktree(spec JobSpec, branch string, wt *openedWorktree) error {
+	args := []string{"worktree", "create", "--cwd", spec.Repo}
+	existing := false
+	if branch != "" {
+		_, existing = output(defaultTimeout, spec.Repo, "git", "show-ref", "--verify", "--quiet", "refs/heads/"+branch)
+		args = append(args, "--branch", branch, "--label", branchSlug(branch))
+	}
+	args = append(args, "--base", spec.Base, "--no-focus")
+	if _, err := herdrCall(2*time.Minute, wt, args...); err != nil {
 		return step("create worktree", err)
 	}
-	if !existing {
-		if _, stderr, err := runCommand(defaultTimeout, spec.Repo, "", "git", "config",
-			"branch."+branch+".gh-merge-base", spec.Base); err != nil {
-			return step("record base branch", fmt.Errorf("%s: %w", strings.TrimSpace(stderr), err))
-		}
+	if existing {
+		return nil
 	}
-	if isLerdProject(wt.Worktree.Path) || isLerdProject(spec.Repo) {
-		return step("lerd setup", lerdSetup(wt.RootPane.PaneID))
+	if branch == "" {
+		branch = wt.Worktree.Branch
+	}
+	if _, stderr, err := runCommand(defaultTimeout, spec.Repo, "", "git", "config",
+		"branch."+branch+".gh-merge-base", spec.Base); err != nil {
+		return step("record base branch", fmt.Errorf("%s: %w", strings.TrimSpace(stderr), err))
 	}
 	return nil
+}
+
+func isLerd(spec JobSpec, wt openedWorktree) bool {
+	return isLerdProject(wt.Worktree.Path) || isLerdProject(spec.Repo)
+}
+
+func setupLerd(spec JobSpec, wt openedWorktree) error {
+	if !isLerd(spec, wt) {
+		return nil
+	}
+	return step("lerd setup", lerdSetup(wt.RootPane.PaneID))
+}
+
+// renameBranch gives the branch its final name and returns the name that the
+// branch has at the end. The agent can already work in the checkout, so a lock
+// can stop the rename for a short time. A failure never stops the job.
+func renameBranch(spec JobSpec, wt openedWorktree, from, to string) string {
+	to = uniqueName(to, func(name string) bool { return branchTaken(spec, name) })
+	path := wt.Worktree.Path
+	for attempt := 1; ; attempt++ {
+		if reason := renameBlocked(path, from); reason != "" {
+			fmt.Fprintf(os.Stderr, "branch %s keeps its name: %s\n", from, reason)
+			return from
+		}
+		_, stderr, err := runCommand(defaultTimeout, path, "", "git", "branch", "-m", from, to)
+		if err == nil {
+			break
+		}
+		if attempt == renameAttempts {
+			fmt.Fprintf(os.Stderr, "branch %s keeps its name: %s\n", from, strings.TrimSpace(stderr))
+			return from
+		}
+		time.Sleep(renameRetryDelay)
+	}
+	if _, err := herdrCall(defaultTimeout, nil, "workspace", "rename", wt.Workspace.WorkspaceID, branchSlug(to)); err != nil {
+		fmt.Fprintln(os.Stderr, "workspace rename:", err)
+	}
+	return to
+}
+
+// renameBlocked tells why the branch must keep its name. The agent can move to
+// another branch, or push this one, before the name arrives.
+func renameBlocked(path, branch string) string {
+	current, _ := output(defaultTimeout, path, "git", "branch", "--show-current")
+	if strings.TrimSpace(current) != branch {
+		return "the checkout moved to another branch"
+	}
+	if _, ok := output(defaultTimeout, path, "git", "config", "--get", "branch."+branch+".remote"); ok {
+		return "the branch has an upstream"
+	}
+	if _, ok := output(defaultTimeout, path, "git", "show-ref", "--verify", "--quiet", "refs/remotes/origin/"+branch); ok {
+		return "the branch is on origin"
+	}
+	return ""
+}
+
+// renameAgent returns the name that the agent has at the end.
+func renameAgent(name, slug string) string {
+	live := liveAgentNames()
+	target := agentName(slug, func(candidate string) bool { return live[candidate] })
+	if _, err := herdrCall(defaultTimeout, nil, "agent", "rename", name, target); err != nil {
+		fmt.Fprintln(os.Stderr, "agent rename:", err)
+		return name
+	}
+	return target
 }
 
 // branchHeld tells if a worktree has the branch checked out.
@@ -223,20 +336,14 @@ func generateBranch(cfg Config, prompt string) string {
 	return fallbackBranch(prompt, time.Now())
 }
 
-// branchTaken checks the local and origin branches, and Herdr's default path.
+// branchTaken checks the local and origin branches.
 func branchTaken(spec JobSpec, name string) bool {
 	for _, ref := range []string{"refs/heads/" + name, "refs/remotes/origin/" + name} {
 		if _, ok := output(defaultTimeout, spec.Repo, "git", "show-ref", "--verify", "--quiet", ref); ok {
 			return true
 		}
 	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return false
-	}
-	path := filepath.Join(home, ".herdr", "worktrees", spec.RepoName, strings.ReplaceAll(name, "/", "-"))
-	_, err = os.Stat(path)
-	return err == nil
+	return false
 }
 
 func isLerdProject(dir string) bool {
