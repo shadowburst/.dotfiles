@@ -29,18 +29,6 @@ _: {
             show_hidden = true;
             show_symlink = true;
           };
-          opener.extract = [
-            {
-              run = ''ya pub extract --list "$@"'';
-              desc = "Extract here";
-              for = "unix";
-            }
-            {
-              run = "ya pub extract --list %*";
-              desc = "Extract here";
-              for = "windows";
-            }
-          ];
           plugin.prepend_fetchers = [
             {
               id = "git";
@@ -56,12 +44,6 @@ _: {
             }
           ];
           preview.image_delay = 100;
-          open.prepend_rules = [
-            {
-              url = "*.zip";
-              use = "extract";
-            }
-          ];
         };
 
         keymap = {

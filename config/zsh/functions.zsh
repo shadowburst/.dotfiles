@@ -13,9 +13,12 @@ extract() {
   case $archive in
     *.tar.bz2|*.tbz2) tar -xjf "$archive" ;;
     *.tar.gz|*.tgz) tar -xzf "$archive" ;;
+    *.tar.xz|*.txz) tar -xJf "$archive" ;;
+    *.tar.zst|*.tzst) tar --zstd -xf "$archive" ;;
     *.bz2) bunzip2 "$archive" ;;
-    *.rar) rar x "$archive" ;;
     *.gz) gunzip "$archive" ;;
+    *.xz) unxz "$archive" ;;
+    *.zst) unzstd --rm "$archive" ;;
     *.tar) tar -xf "$archive" ;;
     *.zip) unzip "$archive" ;;
     *.Z) uncompress "$archive" ;;
