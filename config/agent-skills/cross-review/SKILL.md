@@ -16,7 +16,7 @@ Make the change more correct before it is published: one reviewer from the other
 
 ## 1. Scope
 
-Run `git status --short`. Keep unrelated changes out: limit the review to the change paths when they separate cleanly; otherwise ask. After `git fetch origin`, the base is `git merge-base HEAD origin/<base>` (the PR base when a PR exists, else the default branch). The change is base to working tree in those paths, with untracked files; use one diff command in every round. Run the covering checks and note missing or pre-failing ones in the brief.
+Run `git status --short`. Keep unrelated changes out: limit the review to the change paths when they separate cleanly; otherwise ask. After `git fetch origin`, select the base from the PR, `branch.<head>.gh-merge-base`, or the default branch, in that order. Review from `git merge-base HEAD origin/<base>` through the working tree in those paths, including untracked files; use one diff command in every round. Run the covering checks and note missing or pre-failing ones in the brief.
 
 ## 2. Pick the reviewer
 

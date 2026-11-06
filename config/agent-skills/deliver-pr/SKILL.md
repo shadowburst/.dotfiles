@@ -12,13 +12,13 @@ The user is not watching this thread. Updates and the final message go unread un
 A "deliver" request gives permission to:
 
 - Create a branch, commit, push, rebase, fix conflicts, and use `--force-with-lease` on this task's branch.
-- Use the test methods that evidence needs without asking first: running the app or a dev server, browser automation, screenshots, and visual checks. Rules that name *how* to test (the command, fixture, or check) still apply; only the ask-first step is lifted, and only for this task.
+- Use the test methods that evidence needs without asking first: running the app or a dev server, browser automation, screenshots, and visual checks. Rules that name _how_ to test (the command, fixture, or check) still apply; only the ask-first step is lifted, and only for this task.
 
 Outside the grant, always: merging, auto-merge, merge queues, pushes to the default branch, branch-protection bypasses, deleting data, touching production, changing things outside the repo, closing a PR, force-pushing any other branch. Disable auto-merge and leave any merge queue before work begins and before each push; report it. When automatic merging cannot be prevented, report the blocker first.
 
 ## Steps
 
-1. **Finish the change.** Do all the work in the current checkout, and treat all its uncommitted changes as part of the task, whoever made them, with no question. On the default branch, or when the user names a base, create a new **task branch** from the **base** (the branch the user names, or else the default branch) with `git switch -c <task-branch> <base>`, which carries the uncommitted changes. When Git refuses because a named base conflicts with those changes, add `--merge` and follow Git's output to fix the conflicts. On any other branch, for example in a new worktree made for this request, the checked-out branch is the task branch: continue there. Its base is its recorded `gh-merge-base`, or else the default branch. Record the base: `git config branch.<task-branch>.gh-merge-base <base>`. Complete the request with the smallest change that works; fix the case that happened, not every case that could.
+1. **Finish the change.** Work in the current checkout with all its uncommitted changes. Resolve the base from the user's choice, existing PR, then `branch.<head>.gh-merge-base`; ask if unknown. Record the base there and align any existing PR. Make the smallest change that meets the request.
 2. **Gather evidence.** Observe evidence for every change before it is pushed; see [Evidence](#evidence).
 3. **Cross-review.** Run the `cross-review` skill until it agrees or asks the user.
 4. **Publish.** Rebase onto the latest base (the recorded `gh-merge-base`), gather evidence again for what the rebase touched, then run the `publish-pr` skill and ask it for ready for review, so review bots see code that cross-review already approved. Keep the cross-review line in the PR body.

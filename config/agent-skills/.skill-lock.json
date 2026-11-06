@@ -125,18 +125,18 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
       "skillPath": "skills/cross-review/SKILL.md",
-      "skillFolderHash": "feaf3042c0e7c6f898398f9a9e819bc4c63ef0cb",
+      "skillFolderHash": "f59e39b3073473a034711ef5cee3b6672bd1f2b4",
       "installedAt": "2026-11-03T10:35:25.645Z",
-      "updatedAt": "2026-11-03T10:35:25.645Z"
+      "updatedAt": "2026-11-06T10:37:10.942Z"
     },
     "deliver-pr": {
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
       "skillPath": "skills/deliver-pr/SKILL.md",
-      "skillFolderHash": "9f2eab4fcffdc2f67cbab5e40ea199a14e243585",
+      "skillFolderHash": "0880b3ac853a9890c8690173837d136215cd02ba",
       "installedAt": "2026-11-03T10:35:25.647Z",
-      "updatedAt": "2026-11-05T13:57:07.036Z"
+      "updatedAt": "2026-11-06T10:37:11.014Z"
     },
     "github-pr": {
       "source": "Lynx-Business/skills",
@@ -170,9 +170,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/microsoft/playwright-cli.git",
       "skillPath": "skills/playwright-cli/SKILL.md",
-      "skillFolderHash": "003ec8747c78ceb8e9da5d83f12523a06830093c",
+      "skillFolderHash": "cc70f6e5f0cf42b82d3f72f6f1c3a4134694d518",
       "installedAt": "2026-11-04T11:33:07.547Z",
-      "updatedAt": "2026-11-04T11:33:07.547Z"
+      "updatedAt": "2026-11-06T10:37:11.136Z"
     },
     "modernize": {
       "source": "t3dotgg/tstack",
