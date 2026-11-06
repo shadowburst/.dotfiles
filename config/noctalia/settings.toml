@@ -2,7 +2,7 @@ config_version = 16
 
 [bar.main]
 background_opacity = 0.89999997988343239
-end = [ "tray", "notifications", "bluetooth", "network", "volume", "battery" ]
+end = [ "tray", "notifications", "bar", "bluetooth", "network", "volume", "battery" ]
 layer = "overlay"
 margin_edge = 0.0
 margin_ends = 60
@@ -357,12 +357,21 @@ position = "top_center"
 video_codec = "av1"
 video_source = "focused"
 
+[plugin_settings."noctalia/timer"]
+alarm_duration = 0
+
 [plugin_settings."shadowburst/voxtype"]
 osd_position = "top_center"
 
 [plugins]
 auto_update = "all"
-enabled = [ "noctalia/screen_recorder", "noctalia/translator", "noctalia/wallpaper_depth", "shadowburst/voxtype" ]
+enabled = [
+    "noctalia/screen_recorder",
+    "noctalia/translator",
+    "noctalia/wallpaper_depth",
+    "shadowburst/voxtype",
+    "noctalia/timer"
+]
 
     [[plugins.source]]
     kind = "git"
@@ -457,6 +466,9 @@ transition_on_startup = true
 
     [wallpaper.last]
     path = "/home/pbaudry/Pictures/Wallpapers/1.jpg"
+
+[widget.bar]
+type = "noctalia/timer:bar"
 
 [widget.bluetooth]
 show_label = true
