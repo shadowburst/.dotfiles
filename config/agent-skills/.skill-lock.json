@@ -134,9 +134,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
       "skillPath": "skills/deliver-pr/SKILL.md",
-      "skillFolderHash": "0880b3ac853a9890c8690173837d136215cd02ba",
+      "skillFolderHash": "cb295b1cc5e26babf8f3523993e236a0d581d7a8",
       "installedAt": "2026-11-03T10:35:25.647Z",
-      "updatedAt": "2026-11-06T10:37:11.014Z"
+      "updatedAt": "2026-11-09T10:53:30.104Z"
     },
     "github-pr": {
       "source": "Lynx-Business/skills",

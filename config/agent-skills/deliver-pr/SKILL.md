@@ -21,7 +21,7 @@ Outside the grant, always: merging, auto-merge, merge queues, pushes to the defa
 1. **Finish the change.** Work in the current checkout with all its uncommitted changes. Resolve the base from the user's choice, existing PR, then `branch.<head>.gh-merge-base`; ask if unknown. Record the base there and align any existing PR. Make the smallest change that meets the request.
 2. **Gather evidence.** Observe evidence for every change before it is pushed; see [Evidence](#evidence).
 3. **Cross-review.** Run the `cross-review` skill until it agrees or asks the user.
-4. **Publish.** Rebase onto the latest base (the recorded `gh-merge-base`), gather evidence again for what the rebase touched, then run the `publish-pr` skill and ask it for ready for review, so review bots see code that cross-review already approved. Keep the cross-review line in the PR body.
+4. **Publish.** Before every `publish-pr` run, here and in step 5, fetch the recorded base and rebase onto it when it moved, then gather evidence again for what the rebase touched. Run the `publish-pr` skill and ask it for ready for review, so review bots see code that cross-review already approved. Keep the cross-review line in the PR body.
 5. **Watch.** Run the `watch-pr` skill until the PR is ready to merge or blocked. Gather evidence for each fix before it is pushed.
 6. **Hand off.** See [Handoff](#handoff).
 
