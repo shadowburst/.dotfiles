@@ -51,8 +51,8 @@ func testRows() []row {
 		{Branch: "feat/busy", Path: "/wt/busy", Agent: "codex", Busy: true},
 		{Branch: "feat/c", Path: "/wt/c", Workspaces: []string{"w3"}},
 		{Branch: "feat/b"},
-		{Branch: "only-remote", Remote: "origin"},
 		{Branch: "done", Merged: true},
+		{Branch: "only-remote", Remote: "origin"},
 	}
 }
 
@@ -150,10 +150,10 @@ func TestListSelectsFocusedWorktree(t *testing.T) {
 	}
 }
 
-func TestRemoteRowsNeedAFilter(t *testing.T) {
+func TestRemoteRowsShow(t *testing.T) {
 	m := testUI(t, &recorder{})
-	if strings.Contains(m.render(), "only-remote") {
-		t.Error("a remote row shows without a filter")
+	if !strings.Contains(m.render(), "only-remote") {
+		t.Error("a remote row does not show without a filter")
 	}
 	m = send(m, keys("/", "r", "e", "m")...)
 	if got := selected(m); got != "only-remote" {

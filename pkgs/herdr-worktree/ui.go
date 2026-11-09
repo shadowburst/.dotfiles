@@ -149,15 +149,11 @@ func (m uiModel) Init() tea.Cmd {
 	return tea.Batch(m.previewCmd(), loadPRs(m.repo.Root))
 }
 
-// visible lists the rows that match the filter. Remote branches only show with
-// a filter, so the list stays short.
+// visible lists the rows that match the filter.
 func (m uiModel) visible() []int {
 	q := strings.TrimSpace(m.filter.Value())
 	var out []int
 	for i, r := range m.rows {
-		if r.Remote != "" && q == "" {
-			continue
-		}
 		if q == "" || fuzzy(r.name(), q) {
 			out = append(out, i)
 		}
