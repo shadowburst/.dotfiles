@@ -57,11 +57,10 @@ func TestEveryHerdrThemeHasAPalette(t *testing.T) {
 }
 
 func TestPopupUsesConfiguredTheme(t *testing.T) {
-	m := testModel(t, nil)
 	writeHerdrConfig(t, "[theme]\nname = \"nord\"\n")
-	m = newPopupModel(m.cfg, nil, nil)
+	st := newStyles(loadPalette())
 	want := lipgloss.Color(palettes["nord"].Accent)
-	if !reflect.DeepEqual(m.styles.accent, want) {
-		t.Errorf("accent = %v, want %v", m.styles.accent, want)
+	if !reflect.DeepEqual(st.accent, want) {
+		t.Errorf("accent = %v, want %v", st.accent, want)
 	}
 }

@@ -3,6 +3,7 @@ _: {
   flake.homeModules.cli =
     {
       config,
+      lib,
       pkgs,
       ...
     }:
@@ -17,22 +18,8 @@ _: {
       xdg.configFile."herdr/plugins/config/pbaudry.worktree/config.toml".source =
         (pkgs.formats.toml { }).generate "herdr-worktree-config.toml"
           {
-            # Runs before the plugin removes a merged worktree; cwd is the worktree.
-            teardown = ''
-              if [ -f "$WORKTREE_PATH/.lerd.yaml" ]; then
-                cd "$REPO_ROOT"
-                lerd worktree remove "$WORKTREE_PATH"
-              fi
-            '';
-
             # Names the branch. It reads the request on stdin.
-            naming_command = [
-              "claude"
-              "-p"
-              "--model"
-              "haiku"
-              "--no-session-persistence"
-            ];
+            naming_command = [ (lib.getExe config.textGeneration.package) ];
 
             # The first value of each list is the default in the popup.
             agents = {
@@ -218,6 +205,11 @@ _: {
             resize_mode = "alt+plus";
 
             copy_mode = "alt+esc";
+
+            # The worktree plugin (alt+w) does this through worktrunk.
+            new_worktree = "";
+            open_worktree = "";
+            remove_worktree = "";
             command = [
               {
                 key = "alt+r";
@@ -227,7 +219,7 @@ _: {
               {
                 key = "alt+w";
                 type = "plugin_action";
-                command = "pbaudry.worktree.new";
+                command = "pbaudry.worktree.open";
               }
             ];
           };

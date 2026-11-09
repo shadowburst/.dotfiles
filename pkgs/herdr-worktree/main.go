@@ -1,8 +1,8 @@
 // Command herdr-worktree is the pbaudry.worktree Herdr plugin.
 //
-//	open              open the "New worktree" popup (bound to a key)
+//	open              open the worktree popup (bound to a key)
 //	popup             the popup itself (a plugin pane)
-//	job <spec>        create the worktree and start the agent (detached)
+//	job <spec>        open or create the worktree and start the agent (detached)
 //	daemon            poll all Spaces (single instance through a pidfile)
 //	refresh           refresh the Space in HERDR_WORKSPACE_ID (or all if unset)
 //	refresh --all     refresh all Spaces
@@ -23,7 +23,7 @@ func main() {
 	switch cmd {
 	case "open":
 		_, err = herdrCall(defaultTimeout, nil, "plugin", "pane", "open",
-			"--plugin", os.Getenv("HERDR_PLUGIN_ID"), "--entrypoint", "new")
+			"--plugin", os.Getenv("HERDR_PLUGIN_ID"), "--entrypoint", "popup")
 	case "popup":
 		err = runPopup()
 	case "job":

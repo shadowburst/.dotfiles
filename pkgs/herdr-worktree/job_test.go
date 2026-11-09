@@ -11,29 +11,22 @@ import (
 
 // fakeHerdr answers with the JSON shapes of Herdr 0.9.5 and records each call.
 const fakeHerdr = `#!/bin/sh
-randomBranch=worktree/lucky-harbor-bae4
 printf '%s\n' "$*" >> "$FAKE_HERDR_LOG"
 case "$1 $2" in
-"worktree create")
-	if [ -n "$FAKE_CREATE_ERROR" ]; then
-		printf '{"error":{"code":"worktree_create_failed","message":"%s"}}' "$FAKE_CREATE_ERROR" >&2
+"worktree open")
+	if [ -n "$FAKE_OPEN_ERROR" ]; then
+		printf '{"error":{"code":"worktree_open_failed","message":"%s"}}' "$FAKE_OPEN_ERROR" >&2
 		exit 1
 	fi
 	case "$*" in
-	*"--branch "*)
-		echo '{"result":{"root_pane":{"pane_id":"w2:p1"},"worktree":{"path":"/created"}}}'
-		;;
+	*"--cwd "*) ;;
 	*)
-		echo "{\"result\":{\"root_pane\":{\"pane_id\":\"w2:p1\"},\"workspace\":{\"workspace_id\":\"w2\"},\"worktree\":{\"branch\":\"$randomBranch\",\"path\":\"$FAKE_RANDOM_PATH\"}}}"
+		echo '{"error":{"code":"worktree_not_found","message":"worktree path not found"}}' >&2
+		exit 1
 		;;
 	esac
-	;;
-"pane wait-output")
-	marker=$(printf '%s' "$*" | sed -n 's/.*--regex \(WTDONE-[0-9]*-[0-9]*\)-.*/\1/p')
-	echo "{\"result\":{\"matched_line\":\"$marker-0-END\"}}"
-	;;
-"worktree open")
-	echo "{\"result\":{\"already_open\":${FAKE_ALREADY_OPEN:-false},\"root_pane\":{\"pane_id\":\"w1:p1\"},\"worktree\":{\"path\":\"/held\"}}}"
+	path=$(printf '%s' "$*" | sed -n 's/.*--path \([^ ]*\).*/\1/p')
+	echo "{\"result\":{\"already_open\":${FAKE_ALREADY_OPEN:-false},\"root_pane\":{\"pane_id\":\"w1:p1\"},\"workspace\":{\"workspace_id\":\"w1\"},\"worktree\":{\"path\":\"$path\"}}}"
 	;;
 "pane split")
 	echo '{"result":{"pane":{"pane_id":"w1:p2"}}}'
@@ -56,6 +49,36 @@ case "$1 $2" in
 	echo '{"result":{}}'
 	;;
 esac
+`
+
+// fakeWt makes the worktree with git, like `wt switch`, and fails after it when
+// FAKE_WT_FAIL is set, like a failing hook.
+const fakeWt = `#!/bin/sh
+printf '%s\n' "$*" >> "$FAKE_WT_LOG"
+repo=$2
+shift 3
+create= branch= base=
+while [ $# -gt 0 ]; do
+	case $1 in
+	--create) create=1 branch=$2; shift ;;
+	--base) base=$2; shift ;;
+	--*) ;;
+	*) branch=$1 ;;
+	esac
+	shift
+done
+path="$FAKE_WT_DIR/$(printf '%s' "$branch" | tr / -)"
+if [ -n "$create" ]; then
+	git -C "$repo" worktree add -q -b "$branch" "$path" "$base" >&2 || exit 1
+else
+	git -C "$repo" worktree add -q "$path" "$branch" >&2 || exit 1
+fi
+echo "running pre-start hook" >&2
+if [ -n "$FAKE_WT_FAIL" ]; then
+	echo "hook failed: $FAKE_WT_FAIL" >&2
+	exit 1
+fi
+printf '{"action":"created","branch":"%s","path":"%s"}\n' "$branch" "$path"
 `
 
 // gitRepo has the branches held (in a linked worktree) and free. Both have a
@@ -85,29 +108,47 @@ func runGit(t *testing.T, dir string, args ...string) string {
 	return strings.TrimSpace(string(out))
 }
 
-// useFakeHerdr returns a function that reads the recorded calls.
-func useFakeHerdr(t *testing.T) func() string {
-	t.Helper()
-	dir := t.TempDir()
-	bin := filepath.Join(dir, "herdr")
-	if err := os.WriteFile(bin, []byte(fakeHerdr), 0o700); err != nil {
-		t.Fatal(err)
-	}
-	log := filepath.Join(dir, "calls.log")
-	t.Setenv("HERDR_BIN_PATH", bin)
-	t.Setenv("FAKE_HERDR_LOG", log)
-	t.Setenv("FAKE_CREATE_ERROR", "")
-	t.Setenv("FAKE_ALREADY_OPEN", "")
-	t.Setenv("FAKE_ROOT_BUSY", "")
-	t.Setenv("FAKE_RANDOM_PATH", "")
-	t.Setenv("HERDR_PLUGIN_STATE_DIR", t.TempDir())
-	t.Setenv("HERDR_PLUGIN_CONFIG_DIR", t.TempDir())
+type fakes struct {
+	herdr, wt func() string
+}
+
+func readLog(t *testing.T, path string) func() string {
 	return func() string {
-		raw, err := os.ReadFile(log)
-		if err != nil {
+		raw, err := os.ReadFile(path)
+		if err != nil && !os.IsNotExist(err) {
 			t.Fatal(err)
 		}
 		return string(raw)
+	}
+}
+
+// useFakes puts the fake herdr and wt in place.
+func useFakes(t *testing.T) fakes {
+	t.Helper()
+	dir := t.TempDir()
+	for name, body := range map[string]string{"herdr": fakeHerdr, "wt": fakeWt} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Setenv("HERDR_BIN_PATH", filepath.Join(dir, "herdr"))
+	t.Setenv("HERDR_WORKTREE_WT", filepath.Join(dir, "wt"))
+	t.Setenv("FAKE_HERDR_LOG", filepath.Join(dir, "herdr.log"))
+	t.Setenv("FAKE_WT_LOG", filepath.Join(dir, "wt.log"))
+	t.Setenv("FAKE_WT_DIR", t.TempDir())
+	for _, name := range []string{"FAKE_OPEN_ERROR", "FAKE_ALREADY_OPEN", "FAKE_ROOT_BUSY", "FAKE_WT_FAIL"} {
+		t.Setenv(name, "")
+	}
+	t.Setenv("HERDR_PLUGIN_STATE_DIR", t.TempDir())
+	t.Setenv("HERDR_PLUGIN_CONFIG_DIR", t.TempDir())
+	return fakes{readLog(t, filepath.Join(dir, "herdr.log")), readLog(t, filepath.Join(dir, "wt.log"))}
+}
+
+func useNaming(t *testing.T, script string) {
+	t.Helper()
+	config := fmt.Sprintf("naming_command = [\"sh\", \"-c\", %q]\n", script)
+	if err := os.WriteFile(filepath.Join(os.Getenv("HERDR_PLUGIN_CONFIG_DIR"), "config.toml"), []byte(config), 0o600); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -115,8 +156,13 @@ func testSpec(repo, branch string) JobSpec {
 	return JobSpec{
 		Selection: Selection{Agent: "claude", Model: "opus", Effort: "high"},
 		Repo:      repo, RepoName: "repo", Prompt: "do the task",
-		Branch: branch, Base: "origin/feat/other",
+		Branch: branch, Base: "main",
 	}
+}
+
+func testLaunch(t *testing.T, spec JobSpec) (string, string, error) {
+	t.Helper()
+	return launch(spec, filepath.Join(t.TempDir(), "wt.log"))
 }
 
 func wantCall(t *testing.T, calls, want string) {
@@ -134,75 +180,87 @@ func wantNoCall(t *testing.T, calls, unwanted string) {
 }
 
 func TestHeldBranchOpensItsWorktree(t *testing.T) {
-	calls := useFakeHerdr(t)
+	f := useFakes(t)
 	repo := gitRepo(t)
-	if err := os.WriteFile(filepath.Join(repo, ".lerd.yaml"), nil, 0o600); err != nil {
+
+	if _, _, err := testLaunch(t, testSpec(repo, "held")); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, _, err := launch(testSpec(repo, "held")); err != nil {
-		t.Fatal(err)
-	}
-
-	got := calls()
-	wantCall(t, got, "worktree open --cwd "+repo+" --branch held --no-focus")
-	wantNoCall(t, got, "worktree create")
+	got := f.herdr()
+	wantCall(t, got, "worktree open --cwd "+repo+" --path "+filepath.Join(filepath.Dir(repo), "holder")+" --no-focus")
 	wantCall(t, got, "--pane w1:p1")
 	wantCall(t, got, "agent prompt held do the task")
-	wantNoCall(t, got, "pane run") // lerd set up this worktree when it was made
-	if base := runGit(t, repo, "config", "branch.held.gh-merge-base"); base != "feat/original" {
-		t.Errorf("gh-merge-base = %q", base)
+	wantNoCall(t, got, "pane run")
+	if calls := f.wt(); calls != "" {
+		t.Errorf("wt ran: %s", calls)
 	}
 }
 
 func TestHeldBranchWithBusyPaneUsesNewPane(t *testing.T) {
-	calls := useFakeHerdr(t)
+	f := useFakes(t)
 	t.Setenv("FAKE_ALREADY_OPEN", "true")
 	t.Setenv("FAKE_ROOT_BUSY", "1")
 
-	if _, _, err := launch(testSpec(gitRepo(t), "held")); err != nil {
+	if _, _, err := testLaunch(t, testSpec(gitRepo(t), "held")); err != nil {
 		t.Fatal(err)
 	}
 
-	got := calls()
-	wantCall(t, got, "pane split w1:p1 --direction right --cwd /held --no-focus")
+	got := f.herdr()
+	wantCall(t, got, "pane split w1:p1 --direction right --cwd ")
 	wantCall(t, got, "--pane w1:p2")
-	wantCall(t, got, "agent prompt held do the task")
 }
 
 func TestFreeExistingBranchKeepsItsBase(t *testing.T) {
-	calls := useFakeHerdr(t)
+	f := useFakes(t)
 	repo := gitRepo(t)
 
-	if _, _, err := launch(testSpec(repo, "free")); err != nil {
+	if _, _, err := testLaunch(t, testSpec(repo, "free")); err != nil {
 		t.Fatal(err)
 	}
 
-	wantCall(t, calls(), "worktree create --cwd "+repo+" --branch free")
+	wantCall(t, f.wt(), "-C "+repo+" switch free --no-cd --yes --format=json")
 	if base := runGit(t, repo, "config", "branch.free.gh-merge-base"); base != "feat/original" {
 		t.Errorf("gh-merge-base = %q", base)
 	}
 }
 
-func TestNewBranchRecordsItsBase(t *testing.T) {
-	calls := useFakeHerdr(t)
+func TestNewBranchShowsLogThenStartsAgent(t *testing.T) {
+	f := useFakes(t)
 	repo := gitRepo(t)
 
-	if _, _, err := launch(testSpec(repo, "feat/new")); err != nil {
+	if _, _, err := testLaunch(t, testSpec(repo, "feat/new")); err != nil {
 		t.Fatal(err)
 	}
 
-	wantCall(t, calls(), "worktree create --cwd "+repo+" --branch feat/new")
-	if base := runGit(t, repo, "config", "branch.feat/new.gh-merge-base"); base != "origin/feat/other" {
+	wantCall(t, f.wt(), "-C "+repo+" switch --create feat/new --base main --no-cd --yes --format=json")
+	got := f.herdr()
+	wantCall(t, got, "worktree open --cwd "+repo+" --path "+filepath.Join(os.Getenv("FAKE_WT_DIR"), "feat-new")+" --label new --no-focus")
+	wantCall(t, got, "pane run w1:p1 clear; tail -n +1 -F --pid=")
+	wantCall(t, got, "agent start new --kind claude --pane w1:p1")
+	if base := runGit(t, repo, "config", "branch.feat/new.gh-merge-base"); base != "main" {
 		t.Errorf("gh-merge-base = %q", base)
 	}
 }
 
-// Herdr keeps the first 240 characters of the body, and a Git error can be longer.
-func TestFailureNotificationKeepsDraftHint(t *testing.T) {
-	calls := useFakeHerdr(t)
-	t.Setenv("FAKE_CREATE_ERROR", "fatal: "+strings.Repeat("long git error ", 30))
-	specPath := filepath.Join(t.TempDir(), "spec.json")
+func TestShellJobFocusesAndStartsNoAgent(t *testing.T) {
+	f := useFakes(t)
+	spec := testSpec(gitRepo(t), "free")
+	spec.Prompt, spec.Focus = "", true
+
+	if _, _, err := testLaunch(t, spec); err != nil {
+		t.Fatal(err)
+	}
+
+	got := f.herdr()
+	wantCall(t, got, "--label free --focus")
+	wantNoCall(t, got, "agent start")
+}
+
+func TestWtFailureNotifiesWithItsOutput(t *testing.T) {
+	f := useFakes(t)
+	t.Setenv("FAKE_WT_FAIL", "boom")
+	specPath := filepath.Join(os.Getenv("HERDR_PLUGIN_STATE_DIR"), "jobs", "1.json")
 	if err := writeJSON(specPath, testSpec(gitRepo(t), "feat/new")); err != nil {
 		t.Fatal(err)
 	}
@@ -211,7 +269,29 @@ func TestFailureNotificationKeepsDraftHint(t *testing.T) {
 		t.Fatal("no error from the job")
 	}
 
-	_, body, ok := strings.Cut(calls(), "--body ")
+	got := f.herdr()
+	wantCall(t, got, "notification show Worktree failed: wt switch")
+	wantCall(t, got, "hook failed: boom")
+	wantNoCall(t, got, "agent start")
+	if d, ok := loadDraft(); !ok || d.Prompt != "do the task" {
+		t.Errorf("draft = %+v, %v", d, ok)
+	}
+}
+
+// Herdr keeps the first 240 characters of the body, and an error can be longer.
+func TestFailureNotificationKeepsDraftHint(t *testing.T) {
+	f := useFakes(t)
+	t.Setenv("FAKE_OPEN_ERROR", "fatal: "+strings.Repeat("long error ", 30))
+	specPath := filepath.Join(os.Getenv("HERDR_PLUGIN_STATE_DIR"), "jobs", "1.json")
+	if err := writeJSON(specPath, testSpec(gitRepo(t), "held")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := runJob(specPath); err == nil {
+		t.Fatal("no error from the job")
+	}
+
+	_, body, ok := strings.Cut(f.herdr(), "--body ")
 	if !ok {
 		t.Fatal("no notification body")
 	}
@@ -220,133 +300,42 @@ func TestFailureNotificationKeepsDraftHint(t *testing.T) {
 	}
 }
 
-const randomBranch = "worktree/lucky-harbor-bae4"
+func TestAutoNameComesBeforeTheWorktree(t *testing.T) {
+	f := useFakes(t)
+	useNaming(t, "cat >/dev/null; echo feat/good-name")
 
-// useRandomWorktree makes the checkout that the fake `worktree create` reports,
-// and sets the naming command. It returns the path of the checkout.
-func useRandomWorktree(t *testing.T, repo, naming string) string {
-	t.Helper()
-	path := filepath.Join(t.TempDir(), "worktree-lucky-harbor-bae4")
-	runGit(t, repo, "worktree", "add", "-q", "-b", randomBranch, path)
-	t.Setenv("FAKE_RANDOM_PATH", path)
-	config := fmt.Sprintf("naming_command = [\"sh\", \"-c\", %q]\n", naming)
-	dir := os.Getenv("HERDR_PLUGIN_CONFIG_DIR")
-	if err := os.WriteFile(filepath.Join(dir, "config.toml"), []byte(config), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	return path
-}
-
-func wantBefore(t *testing.T, calls, first, second string) {
-	t.Helper()
-	i, j := strings.Index(calls, first), strings.Index(calls, second)
-	if i < 0 || j < 0 || i > j {
-		t.Errorf("%q must come before %q in:\n%s", first, second, calls)
-	}
-}
-
-func TestAutoNameRenamesAfterAgentHasPrompt(t *testing.T) {
-	calls := useFakeHerdr(t)
-	repo := gitRepo(t)
-	path := useRandomWorktree(t, repo, "cat >/dev/null; sleep 1; echo feat/good-name")
-
-	name, branch, err := launch(testSpec(repo, ""))
+	_, branch, err := testLaunch(t, testSpec(gitRepo(t), ""))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	got := calls()
-	wantCall(t, got, "worktree create --cwd "+repo+" --base origin/feat/other --no-focus")
-	wantCall(t, got, "agent start lucky-harbor-bae4")
-	wantBefore(t, got, "agent prompt lucky-harbor-bae4 do the task", "workspace rename w2 good-name")
-	wantCall(t, got, "agent rename lucky-harbor-bae4 good-name")
-	if name != "good-name" || branch != "feat/good-name" {
-		t.Errorf("name = %q, branch = %q", name, branch)
+	if branch != "feat/good-name" {
+		t.Errorf("branch = %q", branch)
 	}
-	if current := runGit(t, path, "branch", "--show-current"); current != "feat/good-name" {
-		t.Errorf("branch in the checkout = %q", current)
-	}
-	if base := runGit(t, repo, "config", "branch.feat/good-name.gh-merge-base"); base != "origin/feat/other" {
-		t.Errorf("gh-merge-base = %q", base)
-	}
-}
-
-func TestAutoNameRenamesBeforeLerdSetup(t *testing.T) {
-	calls := useFakeHerdr(t)
-	repo := gitRepo(t)
-	useRandomWorktree(t, repo, "cat >/dev/null; echo fix/good-name")
-	if err := os.WriteFile(filepath.Join(repo, ".lerd.yaml"), nil, 0o600); err != nil {
-		t.Fatal(err)
-	}
-
-	name, branch, err := launch(testSpec(repo, ""))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	got := calls()
-	wantBefore(t, got, "workspace rename w2 good-name", "pane run w2:p1")
-	wantCall(t, got, "agent start good-name")
-	wantNoCall(t, got, "agent rename")
-	if name != "good-name" || branch != "fix/good-name" {
-		t.Errorf("name = %q, branch = %q", name, branch)
-	}
+	wantCall(t, f.wt(), "switch --create feat/good-name --base main")
+	wantCall(t, f.herdr(), "agent start good-name")
 }
 
 func TestAutoNameFallsBackToPromptSlug(t *testing.T) {
-	useFakeHerdr(t)
-	repo := gitRepo(t)
-	useRandomWorktree(t, repo, "cat >/dev/null; exit 1")
+	f := useFakes(t)
+	useNaming(t, "exit 1")
 
-	_, branch, err := launch(testSpec(repo, ""))
-	if err != nil {
+	if _, _, err := testLaunch(t, testSpec(gitRepo(t), "")); err != nil {
 		t.Fatal(err)
 	}
-	if branch != "feat/do-the-task" {
-		t.Errorf("branch = %q", branch)
-	}
+
+	wantCall(t, f.wt(), "switch --create feat/do-the-task --base main")
 }
 
-func TestRenameBranchAddsSuffixToTakenName(t *testing.T) {
-	useFakeHerdr(t)
+func TestAutoNameAddsSuffixToTakenName(t *testing.T) {
+	f := useFakes(t)
 	repo := gitRepo(t)
-	path := useRandomWorktree(t, repo, "")
-	runGit(t, repo, "branch", "feat/good-name")
+	runGit(t, repo, "branch", "feat/taken")
+	useNaming(t, "echo feat/taken")
 
-	var wt openedWorktree
-	wt.Worktree.Path = path
-	if got := renameBranch(testSpec(repo, ""), wt, randomBranch, "feat/good-name"); got != "feat/good-name-2" {
-		t.Errorf("branch = %q", got)
+	if _, _, err := testLaunch(t, testSpec(repo, "")); err != nil {
+		t.Fatal(err)
 	}
-}
 
-func TestRenameBranchKeepsNameWhenBlocked(t *testing.T) {
-	cases := map[string]func(t *testing.T, repo, path string){
-		"agent moved to another branch": func(t *testing.T, repo, path string) {
-			runGit(t, path, "switch", "-q", "-c", "feat/agent-choice")
-		},
-		"branch has an upstream": func(t *testing.T, repo, path string) {
-			runGit(t, repo, "config", "branch."+randomBranch+".remote", "origin")
-		},
-		"branch is on origin": func(t *testing.T, repo, path string) {
-			runGit(t, repo, "update-ref", "refs/remotes/origin/"+randomBranch, "HEAD")
-		},
-	}
-	for name, block := range cases {
-		t.Run(name, func(t *testing.T) {
-			useFakeHerdr(t)
-			repo := gitRepo(t)
-			path := useRandomWorktree(t, repo, "")
-			block(t, repo, path)
-
-			var wt openedWorktree
-			wt.Worktree.Path = path
-			if got := renameBranch(testSpec(repo, ""), wt, randomBranch, "feat/good-name"); got != randomBranch {
-				t.Errorf("branch = %q", got)
-			}
-			if out := runGit(t, repo, "branch", "--list", "feat/good-name"); out != "" {
-				t.Errorf("branch was renamed: %q", out)
-			}
-		})
-	}
+	wantCall(t, f.wt(), "switch --create feat/taken-2 --base main")
 }

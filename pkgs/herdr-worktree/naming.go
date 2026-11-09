@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	namingTimeout = 10 * time.Second
+	namingTimeout = 20 * time.Second
 	maxSlugLength = 48
 	fallbackWords = 6
 	maxAgentName  = 32

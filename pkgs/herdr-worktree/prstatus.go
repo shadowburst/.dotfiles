@@ -3,16 +3,13 @@ package main
 // Shows each Space's GitHub PR as the `$pr` token, and removes merged worktrees.
 // Based on https://github.com/Flyingdot/herdr-pr-status (MIT).
 //
-// Before it removes a merged worktree, it runs `teardown` from the plugin
-// config with bash, in the worktree, with WORKTREE_PATH, WORKTREE_BRANCH,
-// REPO_ROOT and PR_NUMBER set. If the teardown fails, the worktree stays. If the
-// teardown removed the checkout, the Space is closed.
+// It removes a merged worktree with `wt remove`, so the repository's remove
+// hooks run, and then closes the Space.
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -23,7 +20,7 @@ import (
 const (
 	source         = "pbaudry.worktree"
 	pollInterval   = 120 * time.Second
-	teardownLimit  = 600 * time.Second
+	removeLimit    = 600 * time.Second
 	tokenTTLMillis = 3 * 120 * 1000 // stale values vanish if the poller dies
 )
 
@@ -48,6 +45,8 @@ type worktreeInfo struct {
 
 type workspace struct {
 	WorkspaceID string        `json:"workspace_id"`
+	Focused     bool          `json:"focused"`
+	AgentStatus string        `json:"agent_status"`
 	Worktree    *worktreeInfo `json:"worktree"`
 }
 
@@ -100,7 +99,7 @@ func prLabel(pr pullRequest) string {
 // mergedAndDone is true when the PR is merged and the worktree has no commits
 // after the merged head. The main checkout is never removed. A worktree with
 // new commits (for example a long-lived branch whose old PR was merged) is kept.
-// A dirty worktree is kept, before any teardown runs. statusOK is false when
+// A dirty worktree is kept. statusOK is false when
 // `git status` failed, and that also keeps the worktree.
 func mergedAndDone(pr pullRequest, isLinked bool, head, porcelain string, statusOK bool) bool {
 	if pr.State != "MERGED" || !isLinked {
@@ -118,47 +117,23 @@ func checkMerged(pr pullRequest, wt worktreeInfo) bool {
 	return mergedAndDone(pr, wt.IsLinkedWorktree, head, porcelain, ok)
 }
 
-func removeWorktree(id string, wt worktreeInfo, pr pullRequest) bool {
-	path := wt.CheckoutPath
-	if teardown := loadConfig().Teardown; teardown != "" {
-		branch, _ := output(defaultTimeout, path, "git", "branch", "--show-current")
-		cmd := exec.Command("bash", "-c", teardown)
-		cmd.Dir = path
-		cmd.Env = append(os.Environ(),
-			"WORKTREE_PATH="+path,
-			"WORKTREE_BRANCH="+strings.TrimSpace(branch),
-			"REPO_ROOT="+wt.RepoRoot,
-			"PR_NUMBER="+strconv.Itoa(pr.Number),
-		)
-		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
-		cmd.WaitDelay = time.Second
-		if err := startAndWait(cmd, teardownLimit); err != nil {
-			fmt.Fprintf(os.Stderr, "teardown failed for %s (%v); worktree kept\n", path, err)
-			return false
-		}
+// removeWorktree keeps a Space where an agent works.
+func removeWorktree(ws workspace) bool {
+	if agentBusy(ws.AgentStatus) {
+		return false
 	}
-	if info, err := os.Stat(path); err == nil && info.IsDir() {
-		_, err := herdrCall(defaultTimeout, nil, "worktree", "remove", "--workspace", id)
-		return err == nil
+	wt := *ws.Worktree
+	branch, _ := output(defaultTimeout, wt.CheckoutPath, "git", "branch", "--show-current")
+	if branch = strings.TrimSpace(branch); branch == "" {
+		return false
 	}
-	_, err := herdrCall(defaultTimeout, nil, "workspace", "close", id)
+	if _, stderr, err := runCommand(removeLimit, wt.RepoRoot, "", wtBin(),
+		"-C", wt.RepoRoot, "remove", branch, "--yes", "--foreground"); err != nil {
+		fmt.Fprintf(os.Stderr, "wt remove %s: %v: %s\n", branch, err, strings.TrimSpace(stderr))
+		return false
+	}
+	_, err := herdrCall(defaultTimeout, nil, "workspace", "close", ws.WorkspaceID)
 	return err == nil
-}
-
-func startAndWait(cmd *exec.Cmd, limit time.Duration) error {
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-	done := make(chan error, 1)
-	go func() { done <- cmd.Wait() }()
-	select {
-	case err := <-done:
-		return err
-	case <-time.After(limit):
-		_ = cmd.Process.Kill()
-		<-done
-		return fmt.Errorf("timeout after %s", limit)
-	}
 }
 
 func refresh(only string) {
@@ -174,7 +149,7 @@ func refresh(only string) {
 		if wt.CheckoutPath != "" {
 			pr = fetchPullRequest(wt.CheckoutPath)
 		}
-		if pr != nil && checkMerged(*pr, wt) && removeWorktree(ws.WorkspaceID, wt, *pr) {
+		if pr != nil && checkMerged(*pr, wt) && removeWorktree(ws) {
 			continue
 		}
 		args := []string{"workspace", "report-metadata", ws.WorkspaceID, "--source", source}

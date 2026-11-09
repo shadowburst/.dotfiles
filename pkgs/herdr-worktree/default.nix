@@ -13,6 +13,7 @@ let
           pkgs.lib.makeBinPath [
             pkgs.gh
             pkgs.git
+            pkgs.worktrunk
           ]
         }
     '';
@@ -25,7 +26,7 @@ pkgs.writeTextDir "herdr-plugin.toml" ''
   name = "Worktree"
   version = "0.1.0"
   min_herdr_version = "0.9.5"
-  description = "Creates a worktree with an agent from a prompt, shows each Space's GitHub PR as the $pr token, and removes merged worktrees"
+  description = "Opens, creates, merges and removes worktrunk worktrees from one popup, starts an agent from a prompt, shows each Space's GitHub PR as the $pr token, and removes merged worktrees"
   platforms = ["linux"]
 
   # Long-running poller; it exits right away if one is already running.
@@ -51,16 +52,16 @@ pkgs.writeTextDir "herdr-plugin.toml" ''
   command = ["${exe}", "refresh", "--all"]
 
   [[actions]]
-  id = "new"
-  title = "New worktree"
+  id = "open"
+  title = "Worktrees"
   contexts = ["global", "workspace", "pane"]
   command = ["${exe}", "open"]
 
   [[panes]]
-  id = "new"
-  title = "New worktree"
+  id = "popup"
+  title = "Worktrees"
   placement = "popup"
-  width = "70%"
-  height = 16
+  width = "90%"
+  height = "80%"
   command = ["${exe}", "popup"]
 ''

@@ -14,7 +14,8 @@ import (
 // agentKinds is the list in the popup. A kind must be a Herdr `--kind` value.
 var agentKinds = []string{"claude", "codex", "pi", "opencode"}
 
-var defaultNamingCommand = []string{"claude", "-p", "--model", "haiku", "--no-session-persistence"}
+// defaultNamingCommand is the flake's text generation wrapper.
+var defaultNamingCommand = []string{"textgen"}
 
 type agentConfig struct {
 	Models  []string `toml:"models"`
@@ -23,7 +24,6 @@ type agentConfig struct {
 
 // Config is $HERDR_PLUGIN_CONFIG_DIR/config.toml.
 type Config struct {
-	Teardown      string                 `toml:"teardown"`
 	NamingCommand []string               `toml:"naming_command"`
 	Agents        map[string]agentConfig `toml:"agents"`
 }

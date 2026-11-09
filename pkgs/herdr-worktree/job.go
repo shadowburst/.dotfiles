@@ -1,31 +1,31 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
-	"regexp"
-	"slices"
+	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
 const (
-	lerdSetupTimeout   = 20 * time.Minute
-	lerdWatcherWait    = 60 * time.Second
+	wtSwitchTimeout    = 30 * time.Minute
+	wtPollInterval     = 300 * time.Millisecond
 	agentBusyWait      = 60 * time.Second
 	agentStartTimeout  = 90 * time.Second
 	agentEnterAfter    = 8 * time.Second
 	agentWorkTimeout   = 25 * time.Second
 	agentDialogTimeout = 15 * time.Minute
-	lerdNotManaged     = 3
-	renameAttempts     = 3
-	renameRetryDelay   = time.Second
+	failureLines       = 4
 )
 
-// JobSpec is the work that the popup gives to the detached job.
+// JobSpec is the work that the popup gives to the detached job. An empty prompt
+// opens the worktree with a shell only.
 type JobSpec struct {
 	Selection
 	Repo     string `json:"repo"`
@@ -33,6 +33,7 @@ type JobSpec struct {
 	Prompt   string `json:"prompt"`
 	Branch   string `json:"branch,omitempty"`
 	Base     string `json:"base"`
+	Focus    bool   `json:"focus,omitempty"`
 }
 
 // stepError names the step that failed, for the notification.
@@ -55,9 +56,12 @@ func runJob(specPath string) error {
 	if !readJSON(specPath, &spec) {
 		return fmt.Errorf("cannot read %s", specPath)
 	}
-	name, branch, err := launch(spec)
+	logPath := strings.TrimSuffix(specPath, ".json") + ".wt.log"
+	name, branch, err := launch(spec, logPath)
 	if err == nil {
-		notify("Agent "+name+" has the prompt", branch+" in "+spec.RepoName, "done")
+		if spec.Prompt != "" {
+			notify("Agent "+name+" has the prompt", branch+" in "+spec.RepoName, "done")
+		}
 		_ = os.Remove(specPath)
 		return nil
 	}
@@ -66,6 +70,11 @@ func runJob(specPath string) error {
 	var se *stepError
 	if errors.As(err, &se) {
 		failed = se.step
+	}
+	if spec.Prompt == "" {
+		notify("Worktree failed: "+failed, err.Error(), "request")
+		_ = os.Remove(specPath)
+		return err
 	}
 	// The draft status comes first: Herdr cuts the body after 240 characters, and
 	// the full error stays in the job log.
@@ -88,62 +97,174 @@ func notify(title, body, sound string) {
 	}
 }
 
-// launch runs all the steps. It returns the agent and branch names.
-func launch(spec JobSpec) (string, string, error) {
-	if spec.Branch == "" {
-		return launchAutoNamed(spec)
-	}
+// launch names the branch, opens its worktree and starts the agent. It returns
+// the agent and branch names.
+func launch(spec JobSpec, logPath string) (string, string, error) {
 	branch := spec.Branch
+	if branch == "" {
+		branch = uniqueName(generateBranch(loadConfig(), spec.Prompt),
+			func(name string) bool { return branchTaken(spec.Repo, name) })
+	}
 	var wt openedWorktree
-	if branchHeld(spec.Repo, branch) {
+	if path, ok := worktreePath(spec.Repo, branch); ok {
 		// Git permits one worktree per branch, so use the worktree that has it.
-		if _, err := herdrCall(2*time.Minute, &wt, "worktree", "open", "--cwd", spec.Repo, "--branch", branch, "--no-focus"); err != nil {
+		if err := openWorktree(spec.Repo, path, "", spec.Focus, &wt); err != nil {
 			return "", branch, step("open worktree", err)
 		}
-	} else {
-		if err := createWorktree(spec, branch, &wt); err != nil {
-			return "", branch, err
-		}
-		if err := setupLerd(spec, wt); err != nil {
-			return "", branch, err
-		}
+	} else if err := switchWorktree(spec, branch, logPath, &wt); err != nil {
+		return "", branch, err
+	}
+	if spec.Prompt == "" {
+		return "", branch, nil
 	}
 	name, err := runAgent(wt, branchSlug(branch), spec)
 	return name, branch, err
 }
 
-// launchAutoNamed uses Herdr's random branch and folder, so the agent does not
-// wait for the naming command. The branch gets its name in the background, and
-// the folder keeps the random name.
-//
-// lerd derives the domain and the database name from the branch, so a lerd
-// project gets the name before its setup. The setup takes much longer anyway.
-func launchAutoNamed(spec JobSpec) (string, string, error) {
-	var wt openedWorktree
-	if err := createWorktree(spec, "", &wt); err != nil {
-		return "", "", err
+// openWorktree opens a checkout of repo. Herdr finds the worktree only from the
+// main checkout: without --cwd it fails with worktree_not_found.
+func openWorktree(repo, path, label string, focus bool, wt *openedWorktree) error {
+	args := []string{"worktree", "open", "--cwd", repo, "--path", path}
+	if label != "" {
+		args = append(args, "--label", label)
 	}
-	random := wt.Worktree.Branch
-	cfg := loadConfig()
-	renamed := make(chan string, 1)
-	go func() { renamed <- renameBranch(spec, wt, random, generateBranch(cfg, spec.Prompt)) }()
-
-	if isLerd(spec, wt) {
-		branch := <-renamed
-		if err := setupLerd(spec, wt); err != nil {
-			return "", branch, err
-		}
-		name, err := runAgent(wt, branchSlug(branch), spec)
-		return name, branch, err
+	if focus {
+		args = append(args, "--focus")
+	} else {
+		args = append(args, "--no-focus")
 	}
-
-	name, err := runAgent(wt, branchSlug(random), spec)
-	branch := <-renamed
-	if err == nil && branch != random {
-		name = renameAgent(name, branchSlug(branch))
-	}
-	return name, branch, err
+	_, err := herdrCall(2*time.Minute, wt, args...)
+	return err
 }
+
+// switchWorktree runs `wt switch`, which also runs the repository's hooks. Its
+// output goes to logPath. As soon as the checkout exists, its workspace opens and
+// the root pane shows the log until wt exits.
+func switchWorktree(spec JobSpec, branch, logPath string, wt *openedWorktree) error {
+	exists := refExists(spec.Repo, "refs/heads/"+branch) || remoteHas(spec.Repo, branch)
+	args := []string{"-C", spec.Repo, "switch"}
+	if exists {
+		args = append(args, branch)
+	} else {
+		args = append(args, "--create", branch, "--base", spec.Base)
+	}
+	args = append(args, "--no-cd", "--yes", "--format=json")
+
+	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+	if err != nil {
+		return step("wt switch", err)
+	}
+	defer logFile.Close()
+	var stdout bytes.Buffer
+	cmd := exec.Command(wtBin(), args...)
+	cmd.Dir = spec.Repo
+	cmd.Stdout, cmd.Stderr = &stdout, logFile
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if err := cmd.Start(); err != nil {
+		return step("wt switch", err)
+	}
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
+	kill := func() { _ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); <-done }
+
+	opened := false
+	open := func(path string) error {
+		if err := openWorktree(spec.Repo, path, branchSlug(branch), spec.Focus, wt); err != nil {
+			return err
+		}
+		opened = true
+		if !exists {
+			recordBase(spec.Repo, branch, spec.Base)
+		}
+		return nil
+	}
+	deadline := time.Now().Add(wtSwitchTimeout)
+	var waitErr error
+wait:
+	for {
+		if !opened {
+			if path, ok := worktreePath(spec.Repo, branch); ok {
+				if err := open(path); err != nil {
+					// A kill would stop the hooks halfway, for example in a
+					// database clone. Let wt finish the checkout.
+					select {
+					case <-done:
+					case <-time.After(time.Until(deadline)):
+						kill()
+					}
+					return step("open worktree", err)
+				}
+				showLog(wt.RootPane.PaneID, cmd.Process.Pid, logPath)
+			}
+		}
+		select {
+		case waitErr = <-done:
+			break wait
+		case <-time.After(wtPollInterval):
+		}
+		if time.Now().After(deadline) {
+			kill()
+			return step("wt switch", fmt.Errorf("timeout after %s", wtSwitchTimeout))
+		}
+	}
+	if !opened {
+		// wt was faster than the poll. A failed hook can leave the checkout.
+		path, ok := worktreePath(spec.Repo, branch)
+		if waitErr == nil {
+			var result struct {
+				Path string `json:"path"`
+			}
+			if json.Unmarshal(stdout.Bytes(), &result) == nil && result.Path != "" {
+				path, ok = result.Path, true
+			}
+		}
+		if ok {
+			if err := open(path); err != nil && waitErr == nil {
+				return step("open worktree", err)
+			}
+			if opened {
+				showLog(wt.RootPane.PaneID, cmd.Process.Pid, logPath)
+			}
+		} else if waitErr == nil {
+			return step("wt switch", fmt.Errorf("no path in %q", stdout.String()))
+		}
+	}
+	if waitErr != nil {
+		return step("wt switch", fmt.Errorf("%w\n%s", waitErr, lastLines(logPath, failureLines)))
+	}
+	return nil
+}
+
+// showLog follows the log in the pane until the process exits.
+func showLog(pane string, pid int, logPath string) {
+	command := fmt.Sprintf("clear; tail -n +1 -F --pid=%d %s", pid, shellQuote(logPath))
+	if _, err := herdrCall(defaultTimeout, nil, "pane", "run", pane, command); err != nil {
+		fmt.Fprintln(os.Stderr, "show log:", err)
+	}
+}
+
+func shellQuote(s string) string { return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'" }
+
+func lastLines(path string, n int) string {
+	raw, _ := os.ReadFile(path)
+	lines := strings.Split(strings.TrimRight(string(raw), "\n"), "\n")
+	return strings.Join(lines[max(len(lines)-n, 0):], "\n")
+}
+
+// recordBase keeps the base for the PR and for the merge view.
+func recordBase(repo, branch, base string) {
+	if _, stderr, err := runCommand(defaultTimeout, repo, "", "git", "config",
+		"branch."+branch+".gh-merge-base", base); err != nil {
+		fmt.Fprintf(os.Stderr, "record base: %s: %v\n", strings.TrimSpace(stderr), err)
+	}
+}
+
+func refExists(repo, ref string) bool {
+	_, ok := output(defaultTimeout, repo, "git", "show-ref", "--verify", "--quiet", ref)
+	return ok
+}
+
+func remoteHas(repo, branch string) bool { return loadBranches(repo).remote[branch] }
 
 // runAgent starts the agent and gives it the prompt.
 func runAgent(wt openedWorktree, slug string, spec JobSpec) (string, error) {
@@ -174,104 +295,6 @@ type openedWorktree struct {
 		Branch string `json:"branch"`
 		Path   string `json:"path"`
 	} `json:"worktree"`
-}
-
-// createWorktree makes a checkout. An empty branch makes Herdr pick a random
-// branch and folder. Only a new branch records the base: Herdr ignores the base
-// for an existing branch, which keeps its own.
-func createWorktree(spec JobSpec, branch string, wt *openedWorktree) error {
-	args := []string{"worktree", "create", "--cwd", spec.Repo}
-	existing := false
-	if branch != "" {
-		_, existing = output(defaultTimeout, spec.Repo, "git", "show-ref", "--verify", "--quiet", "refs/heads/"+branch)
-		args = append(args, "--branch", branch, "--label", branchSlug(branch))
-	}
-	args = append(args, "--base", spec.Base, "--no-focus")
-	if _, err := herdrCall(2*time.Minute, wt, args...); err != nil {
-		return step("create worktree", err)
-	}
-	if existing {
-		return nil
-	}
-	if branch == "" {
-		branch = wt.Worktree.Branch
-	}
-	if _, stderr, err := runCommand(defaultTimeout, spec.Repo, "", "git", "config",
-		"branch."+branch+".gh-merge-base", spec.Base); err != nil {
-		return step("record base branch", fmt.Errorf("%s: %w", strings.TrimSpace(stderr), err))
-	}
-	return nil
-}
-
-func isLerd(spec JobSpec, wt openedWorktree) bool {
-	return isLerdProject(wt.Worktree.Path) || isLerdProject(spec.Repo)
-}
-
-func setupLerd(spec JobSpec, wt openedWorktree) error {
-	if !isLerd(spec, wt) {
-		return nil
-	}
-	return step("lerd setup", lerdSetup(wt.RootPane.PaneID))
-}
-
-// renameBranch gives the branch its final name and returns the name that the
-// branch has at the end. The agent can already work in the checkout, so a lock
-// can stop the rename for a short time. A failure never stops the job.
-func renameBranch(spec JobSpec, wt openedWorktree, from, to string) string {
-	to = uniqueName(to, func(name string) bool { return branchTaken(spec, name) })
-	path := wt.Worktree.Path
-	for attempt := 1; ; attempt++ {
-		if reason := renameBlocked(path, from); reason != "" {
-			fmt.Fprintf(os.Stderr, "branch %s keeps its name: %s\n", from, reason)
-			return from
-		}
-		_, stderr, err := runCommand(defaultTimeout, path, "", "git", "branch", "-m", from, to)
-		if err == nil {
-			break
-		}
-		if attempt == renameAttempts {
-			fmt.Fprintf(os.Stderr, "branch %s keeps its name: %s\n", from, strings.TrimSpace(stderr))
-			return from
-		}
-		time.Sleep(renameRetryDelay)
-	}
-	if _, err := herdrCall(defaultTimeout, nil, "workspace", "rename", wt.Workspace.WorkspaceID, branchSlug(to)); err != nil {
-		fmt.Fprintln(os.Stderr, "workspace rename:", err)
-	}
-	return to
-}
-
-// renameBlocked tells why the branch must keep its name. The agent can move to
-// another branch, or push this one, before the name arrives.
-func renameBlocked(path, branch string) string {
-	current, _ := output(defaultTimeout, path, "git", "branch", "--show-current")
-	if strings.TrimSpace(current) != branch {
-		return "the checkout moved to another branch"
-	}
-	if _, ok := output(defaultTimeout, path, "git", "config", "--get", "branch."+branch+".remote"); ok {
-		return "the branch has an upstream"
-	}
-	if _, ok := output(defaultTimeout, path, "git", "show-ref", "--verify", "--quiet", "refs/remotes/origin/"+branch); ok {
-		return "the branch is on origin"
-	}
-	return ""
-}
-
-// renameAgent returns the name that the agent has at the end.
-func renameAgent(name, slug string) string {
-	live := liveAgentNames()
-	target := agentName(slug, func(candidate string) bool { return live[candidate] })
-	if _, err := herdrCall(defaultTimeout, nil, "agent", "rename", name, target); err != nil {
-		fmt.Fprintln(os.Stderr, "agent rename:", err)
-		return name
-	}
-	return target
-}
-
-// branchHeld tells if a worktree has the branch checked out.
-func branchHeld(repo, branch string) bool {
-	out, ok := output(defaultTimeout, repo, "git", "worktree", "list", "--porcelain")
-	return ok && slices.Contains(strings.Split(out, "\n"), "branch refs/heads/"+branch)
 }
 
 // startAgentIn uses the root pane. A pane that was already open can stay busy,
@@ -336,69 +359,9 @@ func generateBranch(cfg Config, prompt string) string {
 	return fallbackBranch(prompt, time.Now())
 }
 
-// branchTaken checks the local and origin branches.
-func branchTaken(spec JobSpec, name string) bool {
-	for _, ref := range []string{"refs/heads/" + name, "refs/remotes/origin/" + name} {
-		if _, ok := output(defaultTimeout, spec.Repo, "git", "show-ref", "--verify", "--quiet", ref); ok {
-			return true
-		}
-	}
-	return false
-}
-
-func isLerdProject(dir string) bool {
-	_, err := os.Stat(filepath.Join(dir, ".lerd.yaml"))
-	return err == nil
-}
-
-// lerdCommand runs setup in the pane's shell, and prints a line with the exit
-// status. The typed command does not match the regex, because it has no digits
-// at the place of the status. `sh -c` keeps it independent of the user's shell.
-func lerdCommand(marker string) (command, regex string) {
-	command = fmt.Sprintf(`sh -c 'lerd worktree setup; printf "\n%s-%%s-END\n" "$?"'`, marker)
-	return command, marker + "-[0-9]+-END"
-}
-
-func parseMarker(line, marker string) (int, bool) {
-	match := regexp.MustCompile(marker + `-([0-9]+)-END`).FindStringSubmatch(line)
-	if match == nil {
-		return 0, false
-	}
-	code, err := strconv.Atoi(match[1])
-	return code, err == nil
-}
-
-// lerdSetup retries while lerd's watcher has not seen the new worktree (exit 3).
-func lerdSetup(pane string) error {
-	deadline := time.Now().Add(lerdWatcherWait)
-	for attempt := 1; ; attempt++ {
-		marker := fmt.Sprintf("WTDONE-%d-%d", os.Getpid(), attempt)
-		command, regex := lerdCommand(marker)
-		if _, err := herdrCall(defaultTimeout, nil, "pane", "run", pane, command); err != nil {
-			return err
-		}
-		var matched struct {
-			MatchedLine string `json:"matched_line"`
-		}
-		if _, err := herdrCall(lerdSetupTimeout+time.Minute, &matched, "pane", "wait-output", pane,
-			"--regex", regex, "--source", "recent-unwrapped", "--lines", "2000",
-			"--timeout", strconv.FormatInt(lerdSetupTimeout.Milliseconds(), 10)); err != nil {
-			return err
-		}
-		code, ok := parseMarker(matched.MatchedLine, marker)
-		if !ok {
-			return fmt.Errorf("no exit status in %q", matched.MatchedLine)
-		}
-		switch {
-		case code == 0:
-			return nil
-		case code == lerdNotManaged && time.Now().Before(deadline):
-			fmt.Fprintf(os.Stderr, "lerd worktree setup: attempt %d: not managed yet\n", attempt)
-			time.Sleep(3 * time.Second)
-		default:
-			return fmt.Errorf("lerd worktree setup exited with status %d", code)
-		}
-	}
+// branchTaken checks the local and remote branches.
+func branchTaken(repo, name string) bool {
+	return refExists(repo, "refs/heads/"+name) || remoteHas(repo, name)
 }
 
 func liveAgentNames() map[string]bool {

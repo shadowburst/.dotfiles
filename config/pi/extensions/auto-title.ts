@@ -1,11 +1,11 @@
-import type { AssistantMessage } from "@earendil-works/pi-ai";
+import { spawn } from "node:child_process";
+import { tmpdir } from "node:os";
 import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
 
-const TITLE_PROVIDER = "openai-codex";
-const TITLE_MODEL = "gpt-6-luna";
+const TITLE_TIMEOUT_MS = 60_000;
 const TITLE_MAX_WORDS = 4;
 const TITLE_MAX_CHARS = 28;
 const PROMPT_MAX = 2000;
@@ -43,15 +43,25 @@ function cleanTitle(text: string): string | undefined {
   return words.join(" ") || undefined;
 }
 
-function titleFromResponse(response: AssistantMessage): string | undefined {
-  if (response.stopReason === "error") return;
-  const text = response.content
-    .filter(
-      (block): block is { type: "text"; text: string } => block.type === "text",
-    )
-    .map((block) => block.text)
-    .join("\n");
-  return cleanTitle(text);
+// Runs the flake's `textgen` (the textGeneration option): the prompt goes in
+// on stdin and the text comes out on stdout.
+function textgen(prompt: string): Promise<string | undefined> {
+  return new Promise((resolve) => {
+    const child = spawn("textgen", [], {
+      cwd: tmpdir(),
+      stdio: ["pipe", "pipe", "ignore"],
+      signal: AbortSignal.timeout(TITLE_TIMEOUT_MS),
+    });
+    let out = "";
+    child.stdout.setEncoding("utf8");
+    child.stdout.on("data", (chunk: string) => {
+      out += chunk;
+    });
+    child.on("error", () => resolve(undefined));
+    child.on("close", (code) => resolve(code === 0 ? out : undefined));
+    child.stdin.on("error", () => {});
+    child.stdin.end(prompt);
+  });
 }
 
 export default function (pi: ExtensionAPI) {
@@ -88,40 +98,17 @@ export default function (pi: ExtensionAPI) {
     const prompt = firstPrompt.slice(0, PROMPT_MAX);
 
     try {
-      const model = ctx.modelRegistry.find(TITLE_PROVIDER, TITLE_MODEL);
-      if (!model || !ctx.modelRegistry.hasConfiguredAuth(model)) return;
-
-      const response = await ctx.modelRegistry.complete(
-        model,
-        {
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: [
-                    "Reply with a session title only.",
-                    `Maximum ${TITLE_MAX_WORDS} words and ${TITLE_MAX_CHARS} characters.`,
-                    "No quotes.",
-                    "",
-                    "Prompt:",
-                    prompt,
-                  ].join("\n"),
-                },
-              ],
-              timestamp: Date.now(),
-            },
-          ],
-        },
-        {
-          reasoningEffort: "low",
-          maxTokens: 64,
-          cacheRetention: "none",
-        },
+      const text = await textgen(
+        [
+          "Reply with a session title only.",
+          `Maximum ${TITLE_MAX_WORDS} words and ${TITLE_MAX_CHARS} characters.`,
+          "No quotes.",
+          "",
+          "Prompt:",
+          prompt,
+        ].join("\n"),
       );
-
-      const title = titleFromResponse(response);
+      const title = text === undefined ? undefined : cleanTitle(text);
       if (!title || pi.getSessionName()) return;
       pi.setSessionName(title);
       ctx.ui.setTitle(title);

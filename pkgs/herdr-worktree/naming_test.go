@@ -122,19 +122,3 @@ func TestAgentArgs(t *testing.T) {
 		}
 	}
 }
-
-func TestLerdMarker(t *testing.T) {
-	command, regex := lerdCommand("M-1")
-	if strings.Contains(command, "M-1-0-END") || !strings.Contains(command, "lerd worktree setup") {
-		t.Errorf("command: %q", command)
-	}
-	if regex != "M-1-[0-9]+-END" {
-		t.Errorf("regex: %q", regex)
-	}
-	if code, ok := parseMarker("xx M-1-3-END", "M-1"); !ok || code != 3 {
-		t.Errorf("parse: %d %v", code, ok)
-	}
-	if _, ok := parseMarker(command, "M-1"); ok {
-		t.Error("the typed command must not match")
-	}
-}
