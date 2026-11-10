@@ -37,7 +37,7 @@ Use this skill from any harness inside Herdr. The parent keeps task ownership, r
 
 4. **Resolve the result.** Treat delegate output as evidence. Review changes and run the relevant checks before integration. The parent integrates commits and resolves conflicts. For corrections, use a sequential follow-up in the saved conversation; preserve each earlier result. Report failed or blocked work and obtain missing user decisions. Cancel only the selected task when needed; cancellation preserves results and code.
 
-5. **Clean up before finishing.** After integration, run `cleanup` for each task to remove session-created panes and worktrees. Cleanup requires the delegate's HEAD to be an ancestor of the parent's current HEAD; use a merge or fast-forward, not only a cherry-pick. Branches and temporary task records remain. Never force removal of dirty worktrees or discard unintegrated commits. Report any resources that remain, their paths, and why cleanup was refused. Temporary task files can disappear during system cleanup; missing records do not establish success and must not trigger a restart.
+5. **Close the pane.** After accepting the result, completing follow-ups, and integrating changes, immediately run `cleanup TASK_ID`. Verify `state: "cleaned"` and `pane_closed: true`. Cleanup requires the delegate's HEAD to be an ancestor of the parent's current HEAD; use a merge or fast-forward, not only a cherry-pick. Branches and temporary task records remain. Never force removal of dirty worktrees or discard unintegrated commits. Report any resources that remain, their paths, and why cleanup was refused. Temporary task files can disappear during system cleanup; missing records do not establish success and must not trigger a restart.
 
 ## Limits
 
