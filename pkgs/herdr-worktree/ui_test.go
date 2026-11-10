@@ -326,6 +326,36 @@ func TestMergeFailureKeepsOutput(t *testing.T) {
 	}
 }
 
+func TestActionConfirmationKeys(t *testing.T) {
+	for _, tt := range []struct {
+		name, action string
+		cursor       int
+		want         []string
+	}{
+		{"merge", "m", 1, []string{"/wt/a", "-C", "/wt/a", "merge", "main", "--yes"}},
+		{"remove worktree", "x", 3, []string{"/r", "-C", "/r", "remove", "feat/c", "--yes", "--foreground"}},
+		{"remove both", "X", 3, []string{"/r", "-C", "/r", "remove", "feat/c", "--yes", "--foreground", "--force-delete"}},
+		{"remove unmerged branch", "x", 4, []string{"/r", "-C", "/r", "remove", "feat/b", "--yes", "--foreground", "--force-delete"}},
+		{"remove merged branch", "x", 5, []string{"/r", "-C", "/r", "remove", "done", "--yes", "--foreground"}},
+	} {
+		for _, key := range []string{"y", "enter"} {
+			t.Run(tt.name+"/"+key, func(t *testing.T) {
+				rec := &recorder{}
+				m := testUI(t, rec)
+				m.cursor = tt.cursor
+				m = send(m, keyMsg(tt.action))
+				if len(rec.runs) != 0 || !strings.Contains(m.render(), "y/⏎") {
+					t.Fatalf("runs = %v, view:\n%s", rec.runs, m.render())
+				}
+				m = send(m, keyMsg(key))
+				if !reflect.DeepEqual(rec.runs, [][]string{tt.want}) || len(rec.finished) != 1 {
+					t.Errorf("runs = %v, finished = %v", rec.runs, rec.finished)
+				}
+			})
+		}
+	}
+}
+
 func TestRefusals(t *testing.T) {
 	for _, tt := range []struct {
 		name, key, want string
@@ -333,7 +363,10 @@ func TestRefusals(t *testing.T) {
 	}{
 		{"merge main", "m", "main checkout", 0},
 		{"merge busy", "m", "agent is working", 2},
-		{"remove dirty", "x", "Uncommitted changes. Commit", 1},
+		{"remove main", "x", "main checkout", 0},
+		{"remove busy", "x", "agent is working", 2},
+		{"remove both main", "X", "main checkout", 0},
+		{"remove both busy", "X", "agent is working", 2},
 		{"merge branch", "m", "no worktree", 4},
 	} {
 		rec := &recorder{}
@@ -342,6 +375,68 @@ func TestRefusals(t *testing.T) {
 		m = send(m, keyMsg(tt.key), keyMsg("y"), keyMsg("enter"))
 		if !strings.Contains(m.render(), tt.want) || len(rec.runs) != 0 {
 			t.Errorf("%s: runs = %v, view:\n%s", tt.name, rec.runs, m.render())
+		}
+	}
+}
+
+func TestRemoveDirtyWorktreeNeedsConfirmation(t *testing.T) {
+	for _, removeKey := range []string{"x", "X"} {
+		for _, key := range []string{"y", "enter", "n", "esc"} {
+			t.Run(removeKey+"/"+key, func(t *testing.T) {
+				rec := &recorder{}
+				m := testUI(t, rec)
+				m.focusedPath = ""
+				m.cursor = 1 // feat/a has uncommitted changes
+				m = send(m, keyMsg(removeKey))
+				if m.view != viewRemove || !strings.Contains(m.render(), "Uncommitted changes will be lost.") || len(rec.runs) != 0 {
+					t.Fatalf("runs = %v, view:\n%s", rec.runs, m.render())
+				}
+				if warned := strings.Contains(m.render(), "Unmerged commits will be lost."); warned != (removeKey == "X") {
+					t.Errorf("branch warning = %v", warned)
+				}
+				m = send(m, keyMsg(key))
+				if key == "y" || key == "enter" {
+					want := [][]string{{"/r", "-C", "/r", "remove", "feat/a", "--yes", "--foreground", "--force"}}
+					if removeKey == "X" {
+						want[0] = append(want[0], "--force-delete")
+					}
+					if !reflect.DeepEqual(rec.runs, want) || !reflect.DeepEqual(rec.finished, []string{"feat/a"}) {
+						t.Errorf("runs = %v, finished = %v", rec.runs, rec.finished)
+					}
+				} else if len(rec.runs) != 0 || len(rec.finished) != 0 {
+					t.Errorf("cancelled removal: runs = %v, finished = %v", rec.runs, rec.finished)
+				}
+				if m.view != viewList {
+					t.Errorf("view = %v", m.view)
+				}
+				if key == "n" || key == "esc" {
+					m = send(m, keyMsg("x"))
+					if strings.Contains(m.render(), "Unmerged commits will be lost.") {
+						t.Error("cancelled branch deletion is still selected")
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestRemoveWorktreeAndBranch(t *testing.T) {
+	for _, merged := range []bool{false, true} {
+		rec := &recorder{}
+		m := testUI(t, rec)
+		m.cursor = 3 // feat/c has no uncommitted changes
+		m.rows[3].Merged = merged
+		m = send(m, keyMsg("X"))
+		if !strings.Contains(m.render(), "Remove worktree and branch.") || len(rec.runs) != 0 {
+			t.Fatalf("runs = %v, view:\n%s", rec.runs, m.render())
+		}
+		if warned := strings.Contains(m.render(), "Unmerged commits will be lost."); warned == merged {
+			t.Errorf("merged = %v, warning = %v", merged, warned)
+		}
+		m = send(m, keyMsg("y"))
+		want := [][]string{{"/r", "-C", "/r", "remove", "feat/c", "--yes", "--foreground", "--force-delete"}}
+		if !reflect.DeepEqual(rec.runs, want) || m.view != viewList || !reflect.DeepEqual(rec.finished, []string{"feat/c"}) {
+			t.Errorf("runs = %v, view = %v, finished = %v", rec.runs, m.view, rec.finished)
 		}
 	}
 }
@@ -425,7 +520,7 @@ func TestViewFitsPopup(t *testing.T) {
 	for _, size := range [][2]int{{120, 30}, {70, 16}, {160, 40}} {
 		for name, ks := range map[string][]string{
 			"list": nil, "filter": {"/", "f"}, "new": {"n"}, "opencode": {"n", "tab", "l", "l", "l"},
-			"merge": {"m"}, "remove": {"x"}, "message": {"n", "enter"},
+			"merge": {"m"}, "remove": {"x"}, "remove both": {"X"}, "message": {"n", "enter"},
 		} {
 			m := testUI(t, &recorder{})
 			m.width, m.height = size[0], size[1]

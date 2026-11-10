@@ -2,7 +2,7 @@ package main
 
 // The popup. The list of worktrees and branches is the home view; n, m and x
 // open the New, Merge and Remove views for the selected row. Every view fills
-// the popup and has one key line at the bottom.
+// the popup and has one key line at the bottom. X also deletes the branch.
 
 import (
 	"bufio"
@@ -88,13 +88,14 @@ type uiModel struct {
 	scroll    int
 	previews  map[string]string
 
-	view   view
-	form   newForm
-	target textinput.Model
-	sel    row
-	out    []string
-	stream *stream
-	failed bool
+	view         view
+	form         newForm
+	target       textinput.Model
+	sel          row
+	out          []string
+	stream       *stream
+	failed       bool
+	removeBranch bool
 
 	message string
 	ok      bool
@@ -366,7 +367,8 @@ func (m uiModel) updateList(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.openNew()
 	case "m":
 		return m.openAction(viewMerge)
-	case "x", "d":
+	case "x", "d", "X":
+		m.removeBranch = k.String() == "X"
 		return m.openAction(viewRemove)
 	case "q":
 		return m, tea.Quit
@@ -445,8 +447,6 @@ func refusal(r row, v view) string {
 		return "This worktree has no branch."
 	case r.Busy:
 		return "An agent is working here."
-	case v == viewRemove && r.Dirty:
-		return "Uncommitted changes. Commit or stash them first."
 	}
 	return ""
 }
@@ -486,14 +486,17 @@ func (m uiModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.backToList()
 	case refusal(m.sel, m.view) != "":
 		return m, nil
-	case m.view == viewRemove && s == "y":
+	case m.view == viewRemove && (s == "y" || s == "enter"):
 		args := []string{"-C", m.repo.Root, "remove", m.sel.Branch, "--yes", "--foreground"}
-		if m.sel.forceDelete() {
+		if m.sel.Dirty {
+			args = append(args, "--force")
+		}
+		if m.removeBranch || m.sel.forceDelete() {
 			args = append(args, "--force-delete")
 		}
 		m.stream = m.ops.run(m.repo.Root, args...)
 		return m, m.stream.next()
-	case m.view == viewMerge && s == "enter":
+	case m.view == viewMerge && (s == "y" || s == "enter"):
 		target := strings.TrimSpace(m.target.Value())
 		if target == "" {
 			m.message, m.ok = "The target is empty.", false
@@ -571,12 +574,12 @@ func (m uiModel) render() string {
 		body = m.form.view()
 		help = st.help("⏎", "launch", "⇥", "next", "esc", "back")
 	case m.view == viewMerge:
-		body, help = m.actionView(w, bodyH), st.help("⏎", "merge", "esc", "back")
+		body, help = m.actionView(w, bodyH), st.help("y/⏎", "merge", "esc", "back")
 	case m.view == viewRemove:
-		body, help = m.actionView(w, bodyH), st.help("y", "remove", "esc", "back")
+		body, help = m.actionView(w, bodyH), st.help("y/⏎", "remove", "esc", "back")
 	default:
 		body = m.listView(w, bodyH)
-		help = st.help("⏎", "open", "n", "new", "m", "merge", "x", "remove", "/", "filter", "p", "preview")
+		help = st.help("⏎", "open", "n", "new", "m", "merge", "x", "remove", "X", "remove both", "/", "filter", "p", "preview")
 		if m.filtering {
 			help = st.help("⏎", "keep", "esc", "clear")
 		}
@@ -745,8 +748,16 @@ func (m uiModel) actionView(w, h int) string {
 		}
 		m.target.SetWidth(max(w-6, 4))
 		lines = append(lines, label+m.target.View())
-	} else if m.sel.forceDelete() {
-		lines = append(lines, st.err.Render("Unmerged commits will be lost."))
+	} else {
+		if m.removeBranch {
+			lines = append(lines, "Remove worktree and branch.")
+		}
+		if m.sel.Dirty {
+			lines = append(lines, st.err.Render("Uncommitted changes will be lost."))
+		}
+		if m.sel.forceDelete() || (m.removeBranch && !m.sel.Merged) {
+			lines = append(lines, st.err.Render("Unmerged commits will be lost."))
+		}
 	}
 	if len(m.out) > 0 {
 		lines = append(lines, "")
