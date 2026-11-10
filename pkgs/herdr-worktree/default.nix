@@ -26,7 +26,7 @@ pkgs.writeTextDir "herdr-plugin.toml" ''
   name = "Worktree"
   version = "0.1.0"
   min_herdr_version = "0.9.5"
-  description = "Opens, creates, merges and removes worktrunk worktrees from one popup, starts an agent from a prompt, shows each Space's GitHub PR as the $pr token, and removes merged worktrees"
+  description = "Opens, creates, merges and removes worktrunk worktrees from one popup, starts an agent from a prompt, and shows each Space's GitHub PR as the $pr token"
   platforms = ["linux"]
 
   # Long-running poller; it exits right away if one is already running.

@@ -1,30 +1,48 @@
 package main
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
-func TestMergedAndDone(t *testing.T) {
-	merged := pullRequest{State: "MERGED", HeadRefOid: "abc"}
-	tests := []struct {
-		name      string
-		pr        pullRequest
-		linked    bool
-		head      string
-		porcelain string
-		statusOK  bool
-		want      bool
-	}{
-		{"merged and clean", merged, true, "abc\n", "", true, true},
-		{"main checkout", merged, false, "abc\n", "", true, false},
-		{"open PR", pullRequest{State: "OPEN", HeadRefOid: "abc"}, true, "abc\n", "", true, false},
-		{"commits after merge", merged, true, "def\n", "", true, false},
-		{"dirty", merged, true, "abc\n", " M a.go\n", true, false},
-		{"status failed", merged, true, "abc\n", "", false, false},
-		{"head failed", merged, true, "", "", true, false},
-	}
-	for _, tt := range tests {
-		if got := mergedAndDone(tt.pr, tt.linked, tt.head, tt.porcelain, tt.statusOK); got != tt.want {
-			t.Errorf("%s: got %v", tt.name, got)
+func TestRefreshKeepsMergedWorktree(t *testing.T) {
+	f := useFakes(t)
+	repo := gitRepo(t)
+	checkout := filepath.Join(filepath.Dir(repo), "holder")
+	runGit(t, repo, "remote", "add", "origin", "https://github.com/example/repo.git")
+	t.Setenv("FAKE_CHECKOUT_PATH", checkout)
+	t.Setenv("FAKE_REPO_ROOT", repo)
+	t.Setenv("FAKE_PR_HEAD", runGit(t, checkout, "rev-parse", "HEAD"))
+	dir := filepath.Dir(os.Getenv("HERDR_BIN_PATH"))
+	for name, body := range map[string]string{
+		"herdr": `#!/bin/sh
+printf '%s\n' "$*" >> "$FAKE_HERDR_LOG"
+if [ "$1 $2" = "workspace list" ]; then
+	printf '{"result":{"workspaces":[{"workspace_id":"w1","agent_status":"idle","worktree":{"checkout_path":"%s","repo_root":"%s","is_linked_worktree":true}}]}}\n' "$FAKE_CHECKOUT_PATH" "$FAKE_REPO_ROOT"
+else
+	echo '{"result":{}}'
+fi
+`,
+		"gh": `#!/bin/sh
+printf '{"number":7,"state":"MERGED","headRefOid":"%s"}\n' "$FAKE_PR_HEAD"
+`,
+	} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o700); err != nil {
+			t.Fatal(err)
 		}
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	refresh("")
+
+	wantCall(t, f.herdr(), "workspace report-metadata w1 --source "+source+" --token pr= #7")
+	wantNoCall(t, f.herdr(), "workspace close")
+	if got := f.wt(); got != "" {
+		t.Errorf("unexpected wt call: %s", got)
+	}
+	if _, err := os.Stat(checkout); err != nil {
+		t.Errorf("worktree was removed: %v", err)
 	}
 }
 

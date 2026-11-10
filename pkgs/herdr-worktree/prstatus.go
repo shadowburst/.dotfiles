@@ -1,10 +1,7 @@
 package main
 
-// Shows each Space's GitHub PR as the `$pr` token, and removes merged worktrees.
+// Shows each Space's GitHub PR as the `$pr` token.
 // Based on https://github.com/Flyingdot/herdr-pr-status (MIT).
-//
-// It removes a merged worktree with `wt remove`, so the repository's remove
-// hooks run, and then closes the Space.
 
 import (
 	"encoding/json"
@@ -20,7 +17,6 @@ import (
 const (
 	source         = "pbaudry.worktree"
 	pollInterval   = 120 * time.Second
-	removeLimit    = 600 * time.Second
 	tokenTTLMillis = 3 * 120 * 1000 // stale values vanish if the poller dies
 )
 
@@ -38,15 +34,12 @@ var reviewIcons = map[string]string{
 }
 
 type worktreeInfo struct {
-	CheckoutPath     string `json:"checkout_path"`
-	IsLinkedWorktree bool   `json:"is_linked_worktree"`
-	RepoRoot         string `json:"repo_root"`
+	CheckoutPath string `json:"checkout_path"`
 }
 
 type workspace struct {
 	WorkspaceID string        `json:"workspace_id"`
 	Focused     bool          `json:"focused"`
-	AgentStatus string        `json:"agent_status"`
 	Worktree    *worktreeInfo `json:"worktree"`
 }
 
@@ -55,7 +48,6 @@ type pullRequest struct {
 	State          string `json:"state"`
 	IsDraft        bool   `json:"isDraft"`
 	ReviewDecision string `json:"reviewDecision"`
-	HeadRefOid     string `json:"headRefOid"`
 }
 
 func workspaces() []workspace {
@@ -73,7 +65,7 @@ func fetchPullRequest(path string) *pullRequest {
 	if !strings.Contains(remote, "github.com") {
 		return nil
 	}
-	out, ok := output(defaultTimeout, path, "gh", "pr", "view", "--json", "number,state,isDraft,reviewDecision,headRefOid")
+	out, ok := output(defaultTimeout, path, "gh", "pr", "view", "--json", "number,state,isDraft,reviewDecision")
 	if !ok {
 		return nil
 	}
@@ -96,46 +88,6 @@ func prLabel(pr pullRequest) string {
 	return label
 }
 
-// mergedAndDone is true when the PR is merged and the worktree has no commits
-// after the merged head. The main checkout is never removed. A worktree with
-// new commits (for example a long-lived branch whose old PR was merged) is kept.
-// A dirty worktree is kept. statusOK is false when
-// `git status` failed, and that also keeps the worktree.
-func mergedAndDone(pr pullRequest, isLinked bool, head, porcelain string, statusOK bool) bool {
-	if pr.State != "MERGED" || !isLinked {
-		return false
-	}
-	return strings.TrimSpace(head) == pr.HeadRefOid && statusOK && porcelain == ""
-}
-
-func checkMerged(pr pullRequest, wt worktreeInfo) bool {
-	if pr.State != "MERGED" || !wt.IsLinkedWorktree {
-		return false
-	}
-	head, _ := output(defaultTimeout, wt.CheckoutPath, "git", "rev-parse", "HEAD")
-	porcelain, ok := output(defaultTimeout, wt.CheckoutPath, "git", "status", "--porcelain")
-	return mergedAndDone(pr, wt.IsLinkedWorktree, head, porcelain, ok)
-}
-
-// removeWorktree keeps a Space where an agent works.
-func removeWorktree(ws workspace) bool {
-	if agentBusy(ws.AgentStatus) {
-		return false
-	}
-	wt := *ws.Worktree
-	branch, _ := output(defaultTimeout, wt.CheckoutPath, "git", "branch", "--show-current")
-	if branch = strings.TrimSpace(branch); branch == "" {
-		return false
-	}
-	if _, stderr, err := runCommand(removeLimit, wt.RepoRoot, "", wtBin(),
-		"-C", wt.RepoRoot, "remove", branch, "--yes", "--foreground"); err != nil {
-		fmt.Fprintf(os.Stderr, "wt remove %s: %v: %s\n", branch, err, strings.TrimSpace(stderr))
-		return false
-	}
-	_, err := herdrCall(defaultTimeout, nil, "workspace", "close", ws.WorkspaceID)
-	return err == nil
-}
-
 func refresh(only string) {
 	for _, ws := range workspaces() {
 		if only != "" && ws.WorkspaceID != only {
@@ -148,9 +100,6 @@ func refresh(only string) {
 		}
 		if wt.CheckoutPath != "" {
 			pr = fetchPullRequest(wt.CheckoutPath)
-		}
-		if pr != nil && checkMerged(*pr, wt) && removeWorktree(ws) {
-			continue
 		}
 		args := []string{"workspace", "report-metadata", ws.WorkspaceID, "--source", source}
 		if pr != nil {
