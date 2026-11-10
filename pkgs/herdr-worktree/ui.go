@@ -96,6 +96,7 @@ type uiModel struct {
 	stream       *stream
 	failed       bool
 	removeBranch bool
+	confirmKey   string
 
 	message string
 	ok      bool
@@ -366,10 +367,10 @@ func (m uiModel) updateList(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case "n":
 		return m.openNew()
 	case "m":
-		return m.openAction(viewMerge)
+		return m.openAction(viewMerge, k.String())
 	case "x", "d", "X":
 		m.removeBranch = k.String() == "X"
-		return m.openAction(viewRemove)
+		return m.openAction(viewRemove, k.String())
 	case "q":
 		return m, tea.Quit
 	case "esc":
@@ -451,12 +452,13 @@ func refusal(r row, v view) string {
 	return ""
 }
 
-func (m uiModel) openAction(v view) (tea.Model, tea.Cmd) {
+func (m uiModel) openAction(v view, confirmKey string) (tea.Model, tea.Cmd) {
 	r, ok := m.current()
 	if !ok {
 		return m, nil
 	}
 	m.view, m.sel, m.out, m.stream, m.failed = v, r, nil, nil, false
+	m.confirmKey = confirmKey
 	if v != viewMerge || refusal(r, v) != "" {
 		return m, nil
 	}
@@ -486,7 +488,7 @@ func (m uiModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.backToList()
 	case refusal(m.sel, m.view) != "":
 		return m, nil
-	case m.view == viewRemove && (s == "y" || s == "enter"):
+	case m.view == viewRemove && (s == m.confirmKey || s == "y" || s == "enter"):
 		args := []string{"-C", m.repo.Root, "remove", m.sel.Branch, "--yes", "--foreground"}
 		if m.sel.Dirty {
 			args = append(args, "--force")
@@ -496,7 +498,7 @@ func (m uiModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.stream = m.ops.run(m.repo.Root, args...)
 		return m, m.stream.next()
-	case m.view == viewMerge && (s == "y" || s == "enter"):
+	case m.view == viewMerge && (s == m.confirmKey || s == "y" || s == "enter"):
 		target := strings.TrimSpace(m.target.Value())
 		if target == "" {
 			m.message, m.ok = "The target is empty.", false
@@ -574,9 +576,9 @@ func (m uiModel) render() string {
 		body = m.form.view()
 		help = st.help("⏎", "launch", "⇥", "next", "esc", "back")
 	case m.view == viewMerge:
-		body, help = m.actionView(w, bodyH), st.help("y/⏎", "merge", "esc", "back")
+		body, help = m.actionView(w, bodyH), st.help(m.confirmKey+"/y/⏎", "merge", "esc", "back")
 	case m.view == viewRemove:
-		body, help = m.actionView(w, bodyH), st.help("y/⏎", "remove", "esc", "back")
+		body, help = m.actionView(w, bodyH), st.help(m.confirmKey+"/y/⏎", "remove", "esc", "back")
 	default:
 		body = m.listView(w, bodyH)
 		help = st.help("⏎", "open", "n", "new", "m", "merge", "x", "remove", "X", "remove both", "/", "filter", "p", "preview")

@@ -334,17 +334,18 @@ func TestActionConfirmationKeys(t *testing.T) {
 	}{
 		{"merge", "m", 1, []string{"/wt/a", "-C", "/wt/a", "merge", "main", "--yes"}},
 		{"remove worktree", "x", 3, []string{"/r", "-C", "/r", "remove", "feat/c", "--yes", "--foreground"}},
+		{"remove alias", "d", 3, []string{"/r", "-C", "/r", "remove", "feat/c", "--yes", "--foreground"}},
 		{"remove both", "X", 3, []string{"/r", "-C", "/r", "remove", "feat/c", "--yes", "--foreground", "--force-delete"}},
 		{"remove unmerged branch", "x", 4, []string{"/r", "-C", "/r", "remove", "feat/b", "--yes", "--foreground", "--force-delete"}},
 		{"remove merged branch", "x", 5, []string{"/r", "-C", "/r", "remove", "done", "--yes", "--foreground"}},
 	} {
-		for _, key := range []string{"y", "enter"} {
+		for _, key := range []string{tt.action, "y", "enter"} {
 			t.Run(tt.name+"/"+key, func(t *testing.T) {
 				rec := &recorder{}
 				m := testUI(t, rec)
 				m.cursor = tt.cursor
 				m = send(m, keyMsg(tt.action))
-				if len(rec.runs) != 0 || !strings.Contains(m.render(), "y/⏎") {
+				if len(rec.runs) != 0 || !strings.Contains(m.render(), tt.action+"/y/⏎") {
 					t.Fatalf("runs = %v, view:\n%s", rec.runs, m.render())
 				}
 				m = send(m, keyMsg(key))
@@ -372,7 +373,7 @@ func TestRefusals(t *testing.T) {
 		rec := &recorder{}
 		m := testUI(t, rec)
 		m.cursor = tt.moves
-		m = send(m, keyMsg(tt.key), keyMsg("y"), keyMsg("enter"))
+		m = send(m, keyMsg(tt.key), keyMsg(tt.key), keyMsg("y"), keyMsg("enter"))
 		if !strings.Contains(m.render(), tt.want) || len(rec.runs) != 0 {
 			t.Errorf("%s: runs = %v, view:\n%s", tt.name, rec.runs, m.render())
 		}
@@ -380,8 +381,8 @@ func TestRefusals(t *testing.T) {
 }
 
 func TestRemoveDirtyWorktreeNeedsConfirmation(t *testing.T) {
-	for _, removeKey := range []string{"x", "X"} {
-		for _, key := range []string{"y", "enter", "n", "esc"} {
+	for _, removeKey := range []string{"x", "d", "X"} {
+		for _, key := range []string{removeKey, "y", "enter", "n", "esc"} {
 			t.Run(removeKey+"/"+key, func(t *testing.T) {
 				rec := &recorder{}
 				m := testUI(t, rec)
@@ -395,7 +396,7 @@ func TestRemoveDirtyWorktreeNeedsConfirmation(t *testing.T) {
 					t.Errorf("branch warning = %v", warned)
 				}
 				m = send(m, keyMsg(key))
-				if key == "y" || key == "enter" {
+				if key == removeKey || key == "y" || key == "enter" {
 					want := [][]string{{"/r", "-C", "/r", "remove", "feat/a", "--yes", "--foreground", "--force"}}
 					if removeKey == "X" {
 						want[0] = append(want[0], "--force-delete")
