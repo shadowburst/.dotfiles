@@ -33,6 +33,7 @@ _: {
           plugins = [ "${pkgs.ponytail.src}" ];
         };
         cli = {
+          plugins = [ "${pkgs.herdr-resume}/opencode" ];
           animations = true;
           session = {
             sidebar = "auto";

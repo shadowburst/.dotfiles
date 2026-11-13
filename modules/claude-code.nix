@@ -25,6 +25,7 @@ _: {
         '';
         plugins = {
           "ponytail" = pkgs.ponytail.src;
+          "herdr-resume" = "${pkgs.herdr-resume}/claude";
         };
       };
     };

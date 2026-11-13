@@ -10,6 +10,10 @@ let
     ponytail = mkPonytail { inherit pkgs; };
     herdr-reviewr = mkHerdrReviewr { inherit pkgs; };
     herdr-worktree = mkHerdrWorktree { inherit pkgs; };
+    herdr-core-resume = import ./herdr-core-resume { inherit pkgs; };
+    herdr-resume = import ./herdr-resume {
+      inherit pkgs;
+    };
     db-export = mkDbExport { inherit pkgs; };
     browse = mkBrowse { inherit pkgs; };
   };

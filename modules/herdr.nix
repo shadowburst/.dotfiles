@@ -329,7 +329,7 @@ in
     {
       home.packages = [
         pkgs.herdr-desktop
-        pkgs.herdr-core # hc, for agents and skills
+        pkgs.herdr-core-resume # hc, including one-shot conversation recovery
       ];
 
       # The whole home is one link to the repo, so layouts and mods are edited live
@@ -341,7 +341,7 @@ in
 
       # Read-only: the settings screen and the zoom keys cannot save changes.
       home.file.${appFile "settings.json"}.source = json.generate "herdr-app-settings.json" {
-        core = lib.getExe' pkgs.herdr-core "hc";
+        core = lib.getExe' pkgs.herdr-core-resume "hc";
         font = config.stylix.fonts.monospace.name;
         font_size = 11;
         ui_font = config.stylix.fonts.sansSerif.name;
@@ -388,6 +388,13 @@ in
         opencode.providers = [
           "openai"
           "claude-agent"
+        ];
+      };
+
+      home.file.${appFile "programs.json"}.source = json.generate "herdr-app-programs.json" {
+        programs.codex.run = [
+          "codex"
+          "--no-daemon"
         ];
       };
 

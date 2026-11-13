@@ -1,0 +1,7 @@
+{
+  "name": "herdr-resume",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": { "./tui": "./tui.js" },
+  "peerDependencies": { "solid-js": "*" }
+}
