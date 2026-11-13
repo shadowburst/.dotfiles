@@ -1,6 +1,6 @@
 _: {
   flake.homeModules.cli =
-    { ... }:
+    { pkgs, ... }:
     {
       programs.opencode = {
         enable = true;
@@ -19,9 +19,7 @@ _: {
               effect = "allow";
             }
           ];
-          plugins = [
-            "@dietrichgebert/ponytail@5.3.3"
-          ];
+          plugins = [ "${pkgs.ponytail.src}" ];
         };
         cli = {
           animations = true;

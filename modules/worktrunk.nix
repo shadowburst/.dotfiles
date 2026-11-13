@@ -24,5 +24,8 @@ _: {
 
       # Skills and activity markers. The version matches the wt binary.
       programs.codex.plugins = [ "${pkgs.worktrunk.src}/plugins/worktrunk" ];
+
+      # Activity markers, and OpenCode worktrees through wt. OpenCode loads it from its plugins directory.
+      xdg.configFile."opencode/plugins/worktrunk.ts".source = "${pkgs.worktrunk.src}/dev/opencode-plugin.ts";
     };
 }
