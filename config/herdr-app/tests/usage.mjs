@@ -43,8 +43,31 @@ const element = () => {
   return el;
 };
 let testProps = {};
+let testMachines = [];
+const ioCalls = [];
+const accountId = "shared-account";
+const files = new Map([
+  ["local:/local/.codex/auth.json", JSON.stringify({ tokens: { account_id: accountId } })],
+  ["server:/remote/.codex/auth.json", JSON.stringify({ tokens: { account_id: accountId } })],
+  ["server:/remote/.claude/.credentials.json", JSON.stringify({ claudeAiOauth: {} })],
+  ["server:/remote/.claude.json", JSON.stringify({ oauthAccount: { accountUuid: "remote-claude", emailAddress: "r@example.invalid" } })],
+]);
 const herdr = module({
-  appHome() {}, exec() {}, home() {}, readTextFile() {}, writeTextFile() {},
+  appHome() { return "/app"; }, home() { return "/local"; }, machines() { return testMachines; }, writeTextFile() {},
+  async readTextFile(path, { on } = {}) {
+    ioCalls.push({ path, on });
+    if (path === "/app/mods/usage/probe.py") return "# probe fixture";
+    return files.get(`${on ?? "local"}:${path}`) ?? null;
+  },
+  async exec(command, args, { on } = {}) {
+    ioCalls.push({ command, args: Array.from(args), on });
+    if (on === "offline") throw new Error("Machine is offline");
+    if (args[2]?.includes('expanduser("~")')) return { code: 0, stdout: "/remote\n" };
+    if (args[2]?.includes("sqlite3")) return { code: 0, stdout: "{}" };
+    if (!on) throw new Error("Local login expired");
+    if (args.at(-1) === "codex") return { code: 0, stdout: JSON.stringify({ account: { account: { email: "remote@example.invalid" } }, limits: {} }) };
+    return { code: 0, stdout: JSON.stringify({ usage: { rate_limits: { five_hour: { utilization: 25 } } } }) };
+  },
   closeOverlay(id) { closed.push(id); }, layout() {}, props: () => testProps, setShared() {}, shared() {}, theme: () => ({}),
   run(command, args) { calls.push({ command, args }); },
 });
@@ -81,4 +104,17 @@ for (const usedPercent of [10, 50, 90]) {
   assert(elements.some((el) => el.child?.[0] === `${100 - usedPercent}%`));
   assert(elements.some((el) => el.bg?.[0] === "tick" && el.left?.[0] === "50%"), "Keep the pacing mark on the progress bar");
 }
-console.log("Usage: key and sidebar use the native toggle; dialog, percentages and pacing marks pass.");
+testMachines = [{ name: null, layout: "ready" }, { name: "server", layout: "ready" }, { name: "offline", layout: "unavailable" }, { name: "sandbox", temporary: true }];
+const discovered = await sources.namespace.discoverAccounts();
+assert.equal(discovered.accounts.length, 2, "Keep distinct remote accounts and deduplicate shared accounts across machines");
+assert.equal(discovered.errors.length, 1, "Report an unreachable machine without losing other accounts");
+assert.match(discovered.errors[0], /offline/);
+const codex = discovered.accounts.find((a) => a.provider === "chatgpt");
+assert.deepEqual(Array.from(codex.sources), ["Codex (local)", "Codex (server)"]);
+assert.equal((await codex.load()).email, "remote@example.invalid", "Try the other machine when a shared account's first login fails");
+const claude = discovered.accounts.find((a) => a.provider === "claude");
+assert.equal((await claude.load()).windows[0].usedPercent, 25);
+assert(ioCalls.some((c) => c.path === "/remote/.codex/auth.json" && c.on === "server"));
+assert(ioCalls.some((c) => c.command === "python3" && c.on === "server" && c.args.includes("# probe fixture")), "Send the local probe source to the remote machine");
+assert(!ioCalls.some((c) => c.on === "sandbox"), "Skip temporary machines");
+console.log("Usage: native toggle, dialog, pacing, remote discovery and probes, shared-account fallback and offline errors pass.");

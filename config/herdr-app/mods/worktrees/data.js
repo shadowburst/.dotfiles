@@ -1,6 +1,6 @@
 // The repository data the popup shows, and the commands it runs. No UI here.
 
-import { agents, appHome, exec, home, panes, readTextFile, spaces } from "herdr";
+import { agents, appHome, exec, panes, readTextFile, spaces } from "herdr";
 
 // The agents in the New form. Each must be on PATH.
 export const AGENT_KINDS = ["claude", "codex", "opencode"];
@@ -8,9 +8,9 @@ export const PREVIEW_MODES = ["graph", "diff", "changes"];
 const PREVIEW_LINES = 500;
 const DEFAULT_NAMING = ["textgen"];
 
-export async function git(cwd, args) {
+export async function git(cwd, args, on) {
   try {
-    const r = await exec("git", args, { cwd });
+    const r = await exec("git", args, { cwd, on });
     return { ok: r.code === 0, out: r.stdout ?? "", err: (r.stderr || r.stdout || "").trim() };
   } catch (e) {
     return { ok: false, out: "", err: String(e) };
@@ -32,16 +32,16 @@ export async function loadConfig() {
   };
 }
 
-async function opencodeApi(cwd, path) {
-  const r = await exec("sh", ["-c", 'exec timeout 20 opencode api get "$1"', "sh", path], { cwd });
+async function opencodeApi(cwd, path, on) {
+  const r = await exec("sh", ["-c", 'exec timeout 20 opencode api get "$1"', "sh", path], { cwd, on });
   if (r.code !== 0) throw new Error(`opencode api get ${path}: ${(r.stderr || r.stdout).trim()}`);
   return JSON.parse(r.stdout).data ?? [];
 }
 
 // OpenCode's chat models, by provider in the order of `providers` (all when empty):
 // [{ id, name, models: [{ id, name, variants }] }]. Its variants are the effort levels.
-export async function loadOpencodeModels(cwd, providers) {
-  const [list, known] = await Promise.all([opencodeApi(cwd, "/api/model"), opencodeApi(cwd, "/api/provider")]);
+export async function loadOpencodeModels(cwd, providers, on) {
+  const [list, known] = await Promise.all([opencodeApi(cwd, "/api/model", on), opencodeApi(cwd, "/api/provider", on)]);
   const names = Object.fromEntries(known.map((p) => [p.id, p.name]));
   const ids = providers.length ? providers : [...new Set(list.map((m) => m.providerID))];
   return ids.map((id) => ({
@@ -54,15 +54,15 @@ export async function loadOpencodeModels(cwd, providers) {
 }
 
 // The repository of a folder: its main checkout, name, and the current branch.
-export async function detectRepo(cwd) {
+export async function detectRepo(cwd, machine = null) {
   if (!cwd) return null;
-  const common = await git(cwd, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
+  const common = await git(cwd, ["rev-parse", "--path-format=absolute", "--git-common-dir"], machine);
   if (!common.ok) return null;
   const root = common.out.trim().replace(/\/\.git\/?$/, "");
-  let base = (await git(cwd, ["branch", "--show-current"])).out.trim();
-  if (!base) base = (await git(cwd, ["rev-parse", "--short", "HEAD"])).out.trim(); // detached
-  const top = (await git(cwd, ["rev-parse", "--show-toplevel"])).out.trim();
-  return { root, name: root.split("/").pop(), base, top };
+  let base = (await git(cwd, ["branch", "--show-current"], machine)).out.trim();
+  if (!base) base = (await git(cwd, ["rev-parse", "--short", "HEAD"], machine)).out.trim(); // detached
+  const top = (await git(cwd, ["rev-parse", "--show-toplevel"], machine)).out.trim();
+  return { root, name: root.split("/").pop(), base, top, machine };
 }
 
 export const rowName = (r) => r.remote ? `${r.remote}/${r.branch}` : r.branch || "(detached)";
@@ -101,16 +101,16 @@ export function parseRows(raw) {
 }
 
 // `full` also asks the forge for the PRs, which needs the network.
-export async function loadRows(repo, full) {
+export async function loadRows(repo, full, on) {
   const args = ["-C", repo, "list", "--format=json", "--branches", "--remotes", ...(full ? ["--full"] : [])];
   try {
-    const r = await exec("wt", args, { cwd: repo });
+    const r = await exec("wt", args, { cwd: repo, on });
     if (r.code !== 0) return { error: `wt list: ${(r.stderr || r.stdout).trim()}` };
     const list = parseRows(r.stdout);
     // wt can omit matching remote tips. Git is the authoritative ref catalog.
     const [refs, remoteList] = await Promise.all([
-      git(repo, ["for-each-ref", "--format=%(refname)%00%(objectname)%00%(upstream:short)%00%(symref)", "refs/heads", "refs/remotes"]),
-      git(repo, ["remote"]),
+      git(repo, ["for-each-ref", "--format=%(refname)%00%(objectname)%00%(upstream:short)%00%(symref)", "refs/heads", "refs/remotes"], on),
+      git(repo, ["remote"], on),
     ]);
     if (!refs.ok) return { error: refs.err };
     if (!remoteList.ok) return { error: remoteList.err };
@@ -140,7 +140,7 @@ const inside = (p, dir) => p === dir || p.startsWith(dir + "/");
 // The spaces and the agents of each checkout. A space or an agent belongs to the
 // checkout with the longest path that holds its folder (worktrees can be inside
 // the main checkout).
-export function attach(rows) {
+export function attach(rows, machine = null) {
   const holder = (cwd) => {
     let best = null;
     for (const r of rows) if (r.path && cwd && inside(cwd, r.path) && (!best || r.path.length > best.path.length)) best = r;
@@ -148,12 +148,13 @@ export function attach(rows) {
   };
   const ps = panes();
   for (const s of spaces()) {
-    if (s.machine) continue;
+    if ((s.machine ?? null) !== machine) continue;
     const tabs = new Set(s.tabs.map((t) => t.id));
     const r = holder(ps.find((p) => tabs.has(p.tab) && p.cwd)?.cwd || s.folder);
     if (r) r.spaces.push(s.id);
   }
-  const cwd = Object.fromEntries(ps.map((p) => [p.pane, p.cwd]));
+  const tabs = new Set(spaces().filter((s) => (s.machine ?? null) === machine).flatMap((s) => s.tabs.map((t) => t.id)));
+  const cwd = Object.fromEntries(ps.filter((p) => tabs.has(p.tab)).map((p) => [p.pane, p.cwd]));
   for (const a of agents()) {
     const r = holder(cwd[a.pane]);
     if (!r) continue;
@@ -164,10 +165,10 @@ export function attach(rows) {
 }
 
 // Choices keep remote prefixes; the bare sets are also used for generated names.
-export async function loadBranches(repo) {
+export async function loadBranches(repo, on) {
   const [r, remoteList] = await Promise.all([
-    git(repo, ["for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes"]),
-    git(repo, ["remote"]),
+    git(repo, ["for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes"], on),
+    git(repo, ["remote"], on),
   ]);
   const remotes = remoteList.out.trim().split("\n").filter(Boolean).sort((a, b) => b.length - a.length);
   const local = new Set(), remote = new Set(), qualified = [];
@@ -181,28 +182,28 @@ export async function loadBranches(repo) {
   return { local, remote, names: [...new Set([...local, ...qualified])].sort() };
 }
 
-export async function lastFetch(repo) {
-  const path = await git(repo, ["rev-parse", "--path-format=absolute", "--git-path", "FETCH_HEAD"]);
+export async function lastFetch(repo, on) {
+  const path = await git(repo, ["rev-parse", "--path-format=absolute", "--git-path", "FETCH_HEAD"], on);
   if (!path.ok) return null;
   try {
-    const r = await exec("stat", ["-c", "%Y", "--", path.out.trim()], { cwd: repo });
+    const r = await exec("python3", ["-I", "-c", "import os, sys; print(os.stat(sys.argv[1]).st_mtime)", path.out.trim()], { cwd: repo, on });
     return r.code === 0 && Number(r.stdout) > 0 ? Number(r.stdout) * 1000 : null;
   } catch { return null; }
 }
 
 // The base that a New launch recorded for the branch.
-export async function mergeBase(repo, branch) {
-  return (await git(repo, ["config", "--get", `branch.${branch}.gh-merge-base`])).out.trim();
+export async function mergeBase(repo, branch, on) {
+  return (await git(repo, ["config", "--get", `branch.${branch}.gh-merge-base`], on)).out.trim();
 }
 
 // Lines with a kind for coloring: "+", "-", "@" or "".
-export async function loadPreview(repo, def, row, mode) {
+export async function loadPreview(repo, def, row, mode, on) {
   const [dir, ref] = !row.branch ? [row.path, "HEAD"] : [repo, rowRef(row)];
   let out = "";
   if (PREVIEW_MODES[mode] === "diff") {
-    if (def && ref !== def) out = (await git(dir, ["diff", "--stat", "--patch", `${def}...${ref}`])).out;
+    if (def && ref !== def) out = (await git(dir, ["diff", "--stat", "--patch", `${def}...${ref}`], on)).out;
   } else if (PREVIEW_MODES[mode] === "changes" && row.path) {
-    out = (await git(row.path, ["status", "--short"])).out + (await git(row.path, ["diff", "HEAD"])).out;
+    out = (await git(row.path, ["status", "--short"], on)).out + (await git(row.path, ["diff", "HEAD"], on)).out;
   }
   if (!out.trim()) return [];
   return out.replace(/\n+$/, "").replaceAll("\t", "    ").split("\n").slice(0, PREVIEW_LINES).map((text) => {
@@ -242,9 +243,10 @@ const namingPrompt = (prompt) =>
 
 // The naming command reads the request on stdin. A slug of the prompt if it
 // fails, gives no usable name or takes too long.
-export async function generateBranch(cfg, prompt) {
+export async function generateBranch(cfg, prompt, on) {
   try {
-    const r = await exec("sh", ["-c", 'p=$1 && shift && printf %s "$p" | timeout 20 "$@"', "sh", namingPrompt(prompt), ...cfg.naming_command]);
+    // A local Nix store path need not exist on the target machine.
+    const r = await exec("sh", ["-c", 'p=$1 && shift && printf %s "$p" | timeout 20 "$@"', "sh", namingPrompt(prompt), ...(on ? DEFAULT_NAMING : cfg.naming_command)], { on });
     const name = r.code === 0 && sanitizeBranch(r.stdout);
     if (name) return name;
   } catch {}
@@ -289,10 +291,9 @@ export function agentArgv(kind, sel = {}) {
 
 // A command that starts the agent with the prompt from a private file. The
 // file keeps the prompt away from shells and from wt's {{ }} templates.
-export async function promptCommand(agent, prompt) {
-  const dir = `${home()}/.cache/herdr-worktrees`;
-  const file = `${dir}/prompt-${Date.now()}.txt`;
-  const r = await exec("sh", ["-c", 'umask 077 && mkdir -p "$1" && printf %s "$3" > "$2"', "sh", dir, file, prompt]);
-  if (r.code !== 0) throw new Error(`Cannot save the prompt: ${r.stderr.trim()}`);
+export async function promptCommand(agent, prompt, on) {
+  const r = await exec("sh", ["-c", 'umask 077 && d="$HOME/.cache/herdr-worktrees" && mkdir -p "$d" && f=$(mktemp "$d/prompt-XXXXXXXX") && printf %s "$1" > "$f" && printf %s "$f"', "sh", prompt], { on });
+  if (r.code !== 0 || !r.stdout.trim()) throw new Error(`Cannot save the prompt: ${r.stderr.trim()}`);
+  const file = r.stdout.trim();
   return ["sh", "-c", 'p=$(cat "$1") && rm -f "$1" && shift && exec "$@" "$p"', "sh", file, ...agent];
 }

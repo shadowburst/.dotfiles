@@ -44,7 +44,6 @@ function callerFolder(space) {
   if (!space && props()?.folder) return props().folder;
   const f = focused();
   const s = spaces().find((s) => space ? s.id === space : s.active);
-  if (s?.machine) return null;
   if ((!space || f?.space === space) && f?.cwd) return f.cwd;
   const tabs = new Set((s?.tabs ?? []).map((t) => t.id));
   return panes().find((p) => tabs.has(p.tab) && p.cwd)?.cwd || s?.folder || null;
@@ -84,8 +83,9 @@ export default class Worktrees extends View {
     this.names = { local: new Set(), remote: new Set(), names: [] };
     this.repo = undefined; // undefined: looking; null: not a repo
     this.workspace = props()?.space ?? focused()?.space ?? spaces().find((s) => s.active)?.id;
+    this.machine = spaces().find((s) => s.id === this.workspace)?.machine ?? null;
     // OpenCode's providers and models: the last list at once, then the service's.
-    this.opencode = store("opencode-models", null);
+    this.opencode = store(this.modelCacheKey(), null);
     this.opencodeError = "";
     this.listScroll = VirtualListScrollHandle.new();
     this.previewScroll = VirtualListScrollHandle.new();
@@ -175,14 +175,16 @@ export default class Worktrees extends View {
     });
     cx.spawn(async (cx) => {
       this.cfg = await loadConfig();
-      this.repo = await detectRepo(props()?.folder ?? callerFolder(this.workspace));
+      this.repo = await detectRepo(props()?.folder ?? callerFolder(this.workspace), this.machine);
       if (!this.repo) return cx.notify();
-      this.names = await loadBranches(this.repo.root);
+      this.names = await loadBranches(this.repo.root, this.machine);
       this.restoreForm();
       this.refreshOpencode(cx);
       await this.reload(cx);
       // PR numbers need the network: after the first draw.
-      const full = await loadRows(this.repo.root, true);
+      const repo = this.repo;
+      const full = await loadRows(repo.root, true, repo.machine);
+      if (this.repo !== repo) return;
       for (const r of full.rows ?? []) {
         const mine = this.rows.find((m) => m.branch === r.branch && !m.remote && !r.remote);
         if (mine) mine.pr = r.pr;
@@ -191,15 +193,19 @@ export default class Worktrees extends View {
     });
   }
 
+  modelCacheKey() {
+    return this.machine ? `opencode-models:${this.machine}` : "opencode-models";
+  }
+
   refreshOpencode(cx) {
     const repo = this.repo;
     cx.spawn(async (cx) => {
       try {
-        const models = await loadOpencodeModels(repo.root, this.cfg.opencodeProviders);
+        const models = await loadOpencodeModels(repo.root, this.cfg.opencodeProviders, repo.machine);
         if (this.repo !== repo) return;
         this.opencode = models;
         this.opencodeError = "";
-        localStorage.setItem("opencode-models", JSON.stringify(this.opencode));
+        localStorage.setItem(this.modelCacheKey(), JSON.stringify(this.opencode));
       } catch (e) {
         if (this.repo !== repo) return;
         this.opencodeError = String(e.message ?? e);
@@ -214,11 +220,11 @@ export default class Worktrees extends View {
     if (this.reloading) return;
     this.reloading = true;
     const repo = this.repo;
-    const [r, names, fetched] = await Promise.all([loadRows(repo.root, false), loadBranches(repo.root), lastFetch(repo.root)]);
+    const [r, names, fetched] = await Promise.all([loadRows(repo.root, false, repo.machine), loadBranches(repo.root, repo.machine), lastFetch(repo.root, repo.machine)]);
     if (this.repo !== repo) { this.reloading = false; return; }
     const before = this.current() && rowKey(this.current());
     if (r.error) this.setMessage(r.error, false);
-    else { this.setRows(r.def, attach(r.rows)); this.names = names; }
+    else { this.setRows(r.def, attach(r.rows, repo.machine)); this.names = names; }
     this.fetched = fetched;
     this.reloading = false;
     this.loadPreview(cx, true, !before || before !== (this.current() && rowKey(this.current())));
@@ -230,7 +236,7 @@ export default class Worktrees extends View {
     this.fetching = true;
     const repo = this.repo;
     cx.spawn(async (cx) => {
-      const r = await git(repo.root, ["fetch", "--all", "--no-prune", "--no-prune-tags"]);
+      const r = await git(repo.root, ["fetch", "--all", "--no-prune", "--no-prune-tags"], repo.machine);
       if (this.repo !== repo) { this.fetching = false; return; }
       this.fetching = false;
       this.setMessage(r.ok ? "Fetched all remotes." : `Fetch failed: ${r.err}`, r.ok);
@@ -297,17 +303,18 @@ export default class Worktrees extends View {
   }
 
   previewKey(r) {
-    return JSON.stringify([this.repo.root, this.preview, rowKey(r), r.sha]);
+    return JSON.stringify([this.repo.machine, this.repo.root, this.preview, rowKey(r), r.sha]);
   }
 
   loadPreview(cx, refresh = false, reveal = false) {
     const r = this.current();
-    this.graph.configure(this.repo.root, this.visible(), r, cx, reveal);
+    this.graph.configure(this.repo.root, this.visible(), r, cx, reveal, this.repo.machine);
     if (this.preview === 0 || !r || (!refresh && this.previewKey(r) in this.previews)) return;
     const key = this.previewKey(r);
+    const repo = this.repo;
     if (!(key in this.previews)) this.previews[key] = null;
     cx.spawn(async (cx) => {
-      this.previews[key] = await loadPreview(this.repo.root, this.def, r, this.preview);
+      this.previews[key] = await loadPreview(repo.root, this.def, r, this.preview, repo.machine);
       cx.notify();
     });
   }
@@ -368,7 +375,7 @@ export default class Worktrees extends View {
   // Shows the space of a checkout, or opens one.
   showCheckout(r) {
     if (r.spaces.length) run("space.select", { id: r.spaces[0] });
-    else run("space.new", { folder: r.path, machine: "" });
+    else run("space.new", { folder: r.path, machine: this.repo.machine ?? "" });
   }
 
   // ---------------------------------------------------------------- new
@@ -380,14 +387,15 @@ export default class Worktrees extends View {
     this.base.set_value(this.names.names.includes(this.repo.base) ? this.repo.base : this.names.names[0] ?? "");
     const d = store("draft", null);
     if (!d?.prompt) return;
-    this.createFromBase = d.repo === this.repo.root && Boolean(d.createFromBase);
+    const sameRepo = d.repo === this.repo.root && (d.machine ?? null) === (this.repo.machine ?? null);
+    this.createFromBase = sameRepo && Boolean(d.createFromBase);
     this.prompt.set_value(d.prompt);
     this.branch.set_value(d.branch ?? "");
     if (AGENT_KINDS.includes(d.agent)) {
       this.agent = d.agent;
       this.selections[d.agent] = this.validSelection(d, d.agent);
     }
-    if (d.base && d.repo === this.repo.root && this.names.names.includes(d.base)) this.base.set_value(d.base);
+    if (d.base && sameRepo && this.names.names.includes(d.base)) this.base.set_value(d.base);
   }
 
   // Model option keys include the provider; saved selections keep the native IDs.
@@ -396,7 +404,7 @@ export default class Worktrees extends View {
       .map((name) => ({ value: name, label: name.replace(/^refs\/remotes\//, "") }));
     if (field === "workspace") {
       const marks = shared("spaces-pr.marks") ?? {};
-      return spaces().filter((s) => !s.machine).map((s) => ({ value: s.id, label: s.name, mark: marks[s.id] }));
+      return spaces().map((s) => ({ value: s.id, label: s.machine ? `${s.name} · ${s.machine}` : s.name, mark: marks[s.id] }));
     }
     if (field === "agent") return AGENT_KINDS.map((k) => ({ value: k, label: AGENT_NAMES[k] ?? k }));
     if (kind === "opencode") {
@@ -479,7 +487,7 @@ export default class Worktrees extends View {
     const base = this.base.value().trim();
     localStorage.setItem("draft", JSON.stringify({
       agent: this.agent, ...this.selections[this.agent], prompt, branch: this.branch.value().trim(),
-      base: base !== this.repo.base ? base : "", repo: this.repo.root,
+      base: base !== this.repo.base ? base : "", repo: this.repo.root, machine: this.repo.machine,
       createFromBase: Boolean(this.createFromBase),
     }));
   }
@@ -520,11 +528,15 @@ export default class Worktrees extends View {
     cx.notify();
     cx.spawn(async (cx) => {
       try {
-        const repo = await detectRepo(callerFolder(value));
-        if (!repo) throw new Error("This workspace is not a local Git repository.");
-        const [names, list] = await Promise.all([loadBranches(repo.root), loadRows(repo.root, false)]);
+        const machine = spaces().find((s) => s.id === value)?.machine ?? null;
+        const repo = await detectRepo(callerFolder(value), machine);
+        if (!repo) throw new Error("Cannot read this workspace's Git repository. Check its folder and machine connection.");
+        const [names, list] = await Promise.all([loadBranches(repo.root, machine), loadRows(repo.root, false, machine)]);
         if (list.error) throw new Error(list.error);
         this.repo = repo;
+        this.machine = machine;
+        this.opencode = store(this.modelCacheKey(), null);
+        this.opencodeError = "";
         this.names = names;
         this.workspace = value;
         if (!this.selections) this.restoreForm();
@@ -532,7 +544,7 @@ export default class Worktrees extends View {
         this.rows = [];
         this.previews = {};
         this.filter.set_value("");
-        this.setRows(list.def, attach(list.rows));
+        this.setRows(list.def, attach(list.rows, machine));
         this.base.set_value(names.names.includes(repo.base) ? repo.base : names.names[0] ?? "");
         this.saveDraft();
         this.setMessage("", false);
@@ -655,12 +667,12 @@ export default class Worktrees extends View {
     cx.spawn(async (cx) => {
       try {
         const taken = (n) => this.names.local.has(n) || this.names.remote.has(n);
-        const branch = spec.branch || uniqueName(await generateBranch(this.cfg, spec.prompt), taken);
-        const valid = await git(this.repo.root, ["check-ref-format", "--branch", branch]);
+        const branch = spec.branch || uniqueName(await generateBranch(this.cfg, spec.prompt, this.repo.machine), taken);
+        const valid = await git(this.repo.root, ["check-ref-format", "--branch", branch], this.repo.machine);
         if (!valid.ok) throw new Error(valid.err || "Invalid branch name.");
         const slug = branchSlug(branch);
         const checkout = async () => {
-          const list = await git(this.repo.root, ["worktree", "list", "--porcelain"]);
+          const list = await git(this.repo.root, ["worktree", "list", "--porcelain"], this.repo.machine);
           if (!list.ok) throw new Error(list.err);
           return list.out.split("\n\n").find((b) => b.split("\n").includes(`branch refs/heads/${branch}`))?.match(/^worktree (.*)$/m)?.[1];
         };
@@ -670,7 +682,7 @@ export default class Worktrees extends View {
           if (!exists) {
             // Forge tools expect a branch name here, not refs/remotes/<remote>/….
             const target = this.rows.find((r) => r.remote && rowRef(r) === spec.base)?.branch ?? spec.base;
-            const config = await git(this.repo.root, ["config", `branch.${branch}.gh-merge-base`, target]);
+            const config = await git(this.repo.root, ["config", `branch.${branch}.gh-merge-base`, target], this.repo.machine);
             if (!config.ok) throw new Error(config.err);
           }
           this.busy = "Setting up the worktree…";
@@ -681,10 +693,10 @@ export default class Worktrees extends View {
             output = lines;
             this.busy = lines.filter((l) => l.trim()).at(-1) || "Setting up the worktree…";
             cx.notify();
-          });
+          }, this.repo.machine);
           if (code !== 0) throw new Error(`Worktree setup failed with exit code ${code}. ${output.slice(-10).join("\n")}`);
           if (spec.remote) {
-            const upstream = await git(this.repo.root, ["branch", `--set-upstream-to=${spec.base}`, branch]);
+            const upstream = await git(this.repo.root, ["branch", `--set-upstream-to=${spec.base}`, branch], this.repo.machine);
             if (!upstream.ok) throw new Error(`The worktree was created, but its upstream could not be set: ${upstream.err}`);
           }
           path = await checkout();
@@ -695,9 +707,9 @@ export default class Worktrees extends View {
         const row = this.rows.find((r) => r.path === path) ?? { path, spaces: [] };
         if (!spec.prompt) this.showCheckout(row);
         else {
-          const command = await promptCommand(agentArgv(spec.agent, spec.sel), spec.prompt);
+          const command = await promptCommand(agentArgv(spec.agent, spec.sel), spec.prompt, this.repo.machine);
           if (row.spaces.length) run("tab.new", { space: row.spaces[0], folder: path, name: slug, argv: command });
-          else run("space.new", { folder: path, tab: slug, argv: command, machine: "" });
+          else run("space.new", { folder: path, tab: slug, argv: command, machine: this.repo.machine ?? "" });
         }
         if (spec.prompt) {
           localStorage.removeItem("draft");
@@ -723,7 +735,7 @@ export default class Worktrees extends View {
     if (view === "merge" && !refusal(r, view)) {
       this.target.set_value("");
       cx.spawn(async (cx) => {
-        this.target.set_value((await mergeBase(this.repo.root, r.branch)) || this.def);
+        this.target.set_value((await mergeBase(this.repo.root, r.branch, this.repo.machine)) || this.def);
         this.target.focus();
         cx.notify();
       });
@@ -751,7 +763,7 @@ export default class Worktrees extends View {
     cx.spawn(async (cx) => {
       let code = 1;
       try {
-        code = await Job.run(cwd, argv, (lines) => { this.out = lines; cx.notify(); });
+        code = await Job.run(cwd, argv, (lines) => { this.out = lines; cx.notify(); }, this.repo.machine);
       } catch (e) {
         this.out.push(String(e.message ?? e));
       }
@@ -934,7 +946,7 @@ export default class Worktrees extends View {
         .child(h_flex().gap(6).items_center().text_size(12).text_color(t.muted)
           .when(Boolean(this.repo), (el) => el
             .child(svg(ICON("folder")).size(12))
-            .child(div().truncate().child(this.repo.name))
+            .child(div().truncate().child(this.repo.machine ? `${this.repo.name} · ${this.repo.machine}` : this.repo.name))
             .child(div().text_color(t.dim).child("·"))
             .child(svg(ICON("branch")).size(12))
             .child(div().truncate().child(this.repo.base)))))

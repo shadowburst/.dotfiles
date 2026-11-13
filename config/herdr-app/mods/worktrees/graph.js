@@ -28,14 +28,14 @@ export class Graph {
     });
   }
 
-  configure(repo, refs, selected, cx, reveal = false) {
-    const catalogKey = JSON.stringify([repo, refs.map(rowKey).sort()]);
+  configure(repo, refs, selected, cx, reveal = false, on = null) {
+    const catalogKey = JSON.stringify([on, repo, refs.map(rowKey).sort()]);
     if (catalogKey !== this.catalogKey) this.details = null;
     this.catalogKey = catalogKey;
     this.refs = refs;
     this.selected = selected;
     const tips = [...new Set(refs.map((r) => r.sha).filter(Boolean))].sort();
-    const key = JSON.stringify([repo, tips]);
+    const key = JSON.stringify([on, repo, tips]);
     if (key === this.sourceKey) {
       this.chain = firstParents(this.commits, selected?.sha);
       if (reveal) this.reveal(cx);
@@ -46,6 +46,7 @@ export class Graph {
     const count = Math.max(PAGE, this.commits.length);
     if (repo !== this.repo) this.details = null;
     this.repo = repo;
+    this.machine = on;
     this.sourceKey = key;
     this.tips = tips;
     this.version++;
@@ -69,7 +70,7 @@ export class Graph {
     cx.spawn(async (cx) => {
       try {
         do {
-          const result = await history(this.repo, this.tips, this.commits.length, count);
+          const result = await history(this.repo, this.tips, this.commits.length, count, this.machine);
           if (version !== this.version) return;
           this.commits.push(...result.commits);
           this.more = result.more;
@@ -124,12 +125,13 @@ export class Graph {
     this.detailsAt = 0;
     this.detailsScroll.scroll_to_item(0);
     const repo = this.repo;
+    const machine = this.machine;
     cx.spawn(async (cx) => {
       try {
-        const data = await commitDetails(repo, sha);
-        if (this.repo === repo && this.details?.sha === sha) this.details = { ...commit, ...data };
+        const data = await commitDetails(repo, sha, machine);
+        if (this.repo === repo && this.machine === machine && this.details?.sha === sha) this.details = { ...commit, ...data };
       } catch (e) {
-        if (this.repo === repo && this.details?.sha === sha) this.details = { ...commit, error: String(e.message ?? e) };
+        if (this.repo === repo && this.machine === machine && this.details?.sha === sha) this.details = { ...commit, error: String(e.message ?? e) };
       }
       cx.notify();
     });

@@ -13,10 +13,10 @@ const json = (r) => {
 
 export class Job {
   // onLines(lines) gets the output so far; resolves with the exit code.
-  static async run(cwd, argv, onLines) {
-    const started = json(await hc(["run", "--bg", "--json", "--no-notify", "--name", `worktrees-${Date.now()}`, "--cwd", cwd, "--", ...argv]));
+  static async run(cwd, argv, onLines, on) {
+    const started = json(await hc(["run", ...(on ? ["--on", on] : []), "--bg", "--json", "--no-notify", "--name", `worktrees-${Date.now()}`, "--cwd", cwd, "--", ...argv]));
     if (!started?.address) throw new Error(`Cannot start ${argv.slice(0, 3).join(" ")} in herdr-core.`);
-    const t = started.address;
+    const t = on && !started.address.startsWith(`${on}/`) ? `${on}/${started.address}` : started.address;
     let state = null;
     for (;;) {
       await hc(["wait", t, "--timeout", "1", "--json"]);

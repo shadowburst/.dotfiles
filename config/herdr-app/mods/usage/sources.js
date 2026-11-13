@@ -6,7 +6,7 @@
 // only a legacy Codex-style login can, read over HTTP with its token (only read,
 // never renewed).
 
-import { appHome, exec, home, readTextFile, writeTextFile } from "herdr";
+import { appHome, exec, home, machines, readTextFile, writeTextFile } from "herdr";
 
 const CODEX_URL = "https://chatgpt.com/backend-api/wham/usage";
 const JWT_AUTH = "https://api.openai.com/auth";
@@ -25,9 +25,9 @@ const object = (v) => (v !== null && typeof v === "object" && !Array.isArray(v) 
 const number = (v) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
 const clamp = (v) => Math.max(0, Math.min(100, v));
 
-async function readJson(path) {
+async function readJson(path, on) {
   try {
-    const text = await readTextFile(path);
+    const text = await readTextFile(path, { on });
     return text ? JSON.parse(text) : undefined;
   } catch {
     return undefined;
@@ -162,8 +162,11 @@ function whamWindows(payload) {
 // An account: { key, provider, sources: ["Codex", …], load(): Promise<snapshot> }
 // A snapshot: { plan?, email?, windows }
 
-const probe = async (harness) => {
-  const r = await exec("python3", ["-I", `${appHome()}/mods/usage/probe.py`, harness]);
+const probe = async (harness, on) => {
+  // Send the probe source, not a local path that may not exist there.
+  const script = await readTextFile(`${appHome()}/mods/usage/probe.py`);
+  if (!script) throw new Error("The usage probe is missing");
+  const r = await exec("python3", ["-I", "-c", script, harness], { on });
   let answer;
   try {
     answer = JSON.parse(r.stdout);
@@ -174,15 +177,15 @@ const probe = async (harness) => {
   return answer;
 };
 
-async function claudeAccount() {
-  if (!(await readJson(`${home()}/.claude/.credentials.json`))?.claudeAiOauth) return undefined;
-  const profile = (await readJson(`${home()}/.claude.json`))?.oauthAccount;
+async function claudeAccount(dir, on) {
+  if (!(await readJson(`${dir}/.claude/.credentials.json`, on))?.claudeAiOauth) return undefined;
+  const profile = (await readJson(`${dir}/.claude.json`, on))?.oauthAccount;
   return {
-    key: `claude-${hash(profile?.accountUuid ?? profile?.emailAddress ?? "default")}`,
+    key: `claude-${hash(profile?.accountUuid ?? profile?.emailAddress ?? `${on ?? "local"}:default`)}`,
     provider: "claude",
     sources: ["Claude Code"],
     load: async () => {
-      const usage = (await probe("claude")).usage;
+      const usage = (await probe("claude", on)).usage;
       if (usage?.rate_limits_available === false) throw new Error("This login has no plan limits");
       return {
         ...(usage?.subscription_type ? { plan: title(usage.subscription_type) } : {}),
@@ -193,8 +196,8 @@ async function claudeAccount() {
   };
 }
 
-async function codexAccount() {
-  const tokens = (await readJson(`${home()}/.codex/auth.json`))?.tokens;
+async function codexAccount(dir, on) {
+  const tokens = (await readJson(`${dir}/.codex/auth.json`, on))?.tokens;
   const id = tokens?.account_id ?? (tokens?.access_token ? jwtClaims(tokens.access_token)?.[JWT_AUTH]?.chatgpt_account_id : undefined);
   if (!id) return undefined;
   return {
@@ -203,7 +206,7 @@ async function codexAccount() {
     provider: "chatgpt",
     sources: ["Codex"],
     load: async () => {
-      const { account, limits } = await probe("codex");
+      const { account, limits } = await probe("codex", on);
       const plan = limits?.rateLimits?.planType ?? account?.account?.planType;
       return {
         ...(plan && plan !== "unknown" ? { plan: title(plan) } : {}),
@@ -246,9 +249,9 @@ logins = {integration: json.loads(value) for integration, value in rows}
 openai = logins.get("openai", {})
 print(json.dumps({"claude": "claude-agent" in logins, "method": openai.get("methodID"), "access": openai.get("access"), "expires": openai.get("expires")}))`;
 
-async function opencodeLogins() {
+async function opencodeLogins(dir, on) {
   try {
-    const r = await exec("python3", ["-I", "-c", OPENCODE_SCRIPT, `${home()}/.local/share/opencode/opencode.db`]);
+    const r = await exec("python3", ["-I", "-c", OPENCODE_SCRIPT, `${dir}/.local/share/opencode/opencode.db`], { on });
     return JSON.parse(r.stdout);
   } catch {
     return {};
@@ -261,19 +264,44 @@ function opencodeAccount(logins) {
   return id ? httpAccount("OpenCode", id, logins.access, number(logins.expires)) : undefined;
 }
 
-/** Every account, once each: a ChatGPT account several harnesses share is read through the first. */
-export async function discoverAccounts() {
-  const [claude, codex, opencode] = await Promise.all([claudeAccount(), codexAccount(), opencodeLogins()]);
+async function discoverMachine(on) {
+  let dir = home();
+  if (on) {
+    const r = await exec("python3", ["-I", "-c", 'import os; print(os.path.expanduser("~"))'], { on });
+    dir = r.stdout.trim();
+    if (r.code !== 0 || !dir) throw new Error("Cannot find the user's home folder");
+  }
+  const [claude, codex, opencode] = await Promise.all([claudeAccount(dir, on), codexAccount(dir, on), opencodeLogins(dir, on)]);
   // OpenCode's claude-agent runs Claude Code, so it spends Claude Code's login.
   if (claude && opencode.claude) claude.sources.push("OpenCode");
-  const found = [claude, codex, opencodeAccount(opencode)].filter(Boolean);
+  return [claude, codex, opencodeAccount(opencode)].filter(Boolean).map((a) => ({
+    ...a, sources: a.sources.map((s) => `${s} (${on ?? "local"})`),
+  }));
+}
+
+/** Every account once, across this machine and the connected machines. */
+export async function discoverAccounts() {
+  const targets = [null, ...machines().filter((m) => m.name && !m.temporary).map((m) => m.name)];
+  const results = await Promise.allSettled(targets.map(discoverMachine));
   const accounts = [];
-  for (const account of found) {
-    const same = accounts.find((a) => a.key === account.key);
-    if (same) same.sources.push(...account.sources);
-    else accounts.push(account);
+  const errors = [];
+  for (const [i, result] of results.entries()) {
+    if (result.status === "rejected") {
+      errors.push(`${targets[i] ?? "local"}: ${result.reason?.message ?? result.reason}`);
+      continue;
+    }
+    for (const account of result.value) {
+      const same = accounts.find((a) => a.key === account.key);
+      if (same) {
+        same.sources.push(...account.sources);
+        const first = same.load;
+        same.load = async () => {
+          try { return await first(); } catch { return account.load(); }
+        };
+      } else accounts.push(account);
+    }
   }
-  return accounts;
+  return { accounts, errors };
 }
 
 // ---- cache: ~/.cache/agent-usage/<provider>-<account>.json ------------------

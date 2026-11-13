@@ -1,6 +1,6 @@
 // Run: node --experimental-vm-modules config/herdr-app/tests/worktrees.mjs
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import vm from "node:vm";
 
@@ -9,6 +9,8 @@ let created, failSetup, calls, jobs;
 let testSpaces = [], testPanes = [], testFocus = null;
 let testAgents = [], fixtureRoot, fixtureItems, historyGate;
 const gitCalls = [];
+const execCalls = [];
+const hcCalls = [];
 const testShared = {};
 let draftWrites = 0;
 const context = vm.createContext({ console, localStorage: { getItem() { return null; }, setItem(key) { if (key === "draft") draftWrites++; }, removeItem() {} } });
@@ -47,18 +49,24 @@ const herdr = module({
   agents() { return testAgents; }, appHome() {}, home() { return "/home/test"; }, panes() { return testPanes; }, readTextFile() {}, spaces() { return testSpaces; },
   closeOverlay() {}, focused() { return testFocus; }, props() {}, settings() { return {}; }, theme() { return {}; },
   shared(key) { return testShared[key]; }, setShared(key, value) { testShared[key] = value; },
-  machines() { return []; }, openOverlay() {}, hc() {}, watchFolder() {}, window() {}, layout() {},
+  machines() { return []; }, openOverlay() {}, async hc(args) {
+    hcCalls.push(Array.from(args));
+    if (args[0] === "run") return { stdout: JSON.stringify({ address: "t99" }) };
+    if (args[0] === "get") return { stdout: JSON.stringify({ state: "finished", exit_code: 0 }) };
+    return { stdout: "done\n" };
+  }, watchFolder() {}, window() {}, layout() {},
   run(command, args) { calls.push({ command, args }); },
-  async exec(command, args, { cwd } = {}) {
-    if (command === "git") gitCalls.push({ cwd, args });
+  async exec(command, args, { cwd, on } = {}) {
+    execCalls.push({ command, args, cwd, on });
+    if (command === "git") gitCalls.push({ cwd, args, on });
     if (fixtureRoot && cwd?.startsWith(fixtureRoot)) {
       if (command === "wt") return { code: 0, stdout: JSON.stringify({ repo: { default_branch: "main" }, items: fixtureItems }) };
       if (command === "git" && args[0] === "log" && historyGate) await historyGate;
       const r = spawnSync(command, args, { cwd, encoding: "utf8", env: gitEnv });
       return { code: r.status, stdout: r.stdout ?? "", stderr: r.stderr ?? String(r.error ?? "") };
     }
-    if (command === "stat") return { code: 1, stdout: "", stderr: "no fetch yet" };
-    if (command === "sh") return { code: 0, stdout: "", stderr: "" };
+    if (command === "python3") return { code: 1, stdout: "", stderr: "no fetch yet" };
+    if (command === "sh") return { code: 0, stdout: args.includes("/api/model") || args.includes("/api/provider") ? '{"data":[]}' : "/target-home/.cache/herdr-worktrees/prompt-abc", stderr: "" };
     if (command === "wt") return { code: 0, stdout: JSON.stringify({ repo: { default_branch: "develop" }, items: [{ branch: "develop", worktree: { path: cwd, main: true } }] }) };
     assert.equal(command, "git");
     if (cwd === "/not-a-repo") return { code: 1, stdout: "", stderr: "not a repository" };
@@ -68,8 +76,8 @@ const herdr = module({
     return { code: 0, stdout: args[0] === "worktree" && created ? `worktree ${checkout}\nbranch refs/heads/fix/test\n\n` : "", stderr: "" };
   },
 });
-const job = module({ Job: { async run(cwd, argv, onLines) {
-  jobs.push({ cwd, argv });
+const job = module({ Job: { async run(cwd, argv, onLines, on) {
+  jobs.push({ cwd, argv, on });
   onLines(["Setting up…"]);
   if (failSetup) return 1;
   created = true;
@@ -85,14 +93,14 @@ const main = new vm.SourceTextModule(await readFile(new URL("../mods/worktrees/m
 await main.link((name) => ({ "gpui-kit": kit, "gpui-base": base, herdr, "./data.js": data, "./job.js": job, "./graph.js": graph })[name]);
 await main.evaluate();
 
-async function launch(existing = false, failure = false, prompt = "", remote = "") {
+async function launch(existing = false, failure = false, prompt = "", remote = "", machine = null) {
   created = existing;
   failSetup = failure;
   calls = [];
   jobs = [];
   const view = new main.namespace.default();
   Object.assign(view, {
-    repo: { root }, names: { local: new Set(), remote: new Set() }, rows: remote ? [{ branch: "fix/test", remote }] : [],
+    repo: { root, machine }, names: { local: new Set(), remote: new Set() }, rows: remote ? [{ branch: "fix/test", remote }] : [],
     close() {}, prompt: { set_value() {} }, branch: { set_value() {} },
   });
   let task;
@@ -206,7 +214,8 @@ const workspaceView = new main.namespace.default();
 const initCx = { focus_handle() { return handle; }, bind_keys() {}, timer: { after() {}, every() {} }, spawn() {} };
 workspaceView.init({}, initCx);
 assert.equal(workspaceView.workspace, "current", "Preselect the current space, not the last used workspace");
-assert.deepEqual(Array.from(workspaceView.options("workspace"), (o) => o.value), ["current", "other", "invalid"], "The local launcher must not offer remote spaces");
+assert.deepEqual(Array.from(workspaceView.options("workspace"), (o) => o.value), ["current", "other", "invalid", "remote"], "Offer spaces from every machine");
+assert.equal(workspaceView.options("workspace").at(-1).label, "Remote project · server");
 Object.assign(workspaceView, {
   repo: { root, base: "main" }, selections: { claude: {} }, agent: "claude", view: "new",
   saveDraft() {}, refreshOpencode() {},
@@ -233,7 +242,7 @@ workspaceView.pickChoice("workspace", "invalid", workspaceCx);
 await workspaceTask;
 assert.equal(workspaceView.workspace, "other", "Reject a non-repository without changing the launch target");
 assert.equal(workspaceView.repo.root, "/other");
-assert.match(workspaceView.message, /not a local Git repository/);
+assert.match(workspaceView.message, /Git repository/);
 const noRepoView = new main.namespace.default();
 noRepoView.init({}, initCx);
 noRepoView.repo = null;
@@ -244,6 +253,67 @@ assert.equal(noRepoView.view, "new", "Allow a new worktree for another workspace
 assert.equal(noRepoView.repo.root, "/other");
 assert.equal(noRepoView.agent, "claude");
 console.log("Workspaces: current default, target repository, base branch, preserved task, and invalid selection passed.");
+
+execCalls.length = 0;
+workspaceView.pickChoice("workspace", "remote", workspaceCx);
+await workspaceTask;
+assert.equal(workspaceView.repo.machine, "server");
+assert.equal(workspaceView.repo.root, "/remote");
+assert(execCalls.length && execCalls.every((c) => c.on === "server"), "Repository detection, branches and rows run on the selected machine");
+assert(workspaceView.rows[0].spaces.includes("remote"));
+assert.equal(workspaceView.modelCacheKey(), "opencode-models:server");
+execCalls.length = 0;
+await launch(false, false, "Remote task", "", "server");
+assert.equal(jobs[0].on, "server", "Setup runs on the target machine");
+assert.equal(calls[0].args.machine, "server", "The new agent space stays on the target machine");
+assert(execCalls.every((c) => c.on === "server"), "Git and the private prompt file stay on the target machine");
+assert(calls[0].args.argv.includes("/target-home/.cache/herdr-worktrees/prompt-abc"));
+
+const realJob = new vm.SourceTextModule(await readFile(new URL("../mods/worktrees/job.js", import.meta.url), "utf8"), { context });
+await realJob.link(() => herdr); await realJob.evaluate();
+assert.equal(await realJob.namespace.Job.run("/repo", ["wt", "switch", "topic"], () => {}, "server"), 0);
+assert.deepEqual(hcCalls[0].slice(0, 3), ["run", "--on", "server"]);
+assert(hcCalls.slice(1).every((args) => args[1] === "server/t99"), "Wait, get, read and cleanup use the qualified remote terminal address");
+
+testSpaces.push({ id: "remote-same-path", machine: "server", tabs: [{ id: "server/tab" }], folder: "/repo" });
+testPanes.push({ pane: "server/pane", tab: "server/tab", cwd: "/repo" });
+testAgents = [{ pane: "server/pane", status: "working" }];
+const localRows = data.namespace.attach([{ path: "/repo", spaces: [], busy: false }]);
+assert(!localRows[0].busy && !localRows[0].spaces.includes("remote-same-path"), "A remote agent at the same path must not block local work");
+const remoteRows = data.namespace.attach([{ path: "/repo", spaces: [], busy: false }], "server");
+assert(remoteRows[0].busy && remoteRows[0].spaces.includes("remote-same-path"));
+testAgents = [];
+execCalls.length = 0;
+await data.namespace.loadOpencodeModels("/repo", [], "server");
+await data.namespace.generateBranch({ naming_command: ["/nix/store/local-only/bin/textgen"] }, "Fix remote test", "server");
+assert(execCalls.every((c) => c.on === "server"));
+assert(!execCalls.some((c) => c.args.includes("/nix/store/local-only/bin/textgen")), "Do not send a local Nix store path to another machine");
+for (const action of ["merge", "remove"]) {
+  Object.assign(workspaceView, { view: action, sel: { path: "/worktree", branch: "topic", spaces: [] }, target: state({ value: "main" }), handle, finished() {} });
+  workspaceView.confirm(workspaceCx); await workspaceTask;
+  assert.equal(jobs.at(-1).on, "server", `${action} runs on the target machine`);
+}
+console.log("Machines: workspace switching, setup, prompt files, agent launch, terminal cleanup and busy detection passed.");
+
+const promptHome = await mkdtemp("/tmp/opencode/herdr-prompt-");
+try {
+  const prompt = 'Quotes " and \' ; $(exit 7)\n{{ task }}';
+  const argv = await data.namespace.promptCommand(["printf", "%s"], prompt, "server");
+  const save = execCalls.at(-1);
+  const saved = spawnSync(save.command, Array.from(save.args), { encoding: "utf8", env: { ...process.env, HOME: promptHome } });
+  assert.equal(saved.status, 0, saved.stderr);
+  const path = saved.stdout;
+  assert(path.startsWith(`${promptHome}/.cache/herdr-worktrees/`));
+  assert.equal((await stat(path)).mode & 0o777, 0o600);
+  assert.equal(await readFile(path, "utf8"), prompt, "The task is data, not shell code");
+  const command = Array.from(argv, (a) => a === "/target-home/.cache/herdr-worktrees/prompt-abc" ? path : a);
+  const result = spawnSync(command[0], command.slice(1), { encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, prompt);
+  await assert.rejects(stat(path), { code: "ENOENT" }, "Remove the prompt file after reading it");
+} finally {
+  await rm(promptHome, { recursive: true, force: true });
+}
 
 const spaceMarks = new vm.SourceTextModule(await readFile(new URL("../mods/spaces-pr/main.js", import.meta.url), "utf8"), { context });
 const pr = module({ PullRequests: class {} });
@@ -694,8 +764,8 @@ try {
   g.detailsScroll = { scroll_to_item(index) { detailAt = index; } };
   g.key("end", graphCx);
   assert.equal(detailAt, g.detailLines().length - 1, "Commit details can be scrolled with the keyboard");
-  testPanes = [{ pane: "busy-pane", cwd: fixtureRoot }];
-  testSpaces = []; testAgents = [{ pane: "busy-pane", status: "working", app: "opencode" }];
+  testPanes = [{ pane: "busy-pane", tab: "busy-tab", cwd: fixtureRoot }];
+  testSpaces = [{ id: "busy-space", tabs: [{ id: "busy-tab" }] }]; testAgents = [{ pane: "busy-pane", status: "working", app: "opencode" }];
   const attached = data.namespace.attach(refs.rows.map((r) => ({ ...r, spaces: [] })));
   assert(attached.find((r) => r.path === fixtureRoot).busy, "Hiding agent badges does not remove busy-agent safety checks");
   testAgents = [];
@@ -739,6 +809,14 @@ try {
   const fetches = gitCalls.filter((call) => call.args[0] === "fetch");
   assert.equal(fetches.length, beforeFetch + 1, "Ignore repeated Fetch presses while one fetch runs");
   assert.deepEqual(Array.from(fetches.at(-1).args), ["fetch", "--all", "--no-prune", "--no-prune-tags"]);
+  gitCalls.length = 0;
+  g.configure(fixtureRoot, refs.rows, mainRef, graphCx, true, "server"); await settle();
+  g.inspect(m, graphCx); await settle();
+  await data.namespace.loadPreview(fixtureRoot, "main", refs.rows.find((r) => r.branch === "feature" && !r.remote), 1, "server");
+  await data.namespace.loadPreview(fixtureRoot, "main", mainRef, 2, "server");
+  await data.namespace.lastFetch(fixtureRoot, "server");
+  assert(gitCalls.length && gitCalls.every((c) => c.on === "server"), "History, commit details, both previews and fetch time stay on the target machine");
+  assert.equal(g.details.message, "merge topic");
   await assert.rejects(history.namespace.commitDetails(fixtureRoot, "not-a-sha"), /Invalid commit ID/);
   console.log("Graph: real Git refs, merges, first-parent lanes, pagination, detached and shallow history, details, filtering, reverse selection, cancellation, keyboard focus, clean badges, and busy protection passed.");
 } finally {

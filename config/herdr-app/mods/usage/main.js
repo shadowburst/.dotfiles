@@ -35,13 +35,15 @@ export default class Usage extends View {
 
   initView(cx) {
     this.rows = null; // [{ account, entry, error, loading }]
+    this.discoveryErrors = [];
     this.now = Date.now();
     cx.timer.every(60_000, (cx) => {
       this.now = Date.now();
       cx.notify();
     });
     cx.spawn(async (cx) => {
-      const accounts = await usage.discoverAccounts();
+      const { accounts, errors } = await usage.discoverAccounts();
+      this.discoveryErrors = errors;
       this.rows = await Promise.all(accounts.map(async (account) => ({ account, entry: await usage.readCache(account.key), error: null, loading: false })));
       cx.notify();
       await this.refresh(cx, STALE_MS);
@@ -140,11 +142,12 @@ export default class Usage extends View {
     const body = !this.rows
       ? [div().text_size(13).text_color(t.muted).child("Looking for logins…")]
       : this.rows.length === 0
-        ? [div().text_size(13).text_color(t.muted).child("No harness here is logged in to a subscription.")]
+        ? [div().text_size(13).text_color(t.muted).child("No subscription logins found on the available machines.")]
         : ["claude", "chatgpt"]
           .map((provider) => [provider, this.rows.filter((row) => row.account.provider === provider)])
           .filter(([, rows]) => rows.length > 0)
           .map(([provider, rows]) => this.section(provider, rows, t));
+    body.push(...(this.discoveryErrors ?? []).map((error) => div().text_size(12).text_color(t.blocked).child(error)));
     return v_flex().id("usage-view").size_full()
       .child(h_flex().flex_none().h(48).pl(20).pr(10).gap(8).items_center().border_b(1).border_color(t.border)
         .child(svg("mods/usage/gauge.svg").size(16).text_color(t.muted))
