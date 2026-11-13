@@ -14,10 +14,12 @@ const module = (values) => new vm.SyntheticModule(Object.keys(values), function 
 }, { context });
 let virtualLists = 0;
 const actions = new Map();
-const element = () => new Proxy({}, { get: (_target, method) => (...args) => {
+const buttons = new Map();
+const element = (record) => new Proxy({}, { get: (_target, method) => (...args) => {
+  if (record?.button) record[method] = args;
   if (method === "on_action") actions.set(args[0], args[1]);
-  if (method === "when" && args[0]) return args[1](element());
-  return element();
+  if (method === "when" && args[0]) return args[1](element(record));
+  return element(record);
 } });
 const kit = module({ View: class {}, div: element, image: element, svg: element });
 const state = (opts = {}) => {
@@ -26,8 +28,9 @@ const state = (opts = {}) => {
     focus() {}, value() { return opts.value ?? ""; }, set_value(v) { opts.value = v; }, replace(v) { opts.value = (opts.value ?? "") + v; } };
 };
 const base = module({ ...Object.fromEntries([
-  "h_flex", "v_flex", "Input", "InputState", "Scrollbar", "Textarea", "TextareaState", "VirtualListScrollHandle", "v_virtual_list", "Combobox", "Popup",
+  "h_flex", "v_flex", "Button", "Input", "InputState", "Scrollbar", "Textarea", "TextareaState", "VirtualListScrollHandle", "v_virtual_list", "Combobox", "Popup",
 ].map((key) => [key, { new: element }])), h_flex: element, v_flex: element,
+  Button: { new(id) { const record = { button: true }; buttons.set(id, record); return element(record); } },
   v_virtual_list() { virtualLists++; return element(); },
   InputState: { new: state }, TextareaState: { new: state }, VirtualListScrollHandle: { new: () => ({ scroll_to_item() {} }) } });
 const herdr = module({
@@ -95,7 +98,7 @@ assert(!calls[0]?.args.argv.includes("wt"));
 console.log("Worktree launch: new, existing, and failed setup passed.");
 
 const view = new main.namespace.default();
-const handle = { focus() {} };
+const handle = { focus() {}, is_focused: () => false };
 const cx = { notify() {} };
 let scrolledTo;
 Object.assign(view, {
@@ -105,7 +108,7 @@ Object.assign(view, {
     { id: "b", name: "B", models: [{ id: "one", name: "One via B", variants: ["low"] }, { id: "two", name: "Two", variants: ["low"] }] },
   ],
   cfg: { agents: { claude: { models: ["sonnet", "opus"], efforts: ["high", "low"] }, codex: {} } },
-  choiceHandles: { workspace: handle, agent: handle, model: handle, effort: handle, base: handle },
+  choiceHandles: Object.fromEntries(["workspace", "agent", "model", "effort", "branch", "base", "launch", "back"].map((f) => [f, handle])),
   choiceSearch: state(), choiceQuery: "", choiceScroll: { scroll_to_item(i) { scrolledTo = i; } },
   prompt: handle, branch: handle, base: state({ value: "main" }), savePrefs() {}, saveDraft() {},
 });
@@ -272,10 +275,12 @@ view.showChoice("base", true, cx);
 assert.equal(view.choiceQuery, "", "Clear the previous field's query on open");
 assert.equal(view.options("base").length, 3, "Searching must not alter the available branch catalog");
 view.choiceKey("tab", cx);
-assert.equal(view.fields()[view.field], "workspace", "Base remains the last field in Tab order");
+assert.equal(view.fields()[view.field], "back", "Tab reaches Back after Base");
+view.tab(1, cx);
+assert.equal(view.fields()[view.field], "workspace", "Tab wraps after Back");
 view.handle = { is_focused: () => false };
 view.view = "new";
-view.choiceHandles = Object.fromEntries(["workspace", "agent", "model", "effort", "base"].map((field) => [field, { focus() {}, is_focused: () => field === "base" }]));
+view.choiceHandles = Object.fromEntries(["workspace", "agent", "model", "effort", "branch", "base", "launch", "back"].map((field) => [field, { focus() {}, is_focused: () => field === "base" }]));
 view.field = view.fields().indexOf("base");
 view.key({ key_char: "f", keystroke: "f", modifiers: {} }, cx);
 assert.equal(view.dropdown, "base", "Typing on a focused selector opens autocomplete without an extra click");
@@ -349,3 +354,102 @@ const launchBinding = bindings.find((b) => b.keystroke === "ctrl-enter");
 actions.get(launchBinding.action)({}, cx);
 assert.equal(submitted, 1, "Ctrl+Enter still launches the task");
 console.log("Task input: closed dropdowns skip list construction; plain Enter does not submit.");
+
+let focusedField;
+const branchView = new main.namespace.default();
+const branchCx = { ...initCx, notify() {} };
+branchView.init({}, branchCx);
+Object.assign(branchView, {
+  repo: { root, base: "main" }, selections: { claude: {} }, agent: "claude", view: "new",
+  names: { names: ["develop", "feat/search", "feat/settings", "main"] },
+  saveDraft() {}, savePrefs() {},
+});
+assert(!branchView.fields().includes("launch"), "Skip disabled Start when the task is empty");
+branchView.prompt.set_value("Fix this");
+branchView.prompt.emit("change", branchCx);
+branchView.choiceHandles = Object.fromEntries(["workspace", "agent", "model", "effort", "branch", "base", "launch", "back"].map((f) => [f, {
+  focus() { focusedField = f; }, is_focused: () => focusedField === f,
+}]));
+branchView.branch.focus = () => { focusedField = "branch-input"; };
+branchView.prompt.focus = () => { focusedField = "prompt-input"; };
+branchView.setField(branchView.fields().indexOf("branch"));
+branchView.branch.set_value("FEAT/S");
+branchView.branch.emit("change", branchCx);
+assert.equal(branchView.dropdown, "branch", "Typing opens the existing-branch list");
+assert.equal(focusedField, "branch-input", "Typing keeps focus in the editable input");
+assert.deepEqual(Array.from(branchView.choiceOptions("branch"), (o) => o.value), ["feat/search", "feat/settings"]);
+assert.equal(branchView.choiceAt, -1, "Do not select a suggestion merely because it matches");
+branchView.branchKey("enter", branchCx);
+assert.equal(branchView.branch.value(), "FEAT/S", "Enter without a highlight keeps the typed name");
+branchView.branchKey("down", branchCx);
+assert.equal(branchView.choiceAt, 0);
+assert.equal(branchView.branch.value(), "FEAT/S", "Browsing does not replace the typed name");
+branchView.branchKey("down", branchCx);
+branchView.branchKey("enter", branchCx);
+assert.equal(branchView.branch.value(), "feat/settings", "Enter accepts the highlighted branch");
+assert.equal(branchView.dropdown, null);
+assert.equal(focusedField, "branch-input", "Selection returns to the same editable input");
+branchView.branch.emit("change", branchCx);
+assert.equal(branchView.dropdown, null, "A selected value's change event must not reopen its popup");
+branchView.pickChoice("branch", "develop", branchCx);
+assert.equal(branchView.branch.value(), "develop", "Pointer selection uses the same existing-branch selection path");
+branchView.showChoice("branch", true, branchCx);
+assert.equal(branchView.branch.value(), "develop", "Reopening must not clear the input");
+branchView.branch.set_value("fix/new-name");
+branchView.branch.emit("change", branchCx);
+assert.equal(branchView.choiceOptions("branch").length, 0);
+branchView.branchKey("down", branchCx);
+branchView.branchKey("enter", branchCx);
+assert.equal(branchView.branch.value(), "fix/new-name", "A new name remains valid with no matching suggestions");
+branchView.escape(branchCx);
+assert.equal(branchView.dropdown, null);
+assert.equal(branchView.view, "new", "Escape dismisses the branch popup before leaving the form");
+assert.equal(branchView.branch.value(), "fix/new-name", "Escape preserves free input");
+branchView.branchKey("enter", branchCx);
+assert.equal(branchView.dropdown, null, "Enter on a closed branch input does not open or launch anything");
+branchView.branch.set_value("feat/s");
+branchView.branch.emit("change", branchCx);
+branchView.branchKey("down", branchCx);
+branchView.tab(1, branchCx);
+assert.equal(branchView.branch.value(), "feat/s", "Tab must not accept the highlighted branch");
+assert.equal(branchView.dropdown, null);
+assert.equal(focusedField, "base");
+branchView.tab(1, branchCx);
+assert.equal(focusedField, "back");
+branchView.tab(-1, branchCx);
+assert.equal(focusedField, "base");
+branchView.setField(branchView.fields().indexOf("launch"));
+assert.equal(focusedField, "launch", "Start is a keyboard stop");
+branchView.tab(1, branchCx);
+assert.equal(focusedField, "branch-input", "Tab follows the visible order from Start to Branch");
+branchView.branch.set_value("");
+branchView.branch.emit("change", branchCx);
+assert.equal(branchView.choiceOptions("branch").length, 4, "An empty input shows all existing branches");
+branchView.branchKey("up", branchCx);
+assert.equal(branchView.choiceAt, 3, "Up from the input starts at the last suggestion");
+branchView.tab(1, branchCx);
+assert.equal(branchView.branch.value(), "", "Leaving Branch empty preserves automatic naming");
+assert(!bindings.some((b) => b.keystroke === "end"), "End retains its native cursor behavior");
+let launchSpec;
+branchView.prompt.set_value("Fix this");
+branchView.base.set_value("main");
+branchView.launch = (spec) => { launchSpec = spec; };
+branchView.submitNew(branchCx);
+assert.equal(launchSpec.branch, "", "Submit keeps the automatic-naming path");
+branchView.branch.set_value("fix/custom");
+branchView.submitNew(branchCx);
+assert.equal(launchSpec.branch, "fix/custom", "Submit accepts a new branch name without selecting an option");
+branchView.ui({}).button("launch", "Start", "Ctrl ↵", (cx) => branchView.submitNew(cx), "primary");
+assert.equal(buttons.get("btn-launch").track_focus[0], branchView.choiceHandles.launch, "Start uses a native button with the form's focus handle");
+assert.equal(buttons.get("btn-launch").disabled[0], false);
+launchSpec = null;
+buttons.get("btn-launch").on_click[0]({}, branchCx);
+assert.equal(launchSpec.branch, "fix/custom", "The native Start button keeps the existing submit path");
+branchView.formActions(branchView.ui({}));
+assert.equal(buttons.get("btn-back").track_focus[0], branchView.choiceHandles.back, "Back uses a native keyboard-operable button too");
+branchView.base.set_value("missing");
+launchSpec = null;
+branchView.submitNew(branchCx);
+assert.equal(launchSpec, null, "Base must still be an existing branch");
+assert.match(branchView.message, /existing base branch/);
+console.log("Editable branch: matching, free input, explicit selection, cancellation, automatic naming, and action-button Tab stops passed.");

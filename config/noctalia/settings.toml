@@ -396,16 +396,12 @@ video_source = "focused"
 [plugin_settings."noctalia/timer"]
 alarm_duration = 0
 
-[plugin_settings."shadowburst/voxtype"]
-osd_position = "top_center"
-
 [plugins]
 auto_update = "all"
 enabled = [
     "noctalia/screen_recorder",
     "noctalia/translator",
     "noctalia/wallpaper_depth",
-    "shadowburst/voxtype",
     "noctalia/timer"
 ]
 
@@ -418,11 +414,6 @@ enabled = [
     kind = "git"
     location = "https://github.com/noctalia-dev/community-plugins"
     name = "community"
-
-    [[plugins.source]]
-    kind = "path"
-    location = "~/.dotfiles/config/noctalia/plugins"
-    name = "dotfiles"
 
 [shell]
 password_style = "random"

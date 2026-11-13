@@ -5,11 +5,11 @@
 // New runs `wt switch` (with the repo's hooks), then opens a space in the checkout.
 // Merge and remove run `wt` in a hidden herdr-core terminal; its output shows here.
 //
-// In the New form, Tab and Shift+Tab always go to the next or previous field.
+// In the New form, Tab and Shift+Tab go to the next or previous control.
 // Choices open with Enter, Space or an arrow; Up/Down select, Enter confirms.
 
 import { View, div, image, svg } from "gpui-kit";
-import { h_flex, v_flex, Combobox, Input, InputState, Popup, Scrollbar, Textarea, TextareaState, VirtualListScrollHandle, v_virtual_list } from "gpui-base";
+import { h_flex, v_flex, Button, Combobox, Input, InputState, Popup, Scrollbar, Textarea, TextareaState, VirtualListScrollHandle, v_virtual_list } from "gpui-base";
 import { closeOverlay, focused, panes, props, run, settings, shared, spaces, theme } from "herdr";
 import {
   AGENT_KINDS, PREVIEW_MODES, agentArgv, attach, branchSlug, detectRepo, generateBranch, git, loadBranches,
@@ -17,7 +17,7 @@ import {
 } from "./data.js";
 import { Job } from "./job.js";
 
-const CHOICES = ["workspace", "agent", "model", "effort", "base"];
+const CHOICES = ["workspace", "agent", "model", "effort", "branch", "base"];
 const CHOICE_KEYS = ["up", "down", "enter", "escape", "tab", "shift-tab"];
 const LABELS = { workspace: "Workspace", prompt: "Task", agent: "Harness", model: "Model", effort: "Effort", branch: "Branch", base: "Base" };
 const AGENT_NAMES = { claude: "Claude Code", codex: "Codex", opencode: "OpenCode" };
@@ -90,7 +90,7 @@ export default class Worktrees extends View {
     this.listScroll = VirtualListScrollHandle.new();
     this.previewScroll = VirtualListScrollHandle.new();
     this.choiceScroll = VirtualListScrollHandle.new();
-    this.choiceHandles = Object.fromEntries(CHOICES.map((f) => [f, cx.focus_handle()]));
+    this.choiceHandles = Object.fromEntries([...CHOICES, "launch", "back"].map((f) => [f, cx.focus_handle()]));
     this.choiceSearch = InputState.new({ placeholder: "Type to search…" });
     this.choiceSearch.on("change", (_e, cx) => this.filterChoices(cx));
     this.choiceQuery = "";
@@ -122,7 +122,14 @@ export default class Worktrees extends View {
     this.branch = InputState.new({ placeholder: "Generated from the task" });
     this.base = InputState.new({});
     this.target = InputState.new({});
-    for (const s of [this.branch, this.base]) s.on("change", (_e, cx) => { this.saveDraft(); cx.notify(); });
+    this.base.on("change", (_e, cx) => { this.saveDraft(); cx.notify(); });
+    this.branch.on("change", (_e, cx) => {
+      this.saveDraft();
+      if (this.view === "new" && !this.busy && this.fields()[this.field] === "branch" && this.branch.value() !== this.branchPicked) {
+        return this.showChoice("branch", true, cx);
+      }
+      cx.notify();
+    });
     // A click in a text field selects its row in the form.
     for (const [name, s] of [["prompt", this.prompt], ["branch", this.branch]]) {
       s.on("focus", (_e, cx) => {
@@ -144,8 +151,9 @@ export default class Worktrees extends View {
       })),
       { keystroke: "ctrl-enter", action: "wt_launch", context: "Worktrees" },
       ...["enter", "shift-enter"].map((keystroke) => ({ keystroke, action: "wt_newline", context: "WtPrompt > Input" })),
-      // End takes the branch name that the field suggests.
-      { keystroke: "end", action: "wt_complete", context: "WtSuggest > Input" },
+      ...["up", "down", "enter"].map((keystroke) => ({
+        keystroke, action: `wt_branch_${keystroke}`, context: "WtBranch > Input",
+      })),
       ...["down", "ctrl-n", "ctrl-j"].map((keystroke) => ({ keystroke, action: "wt_down", context: "WtFilter > Input" })),
       ...["up", "ctrl-p", "ctrl-k"].map((keystroke) => ({ keystroke, action: "wt_up", context: "WtFilter > Input" })),
       ...CHOICE_KEYS.map((keystroke) => ({
@@ -339,7 +347,7 @@ export default class Worktrees extends View {
 
   // Model option keys include the provider; saved selections keep the native IDs.
   options(field, kind = this.agent, sel = this.selections?.[kind] ?? {}) {
-    if (field === "base") return this.names.names.map((name) => ({ value: name, label: name }));
+    if (field === "base" || field === "branch") return this.names.names.map((name) => ({ value: name, label: name }));
     if (field === "workspace") {
       const marks = shared("spaces-pr.marks") ?? {};
       return spaces().filter((s) => !s.machine).map((s) => ({ value: s.id, label: s.name, mark: marks[s.id] }));
@@ -362,6 +370,7 @@ export default class Worktrees extends View {
 
   choiceValue(field) {
     if (field === "base") return this.base.value().trim();
+    if (field === "branch") return this.branch.value().trim();
     if (field === "workspace") return this.workspace;
     if (field === "agent") return this.agent;
     const sel = this.selections[this.agent];
@@ -380,7 +389,7 @@ export default class Worktrees extends View {
   }
 
   choiceOptions(field) {
-    const query = this.dropdown === field ? this.choiceQuery : "";
+    const query = this.dropdown === field ? (field === "branch" ? this.branch.value().trim().toLowerCase() : this.choiceQuery) : "";
     return this.options(field).filter((o) => !query || fuzzy(`${o.label} ${o.group ?? ""} ${o.value}`, query));
   }
 
@@ -441,7 +450,7 @@ export default class Worktrees extends View {
   // Tab follows the composer, then the branch settings below it.
   fields() {
     const shown = (f) => f === "agent" || (this.agent === "opencode" && f === "model") || this.options(f).length > 0;
-    return ["workspace", "prompt", ...CHOICES.filter((f) => !["workspace", "base"].includes(f) && shown(f)), "branch", "base"];
+    return ["workspace", "prompt", ...CHOICES.filter((f) => !["workspace", "branch", "base"].includes(f) && shown(f)), ...(!this.promptEmpty ? ["launch"] : []), "branch", "base", "back"];
   }
 
   setField(i) {
@@ -452,21 +461,6 @@ export default class Worktrees extends View {
     if (f === "prompt") this.prompt.focus();
     else if (f === "branch") this.branch.focus();
     else this.choiceHandles[f].focus();
-  }
-
-  // The first branch that completes a text field, or "".
-  completion(state) {
-    const v = state.value().trim();
-    if (!v) return "";
-    return this.names.names.find((n) => n.startsWith(v) && n !== v) ?? "";
-  }
-
-  complete(cx) {
-    const f = this.fields()[this.field];
-    const state = f === "branch" ? this.branch : null;
-    const done = state && this.completion(state);
-    if (done) state.set_value(done);
-    cx.notify();
   }
 
   selectWorkspace(value, cx) {
@@ -510,7 +504,10 @@ export default class Worktrees extends View {
     if (field === "workspace") return this.selectWorkspace(value, cx);
     if (field === "agent") this.agent = value;
     else if (field === "base") this.base.set_value(value);
-    else {
+    else if (field === "branch") {
+      this.branchPicked = value;
+      this.branch.set_value(value);
+    } else {
       const sel = this.selections[this.agent];
       if (field === "model" && this.agent === "opencode") Object.assign(sel, { provider: option.provider, model: option.model });
       else sel[field] = value;
@@ -521,11 +518,18 @@ export default class Worktrees extends View {
     this.savePrefs();
     this.saveDraft();
     this.dropdown = null;
-    this.choiceHandles[field].focus();
+    (field === "branch" ? this.branch : this.choiceHandles[field]).focus();
   }
 
   showChoice(field, open, cx) {
     this.field = this.fields().indexOf(field);
+    if (field === "branch") {
+      this.dropdown = open ? field : null;
+      this.choiceAt = -1;
+      if (open) this.choiceScroll.scroll_to_item(0);
+      this.branch.focus();
+      return cx.notify();
+    }
     this.dropdown = open && this.options(field).length ? field : null;
     this.choiceQuery = "";
     this.choiceSearch.set_value("");
@@ -544,7 +548,7 @@ export default class Worktrees extends View {
     else if (key === "tab" || key === "shift-tab") this.tab(key === "tab" ? 1 : -1, cx);
     else if (key === "enter" || key === "space") this.pickChoice(field, opts[this.choiceAt]?.value, cx);
     else {
-      this.choiceAt = key === "home" ? 0 : key === "end" ? opts.length - 1
+      this.choiceAt = key === "home" ? 0 : key === "end" || (key === "up" && this.choiceAt < 0) ? opts.length - 1
         : Math.max(0, Math.min(opts.length - 1, this.choiceAt + (key === "down" ? 1 : -1)));
       this.scrollChoice(field);
     }
@@ -552,8 +556,18 @@ export default class Worktrees extends View {
   }
 
   tab(step, cx) {
-    this.setField(this.field + step);
+    const focused = this.fields().findIndex((f) => this.choiceHandles[f]?.is_focused());
+    this.setField((focused >= 0 ? focused : this.field) + step);
     cx.notify();
+  }
+
+  branchKey(key, cx) {
+    if (this.busy) return;
+    if (this.dropdown !== "branch") {
+      if (key === "enter") return;
+      this.showChoice("branch", true, cx);
+    }
+    this.choiceKey(key, cx);
   }
 
   newKey(key, cx) {
@@ -787,10 +801,12 @@ export default class Worktrees extends View {
       .on_action("wt_newline", () => this.prompt.replace("\n"))
       .on_action("wt_tab", (_e, cx) => this.tabKey(1, cx))
       .on_action("wt_shift_tab", (_e, cx) => this.tabKey(-1, cx))
-      .on_action("wt_complete", (_e, cx) => this.complete(cx))
       .on_action("wt_down", (_e, cx) => this.move(1, cx))
       .on_action("wt_up", (_e, cx) => this.move(-1, cx))
       .when(true, (el) => {
+        for (const key of ["up", "down", "enter"]) {
+          el = el.on_action(`wt_branch_${key}`, (_e, cx) => this.branchKey(key, cx));
+        }
         for (const key of CHOICE_KEYS) {
           el = el.on_action(`wt_choice_${key.replace("-", "_")}`, (_e, cx) => this.choiceKey(key, cx));
         }
@@ -813,8 +829,11 @@ export default class Worktrees extends View {
     const button = (id, label, key, click, kind = "", disabled = false) => {
       const [bg, fg, border] = kind === "primary" ? [t.solid, t.solid_foreground, t.solid]
         : kind === "danger" ? [t.blocked, t.background, t.blocked] : [t.raised, t.foreground, t.border];
-      return h_flex().id(`btn-${id}`).flex_none().h(32).px(12).gap(8).items_center().rounded(8)
+      const action = this.view === "new" && ["launch", "back"].includes(id);
+      return (action ? Button.new(`btn-${id}`).track_focus(this.choiceHandles[id]).disabled(disabled) : h_flex().id(`btn-${id}`))
+        .flex().flex_none().h(32).px(12).gap(8).items_center().rounded(8)
         .border(1).border_color(border).bg(bg).text_color(fg).font_medium().text_size(12.5)
+        .when(action && this.choiceHandles[id].is_focused(), (el) => el.border_color(t.accent))
         .when(disabled, (el) => el.opacity(0.45))
         .when(!disabled, (el) => el.cursor_pointer().hover((s) => s.opacity(0.88)).on_click((_e, cx) => click(cx)))
         .child(label)
@@ -959,6 +978,7 @@ export default class Worktrees extends View {
 
   // The kit owns dropdown semantics and focus; the list owns its highlight.
   choiceView(f, on, t) {
+    const editable = f === "branch";
     const opts = this.options(f);
     const matches = this.dropdown === f ? this.choiceOptions(f) : [];
     const value = this.choiceValue(f);
@@ -977,7 +997,8 @@ export default class Worktrees extends View {
         : svg(mark?.icon ?? ICON("folder")).size(14).flex_none().text_color(t.dim);
     };
     const trigger = h_flex().id(`wt-${f}-value`).w_full().h(32).px(8).gap(6).items_center().rounded(7).border(1)
-      .when(this.dropdown === f, (el) => el.key_context("WtChoice"))
+      .when(editable, (el) => el.key_context("WtBranch"))
+      .when(!editable && this.dropdown === f, (el) => el.key_context("WtChoice"))
       .border_color(on ? t.accent : t.border).bg(on ? t.raised : t.background)
       .when(f === "workspace" && !on, (el) => el.border_color("#00000000").bg("#00000000"))
       .on_size_change((size) => { this.choiceWidths[f] = size.width / (settings().zoom || 1); })
@@ -988,15 +1009,16 @@ export default class Worktrees extends View {
       .tooltip(`${LABELS[f]}: ${label}${opts[i]?.group ? ` · ${opts[i].group}` : ""}`)
       .when(f === "agent", (el) => el.child(harnessIcon(value)))
       .when(f === "workspace", (el) => el.child(workspaceIcon(opts[i])))
-      .when(this.dropdown === f, (el) => el.child(Input.new(this.choiceSearch).flex_1().min_w(0).h(28).accessibility_label(LABELS[f]).text_color(t.foreground)))
-      .when(this.dropdown !== f, (el) => el.child(div().flex_1().min_w(0).truncate().text_color(t.foreground).child(label)))
+      .when(editable || this.dropdown === f, (el) => el.child(Input.new(editable ? this.branch : this.choiceSearch).flex_1().min_w(0).h(28).accessibility_label(LABELS[f]).text_color(t.foreground)))
+      .when(!editable && this.dropdown !== f, (el) => el.child(div().flex_1().min_w(0).truncate().text_color(t.foreground).child(label)))
+      .when(editable && i >= 0, (el) => el.child(div().text_size(11).text_color(t.ansi3).child("exists")))
       .when(this.dropdown !== f && Boolean(opts[i]?.group), (el) => el.child(div().max_w(100).truncate().text_size(11).text_color(t.muted).child(opts[i].group)))
       .child(svg(ICON("chevron-down")).size(14).flex_none().text_color(t.muted));
     const list = v_flex().id(`wt-${f}-options`)
       .w(Math.max(this.choiceWidths[f] ?? 300, f === "model" ? 320 : 180)).h(height + 8).mt(4).p(4).rounded(8)
       .bg(t.popover).border(1).border_color(t.border).shadow_lg().role("list_box")
       .on_mouse_down_out((_e, cx) => { if (this.choiceOver !== f) this.showChoice(f, false, cx); })
-      .when(!rows.length, (el) => el.child(div().h(32).px(8).py(7).text_color(t.muted).child("No matches")))
+      .when(!rows.length, (el) => el.child(div().h(32).px(8).py(7).text_color(t.muted).child(editable ? "New branch name" : "No matches")))
       .when(Boolean(rows.length), (el) => el.child(v_virtual_list(`wt-${f}-list`, rows.length, sizes, (n) => rows[n].value, (range) => rows.slice(range.start, range.end).map((o, n) => {
         const at = range.start + n;
         if (o.heading) return div().h(24).px(8).pt(5).text_size(11).font_medium().text_color(t.muted).child(o.label);
@@ -1016,29 +1038,14 @@ export default class Worktrees extends View {
       .child(Popup.new(`wt-${f}-popup`, trigger).w_full().when(this.dropdown === f, (el) => el.content(list)));
   }
 
-  textView(f, state, on, t, ui, note) {
-    const done = on ? this.completion(state) : "";
-    return h_flex().flex_1().gap(10).items_center()
-      .child(h_flex().when(Boolean(done), (el) => el.key_context("WtSuggest")).flex_1().h(36).px(10).items_center().rounded(8).border(1)
-        .border_color(on ? t.accent : t.input).bg(t.background)
-        .child(Input.new(state).flex_1().h(32).text_color(t.foreground)))
-      .when(Boolean(done), (el) => el.child(h_flex().id(`wt-${f}-done`).flex_none().gap(6).items_center().cursor_pointer()
-        .text_size(12).text_color(t.muted).hover((s) => s.text_color(t.foreground))
-        .on_click((_e, cx) => { state.set_value(done); cx.notify(); })
-        .child(ui.kbd("End")).child(done)))
-      .when(Boolean(note), (el) => el.child(ui.badge(note?.[0] ?? "", note?.[1] ?? t.dim)));
-  }
-
   formView(t, ui) {
     this.promptEmpty = !this.prompt.value().trim();
     const fields = this.fields();
     const on = (f) => fields[this.field] === f;
-    const b = this.branch.value().trim();
-    const has = (n) => this.names.local.has(n) || this.names.remote.has(n);
     const row = (f, control) => v_flex().flex_1().min_w(0).gap(6)
       .child(div().text_size(11.5).text_color(on(f) ? t.foreground : t.muted).child(LABELS[f]))
       .child(control);
-    const choices = fields.filter((f) => CHOICES.includes(f) && !["workspace", "base"].includes(f));
+    const choices = fields.filter((f) => CHOICES.includes(f) && !["workspace", "branch", "base"].includes(f));
     const opencodeNote = this.agent === "opencode" && this.opencodeError ? this.opencodeError : "";
     return v_flex().size_full().max_w(900).mx_auto().justify_center().gap(16)
       .child(v_flex().flex_1().min_h(160).max_h(320).rounded(14).border(1).border_color(on("prompt") ? t.accent : t.input).bg(t.background)
@@ -1052,10 +1059,8 @@ export default class Worktrees extends View {
           .child(ui.button("launch", "Start", "Ctrl ↵", (cx) => this.submitNew(cx), "primary", Boolean(this.busy) || this.promptEmpty))))
       .when(Boolean(opencodeNote), (el) => el.child(div().text_size(11.5).text_color(t.blocked).child(opencodeNote)))
       .child(h_flex().flex_none().gap(16)
-        .child(row("branch", this.textView("branch", this.branch, on("branch"), t, ui, b && has(b) ? ["exists", t.ansi3] : null)))
-        .child(row("base", this.choiceView("base", on("base"), t))))
-      .child(h_flex().flex_none().justify_end().text_size(11).text_color(t.dim)
-        .child(h_flex().gap(5).child(ui.kbd("⇥")).child("next field")));
+        .child(row("branch", this.choiceView("branch", on("branch"), t)))
+        .child(row("base", this.choiceView("base", on("base"), t))));
   }
 
   // ---------------------------------------------------------------- merge, remove view
