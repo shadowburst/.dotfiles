@@ -11,19 +11,21 @@ The user is not watching this thread. Updates and the final message go unread un
 
 A "deliver" request gives permission to:
 
-- Create a branch, commit, push, rebase, fix conflicts, and use `--force-with-lease` on this task's branch.
+- Create a branch, commit, push, merge the base into the branch, and fix conflicts on this task's branch.
 - Use the test methods that evidence needs without asking first: running the app or a dev server, browser automation, screenshots, and visual checks. Rules that name _how_ to test (the command, fixture, or check) still apply; only the ask-first step is lifted, and only for this task.
 
-Outside the grant, always: merging, auto-merge, merge queues, pushes to the default branch, branch-protection bypasses, deleting data, touching production, changing things outside the repo, closing a PR, force-pushing any other branch. Disable auto-merge and leave any merge queue before work begins and before each push; report it. When automatic merging cannot be prevented, report the blocker first.
+Outside the grant, always: merging, auto-merge, merge queues, pushes to the default branch, branch-protection bypasses, deleting data, touching production, changing things outside the repo, closing a PR, force-pushing any branch. Disable auto-merge and leave any merge queue before work begins and before each push; report it. When automatic merging cannot be prevented, report the blocker first.
 
 ## Steps
 
 1. **Finish the change.** Work in the current checkout with all its uncommitted changes. Resolve the base from the user's choice, existing PR, then `branch.<head>.gh-merge-base`; ask if unknown. Record the base there and align any existing PR. Make the smallest change that meets the request.
 2. **Gather evidence.** Observe evidence for every change before it is pushed; see [Evidence](#evidence).
 3. **Cross-review.** Run the `cross-review` skill until it agrees or asks the user.
-4. **Publish.** Before every `publish-pr` run, here and in step 5, fetch the recorded base and rebase onto it when it moved, then gather evidence again for what the rebase touched. Run the `publish-pr` skill and ask it for ready for review, so review bots see code that cross-review already approved. Keep the cross-review line in the PR body.
+4. **Publish.** Before every `publish-pr` run, here and in step 5, fetch the recorded base and, when it moved, merge it into the branch, then gather evidence again for what the merge touched, including conflict fixes. Run the `publish-pr` skill and ask it for ready for review, so review bots see code that cross-review already approved. Keep the cross-review line in the PR body.
 5. **Watch.** Run the `watch-pr` skill until the PR is ready to merge or blocked. Gather evidence for each fix before it is pushed.
 6. **Hand off.** See [Handoff](#handoff).
+
+Add new commits on top of pushed ones; never rebase or amend a pushed commit. History that keeps every pushed commit lets `publish-pr` push without force and keeps test-impact caches such as Pest TIA valid.
 
 Stay active from step 1 to step 6. Ending the turn while checks or bots are pending stops the work, because nobody will prompt you again; `watch-pr`'s waiter is what wakes you.
 

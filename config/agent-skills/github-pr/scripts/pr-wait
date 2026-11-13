@@ -467,7 +467,7 @@ class Watcher:
         if base_oid:
             self.state["base_oid"] = base_oid
         merge_state = pr["mergeStateStatus"]
-        dirty_line = f"merge state is DIRTY: the branch conflicts with {base}, rebase it"
+        dirty_line = f"merge state is DIRTY: the branch conflicts with {base}, merge {base} into it"
         behind_line = f"merge state is BEHIND: update the branch from {base} before merging"
         if merge_state != "UNKNOWN":
             if merge_state in ("BEHIND", "DIRTY") and self.state["merge_state"] != merge_state:
