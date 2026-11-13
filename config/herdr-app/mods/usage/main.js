@@ -1,19 +1,16 @@
-// The focused agent's subscription usage, at the bottom of the sidebar: the
-// 5-hour window if its account has one, else the weekly, as what is left.
-// A click opens every window of that account. Empty when no agent has focus.
-// Same mod with props {popup: true}: that popup, drawn from shared "usage.view".
-// Key commands: "usage.refresh" fetches now, "usage.popup" opens the popup.
+// Usage: a row above Settings in the sidebar that opens the subscription limits
+// of every logged-in account, after T3 Code's Usage → Limits page: one section
+// per provider, one card per window with what is left, its pace and its reset.
+// The same mod with props {view: true} is that dialog.
+// Key command: "usage.open".
 
-import { View, div, svg } from "gpui-kit";
+import { View, div, image, svg } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
-import { agents, focused, layout, nextCommand, openOverlay, panes, props, run, setShared, shared, theme } from "herdr";
+import { closeOverlay, layout, nextCommand, openOverlay, props, setShared, shared, theme } from "herdr";
 import * as usage from "./sources.js";
 
-const VIEW = "usage.view";
-// Fetch again only when the cache is older than this.
-const ON_FOCUS_MS = 2 * 60_000;
-const ON_IDLE_MS = 30_000;
-const POLL_MS = 5 * 60_000;
+// T3 Code's rule: opening checks again only when the last check is older.
+const STALE_MS = 5 * 60_000;
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -26,202 +23,166 @@ function find(node, id) {
 
 const narrow = () => (find(layout(), "sidebar")?.size?.px ?? Infinity) < 160;
 
-// The agent in the focused pane; none when a shell, an editor or a mod has focus.
-function focusedAgent() {
-  const address = focused()?.terminal;
-  return address ? agents().find((a) => a.address === address) : undefined;
-}
-
-function bar(remaining, color, t) {
-  return div().w_full().h(4).rounded(2).bg(t.hover)
-    .child(div().h_full().rounded(2).bg(color).w(`${Math.max(0, Math.min(100, remaining))}%`));
+function openUsage() {
+  openOverlay({ mod: "usage", kind: "dialog", props: { view: true }, width: 0.8, height: 0.85 });
 }
 
 export default class Usage extends View {
-  init(p, cx) {
-    if (p?.popup) {
-      cx.timer.every(30_000, (cx) => cx.notify()); // "updated … ago"
-      return;
-    }
-    this.address = null;
-    this.status = null;
-    this.generation = 0;
-    this.target = null; // { provider, login: "claude" | …, label, key, auth }
-    this.entry = null; // { snapshot, fetchedAt }
-    this.error = null;
-    this.loading = false;
-    this.published = "";
-
-    cx.timer.every(1500, (cx) => this.tick(cx));
-    cx.timer.every(60_000, (cx) => cx.notify()); // the reset countdown
-    cx.timer.every(POLL_MS, (cx) => cx.spawn((cx) => this.fetch(cx, POLL_MS)));
+  init(_props, cx) {
+    // Herdr gives a mod its props through props(), not through init's argument.
+    if (props()?.view) return this.initView(cx);
+    // The earlier sidebar bar kept its last reading here.
+    if (shared("usage.view")) setShared("usage.view", null);
     cx.spawn(async (cx) => {
       for (;;) {
         const command = await nextCommand();
-        // A replaced build's loop throws here, before it acts, rather than
-        // living on beside the new one (openOverlay never touches cx).
-        cx.notify();
-        if (command === "refresh") cx.spawn((cx) => this.fetch(cx, 0));
-        else if (command === "popup" && this.target) this.openPopup();
+        cx.notify(); // a replaced build's loop stops here, before it acts
+        if (command === "open") openUsage();
       }
     });
-    this.tick(cx);
   }
 
-  // Focus and agent status are live data; this only compares them, and works
-  // when the focused agent changes or stops working.
-  tick(cx) {
-    const agent = focusedAgent();
-    const address = agent?.address ?? null;
-    const wasWorking = this.status === "working";
-    this.status = agent?.status ?? null;
-    if (address !== this.address) {
-      this.address = address;
-      this.select(cx, agent, ON_FOCUS_MS);
-    } else if (agent && wasWorking && agent.status !== "working") {
-      // The model may have changed with the turn: look it up again.
-      this.select(cx, agent, ON_IDLE_MS);
-    }
-  }
+  // ---- the dialog ------------------------------------------------------------
 
-  select(cx, agent, maxAge) {
-    const generation = ++this.generation;
-    cx.spawn(async (cx) => {
-      const cwd = agent ? panes().find((p) => p.terminal === agent.address)?.cwd : undefined;
-      const target = agent ? await usage.resolveAgent(agent, cwd) : undefined;
-      const auth = target ? await usage.loadLogin(target) : undefined;
-      if (generation !== this.generation) return;
-      const key = target ? (auth?.key ?? `${target.provider}-none`) : null;
-      if (key !== this.target?.key) {
-        const entry = auth ? await usage.readCache(auth.key) : undefined;
-        if (generation !== this.generation) return;
-        this.entry = entry ?? null;
-        this.error = target && !auth ? "Not logged in" : null;
-      }
-      this.target = target ? { ...target, label: usage.LABELS[target.provider], key, auth } : null;
-      this.publish();
+  initView(cx) {
+    this.rows = null; // [{ account, entry, error, loading }]
+    this.now = Date.now();
+    cx.timer.every(60_000, (cx) => {
+      this.now = Date.now();
       cx.notify();
-      if (this.target) await this.fetch(cx, maxAge);
+    });
+    cx.spawn(async (cx) => {
+      const accounts = await usage.discoverAccounts();
+      this.rows = await Promise.all(accounts.map(async (account) => ({ account, entry: await usage.readCache(account.key), error: null, loading: false })));
+      cx.notify();
+      await this.refresh(cx, STALE_MS);
     });
   }
 
-  async fetch(cx, maxAge) {
-    const target = this.target;
-    if (!target || this.loading) return;
-    if (this.entry && Date.now() - this.entry.fetchedAt < maxAge) return;
-    // The harness may have renewed its token since: read it again.
-    const auth = await usage.loadLogin(target);
-    if (this.target !== target) return;
-    if (!auth) return this.fail(cx, "Not logged in");
-    if (auth.key !== target.key) return; // another account now: the next select handles it
-    if (auth.expiresAt && auth.expiresAt <= Date.now()) return this.fail(cx, "Login expired");
-
-    this.loading = true;
-    this.publish();
-    cx.notify();
-    try {
-      const entry = { snapshot: await usage.fetchUsage(target.provider, auth), fetchedAt: Date.now() };
-      await usage.writeCache(auth.key, entry);
-      if (this.target?.key === auth.key) {
-        this.entry = entry;
-        this.error = null;
+  async refresh(cx, maxAge) {
+    this.now = Date.now();
+    await Promise.all((this.rows ?? []).map(async (row) => {
+      if (row.loading || (row.entry && this.now - row.entry.fetchedAt < maxAge)) return;
+      row.loading = true;
+      cx.notify();
+      try {
+        const entry = { snapshot: await row.account.load(), fetchedAt: Date.now() };
+        await usage.writeCache(row.account.key, entry);
+        row.entry = entry;
+        row.error = null;
+      } catch (error) {
+        row.error = error instanceof Error ? error.message : String(error);
       }
-    } catch (error) {
-      if (this.target?.key === auth.key) this.error = error instanceof Error ? error.message : String(error);
-    }
-    this.loading = false;
-    this.publish();
-    cx.notify();
+      row.loading = false;
+      this.now = Date.now();
+      cx.notify();
+    }));
   }
 
-  fail(cx, message) {
-    this.error = message;
-    this.publish();
-    cx.notify();
+  iconButton(id, icon, tip, action) {
+    const t = theme();
+    return div().id(id).size(28).flex_none().flex().items_center().justify_center().rounded(6)
+      .text_color(t.muted).cursor_pointer().hover((s) => s.bg(t.hover).text_color(t.foreground))
+      .tooltip(tip).on_click(action).child(icon);
   }
 
-  // What the popup draws. Never the token.
-  publish() {
-    const view = this.target
-      ? { label: this.target.label, entry: this.entry, error: this.error, loading: this.loading }
-      : null;
-    const text = JSON.stringify(view);
-    if (text === this.published) return;
-    this.published = text;
-    setShared(VIEW, view);
+  bar(id, window, remaining, color, t) {
+    // The tick is where even spending would be: the share of the window still to run.
+    const timeLeft = usage.timeLeftPercent(window, this.now);
+    return div().id(id).relative().w_full().h(20)
+      .child(div().absolute().left(0).top(7).w_full().h(6).rounded(3).bg(t.border))
+      .when(remaining > 0, (el) => el.child(div().absolute().left(0).top(7).h(6).rounded(3).bg(color).w(`${remaining}%`)))
+      .when(timeLeft !== null, (el) => el.child(div().absolute().top(2).h(16).w(2).rounded(1).bg(t.foreground).left(`${Math.min(timeLeft, 99.5)}%`)));
   }
 
-  openPopup() {
-    const count = this.entry?.snapshot?.windows?.length ?? 0;
-    openOverlay({ mod: "usage", kind: "popup", props: { popup: true }, width: 300, height: 120 + Math.max(1, count) * 62 });
+  card(row, window, base, t) {
+    const remaining = Math.round(100 - window.usedPercent);
+    const stale = Boolean(row.error);
+    const color = stale ? t.dim : usage.fillColor(remaining, base, t);
+    const pace = usage.paceOf(window, this.now);
+    const id = `${row.account.key}-${window.id}`;
+    return h_flex().id(`card-${id}`).gap(24).items_center().p(16).rounded(8).border(1).border_color(t.border)
+      .child(v_flex().w(176).flex_none().gap(2)
+        .child(div().text_size(13).font_medium().text_color(t.foreground).truncate().child(window.label))
+        .child(h_flex().items_baseline().gap(8)
+          .child(div().text_size(28).font_semibold().text_color(stale ? t.dim : usage.fillColor(remaining, t.foreground, t)).child(`${remaining}%`))
+          .child(div().text_size(13).text_color(t.muted).child("left"))
+          .when(Boolean(pace), (el) => el.child(div().id(`pace-${id}`).text_color(t.muted).tooltip(usage.PACE[pace].label)
+            .child(svg(usage.PACE[pace].icon).size(14))))))
+      .child(v_flex().flex_1().min_w(0).gap(4)
+        .child(this.bar(`bar-${id}`, window, remaining, color, t))
+        .child(div().text_size(11.5).text_color(t.dim).child(usage.resetText(window, this.now))));
   }
+
+  account(row, base, t) {
+    const snapshot = row.entry?.snapshot;
+    const about = [snapshot?.plan, snapshot?.email ? usage.maskEmail(snapshot.email) : null, `via ${row.account.sources.join(", ")}`]
+      .filter(Boolean).join(" · ");
+    const status = row.loading
+      ? div().text_color(t.dim).child("Checking…")
+      : row.error
+        ? div().text_color(t.ansi1).truncate().child(row.error)
+        : div().text_color(t.dim).child(row.entry ? `Updated ${usage.age(row.entry.fetchedAt, this.now)}` : "");
+    const windows = snapshot?.windows ?? [];
+    return v_flex().gap(10)
+      .child(h_flex().justify_between().gap(16).text_size(12)
+        .child(div().text_color(t.muted).truncate().child(about))
+        .child(div().flex_none().max_w(360).child(status)))
+      .when(windows.length === 0 && !row.loading && !row.error, (el) => el.child(div().text_size(12.5).text_color(t.dim).child("No limits reported.")))
+      .children(windows.map((window) => this.card(row, window, base, t)));
+  }
+
+  section(provider, rows, t) {
+    const info = usage.PROVIDERS[provider];
+    const base = info.color ?? t.foreground;
+    return v_flex().gap(14)
+      .child(h_flex().justify_between().items_center()
+        .child(h_flex().gap(8).items_center()
+          .child(image(info.icon).size(18))
+          .child(div().text_size(14).font_semibold().text_color(t.foreground).child(info.label)))
+        .child(div().id(`manage-${provider}`).px(8).py(3).rounded(6).text_size(12).text_color(t.muted)
+          .cursor_pointer().hover((s) => s.bg(t.hover).text_color(t.foreground))
+          .on_click((_e, cx) => cx.open_url(info.manage)).child("Manage usage ↗")))
+      .children(rows.map((row) => this.account(row, base, t)));
+  }
+
+  renderView() {
+    const t = theme();
+    const loading = (this.rows ?? []).some((row) => row.loading);
+    this.now ??= Date.now();
+    const refreshIcon = svg("mods/usage/refresh.svg").size(15);
+    const body = !this.rows
+      ? [div().text_size(13).text_color(t.muted).child("Looking for logins…")]
+      : this.rows.length === 0
+        ? [div().text_size(13).text_color(t.muted).child("No harness here is logged in to a subscription.")]
+        : ["claude", "chatgpt"]
+          .map((provider) => [provider, this.rows.filter((row) => row.account.provider === provider)])
+          .filter(([, rows]) => rows.length > 0)
+          .map(([provider, rows]) => this.section(provider, rows, t));
+    return v_flex().id("usage-view").size_full()
+      .child(h_flex().flex_none().h(48).pl(20).pr(10).gap(8).items_center().border_b(1).border_color(t.border)
+        .child(svg("mods/usage/gauge.svg").size(16).text_color(t.muted))
+        .child(div().text_size(14).font_semibold().text_color(t.foreground).child("Usage limits"))
+        .child(div().flex_1())
+        .child(this.iconButton("usage-refresh", loading ? refreshIcon.spin(900) : refreshIcon, "Refresh limits", (_e, cx) => {
+          cx.spawn((cx) => this.refresh(cx, 0));
+        }))
+        .child(this.iconButton("usage-close", svg("mods/usage/x.svg").size(15), "Close", () => closeOverlay(props().overlay))))
+      .child(div().id("usage-body").flex_1().min_h(0).overflow_y_scrollbar()
+        .child(v_flex().w_full().max_w(880).mx_auto().px(24).py(20).gap(28).children(body)));
+  }
+
+  // ---- the sidebar row -------------------------------------------------------
 
   render() {
-    if (props()?.popup) return this.renderPopup();
+    if (props()?.view) return this.renderView();
     const t = theme();
-    const root = v_flex().id("usage").size_full().bg(t.chrome).border_t(1).border_color(t.border).justify_center();
-    if (!this.target) return root;
-
-    const win = usage.mainWindow(this.entry?.snapshot);
-    const remaining = win ? 100 - win.usedPercent : 0;
-    // A failed or expired fetch keeps the last value, dimmed.
-    const color = !win || this.error ? t.dim : usage.barColor(remaining, t);
-    const name = win ? `${this.target.label} · ${usage.windowName(win.seconds)}` : this.target.label;
-    const reset = win?.resetsAt ? usage.countdown(win.resetsAt) : "";
-    const tip = [name, win ? `${Math.round(remaining)} % left` : "", reset && `resets in ${reset}`, this.error ?? ""]
-      .filter(Boolean).join(" · ");
-
-    const clickable = (el) => el.cursor_pointer().hover((s) => s.bg(t.hover)).on_click(() => this.openPopup());
-
-    if (narrow()) {
-      return clickable(root.px(8).tooltip(tip).child(bar(remaining, color, t)));
-    }
-    const right = win
-      ? h_flex().gap(6).child(div().text_color(color).child(`${Math.round(remaining)} %`))
-        .when(Boolean(reset), (el) => el.child(div().text_color(t.dim).child(reset)))
-      : div().text_color(t.dim).child(this.error ?? (this.loading ? "…" : "—"));
-    return clickable(root.px(16).gap(6).text_size(12).tooltip(tip)
-      .child(h_flex().justify_between().items_center()
-        .child(div().text_color(this.error ? t.dim : t.muted).truncate().child(name))
-        .child(right))
-      .child(bar(remaining, color, t)));
-  }
-
-  renderPopup() {
-    const t = theme();
-    const view = /** @type {any} */ (shared(VIEW));
-    const root = v_flex().id("usage-popup").size_full().p(14).gap(12).text_size(12.5);
-    if (!view) return root.child(div().text_color(t.muted).child("No agent in focus"));
-
-    const snapshot = view.entry?.snapshot;
-    const meta = [snapshot?.plan, snapshot?.email ? usage.maskEmail(snapshot.email) : null].filter(Boolean).join(" · ");
-    const windows = (snapshot?.windows ?? []).map((w, i) => {
-      const remaining = 100 - w.usedPercent;
-      const color = view.error ? t.dim : usage.barColor(remaining, t);
-      const reset = w.resetsAt ? `resets in ${usage.countdown(w.resetsAt)}` : "no reset time";
-      return v_flex().id(`window-${i}`).gap(4)
-        .child(h_flex().justify_between()
-          .child(div().text_color(t.foreground).child(`${w.label} · ${usage.windowName(w.seconds)}`))
-          .child(div().text_color(color).child(`${Math.round(remaining)} % left`)))
-        .child(bar(remaining, color, t))
-        .child(div().text_size(11).text_color(t.dim).child(reset));
-    });
-    const status = view.loading
-      ? "Refreshing…"
-      : [view.entry ? `Updated ${usage.age(view.entry.fetchedAt)}` : "No data yet", view.error].filter(Boolean).join(" · ");
-    const icon = svg("mods/usage/refresh.svg").size(14);
-
-    return root
-      .child(h_flex().justify_between().items_start().gap(8)
-        .child(v_flex().flex_1().gap(2)
-          .child(div().font_semibold().text_color(t.foreground).child(view.label))
-          .when(Boolean(meta), (el) => el.child(div().text_size(11.5).text_color(t.dim).child(meta))))
-        .child(div().id("usage-refresh").size(24).flex_none().flex().items_center().justify_center().rounded(6)
-          .text_color(t.muted).cursor_pointer().hover((s) => s.bg(t.hover).text_color(t.foreground))
-          .tooltip("Refresh")
-          .on_click(() => run("usage.refresh"))
-          .child(view.loading ? icon.spin(900) : icon)))
-      .child(v_flex().flex_1().gap(12).children(windows))
-      .child(div().truncate().text_size(11.5).text_color(view.error ? t.ansi1 : t.dim).child(status));
+    return v_flex().size_full().bg(t.chrome).border_t(1).border_color(t.border).px(8).justify_center()
+      .child(h_flex().id("usage-open").h(28).px(8).gap(9).items_center().rounded(8).text_size(13)
+        .text_color(t.muted).hover((s) => s.bg(t.hover).text_color(t.foreground)).cursor_pointer()
+        .when(narrow(), (el) => el.tooltip("Usage"))
+        .on_click(() => openUsage())
+        .child(svg("mods/usage/gauge.svg").size(14))
+        .when(!narrow(), (el) => el.child("Usage")));
   }
 }

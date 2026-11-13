@@ -48,7 +48,7 @@
           "id": "usage",
           "type": "block",
           "size": {
-            "px": 46
+            "px": 37
           },
           "content": {
             "mod": "usage"
@@ -69,7 +69,7 @@
         }
       ],
       "size": {
-        "px": 268
+        "px": 340
       },
       "min": 44,
       "max": 480,
@@ -173,16 +173,6 @@
         }
       ],
       "resizable": false
-    },
-    {
-      "id": "b60a38417ce64c35be006fd0dd2d11a14",
-      "type": "block",
-      "content": {
-        "mod": "usage"
-      },
-      "size": {
-        "px": 320
-      }
     }
   ],
   "background": "canvas",

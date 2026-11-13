@@ -1,14 +1,14 @@
-// Cloned from Herdr's shipped `spaces` mod (app 0.1.13). The only change: each
-// local checkout's GitHub PR after its name (pr.js), as in the Herdr TUI.
+// Cloned from Herdr's shipped `spaces` mod (app 0.1.13): local GitHub PR badges
+// (pr.js), as in the Herdr TUI, and shared marks for workspace pickers.
 //
 // Workspace spaces: stable colored avatars, worktrees under their checkout,
-// grouped by machine when more than one is known. After a space's name, the repo
-// its first terminal is in now, only where unusual: branch, ahead/behind. Agent state lives in the agents list, not here. Click to
-// switch, right-click for its menu, drag to reorder.
+// grouped by machine when more than one is known. Separate lines show the space's
+// state, Git details and agent session title. Click to switch, right-click for
+// its menu, drag to reorder.
 
-import { View, div, svg } from "gpui-kit";
+import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { spaces, machines, panes, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout } from "herdr";
+import { spaces, machines, panes, agents, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout } from "herdr";
 import { PullRequests } from "./pr.js";
 
 function find(node, id) {
@@ -29,7 +29,6 @@ function place(s, ps) {
   const tabs = new Set((s.tabs ?? []).map((c) => c.id));
   return ps.find((p) => tabs.has(p.tab) && p.cwd)?.cwd || s.folder;
 }
-const rowHeight = ({ tree }) => (tree ? 28 : 30);
 const where = (s, ps) => JSON.stringify([s.machine ?? null, place(s, ps)]);
 const base = (path) => path.replace(/\/+$/, "").split("/").pop();
 // Changes made outside Herdr (an editor's save, a commit in another app): looked
@@ -40,6 +39,12 @@ const FALLBACK = 60000;
 // that draws space avatars): one strong color per hue, light and dark alike.
 const MARK = { ansi6: "#22a99a", ansi3: "#e3814f", ansi4: "#5b8def", ansi5: "#8b7cf6", ansi2: "#3fae6a", ansi1: "#d9649a" };
 
+export function spaceMark(space, tree, t) {
+  if (tree) return { icon: "mods/workspace-chrome/branch.svg" };
+  const color = shared("space.colors")?.[space.id] ?? "ansi6";
+  return { color: color.startsWith("#") ? color : (MARK[color] ?? t[color]), text: [...space.name][0]?.toUpperCase() ?? "?" };
+}
+
 // A space speaks up only when something in it needs you.
 export function glyph(status) {
   return status === "blocked" || status === "done" ? "●" : "·";
@@ -47,6 +52,23 @@ export function glyph(status) {
 
 export function tone(t, status) {
   return t[status] ?? t.unknown;
+}
+
+const STATES = { blocked: "Needs input", done: "Finished", working: "Working", idle: "Idle", unknown: "Unknown" };
+
+export function activity(list) {
+  const counts = {};
+  for (const a of list) {
+    const status = Object.hasOwn(STATES, a.status) ? a.status : "unknown";
+    counts[status] = (counts[status] ?? 0) + 1;
+  }
+  const states = Object.keys(STATES).filter(s => counts[s]);
+  const status = states[0] ?? null;
+  return {
+    status,
+    agent: list.find(a => (Object.hasOwn(STATES, a.status) ? a.status : "unknown") === status),
+    label: states.map(s => list.length === 1 ? STATES[s] : `${counts[s]} ${STATES[s].toLowerCase()}`).join(" · ") || "No agents",
+  };
 }
 
 export default class Spaces extends View {
@@ -304,7 +326,15 @@ export default class Spaces extends View {
   // The rows, under a header per machine once one isn't this computer.
   grouped(t, collapsed) {
     const rows = this.ordered();
-    const draw = (r) => (collapsed ? this.compact(r, t) : this.row(r, t));
+    // Pickers use the same marks, without a second palette or worktree lookup.
+    const marks = Object.fromEntries(rows.map(({ w, tree }) => [w.id, spaceMark(w, tree, t)]));
+    if (JSON.stringify(shared("spaces-pr.marks")) !== JSON.stringify(marks)) setShared("spaces-pr.marks", marks);
+    const bySpace = new Map();
+    if (!collapsed) for (const a of agents()) {
+      if (!bySpace.has(a.space)) bySpace.set(a.space, []);
+      bySpace.get(a.space).push(a);
+    }
+    const draw = (r) => (collapsed ? this.compact(r, t) : this.row(r, t, activity(bySpace.get(r.w.id) ?? [])));
     const remote = [...new Set([...rows.map(r => r.w.machine).filter(Boolean), ...this.machines.map(m => m.name), ...Object.keys(this.reconnecting)])].sort();
     const loading = m => {
       const layout = machines().find(k => k.name === m)?.layout;
@@ -351,43 +381,44 @@ export default class Spaces extends View {
     });
   }
 
-  // Only what's unusual, after the name: "herdr \u00b7 spike \u21912 \u21931". The repo or
-  // branch goes when the name already says it (a worktree is named after its branch),
-  // and master/main go: nearly every space is on one.
+  // Always show the branch, even when the space name already contains it.
   gitTail(g, tree, name, t, pr) {
-    const raw = g.branch ?? "detached";
     const same = (a) => a.toLowerCase() === name.toLowerCase();
-    const branch = same(raw) || raw === "master" || raw === "main" ? "" : raw;
+    const branch = g.branch === "(detached)" ? "Detached HEAD" : g.branch ?? "Branch unknown";
     const repo = tree || same(g.name) ? "" : g.name;
     const where = [repo, branch].filter(Boolean).join(" \u00b7 ");
     return h_flex()
-      .flex_1()
       .min_w(0)
       .gap(5)
-      .justify_end()
       .items_center()
       .text_size(11.5)
-      .text_color(t.dim)
-      .when(Boolean(where), (el) => el.child(div().min_w(0).truncate().child(where)))
+      .text_color(t.muted)
+      .child(svg("mods/workspace-chrome/branch.svg").size(12).flex_none())
+      .child(div().flex_1().min_w(0).overflow_hidden().whitespace_nowrap().text_ellipsis_middle().tooltip(where).child(where))
       .when(Boolean(pr), (el) => el.child(pr))
       .when(g.ahead > 0, (el) => el.child(div().flex_none().text_color(t.ansi2).child(`\u2191${g.ahead}`)))
       .when(g.behind > 0, (el) => el.child(div().flex_none().text_color(t.ansi1).child(`\u2193${g.behind}`)));
   }
 
-  row({ w, i, g, tree, key }, t) {
+  row({ w, i, g, tree, key }, t, state) {
     const on = w.active;
     const fromIndex = this.pressed === null ? -1 : spaces().findIndex(s => s.id === this.pressed);
-    const colors = shared("space.colors") ?? {};
-    const color = colors[w.id] ?? "ansi6";
-    const fill = color.startsWith("#") ? color : (MARK[color] ?? t[color]);
+    const mark = spaceMark(w, tree, t);
+    const task = state.agent?.title?.trim() || state.agent?.program?.name || "Untitled agent";
+    const program = state.agent?.program;
+    const pic = program?.icon && (program.tint ? svg(program.icon).text_color(t.muted) : image(program.icon)).size(12).flex_none();
+    const indent = tree ? 44 : 27;
+    const git = g ?? (w.branch ? { name: w.name, branch: w.branch, ahead: 0, behind: 0 } : null);
     return v_flex()
       .relative()
       .id(`space-${w.id}`)
       .px(8)
-      .h(rowHeight({ tree }))
+      .py(8)
+      .gap(4)
       .flex_none()
       .justify_center()
       .rounded(8)
+      .accessibility_label([w.name, state.label, git?.branch, state.agent && task].filter(Boolean).join(", "))
       .when(on, (el) => el.bg(t.selected))
       .when(!on, (el) => el.hover((s) => s.bg(t.hover)))
       .when(this.pressed === w.id && this.over !== w.id, (el) => el.opacity(0.5))
@@ -422,13 +453,22 @@ export default class Spaces extends View {
       .on_mouse_down("right", () => this.menu(w))
       .child(
         h_flex()
+          .h(20)
           .gap(9)
           .items_center()
-          .when(Boolean(tree), el => el.pl(22).child(svg("mods/workspace-chrome/branch.svg").size(13).text_color(t.dim)))
-          .when(!tree, el => el.child(h_flex().size(18).flex_none().rounded(5).bg(fill).items_center().justify_center().text_size(10.5).font_bold().text_color("#ffffff").child([...w.name][0]?.toUpperCase() ?? "?")))
-          .child(div().flex_shrink(0).max_w(150).truncate().text_color(t.foreground).child(w.name))
-          .child(g ? this.gitTail(g, tree, w.name, t, this.prs.badge(key, t)) : div().flex_1()),
-      );
+          .when(Boolean(tree), el => el.pl(22).child(svg(mark.icon).size(13).flex_none().text_color(t.dim)))
+          .when(!tree, el => el.child(h_flex().size(18).flex_none().rounded(5).bg(mark.color).items_center().justify_center().text_size(10.5).font_bold().text_color("#ffffff").child(mark.text)))
+          .child(div().flex_1().min_w(0).truncate().font_medium().tooltip(w.name).text_color(t.foreground).child(w.name))
+          .child(h_flex().max_w(170).min_w(0).gap(4).items_center().text_size(11).text_color(state.status ? tone(t, state.status) : t.dim)
+            .when(state.status === "working", el => el.child(svg("mods/workspace-chrome/spinner.svg").size(12).flex_none().spin(900)))
+            .child(div().min_w(0).truncate().tooltip(state.label).child(state.label))),
+      )
+      .child(v_flex().pl(indent).min_w(0)
+        .child(git ? this.gitTail(git, tree, w.name, t, g ? this.prs.badge(key, t) : null)
+          : div().text_size(11.5).text_color(t.dim).child(this.unsure.has(key) ? "Git unavailable" : key in this.git ? "No Git repository" : "Checking Git…")))
+      .when(Boolean(state.agent), el => el.child(h_flex().pl(indent).h(18).min_w(0).gap(5).items_center().text_size(12).text_color(t.muted)
+        .when(Boolean(pic), line => line.child(pic))
+        .child(div().flex_1().min_w(0).truncate().tooltip(task).child(task))));
   }
 
   compact({ w, i }, t) {
