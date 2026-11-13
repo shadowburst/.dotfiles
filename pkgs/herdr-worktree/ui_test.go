@@ -218,7 +218,7 @@ func TestNewNeedsPrompt(t *testing.T) {
 }
 
 func TestOpencodeHidesModelAndEffort(t *testing.T) {
-	m := send(testUI(t, &recorder{}), keys("n", "tab", "l", "l", "l")...)
+	m := send(testUI(t, &recorder{}), keys("n", "tab", "l", "l")...)
 	if m.form.agent != "opencode" {
 		t.Fatalf("agent = %q", m.form.agent)
 	}

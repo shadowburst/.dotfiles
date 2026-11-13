@@ -4,6 +4,7 @@
 !/sidebar-switch/
 !/spaces-pr/
 !/t3-inbox/
+!/usage/
 !/worktrees/
 # Type files the app writes into every mod folder.
 *.d.ts

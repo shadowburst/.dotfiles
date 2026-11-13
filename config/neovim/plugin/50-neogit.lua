@@ -28,18 +28,18 @@ local function progress(title)
   end
 end
 
-local function run_pi_git_action(skill)
+-- OpenCode runs the skill without a TUI. --auto: it cannot ask for permissions here.
+local function run_git_action(skill)
   local neogit = require("neogit")
-  local done = progress("Pi " .. skill)
+  local done = progress("OpenCode " .. skill)
 
   vim.system({
-    "pi",
-    "--print",
-    "--no-session",
+    "opencode",
+    "run",
+    "--archived",
+    "--auto",
     "--model",
-    "openai-codex/gpt-6-luna",
-    "--thinking",
-    "low",
+    "openai/gpt-6-luna#low",
     "Use the `" .. skill .. "` skill.",
   }, { cwd = neogit.status.instance().cwd, text = true }, function(result)
     vim.schedule(function()
@@ -49,13 +49,13 @@ local function run_pi_git_action(skill)
       local output = vim.trim((result.stdout or "") .. "\n" .. (result.stderr or ""))
       if result.code == 0 then
         if output ~= "" then
-          Snacks.notifier.hide(Snacks.notify.info(output, { title = "Pi " .. skill .. " report" }))
+          Snacks.notifier.hide(Snacks.notify.info(output, { title = "OpenCode " .. skill .. " report" }))
         end
-        Snacks.notify.info("Pi " .. skill .. " completed", { title = "Neogit" })
+        Snacks.notify.info("OpenCode " .. skill .. " completed", { title = "Neogit" })
       else
         Snacks.notify.error(
-          output ~= "" and output or "Pi exited with code " .. result.code,
-          { title = "Pi " .. skill }
+          output ~= "" and output or "OpenCode exited with code " .. result.code,
+          { title = "OpenCode " .. skill }
         )
       end
     end)
@@ -111,7 +111,7 @@ local function create_ai_popup()
     :name("NeogitAiPopup")
     :new_action_group("AI")
     :action("c", "Commit", generate_commit)
-    :action("p", "Pull request", function() run_pi_git_action("pr") end)
+    :action("p", "Pull request", function() run_git_action("pr") end)
     :build()
 
   popup:show()

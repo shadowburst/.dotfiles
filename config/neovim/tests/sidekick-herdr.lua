@@ -116,7 +116,7 @@ function running(opts)
       process_info = {
         shell_pid = opts.shell or 4242,
         foreground_processes = {
-          { pid = opts.pid or 4243, cmdline = opts.cmd or "/nix/store/xxx/bin/pi", cwd = opts.cwd or CWD },
+          { pid = opts.pid or 4243, cmdline = opts.cmd or "/nix/store/xxx/bin/opencode", cwd = opts.cwd or CWD },
         },
       },
     },
@@ -140,27 +140,28 @@ assert(Session.backends.herdr, "must register the herdr backend inside herdr")
 assert(Config.cli.mux.backend == "herdr", "backend must be herdr")
 assert(Config.cli.mux.enabled == true, "mux must be enabled")
 assert(#notes == 0, "setup must not notify: " .. vim.inspect(notes))
-assert(Session.new({ tool = "pi", cwd = CWD }).backend == "herdr", "sessions must use the herdr backend")
+assert(Session.new({ tool = "opencode", cwd = CWD }).backend == "herdr", "sessions must use the herdr backend")
 
 -- 2. start(): a herdr tab in the ambient session, launched with `pane run`, no terminal window.
 reset()
 vim.env.HERDR_ENV = "1"
 vim.env.HERDR_WORKSPACE_ID = "w1"
 require("sidekick-herdr").setup()
-local session = Session.new({ tool = "pi", cwd = CWD })
+local session = Session.new({ tool = "opencode", cwd = CWD })
 assert(session.external == false, "our sessions are ours, not pre-existing ones")
 pane_list()
-replies["herdr tab create --workspace w1 --cwd " .. CWD .. " --label " .. session.sid .. " --no-focus"] =
+-- sidekick's opencode tool sets OPENCODE_THEME=system.
+replies["herdr tab create --workspace w1 --cwd " .. CWD .. " --label " .. session.sid .. " --no-focus --env OPENCODE_THEME=system"] =
   vim.json.encode({ result = { root_pane = { pane_id = PANE, terminal_id = TERMINAL, cwd = CWD } } })
-replies["herdr pane run " .. PANE .. " exec 'pi'"] = ""
+replies["herdr pane run " .. PANE .. " exec 'opencode'"] = ""
 session:start()
 assert(#issued("terminal attach") == 0, "must not ask sidekick for a terminal window")
 assert(
   issued("tab create")[1]
-    == "herdr tab create --workspace w1 --cwd " .. CWD .. " --label " .. session.sid .. " --no-focus",
+    == "herdr tab create --workspace w1 --cwd " .. CWD .. " --label " .. session.sid .. " --no-focus --env OPENCODE_THEME=system",
   "must create a tab in the ambient workspace: " .. vim.inspect(issued())
 )
-assert(issued("pane run")[1] == "herdr pane run " .. PANE .. " exec 'pi'", "must launch via pane run")
+assert(issued("pane run")[1] == "herdr pane run " .. PANE .. " exec 'opencode'", "must launch via pane run")
 assert(#issued("--session") == 0, "must never target a named session: " .. vim.inspect(issued()))
 
 -- 3. identity: the id used at attach time is the id discovery reports, or the attach is silently pruned.
@@ -174,9 +175,9 @@ require("sidekick-herdr").setup()
 pane_list()
 running()
 local found = discovered()
-assert(#found == 1, "must discover the running pi pane, got " .. #found)
+assert(#found == 1, "must discover the running opencode pane, got " .. #found)
 assert(found[1].id == "herdr " .. TERMINAL, "discovery id must match the attach id, got " .. found[1].id)
-assert(found[1].tool.name == "pi", "must match pi by process")
+assert(found[1].tool.name == "opencode", "must match opencode by process")
 assert(found[1].cwd == CWD, "must take cwd from the pane")
 assert(vim.tbl_contains(found[1].pids, 4243), "must record the agent pid")
 
@@ -194,8 +195,8 @@ replies["herdr pane process-info --pane " .. PANE] = vim.json.encode({
     process_info = {
       shell_pid = 4242,
       foreground_processes = {
-        { pid = 4243, cmdline = "/nix/store/xxx/bin/pi", cwd = CWD },
-        { pid = 4244, cmdline = "/nix/store/xxx/bin/pi --resume", cwd = CWD },
+        { pid = 4243, cmdline = "/nix/store/xxx/bin/opencode", cwd = CWD },
+        { pid = 4244, cmdline = "/nix/store/xxx/bin/opencode --resume", cwd = CWD },
       },
     },
   },
@@ -207,7 +208,7 @@ reset()
 vim.env.HERDR_ENV = "1"
 vim.env.HERDR_WORKSPACE_ID = nil
 require("sidekick-herdr").setup()
-local orphan = Session.new({ tool = "pi", cwd = CWD })
+local orphan = Session.new({ tool = "opencode", cwd = CWD })
 orphan:start()
 vim.wait(200) -- Util.error notifies on a scheduled tick
 assert(#issued("tab create") == 0, "must not build a tab command without a workspace")
@@ -232,16 +233,16 @@ assert(issued("send-keys")[1] == "herdr pane send-keys " .. PANE .. " Enter", "s
 reset()
 vim.env.HERDR_ENV = "1"
 vim.env.HERDR_WORKSPACE_ID = "w1"
-Config.cli.tools.pi = { env = { PI_THEME = "dark" } }
+Config.cli.tools.opencode = { env = { OPENCODE_THEME = "dark" } }
 require("sidekick-herdr").setup()
-local envd = Session.new({ tool = "pi", cwd = CWD })
+local envd = Session.new({ tool = "opencode", cwd = CWD })
 pane_list()
-replies["herdr tab create --workspace w1 --cwd " .. CWD .. " --label " .. envd.sid .. " --no-focus --env PI_THEME=dark"] =
+replies["herdr tab create --workspace w1 --cwd " .. CWD .. " --label " .. envd.sid .. " --no-focus --env OPENCODE_THEME=dark"] =
   vim.json.encode({ result = { root_pane = { pane_id = PANE, terminal_id = TERMINAL } } })
-replies["herdr pane run " .. PANE .. " exec 'pi'"] = ""
+replies["herdr pane run " .. PANE .. " exec 'opencode'"] = ""
 envd:start()
-assert(issued("--env PI_THEME=dark")[1] ~= nil, "tool env must reach the tab: " .. vim.inspect(issued()))
-Config.cli.tools.pi = {}
+assert(issued("--env OPENCODE_THEME=dark")[1] ~= nil, "tool env must reach the tab: " .. vim.inspect(issued()))
+Config.cli.tools.opencode = {}
 
 -- 6. focus: the attached session's pane, or nothing when none is attached.
 reset()
@@ -372,7 +373,7 @@ vim.wait(100)
 assert(#issued("send-text") == 1, "a cancelled prompt must send nothing")
 assert(#issued("agent focus") == 1, "a cancelled prompt must not focus")
 
--- 9. Exercise the actual keymaps: reuse any local agent, never start Pi.
+-- 9. Exercise the actual keymaps: reuse any local agent, never start OpenCode.
 vim.cmd.packadd("codediff.nvim")
 local maps = {}
 local snacks, pack_add = _G.Snacks, vim.pack.add
@@ -389,7 +390,7 @@ local file = CWD .. "/example.lua"
 vim.cmd.edit(vim.fn.fnameescape(file))
 maps["<leader>af"]()
 vim.wait(100)
-assert(#issued("tab create") == 0, "send must reuse Claude rather than start Pi")
+assert(#issued("tab create") == 0, "send must reuse Claude rather than start OpenCode")
 assert(#picks == 0, "one local agent must be selected without a picker")
 assert(#issued("send-text") == 1, "file keymap must send to the existing agent")
 
@@ -415,7 +416,7 @@ Session.attach(discovered()[1])
 maps["<leader>af"]()
 vim.wait(100)
 assert(#issued("send-text") == 0, "must not send to an attached agent in another directory")
-assert(#issued("tab create") == 0, "no local agent must not start Pi")
+assert(#issued("tab create") == 0, "no local agent must not start OpenCode")
 
 reset()
 dofile(plugin)
@@ -423,7 +424,7 @@ pane_list()
 running({ cmd = "/nix/store/xxx/bin/claude" })
 require("sidekick-herdr").prompt_cb()("preview", rendered)
 vim.wait(100)
-assert(#issued("tab create") == 0, "prompts must reuse Claude rather than start Pi")
+assert(#issued("tab create") == 0, "prompts must reuse Claude rather than start OpenCode")
 assert(#issued("send-text") == 1, "prompt must reach the existing agent")
 
 _G.Snacks, vim.pack.add = snacks, pack_add

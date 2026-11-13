@@ -39,7 +39,7 @@ func TestAttachHerdr(t *testing.T) {
 		{WorkspaceID: "w2", Worktree: &worktreeInfo{CheckoutPath: "/w/b"}},
 	}
 	agents := []herdrAgent{
-		{Agent: "pi", AgentStatus: "idle", WorkspaceID: "w2", Cwd: "/elsewhere"},
+		{Agent: "codex", AgentStatus: "idle", WorkspaceID: "w2", Cwd: "/elsewhere"},
 		{Agent: "claude", AgentStatus: "working", WorkspaceID: "w9", Cwd: "/r/.wt/a/src"},
 	}
 	attachHerdr(rows, spaces, agents)
@@ -49,7 +49,7 @@ func TestAttachHerdr(t *testing.T) {
 	if r := rows[1]; r.Agent != "claude" || !r.Busy {
 		t.Errorf("nested worktree = %+v", r)
 	}
-	if r := rows[2]; r.Agent != "pi" || r.Busy || !reflect.DeepEqual(r.Workspaces, []string{"w2"}) {
+	if r := rows[2]; r.Agent != "codex" || r.Busy || !reflect.DeepEqual(r.Workspaces, []string{"w2"}) {
 		t.Errorf("b = %+v", r)
 	}
 }

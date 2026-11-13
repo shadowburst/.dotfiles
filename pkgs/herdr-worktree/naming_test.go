@@ -111,7 +111,6 @@ func TestAgentArgs(t *testing.T) {
 	}{
 		{"claude", "opus", "high", []string{"--model", "opus", "--effort", "high"}},
 		{"codex", "gpt", "low", []string{"-m", "gpt", "-c", "model_reasoning_effort=low"}},
-		{"pi", "a/b", "max", []string{"--model", "a/b", "--thinking", "max"}},
 		{"opencode", "x", "y", nil},
 		{"claude", "", "", nil},
 		{"codex", "", "low", []string{"-c", "model_reasoning_effort=low"}},

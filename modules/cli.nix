@@ -7,7 +7,7 @@ _: {
       programs.cava.enable = true;
       programs.direnv.enable = true;
 
-      home.sessionVariables.AGENT = "pi";
+      home.sessionVariables.AGENT = "opencode";
 
       home.packages = with pkgs; [
         act

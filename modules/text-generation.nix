@@ -19,7 +19,7 @@ _: {
             only the text on stdout. Override it per host in `homeModules.<host>`.
 
             Nix code uses `lib.getExe config.textGeneration.package`. Code that is
-            not Nix (neovim, pi extensions, scripts) runs `textgen` from PATH.
+            not Nix (neovim, scripts) runs `textgen` from PATH.
           '';
         };
         package = lib.mkOption {

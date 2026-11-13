@@ -14,7 +14,7 @@ local M = {}
 M.BACKEND = "herdr"
 M.CREATE = "window" -- a tab in the session nvim is already running inside
 M.DEFAULT_SESSION = "default"
-M.TOOL = "pi"
+M.TOOL = "opencode"
 
 --- Build a herdr command. Deliberately never passes `--session`: this backend
 --- only ever drives the session nvim is already running inside (see `setup`).

@@ -3,7 +3,7 @@
 import { agents, appHome, exec, home, panes, readTextFile, spaces } from "herdr";
 
 // The agents in the New form. Each must be on PATH.
-export const AGENT_KINDS = ["claude", "codex", "pi", "opencode"];
+export const AGENT_KINDS = ["claude", "codex", "opencode"];
 export const PREVIEW_MODES = ["diff", "log", "changes"];
 const PREVIEW_LINES = 500;
 const DEFAULT_NAMING = ["textgen"];
@@ -17,14 +17,40 @@ export async function git(cwd, args) {
   }
 }
 
-// worktrees.json, written by Nix: { naming_command, agents: { kind: { models, efforts } } }.
-// The first value of each list is the default.
+// worktrees.json, written by Nix: { naming_command, agents: { kind: { models, efforts } },
+// opencode: { providers } }. The first value of each list is the default. OpenCode's
+// models come from its service, limited to the listed providers.
 export async function loadConfig() {
   let cfg = {};
   try {
     cfg = JSON.parse((await readTextFile(`${appHome()}/worktrees.json`)) ?? "{}");
   } catch {}
-  return { naming_command: cfg.naming_command?.length ? cfg.naming_command : DEFAULT_NAMING, agents: cfg.agents ?? {} };
+  return {
+    naming_command: cfg.naming_command?.length ? cfg.naming_command : DEFAULT_NAMING,
+    agents: cfg.agents ?? {},
+    opencodeProviders: cfg.opencode?.providers ?? [],
+  };
+}
+
+async function opencodeApi(cwd, path) {
+  const r = await exec("sh", ["-c", 'exec timeout 20 opencode api get "$1"', "sh", path], { cwd });
+  if (r.code !== 0) throw new Error(`opencode api get ${path}: ${(r.stderr || r.stdout).trim()}`);
+  return JSON.parse(r.stdout).data ?? [];
+}
+
+// OpenCode's chat models, by provider in the order of `providers` (all when empty):
+// [{ id, name, models: [{ id, name, variants }] }]. Its variants are the effort levels.
+export async function loadOpencodeModels(cwd, providers) {
+  const [list, known] = await Promise.all([opencodeApi(cwd, "/api/model"), opencodeApi(cwd, "/api/provider")]);
+  const names = Object.fromEntries(known.map((p) => [p.id, p.name]));
+  const ids = providers.length ? providers : [...new Set(list.map((m) => m.providerID))];
+  return ids.map((id) => ({
+    id,
+    name: names[id] ?? id,
+    models: list
+      .filter((m) => m.providerID === id && m.type !== "image" && m.enabled !== false && m.status !== "deprecated")
+      .map((m) => ({ id: m.id, name: m.name || m.id, variants: (m.variants ?? []).map((v) => (typeof v === "string" ? v : v.id)) })),
+  })).filter((p) => p.models.length);
 }
 
 // The repository of a folder: its main checkout, name, and the current branch.
@@ -137,6 +163,7 @@ export async function loadPreview(repo, def, row, mode) {
   } else if (row.path) {
     out = (await git(row.path, ["status", "--short"])).out + (await git(row.path, ["diff", "HEAD"])).out;
   }
+  if (!out.trim()) return [];
   return out.replace(/\n+$/, "").replaceAll("\t", "    ").split("\n").slice(0, PREVIEW_LINES).map((text) => {
     const kind = /^(\+\+\+|---)/.test(text) ? "" : text.startsWith("@@") ? "@" : text[0] === "+" ? "+" : text[0] === "-" ? "-" : "";
     return { kind, text };
@@ -193,14 +220,29 @@ export const branchSlug = (branch) => branch.slice(branch.lastIndexOf("/") + 1);
 
 // ---------------------------------------------------------------- launch
 
-// The agent and its native flags; the prompt comes last (opencode's after --prompt).
-export function agentArgv(kind, model, effort) {
+// OpenCode's TUI has no model flag: the script makes a session with the model and
+// the variant ($1, a Model.Ref) in the checkout, then opens it with the prompt ($2).
+// No "}}" or "{{" in it: wt reads its arguments as templates.
+const OPENCODE_SESSION = `
+d=$(printf %s "$PWD" | sed 's/[\\\\"]/\\\\&/g')
+r=$(opencode api post /api/session -d "{\\"model\\":$1,\\"location\\":{\\"directory\\":\\"$d\\"} }")
+id=$(printf %s "$r" | grep -o '"id":"ses_[^"]*"' | head -n 1 | cut -d '"' -f 4)
+[ -n "$id" ] || { printf 'No OpenCode session with this model: %s\\n' "$r" >&2; exec opencode --prompt "$2"; }
+exec opencode --session "$id" --prompt "$2"`;
+
+// The agent and its native flags; the prompt comes last.
+export function agentArgv(kind, sel = {}) {
+  const { provider, model, effort } = sel;
+  if (kind === "opencode") {
+    if (!provider || !model) return ["opencode", "--prompt"];
+    const ref = { providerID: provider, id: model, ...(effort ? { variant: effort } : {}) };
+    return ["sh", "-c", OPENCODE_SESSION, "sh", JSON.stringify(ref)];
+  }
   const argv = [kind];
   if (kind === "codex") argv.push("--no-daemon"); // else its commands run outside herdr-core
-  const flags = { claude: ["--model", "--effort"], pi: ["--model", "--thinking"], codex: ["-m", "-c"] }[kind];
+  const flags = { claude: ["--model", "--effort"], codex: ["-m", "-c"] }[kind];
   if (flags && model) argv.push(flags[0], model);
   if (flags && effort) argv.push(flags[1], kind === "codex" ? `model_reasoning_effort=${effort}` : effort);
-  if (kind === "opencode") argv.push("--prompt");
   return argv;
 }
 

@@ -4,11 +4,22 @@ _: {
     {
       programs.opencode = {
         enable = true;
+        package = pkgs.symlinkJoin {
+          name = "opencode-wrapped";
+          paths = [ pkgs.opencode ];
+          nativeBuildInputs = [ pkgs.makeWrapper ];
+          postBuild = ''
+            wrapProgram $out/bin/opencode --set CLAUDE_CODE_ENTRYPOINT opencode
+          '';
+          inherit (pkgs.opencode) meta passthru version;
+        };
         mutableSettings = true;
         context = ''
           Reply in ASD-STE100 Simplified Technical English.
 
           During grilling sessions, ask every round through the `question` tool, batching the whole frontier into one call.
+
+          Start subagents with the `subagent` tool, on any listed model. Use `hc` only for agents that the user must see or steer.
         '';
         settings = {
           lsp = false;

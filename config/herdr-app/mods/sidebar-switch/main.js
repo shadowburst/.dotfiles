@@ -1,10 +1,12 @@
 // The header of the sidebar stack: Spaces or Inbox, one click or key apart.
-// Key commands: "sidebar" switches the stack, "changes" shows or hides the
+// Key commands: "sidebar" switches the stack, "left" / "right" go to Spaces /
+// Inbox (no wrap), "next" / "prev" go to the next or previous space, or agent
+// while the Inbox shows (alt+tab; the props.keys copy), "changes" shows or hides the
 // Changes panel (one key, as the TUI's review pane).
 
 import { View, div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { agents, layout, nextCommand, run, theme } from "herdr";
+import { agents, layout, nextCommand, props, run, theme } from "herdr";
 
 const STACK = "sidebar-lists";
 
@@ -34,10 +36,21 @@ function toggleChanges() {
 
 export default class SidebarSwitch extends View {
   init(_props, cx) {
+    // The copy with props.keys floats over the whole window and draws nothing:
+    // it answers alt+tab even while the sidebar is hidden. The header answers the rest.
+    this.keys = Boolean(props()?.keys);
     cx.spawn(async (cx) => {
       for (;;) {
         const command = await nextCommand();
+        if (this.keys) {
+          // The next space, or the next agent of the Inbox while it shows.
+          if (command === "next" || command === "prev") run(`${active() === "inbox" ? "agent" : "space"}.${command}`, {});
+          continue;
+        }
         if (command === "sidebar") show(active() === "inbox" ? "lists" : "inbox");
+        // Spaces is on the left, Inbox on the right: no wrap at either end.
+        else if (command === "left") show("lists");
+        else if (command === "right") show("inbox");
         else if (command === "changes") toggleChanges();
         cx.notify();
       }
@@ -65,6 +78,7 @@ export default class SidebarSwitch extends View {
   }
 
   render() {
+    if (this.keys) return div();
     const t = theme();
     // Agents that wait for the person: what the Inbox puts on top.
     const waiting = agents().filter((a) => a.status === "blocked" || a.status === "done").length;

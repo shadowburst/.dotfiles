@@ -23,15 +23,16 @@ let
       tui = "previous_workspace";
       app = "space.prev";
     }
+    # The app's alt+tab goes through the agents instead while the Inbox shows (keys.json).
     {
       key = "alt+up";
       tui = "previous_agent";
-      app = "agent.prev";
+      app = null;
     }
     {
       key = "alt+down";
       tui = "next_agent";
-      app = "agent.next";
+      app = null;
     }
     {
       key = "alt+n";
@@ -158,25 +159,6 @@ let
         "medium"
         "low"
         "xhigh"
-      ];
-    };
-    pi = {
-      models = [
-        "openai-codex/gpt-6.1-sol"
-        "openai-codex/gpt-6-astra"
-        "openai-codex/gpt-6-luna"
-        "claude-code/claude-fable-5-1"
-        "claude-code/claude-opus-5-5"
-        "claude-code/claude-haiku-5-5"
-      ];
-      efforts = [
-        "medium"
-        "high"
-        "low"
-        "off"
-        "minimal"
-        "xhigh"
-        "max"
       ];
     };
   };
@@ -402,6 +384,11 @@ in
       home.file.${appFile "worktrees.json"}.source = json.generate "herdr-app-worktrees.json" {
         naming_command = [ (lib.getExe config.textGeneration.package) ];
         agents = worktreeAgents;
+        # OpenCode's models and efforts come from its service; only these providers show.
+        opencode.providers = [
+          "openai"
+          "claude-agent"
+        ];
       };
 
       home.file.${appFile "keys.json"}.source = json.generate "herdr-app-keys.json" {
@@ -420,6 +407,8 @@ in
           // {
             # The inbox layout: Spaces or Inbox in the sidebar, and settle the agent in view.
             "alt-i" = "sidebar-switch.sidebar";
+            "alt-left" = "sidebar-switch.left";
+            "alt-right" = "sidebar-switch.right";
             "alt-shift-s" = "t3-inbox.settle";
 
             # The app's own keys, kept from its defaults.
@@ -435,6 +424,11 @@ in
             "f2" = "tab.rename";
             "shift-f2" = "space.rename";
           };
+        # The inbox layout: alt+tab goes through the spaces or the agents, as the sidebar shows.
+        "layout:inbox" = {
+          "alt-tab" = "sidebar-switch.next";
+          "alt-shift-tab" = "sidebar-switch.prev";
+        };
         terminal = {
           # As kitty sends them for the TUI.
           "ctrl-backspace" = builtins.fromJSON ''"send:\u0017"'';

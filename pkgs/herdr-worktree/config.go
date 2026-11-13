@@ -12,7 +12,7 @@ import (
 )
 
 // agentKinds is the list in the popup. A kind must be a Herdr `--kind` value.
-var agentKinds = []string{"claude", "codex", "pi", "opencode"}
+var agentKinds = []string{"claude", "codex", "opencode"}
 
 // defaultNamingCommand is the flake's text generation wrapper.
 var defaultNamingCommand = []string{"textgen"}
@@ -50,8 +50,6 @@ func agentArgs(kind, model, effort string) []string {
 	switch kind {
 	case "claude":
 		modelFlag, effortFlag = "--model", "--effort"
-	case "pi":
-		modelFlag, effortFlag = "--model", "--thinking"
 	case "codex":
 		modelFlag, effortFlag = "-m", "-c"
 		if effort != "" {
