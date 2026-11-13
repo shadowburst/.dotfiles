@@ -47,6 +47,8 @@ _: {
             "agent.cycle" = "none";
             "agent.cycle.reverse" = "none";
             "variant.cycle" = "shift+tab";
+            "prompt.editor" = "ctrl+g,<leader>e";
+            "session.first" = "home,alt+home";
             "session.fork" = "<leader>f";
             "session.half.page.up" = "ctrl+u";
             "session.half.page.down" = "ctrl+d";
