@@ -1,6 +1,7 @@
 // Worktrees: the Herdr TUI worktree plugin as a native popup. The list of
 // worktrees and branches is the home view; n, m and x open the New, Merge and
 // Remove views for the selected row. Every view has its buttons at the bottom.
+// / filters both panes, p changes the preview, and Tab moves keyboard focus.
 //
 // New runs `wt switch` (with the repo's hooks), then opens a space in the checkout.
 // Merge and remove run `wt` in a hidden herdr-core terminal; its output shows here.
@@ -9,13 +10,14 @@
 // Choices open with Enter, Space or an arrow; Up/Down select, Enter confirms.
 
 import { View, div, image, svg } from "gpui-kit";
-import { h_flex, v_flex, Button, Combobox, Input, InputState, Popup, Scrollbar, Textarea, TextareaState, VirtualListScrollHandle, v_virtual_list } from "gpui-base";
+import { h_flex, v_flex, h_resizable, resizable_panel, Button, Combobox, Input, InputState, Popup, Scrollbar, Textarea, TextareaState, VirtualListScrollHandle, v_virtual_list } from "gpui-base";
 import { closeOverlay, focused, panes, props, run, settings, shared, spaces, theme } from "herdr";
 import {
   AGENT_KINDS, PREVIEW_MODES, agentArgv, attach, branchSlug, detectRepo, generateBranch, git, loadBranches,
-  loadConfig, loadOpencodeModels, loadPreview, loadRows, mergeBase, promptCommand, uniqueName,
+  lastFetch, loadConfig, loadOpencodeModels, loadPreview, loadRows, mergeBase, promptCommand, rowKey, rowName, rowRef, uniqueName,
 } from "./data.js";
 import { Job } from "./job.js";
+import { Graph } from "./graph.js";
 
 const CHOICES = ["workspace", "agent", "model", "effort", "branch", "base"];
 const CHOICE_KEYS = ["up", "down", "enter", "escape", "tab", "shift-tab"];
@@ -56,8 +58,6 @@ function fuzzy(s, q) {
   return i === q.length;
 }
 
-const rowName = (r) => r.branch || "(detached)";
-
 // Why the row cannot be merged or removed, or "".
 function refusal(r, view) {
   if (r.main) return "This is the main checkout.";
@@ -89,6 +89,8 @@ export default class Worktrees extends View {
     this.opencodeError = "";
     this.listScroll = VirtualListScrollHandle.new();
     this.previewScroll = VirtualListScrollHandle.new();
+    this.previewHandle = cx.focus_handle();
+    this.graph = new Graph(cx, (key, cx) => this.selectRef(key, cx));
     this.choiceScroll = VirtualListScrollHandle.new();
     this.choiceHandles = Object.fromEntries([...CHOICES, "launch", "back"].map((f) => [f, cx.focus_handle()]));
     this.choiceSearch = InputState.new({ placeholder: "Type to search…" });
@@ -100,7 +102,12 @@ export default class Worktrees extends View {
     this.filter = InputState.new({ placeholder: "Filter branches" });
     this.filter.on("change", (_e, cx) => {
       this.cursor = 0;
-      this.loadPreview(cx);
+      this.searchTimer?.cancel();
+      this.searchTimer = cx.timer.after(120, (cx) => {
+        this.listScroll.scroll_to_item(0);
+        this.loadPreview(cx, false, true);
+        cx.notify();
+      });
       cx.notify();
     });
     this.filter.on("focus", (_e, cx) => {
@@ -163,6 +170,9 @@ export default class Worktrees extends View {
 
     this.handle.focus();
     cx.timer.after(600, () => this.view === "list" && !this.filtering && this.handle.focus());
+    cx.timer.every(5000, (cx) => {
+      if (this.repo && this.view === "list" && !this.busy && !this.reloading && !this.fetching) cx.spawn((cx) => this.reload(cx));
+    });
     cx.spawn(async (cx) => {
       this.cfg = await loadConfig();
       this.repo = await detectRepo(props()?.folder ?? callerFolder(this.workspace));
@@ -201,20 +211,44 @@ export default class Worktrees extends View {
   }
 
   async reload(cx) {
-    const r = await loadRows(this.repo.root, false);
+    if (this.reloading) return;
+    this.reloading = true;
+    const repo = this.repo;
+    const [r, names, fetched] = await Promise.all([loadRows(repo.root, false), loadBranches(repo.root), lastFetch(repo.root)]);
+    if (this.repo !== repo) { this.reloading = false; return; }
+    const before = this.current() && rowKey(this.current());
     if (r.error) this.setMessage(r.error, false);
-    else this.setRows(r.def, attach(r.rows));
-    this.loadPreview(cx);
+    else { this.setRows(r.def, attach(r.rows)); this.names = names; }
+    this.fetched = fetched;
+    this.reloading = false;
+    this.loadPreview(cx, true, !before || before !== (this.current() && rowKey(this.current())));
+    cx.notify();
+  }
+
+  fetchAll(cx) {
+    if (this.fetching) return;
+    this.fetching = true;
+    const repo = this.repo;
+    cx.spawn(async (cx) => {
+      const r = await git(repo.root, ["fetch", "--all", "--no-prune", "--no-prune-tags"]);
+      if (this.repo !== repo) { this.fetching = false; return; }
+      this.fetching = false;
+      this.setMessage(r.ok ? "Fetched all remotes." : `Fetch failed: ${r.err}`, r.ok);
+      await this.reload(cx);
+    });
     cx.notify();
   }
 
   // Keeps the selected row when it is still there, else selects the caller's checkout.
   setRows(def, rows) {
     const current = this.current();
+    const prs = new Map(this.rows.map((r) => [rowKey(r), r.pr]));
+    for (const r of rows) r.pr ||= prs.get(rowKey(r)) ?? 0;
     this.def = def;
     this.rows = rows;
+    this.rowsLoaded = true;
     const at = this.visible().findIndex((r) =>
-      current ? r.branch === current.branch && r.remote === current.remote : r.path && r.path === this.repo.top);
+      current ? rowKey(r) === rowKey(current) : r.path && r.path === this.repo.top);
     this.cursor = Math.max(at, 0);
   }
 
@@ -245,7 +279,7 @@ export default class Worktrees extends View {
     this.cursor = Math.min(Math.max(this.cursor + d, 0), Math.max(n - 1, 0));
     this.listScroll.scroll_to_item(this.cursor);
     this.scrollPreview(-Infinity);
-    this.loadPreview(cx);
+    this.loadPreview(cx, false, true);
     cx.notify();
   }
 
@@ -257,23 +291,31 @@ export default class Worktrees extends View {
   setPreview(mode, cx) {
     this.preview = (mode + PREVIEW_MODES.length) % PREVIEW_MODES.length;
     this.scrollPreview(-Infinity);
-    this.loadPreview(cx);
+    this.loadPreview(cx, false, this.preview === 0);
+    this.handle.focus();
     cx.notify();
   }
 
   previewKey(r) {
-    return JSON.stringify([this.preview, r.path, r.remote, r.branch]);
+    return JSON.stringify([this.repo.root, this.preview, rowKey(r), r.sha]);
   }
 
-  loadPreview(cx) {
+  loadPreview(cx, refresh = false, reveal = false) {
     const r = this.current();
-    if (!r || this.previewKey(r) in this.previews) return;
+    this.graph.configure(this.repo.root, this.visible(), r, cx, reveal);
+    if (this.preview === 0 || !r || (!refresh && this.previewKey(r) in this.previews)) return;
     const key = this.previewKey(r);
-    this.previews[key] = null;
+    if (!(key in this.previews)) this.previews[key] = null;
     cx.spawn(async (cx) => {
       this.previews[key] = await loadPreview(this.repo.root, this.def, r, this.preview);
       cx.notify();
     });
+  }
+
+  selectRef(key, cx) {
+    const at = this.visible().findIndex((r) => rowKey(r) === key);
+    if (at < 0) return;
+    this.move(at - this.cursor, cx);
   }
 
   startFilter(cx) {
@@ -300,6 +342,7 @@ export default class Worktrees extends View {
       case "ctrl-d": this.scrollPreview(page); return cx.notify();
       case "ctrl-u": this.scrollPreview(-page); return cx.notify();
       case "p": return this.setPreview(this.preview + 1, cx);
+      case "f": return this.fetchAll(cx);
       case "/": return this.startFilter(cx);
       case "enter": return this.open(cx);
       case "n": return this.openNew(cx);
@@ -318,7 +361,8 @@ export default class Worktrees extends View {
       this.showCheckout(r);
       return this.close();
     }
-    this.launch({ branch: r.branch, base: this.def, prompt: "" }, cx);
+    if (r.remote && this.names.local.has(r.branch)) return this.openNew(cx, true);
+    this.launch({ branch: r.branch, base: r.remote ? rowRef(r) : this.def, remote: r.remote, prompt: "" }, cx);
   }
 
   // Shows the space of a checkout, or opens one.
@@ -336,6 +380,7 @@ export default class Worktrees extends View {
     this.base.set_value(this.names.names.includes(this.repo.base) ? this.repo.base : this.names.names[0] ?? "");
     const d = store("draft", null);
     if (!d?.prompt) return;
+    this.createFromBase = d.repo === this.repo.root && Boolean(d.createFromBase);
     this.prompt.set_value(d.prompt);
     this.branch.set_value(d.branch ?? "");
     if (AGENT_KINDS.includes(d.agent)) {
@@ -347,7 +392,8 @@ export default class Worktrees extends View {
 
   // Model option keys include the provider; saved selections keep the native IDs.
   options(field, kind = this.agent, sel = this.selections?.[kind] ?? {}) {
-    if (field === "base" || field === "branch") return this.names.names.map((name) => ({ value: name, label: name }));
+    if (field === "base" || field === "branch") return (field === "branch" ? [...this.names.local] : this.names.names)
+      .map((name) => ({ value: name, label: name.replace(/^refs\/remotes\//, "") }));
     if (field === "workspace") {
       const marks = shared("spaces-pr.marks") ?? {};
       return spaces().filter((s) => !s.machine).map((s) => ({ value: s.id, label: s.name, mark: marks[s.id] }));
@@ -434,13 +480,16 @@ export default class Worktrees extends View {
     localStorage.setItem("draft", JSON.stringify({
       agent: this.agent, ...this.selections[this.agent], prompt, branch: this.branch.value().trim(),
       base: base !== this.repo.base ? base : "", repo: this.repo.root,
+      createFromBase: Boolean(this.createFromBase),
     }));
   }
 
-  openNew(cx) {
+  openNew(cx, fromRemote = false) {
     if (!this.selections) return;
     const r = this.current();
-    if (r?.branch && !this.prompt.value().trim()) this.base.set_value(r.branch);
+    this.createFromBase = fromRemote || (Boolean(this.createFromBase) && Boolean(this.prompt.value().trim()));
+    if (r?.branch && (fromRemote || !this.prompt.value().trim())) this.base.set_value(r.remote ? rowRef(r) : r.branch);
+    if (fromRemote) this.branch.set_value(uniqueName(r.branch, (name) => this.names.local.has(name) || this.names.remote.has(name)));
     this.view = "new";
     this.setMessage("", false);
     this.setField(this.fields().indexOf("prompt"));
@@ -586,9 +635,10 @@ export default class Worktrees extends View {
     if (!prompt.trim()) return this.fail("The task is empty.", cx);
     if (!base) return this.fail("The base is empty.", cx);
     if (!this.names.names.includes(base)) return this.fail("Select an existing base branch.", cx);
+    if (this.createFromBase && this.names.local.has(this.branch.value().trim())) return this.fail("Choose an unused local branch name.", cx);
     const sel = this.selections[this.agent];
     this.savePrefs();
-    this.launch({ prompt, base, branch: this.branch.value().trim(), agent: this.agent, sel }, cx);
+    this.launch({ prompt, base, branch: this.branch.value().trim(), createFromBase: this.createFromBase, agent: this.agent, sel }, cx);
   }
 
   fail(text, cx) {
@@ -606,17 +656,21 @@ export default class Worktrees extends View {
       try {
         const taken = (n) => this.names.local.has(n) || this.names.remote.has(n);
         const branch = spec.branch || uniqueName(await generateBranch(this.cfg, spec.prompt), taken);
+        const valid = await git(this.repo.root, ["check-ref-format", "--branch", branch]);
+        if (!valid.ok) throw new Error(valid.err || "Invalid branch name.");
         const slug = branchSlug(branch);
         const checkout = async () => {
           const list = await git(this.repo.root, ["worktree", "list", "--porcelain"]);
           if (!list.ok) throw new Error(list.err);
           return list.out.split("\n\n").find((b) => b.split("\n").includes(`branch refs/heads/${branch}`))?.match(/^worktree (.*)$/m)?.[1];
         };
-        let path = await checkout();
+        let path = spec.remote || spec.createFromBase ? null : await checkout();
         if (!path) {
-          const exists = taken(branch);
+          const exists = !spec.remote && !spec.createFromBase && this.names.local.has(branch);
           if (!exists) {
-            const config = await git(this.repo.root, ["config", `branch.${branch}.gh-merge-base`, spec.base]);
+            // Forge tools expect a branch name here, not refs/remotes/<remote>/….
+            const target = this.rows.find((r) => r.remote && rowRef(r) === spec.base)?.branch ?? spec.base;
+            const config = await git(this.repo.root, ["config", `branch.${branch}.gh-merge-base`, target]);
             if (!config.ok) throw new Error(config.err);
           }
           this.busy = "Setting up the worktree…";
@@ -629,6 +683,10 @@ export default class Worktrees extends View {
             cx.notify();
           });
           if (code !== 0) throw new Error(`Worktree setup failed with exit code ${code}. ${output.slice(-10).join("\n")}`);
+          if (spec.remote) {
+            const upstream = await git(this.repo.root, ["branch", `--set-upstream-to=${spec.base}`, branch]);
+            if (!upstream.ok) throw new Error(`The worktree was created, but its upstream could not be set: ${upstream.err}`);
+          }
           path = await checkout();
           if (!path) throw new Error(`No worktree found for ${branch}.`);
         }
@@ -733,12 +791,23 @@ export default class Worktrees extends View {
 
   // Keys while no text field has the keyboard. Tab comes as an action.
   key(e, cx) {
-    if (!this.handle.is_focused() && !Object.values(this.choiceHandles).some((h) => h.is_focused())) return;
+    const graphFocus = this.view === "list" && this.preview === 0 && (this.graph.handle.is_focused() || this.graph.detailsHandle.is_focused());
+    const previewFocus = this.view === "list" && this.preview !== 0 && this.previewHandle.is_focused();
+    if (!this.handle.is_focused() && !graphFocus && !previewFocus && !Object.values(this.choiceHandles).some((h) => h.is_focused())) return;
     // A printable key by its character, so G, X and / work on every keyboard layout.
     const m = e.modifiers;
     const typed = e.key_char?.length === 1 && e.key_char > " " && !m.control && !m.alt && !m.platform;
     const key = typed ? e.key_char : e.keystroke;
     if (this.busy || key === "tab" || key === "shift-tab" || key === "escape") return;
+    if (graphFocus || previewFocus) {
+      if (graphFocus && this.graph.key(key, cx)) return;
+      if (key === "p") this.setPreview(this.preview + 1, cx);
+      else if (key === "f") this.fetchAll(cx);
+      else if (key === "/") this.startFilter(cx);
+      else if (previewFocus && key === "ctrl-d") { this.scrollPreview(10); cx.notify(); }
+      else if (previewFocus && key === "ctrl-u") { this.scrollPreview(-10); cx.notify(); }
+      return;
+    }
     if (this.message && !this.failed) this.message = "";
     const field = this.fields()[this.field];
     if (this.view === "new" && CHOICES.includes(field) && typed && !this.dropdown) {
@@ -759,13 +828,20 @@ export default class Worktrees extends View {
   tabKey(step, cx) {
     if (this.busy) return;
     if (this.view === "new") return this.tab(step, cx);
-    if (this.view === "list" && !this.filtering) this.setPreview(this.preview + step, cx);
+    if (this.view === "list") {
+      if (this.filtering) this.stopFilter(false, cx);
+      const handles = this.preview === 0 ? [this.handle, this.graph.handle, ...(this.graph.details ? [this.graph.detailsHandle] : [])] : [this.handle, this.previewHandle];
+      const at = Math.max(0, handles.findIndex((h) => h.is_focused()));
+      handles[(at + step + handles.length) % handles.length].focus();
+      cx.notify();
+    }
   }
 
   escape(cx) {
     if (this.busy || this.running) return;
     if (this.dropdown) return this.showChoice(this.dropdown, false, cx);
     if (this.view === "list" && this.filtering) return this.stopFilter(true, cx);
+    if (this.view === "list" && this.graph.details) { this.graph.details = null; this.graph.handle.focus(); return cx.notify(); }
     if (this.view === "list") return this.close();
     this.back(cx);
   }
@@ -778,6 +854,7 @@ export default class Worktrees extends View {
   // ---------------------------------------------------------------- view
 
   render() {
+    this.graph.enabled = this.view === "list" && this.preview === 0;
     const t = theme();
     const ui = this.ui(t);
     let body, actions;
@@ -861,11 +938,11 @@ export default class Worktrees extends View {
             .child(div().text_color(t.dim).child("·"))
             .child(svg(ICON("branch")).size(12))
             .child(div().truncate().child(this.repo.base)))))
-      .when(this.view === "list" && Boolean(this.repo), (el) => el.child(ui.badge(`${this.visible().length} of ${this.rows.length}`, t.muted)))
-      .child(div().id("wt-close").flex_none().size(28).rounded(7).flex().items_center().justify_center().cursor_pointer()
-        .text_color(t.muted).hover((s) => s.bg(t.hover).text_color(t.foreground))
-        .on_click(() => this.close())
-        .child(svg(ICON("x")).size(15)));
+      .child(Button.new("wt-close").flex_none().size(28).rounded(6).flex().items_center().justify_center().cursor_pointer()
+        .disabled(Boolean(this.busy || this.running)).text_size(11).text_color(t.dim).hover((s) => s.bg(t.hover).text_color(t.foreground))
+        .accessibility_label("Escape").tooltip("Back or close (Esc)")
+        .on_click((_e, cx) => this.escape(cx))
+        .child("Esc"));
   }
 
   footer(t, actions) {
@@ -894,7 +971,7 @@ export default class Worktrees extends View {
       ui.button("remove", "Remove", "x", (cx) => this.openAction("remove", cx), "", none),
       ui.button("merge", "Merge", "m", (cx) => this.openAction("merge", cx), "", none),
       ui.button("new", "New", "n", (cx) => this.openNew(cx)),
-      ui.button("open", r && !r.path ? "Check out" : "Open", "↵", (cx) => this.open(cx), "primary", none),
+      ui.button("open", r?.remote && this.names.local.has(r.branch) ? "New from remote" : r && !r.path ? "Check out" : "Open", "↵", (cx) => this.open(cx), "primary", none),
     ];
   }
 
@@ -907,20 +984,22 @@ export default class Worktrees extends View {
       .child(Input.new(this.filter).flex_1().h(30).text_color(t.foreground))
       .when(!this.filtering, (el) => el.child(ui.kbd("/")));
     const list = v_flex().flex_1().min_h(0).relative()
-      .child(v_virtual_list("wt-rows", rows.length, 40, (i) => JSON.stringify([rows[i].branch, rows[i].remote]),
+      .child(v_virtual_list("wt-rows", rows.length, 40, (i) => rowKey(rows[i]),
         (range) => rows.slice(range.start, range.end).map((r, i) => this.rowView(r, range.start + i === this.cursor, t, ui)))
         .track_scroll(this.listScroll)
+        .role("list_box").accessibility_label("Worktrees and branches")
         .on_item_click((key, cx) => {
-          const i = rows.findIndex((r) => JSON.stringify([r.branch, r.remote]) === key);
+          const i = rows.findIndex((r) => rowKey(r) === key);
+          if (i < 0) return;
           if (this.filtering) this.stopFilter(false, cx);
-          if (i === this.cursor) return this.open(cx);
+          this.handle.focus();
           this.move(i - this.cursor, cx);
         })
         .size_full())
       .child(Scrollbar.vertical("wt-rows").absolute().inset_0());
-    const left = v_flex().w("42%").min_w(320).h_full().gap(10).child(search)
+    const left = v_flex().w_full().h_full().pr(8).gap(10).child(search)
       .child(rows.length ? list : v_flex().flex_1().items_center().justify_center().text_color(t.dim)
-        .child(this.rows.length ? "No branch matches." : "Loading…"));
+        .child(this.rows.length ? "No branch matches." : this.rowsLoaded ? "No branches yet." : "Loading…"));
 
     const r = this.current();
     const lines = (r && this.previews[this.previewKey(r)]) ?? null;
@@ -931,7 +1010,7 @@ export default class Worktrees extends View {
         .when(i !== this.preview, (el) => el.hover((s) => s.text_color(t.foreground)))
         .on_click((_e, cx) => this.setPreview(i, cx))
         .child(m[0].toUpperCase() + m.slice(1))));
-    const code = lines === null
+    const code = this.preview === 0 ? this.graph.render(t) : lines === null
       ? v_flex().flex_1().items_center().justify_center().text_color(t.dim).child(svg(ICON("spinner")).size(18).spin(900))
       : !lines.length
         ? v_flex().flex_1().items_center().justify_center().text_color(t.dim).child(r ? "Nothing to show." : "")
@@ -943,19 +1022,23 @@ export default class Worktrees extends View {
               .text_color(kind === "+" ? t.ansi2 : kind === "-" ? t.ansi1 : kind === "@" ? t.ansi4 : t.foreground)
               .child(text || " "))).track_scroll(this.previewScroll).size_full())
           .child(Scrollbar.vertical("wt-preview").absolute().inset_0());
-    const preview = v_flex().flex_1().min_w(0).h_full().rounded(10).border(1).border_color(t.border).bg(t.background).overflow_hidden()
+    const preview = v_flex().flex_1().min_w(0).h_full().ml(8).rounded(10).border(1).border_color(t.border).bg(t.background).overflow_hidden()
       .child(h_flex().flex_none().h(44).px(10).gap(10).items_center().border_b(1).border_color(t.border)
         .child(tabs)
         .child(div().flex_1())
-        .child(h_flex().gap(6).text_size(11).text_color(t.dim).child(ui.kbd("p")).child("next view")))
-      .child(v_flex().flex_1().min_h(0).py(6).child(code));
-    return h_flex().size_full().gap(16).child(left).child(preview);
+        .child(div().text_size(10.5).text_color(t.dim).child(this.fetched ? `Fetched ${new Date(this.fetched).toLocaleString()}` : "Fetch time unknown"))
+        .child(ui.button("fetch", this.fetching ? "Fetching…" : "Fetch all", "", (cx) => this.fetchAll(cx), "", Boolean(this.fetching))))
+      .child(v_flex().flex_1().min_h(0).track_focus(this.previewHandle).py(6).child(code));
+    return h_resizable("wt-list-preview").size_full()
+      .child(resizable_panel().size(390).size_range(250).child(left))
+      .child(resizable_panel().size_range(360).child(preview));
   }
 
   rowView(r, selected, t, ui) {
     const [icon, tone] = r.main ? ["monitor", t.accent] : r.remote ? ["server", t.dim] : !r.path ? ["branch", t.dim] : ["git-branch", t.accent];
-    const sub = r.main ? "main checkout" : r.remote ? `only on ${r.remote}` : !r.path ? "branch, no worktree" : r.spaces.length ? "worktree · open" : "worktree";
+    const sub = (r.main ? "main checkout" : r.remote ? `remote · ${r.remote}` : !r.path ? "branch, no worktree" : r.spaces.length ? "worktree · open" : "worktree") + (r.upstream ? ` · ${r.upstream}` : "");
     return h_flex().h(40).px(10).gap(10).items_center().rounded(8)
+      .role("list_box_option").aria_selected(selected).accessibility_label(`${rowName(r)}; ${sub}${r.dirty ? "; uncommitted changes" : ""}`)
       .when(selected, (el) => el.bg(t.selected))
       .when(!selected, (el) => el.hover((s) => s.bg(t.hover)))
       .child(div().flex_none().size(26).rounded(7).bg(alpha(tone, 0.14)).flex().items_center().justify_center()
@@ -965,9 +1048,8 @@ export default class Worktrees extends View {
         .child(div().truncate().text_size(11).text_color(t.dim).child(sub)))
       .when(r.ahead > 0, (el) => el.child(ui.badge(`↑${r.ahead}`, t.ansi2)))
       .when(r.behind > 0, (el) => el.child(ui.badge(`↓${r.behind}`, t.ansi1)))
-      .when(r.dirty, (el) => el.child(ui.badge("edited", t.ansi3, "square-pen")))
-      .when(r.pr > 0, (el) => el.child(ui.badge(`#${r.pr}`, t.ansi5, "git-compare")))
-      .when(Boolean(r.agent), (el) => el.child(ui.badge(r.agent, r.busy ? t.working : t.muted, r.busy ? "spinner" : "terminal")));
+      .when(r.dirty, (el) => el.child(svg("mods/worktrees/pencil.svg").size(14).flex_none().text_color(t.ansi3).accessibility_label("Uncommitted changes")))
+      .when(r.pr > 0, (el) => el.child(ui.badge(`#${r.pr}`, t.ansi5, "git-compare")));
   }
 
   // ---------------------------------------------------------------- new view

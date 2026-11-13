@@ -31,6 +31,7 @@ const module = (values) => new vm.SyntheticModule(Object.keys(values), function 
   for (const [key, value] of Object.entries(values)) this.setExport(key, value);
 }, { context });
 const elements = [], icons = [], calls = [];
+const closed = [];
 const element = () => {
   const calls = {};
   const el = new Proxy({}, { get: (_target, method) => (...args) => {
@@ -44,7 +45,7 @@ const element = () => {
 let testProps = {};
 const herdr = module({
   appHome() {}, exec() {}, home() {}, readTextFile() {}, writeTextFile() {},
-  closeOverlay() {}, layout() {}, props: () => testProps, setShared() {}, shared() {}, theme: () => ({}),
+  closeOverlay(id) { closed.push(id); }, layout() {}, props: () => testProps, setShared() {}, shared() {}, theme: () => ({}),
   run(command, args) { calls.push({ command, args }); },
 });
 const sources = new vm.SourceTextModule(await readFile(new URL("../mods/usage/sources.js", import.meta.url), "utf8"), { context });
@@ -67,6 +68,10 @@ assert.equal(view.rows, null, "An overlay must initialize the usage dialog, not 
 elements.length = 0;
 view.render();
 assert(elements.some((el) => el.id?.[0] === "usage-view"), "The native toggle must render the usage dialog");
+assert(elements.some((el) => el.child?.[0] === "Esc"), "Dialogs use the same Esc close indicator");
+assert(!icons.includes("mods/usage/x.svg"));
+elements.find((el) => el.id?.[0] === "usage-close").on_click[0]();
+assert.equal(closed.at(-1), "usage-dialog", "The Esc indicator remains clickable");
 
 view.now = 1_000_000;
 for (const usedPercent of [10, 50, 90]) {

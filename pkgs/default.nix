@@ -4,12 +4,14 @@ let
   mkHerdrReviewr = import ./herdr-reviewr.nix;
   mkHerdrWorktree = import ./herdr-worktree;
   mkDbExport = import ./db-export.nix;
+  mkBrowse = import ./browse.nix;
 
   mkPackages = { lib, pkgs }: rec {
     ponytail = mkPonytail { inherit pkgs; };
     herdr-reviewr = mkHerdrReviewr { inherit pkgs; };
     herdr-worktree = mkHerdrWorktree { inherit pkgs; };
     db-export = mkDbExport { inherit pkgs; };
+    browse = mkBrowse { inherit pkgs; };
   };
 in
 {

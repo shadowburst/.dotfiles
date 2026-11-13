@@ -153,7 +153,7 @@ export default class Usage extends View {
         .child(this.iconButton("usage-refresh", loading ? refreshIcon.spin(900) : refreshIcon, "Refresh limits", (_e, cx) => {
           cx.spawn((cx) => this.refresh(cx, 0));
         }))
-        .child(this.iconButton("usage-close", svg("mods/usage/x.svg").size(15), "Close", () => closeOverlay(props().overlay))))
+        .child(this.iconButton("usage-close", div().text_size(11).text_color(t.dim).child("Esc"), "Close (Esc)", () => closeOverlay(props().overlay))))
       .child(div().id("usage-body").flex_1().min_h(0).overflow_y_scrollbar()
         .child(v_flex().w_full().max_w(880).mx_auto().px(24).py(20).gap(28).children(body)));
   }

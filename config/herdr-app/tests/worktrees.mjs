@@ -1,11 +1,14 @@
 // Run: node --experimental-vm-modules config/herdr-app/tests/worktrees.mjs
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import vm from "node:vm";
 
 const root = "/repo", checkout = "/worktrees/fix-test";
 let created, failSetup, calls, jobs;
 let testSpaces = [], testPanes = [], testFocus = null;
+let testAgents = [], fixtureRoot, fixtureItems, historyGate;
+const gitCalls = [];
 const testShared = {};
 let draftWrites = 0;
 const context = vm.createContext({ console, localStorage: { getItem() { return null; }, setItem(key) { if (key === "draft") draftWrites++; }, removeItem() {} } });
@@ -15,13 +18,19 @@ const module = (values) => new vm.SyntheticModule(Object.keys(values), function 
 let virtualLists = 0;
 const actions = new Map();
 const buttons = new Map();
+const lists = new Map();
+const text = [], icons = [];
+let deferred = false;
 const element = (record) => new Proxy({}, { get: (_target, method) => (...args) => {
-  if (record?.button) record[method] = args;
+  assert(!(deferred && method.startsWith("on_")), "Virtual rows must not install handlers during native layout");
+  if (record && typeof record === "object") record[method] = args;
+  if (method === "child" && typeof args[0] === "string") text.push(args[0]);
   if (method === "on_action") actions.set(args[0], args[1]);
   if (method === "when" && args[0]) return args[1](element(record));
   return element(record);
 } });
-const kit = module({ View: class {}, div: element, image: element, svg: element });
+context.window = { paint_path: element };
+const kit = module({ View: class {}, div: element, image: element, svg(path) { icons.push(path); return element(); }, PathBuilder: { stroke: element } });
 const state = (opts = {}) => {
   const handlers = {};
   return { on(event, fn) { (handlers[event] ??= []).push(fn); }, emit(event, cx) { for (const fn of handlers[event] ?? []) fn({}, cx); },
@@ -29,17 +38,26 @@ const state = (opts = {}) => {
 };
 const base = module({ ...Object.fromEntries([
   "h_flex", "v_flex", "Button", "Input", "InputState", "Scrollbar", "Textarea", "TextareaState", "VirtualListScrollHandle", "v_virtual_list", "Combobox", "Popup",
-].map((key) => [key, { new: element }])), h_flex: element, v_flex: element,
+].map((key) => [key, { new: element }])), h_flex: element, v_flex: element, h_resizable: element, resizable_panel: element,
   Button: { new(id) { const record = { button: true }; buttons.set(id, record); return element(record); } },
-  v_virtual_list() { virtualLists++; return element(); },
+  Scrollbar: { vertical: element },
+  v_virtual_list(id, count, sizes, key, render) { virtualLists++; const record = { count, sizes, key, render }; lists.set(id, record); return element(record); },
   InputState: { new: state }, TextareaState: { new: state }, VirtualListScrollHandle: { new: () => ({ scroll_to_item() {} }) } });
 const herdr = module({
-  agents() { return []; }, appHome() {}, home() { return "/home/test"; }, panes() { return testPanes; }, readTextFile() {}, spaces() { return testSpaces; },
+  agents() { return testAgents; }, appHome() {}, home() { return "/home/test"; }, panes() { return testPanes; }, readTextFile() {}, spaces() { return testSpaces; },
   closeOverlay() {}, focused() { return testFocus; }, props() {}, settings() { return {}; }, theme() { return {}; },
   shared(key) { return testShared[key]; }, setShared(key, value) { testShared[key] = value; },
   machines() { return []; }, openOverlay() {}, hc() {}, watchFolder() {}, window() {}, layout() {},
   run(command, args) { calls.push({ command, args }); },
   async exec(command, args, { cwd } = {}) {
+    if (command === "git") gitCalls.push({ cwd, args });
+    if (fixtureRoot && cwd?.startsWith(fixtureRoot)) {
+      if (command === "wt") return { code: 0, stdout: JSON.stringify({ repo: { default_branch: "main" }, items: fixtureItems }) };
+      if (command === "git" && args[0] === "log" && historyGate) await historyGate;
+      const r = spawnSync(command, args, { cwd, encoding: "utf8", env: gitEnv });
+      return { code: r.status, stdout: r.stdout ?? "", stderr: r.stderr ?? String(r.error ?? "") };
+    }
+    if (command === "stat") return { code: 1, stdout: "", stderr: "no fetch yet" };
     if (command === "sh") return { code: 0, stdout: "", stderr: "" };
     if (command === "wt") return { code: 0, stdout: JSON.stringify({ repo: { default_branch: "develop" }, items: [{ branch: "develop", worktree: { path: cwd, main: true } }] }) };
     assert.equal(command, "git");
@@ -59,23 +77,27 @@ const job = module({ Job: { async run(cwd, argv, onLines) {
 } } });
 const data = new vm.SourceTextModule(await readFile(new URL("../mods/worktrees/data.js", import.meta.url), "utf8"), { context });
 await data.link(() => herdr);
+const history = new vm.SourceTextModule(await readFile(new URL("../mods/worktrees/history.js", import.meta.url), "utf8"), { context });
+await history.link(() => data);
+const graph = new vm.SourceTextModule(await readFile(new URL("../mods/worktrees/graph.js", import.meta.url), "utf8"), { context });
+await graph.link((name) => ({ "gpui-kit": kit, "gpui-base": base, herdr, "./data.js": data, "./history.js": history })[name]);
 const main = new vm.SourceTextModule(await readFile(new URL("../mods/worktrees/main.js", import.meta.url), "utf8"), { context });
-await main.link((name) => ({ "gpui-kit": kit, "gpui-base": base, herdr, "./data.js": data, "./job.js": job })[name]);
+await main.link((name) => ({ "gpui-kit": kit, "gpui-base": base, herdr, "./data.js": data, "./job.js": job, "./graph.js": graph })[name]);
 await main.evaluate();
 
-async function launch(existing = false, failure = false, prompt = "") {
+async function launch(existing = false, failure = false, prompt = "", remote = "") {
   created = existing;
   failSetup = failure;
   calls = [];
   jobs = [];
   const view = new main.namespace.default();
   Object.assign(view, {
-    repo: { root }, names: { local: new Set(), remote: new Set() }, rows: [],
+    repo: { root }, names: { local: new Set(), remote: new Set() }, rows: remote ? [{ branch: "fix/test", remote }] : [],
     close() {}, prompt: { set_value() {} }, branch: { set_value() {} },
   });
   let task;
   const cx = { notify() {}, spawn(fn) { task = fn(cx); } };
-  view.launch({ branch: "fix/test", base: "main", prompt, agent: "codex", sel: {} }, cx);
+  view.launch({ branch: "fix/test", base: remote ? `refs/remotes/${remote}/fix/test` : "main", remote, prompt, agent: "codex", sel: {} }, cx);
   await task;
   return view;
 }
@@ -98,6 +120,7 @@ assert(!calls[0]?.args.argv.includes("wt"));
 console.log("Worktree launch: new, existing, and failed setup passed.");
 
 const view = new main.namespace.default();
+view.graph = { enabled: false };
 const handle = { focus() {}, is_focused: () => false };
 const cx = { notify() {} };
 let scrolledTo;
@@ -180,7 +203,7 @@ testSpaces = [
 testPanes = [{ tab: "other-tab", cwd: "/other" }];
 testFocus = { space: "current", cwd: "/repo" };
 const workspaceView = new main.namespace.default();
-const initCx = { focus_handle() { return handle; }, bind_keys() {}, timer: { after() {} }, spawn() {} };
+const initCx = { focus_handle() { return handle; }, bind_keys() {}, timer: { after() {}, every() {} }, spawn() {} };
 workspaceView.init({}, initCx);
 assert.equal(workspaceView.workspace, "current", "Preselect the current space, not the last used workspace");
 assert.deepEqual(Array.from(workspaceView.options("workspace"), (o) => o.value), ["current", "other", "invalid"], "The local launcher must not offer remote spaces");
@@ -246,7 +269,7 @@ function search(view, field, query) {
   view.filterChoices(cx);
   return Array.from(view.choiceOptions(field), (o) => o.value);
 }
-view.names = { names: ["develop", "feat/search", "main"] };
+view.names = { names: ["develop", "feat/search", "main"], local: new Set(["develop", "feat/search", "main"]), remote: new Set() };
 assert.deepEqual(search(view, "base", "FEAT/"), ["feat/search"]);
 assert.equal(view.base.value(), "main", "Typing only filters; it must not commit an incomplete branch name");
 view.choiceKey("enter", cx);
@@ -292,7 +315,7 @@ console.log("Autocomplete: all selectors, branch validation, cancellation, empty
 
 let notifications = 0;
 const timers = [], bindings = [];
-const inputCx = { ...initCx, notify() { notifications++; }, bind_keys(keys) { bindings.push(...keys); }, timer: { after(ms, fn) {
+const inputCx = { ...initCx, notify() { notifications++; }, bind_keys(keys) { bindings.push(...keys); }, timer: { every() {}, after(ms, fn) {
   const timer = { ms, fn, cancelled: false, cancel() { this.cancelled = true; } };
   timers.push(timer);
   return timer;
@@ -361,7 +384,7 @@ const branchCx = { ...initCx, notify() {} };
 branchView.init({}, branchCx);
 Object.assign(branchView, {
   repo: { root, base: "main" }, selections: { claude: {} }, agent: "claude", view: "new",
-  names: { names: ["develop", "feat/search", "feat/settings", "main"] },
+  names: { names: ["develop", "feat/search", "feat/settings", "main"], local: new Set(["develop", "feat/search", "feat/settings", "main"]), remote: new Set() },
   saveDraft() {}, savePrefs() {},
 });
 assert(!branchView.fields().includes("launch"), "Skip disabled Start when the task is empty");
@@ -453,3 +476,272 @@ branchView.submitNew(branchCx);
 assert.equal(launchSpec, null, "Base must still be an existing branch");
 assert.match(branchView.message, /existing base branch/);
 console.log("Editable branch: matching, free input, explicit selection, cancellation, automatic naming, and action-button Tab stops passed.");
+
+await launch(false, false, "", "origin");
+assert.deepEqual(Array.from(jobs[0].argv), ["wt", "switch", "--create", "fix/test", "--base", "refs/remotes/origin/fix/test", "--yes", "--no-cd"]);
+assert(gitCalls.some((c) => c.args.includes("--set-upstream-to=refs/remotes/origin/fix/test")), "Set the upstream to the selected remote, not Git's guessed remote");
+assert(gitCalls.some((c) => c.args[0] === "config" && c.args[1] === "branch.fix/test.gh-merge-base" && c.args[2] === "fix/test"), "Keep forge branch names separate from exact Git base refs");
+console.log("Remote checkout: explicit creation, exact remote base, and explicit upstream passed.");
+
+const gitEnv = { ...process.env, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1", GIT_AUTHOR_NAME: "Graph Test", GIT_AUTHOR_EMAIL: "graph@example.invalid", GIT_COMMITTER_NAME: "Graph Test", GIT_COMMITTER_EMAIL: "graph@example.invalid" };
+fixtureRoot = await mkdtemp("/tmp/opencode/herdr-graph-");
+const fixtureGit = (...args) => {
+  const r = spawnSync("git", args, { cwd: fixtureRoot, encoding: "utf8", env: gitEnv });
+  assert.equal(r.status, 0, r.stderr);
+  return r.stdout.trim();
+};
+try {
+  fixtureGit("init", "--initial-branch=main");
+  await writeFile(`${fixtureRoot}/readme.txt`, "root\n");
+  fixtureGit("add", "."); fixtureGit("commit", "-m", "root");
+  const a = fixtureGit("rev-parse", "HEAD");
+  fixtureGit("checkout", "-b", "topic");
+  await writeFile(`${fixtureRoot}/feature.txt`, "feature\n");
+  fixtureGit("add", "."); fixtureGit("commit", "-m", "feature");
+  const b = fixtureGit("rev-parse", "HEAD");
+  fixtureGit("checkout", "main");
+  await writeFile(`${fixtureRoot}/main.txt`, "main\n");
+  fixtureGit("add", "."); fixtureGit("commit", "-m", "main work");
+  const c = fixtureGit("rev-parse", "HEAD");
+  fixtureGit("merge", "--no-ff", "topic", "-m", "merge topic");
+  const m = fixtureGit("rev-parse", "HEAD");
+  fixtureGit("branch", "feature", b);
+  fixtureGit("update-ref", "refs/remotes/origin/feature", c);
+  fixtureGit("update-ref", "refs/remotes/backup/feature", a);
+  fixtureGit("update-ref", "refs/remotes/origin/main", m);
+  fixtureGit("symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main");
+  fixtureGit("config", "remote.origin.url", "https://example.invalid/repo");
+  fixtureGit("config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*");
+  fixtureGit("branch", "--set-upstream-to=refs/remotes/origin/main", "main");
+  const tree = fixtureGit("rev-parse", "HEAD^{tree}");
+  const detached = fixtureGit("commit-tree", tree, "-m", "detached checkout");
+  fixtureItems = [
+    { branch: "main", head: { sha: m }, upstream: { remote: "origin", branch: "main" }, worktree: { path: fixtureRoot, main: true, changes: { modified: true } } },
+    { branch: "feature", head: { sha: b } },
+    { head: { sha: detached }, worktree: { path: `${fixtureRoot}/detached`, detached: true } },
+  ];
+  const { rowKey, rowName, rowRef, loadRows, loadBranches } = data.namespace;
+  const refs = await loadRows(fixtureRoot, false);
+  assert(!refs.error);
+  assert.equal(refs.rows.length, 7, "Supplement wt's omitted local and remote refs, while keeping detached worktrees");
+  assert.equal(refs.rows.find((r) => r.remote === "origin" && r.branch === "feature").sha, c);
+  assert.equal(refs.rows.find((r) => r.remote === "backup").sha, a);
+  assert(!refs.rows.some((r) => r.branch === "HEAD"), "The symbolic remote HEAD is not an extra branch");
+  assert.equal(new Set(refs.rows.map(rowKey)).size, refs.rows.length);
+  const names = await loadBranches(fixtureRoot);
+  assert(names.names.includes("refs/remotes/origin/feature"));
+  assert(names.names.includes("refs/remotes/backup/feature"));
+  assert(names.names.includes("feature"));
+  fixtureGit("remote", "add", "team/upstream", "https://example.invalid/other");
+  fixtureGit("update-ref", "refs/remotes/team/upstream/main", m);
+  const slashRemote = await loadRows(fixtureRoot, false);
+  assert(slashRemote.rows.some((r) => r.remote === "team/upstream" && r.branch === "main"), "Remote names containing slashes retain their exact identity");
+  assert(!(await loadBranches(fixtureRoot)).remote.has("upstream/main"));
+  assert.equal(rowName(refs.rows.find((r) => r.remote === "origin" && r.branch === "feature")), "origin/feature");
+  assert.notEqual(rowKey({ branch: "main", path: "/one" }), rowKey({ branch: "main", path: "/two" }), "Multiple worktrees on one branch have distinct list keys");
+
+  const full = await history.namespace.history(fixtureRoot, [m], 0, 100);
+  assert.equal(full.commits.length, 4);
+  const page1 = await history.namespace.history(fixtureRoot, [m], 0, 2);
+  const page2 = await history.namespace.history(fixtureRoot, [m], 2, 2);
+  assert(page1.more); assert(!page2.more);
+  assert.deepEqual(Array.from([...page1.commits, ...page2.commits], (x) => x.sha), Array.from(full.commits, (x) => x.sha), "Snapshot pagination has no duplicates or gaps");
+  const chain = history.namespace.firstParents(full.commits, m);
+  assert(chain.has(m) && chain.has(c) && chain.has(a));
+  assert(!chain.has(b), "First-parent highlighting excludes merged-in side history");
+  const geometry = history.namespace.layout(full.commits);
+  assert(!geometry.rows[0].edges.some((e) => e.start === 0), "A branch tip has no invented incoming edge");
+  for (const [index, row] of geometry.rows.entries()) {
+    const outgoing = row.edges.filter((e) => e.source);
+    assert.equal(outgoing.length, row.parents.length, "Draw every merge parent");
+    for (const edge of outgoing) {
+      const end = geometry.rows.findIndex((r) => r.sha === edge.target);
+      assert(end > index);
+      assert.equal(geometry.rows[end].lane, edge.to, "Edges reach their real parent node");
+      for (const passing of geometry.rows.slice(index + 1, end)) assert(passing.edges.some((e) => !e.source && e.from === edge.to && e.to === edge.to && e.target === edge.target), "A continuing lane stays connected through intervening rows");
+    }
+  }
+  const octopus = history.namespace.layout([{ sha: "f".repeat(40), parents: [m, b, detached] }, ...full.commits, { sha: detached, parents: [] }]);
+  assert.equal(octopus.rows[0].edges.filter((e) => e.source).length, 3, "Octopus merges draw all parents");
+  const rootDetails = await history.namespace.commitDetails(fixtureRoot, a);
+  assert.match(rootDetails.files, /readme\.txt/);
+  const mergeDetails = await history.namespace.commitDetails(fixtureRoot, m);
+  assert.match(mergeDetails.files, /feature\.txt/);
+  assert.equal(mergeDetails.message, "merge topic");
+  await assert.rejects(history.namespace.history(fixtureRoot, ["--all"]), /valid commit ID/);
+  await writeFile(`${fixtureRoot}/.git/shallow`, `${m}\n`);
+  const shallow = await history.namespace.history(fixtureRoot, [m]);
+  assert.equal(shallow.commits.length, 1);
+  assert.equal(shallow.commits[0].parents.length, 0, "Shallow boundaries do not invent unavailable parents");
+  await rm(`${fixtureRoot}/.git/shallow`);
+
+  const tasks = [], polling = [];
+  let focusedHandle, scrollTarget;
+  const graphCx = {
+    notify() {}, bind_keys() {},
+    focus_handle() { const h = { focus() { focusedHandle = h; }, is_focused() { return focusedHandle === h; } }; return h; },
+    timer: { every(_ms, fn) { polling.push(fn); }, after(_ms, fn) { return { cancel() {}, fn }; } },
+    spawn(fn) { const task = Promise.resolve().then(() => fn(graphCx)); tasks.push(task); return task; },
+  };
+  const settle = async () => { while (tasks.length) await Promise.all(tasks.splice(0)); };
+  let selectedRef;
+  const g = new graph.namespace.Graph(graphCx, (key) => { selectedRef = key; });
+  g.scroll = { scroll_to_item(index, strategy) { scrollTarget = [index, strategy]; } };
+  const mainRef = refs.rows.find((r) => r.branch === "main" && !r.remote);
+  g.configure(fixtureRoot, refs.rows, mainRef, graphCx, true);
+  await settle();
+  assert.equal(g.rows.length, 5, "Unreferenced detached worktree HEADs are graph roots too");
+  assert.equal(g.rows[scrollTarget[0]].sha, m);
+  assert.equal(scrollTarget[1], "center");
+  assert.equal(g.labels(m).filter((l) => l.ref).length, 2, "Combine the local label and matching upstream only at the same commit");
+  assert(g.labels(m)[0].width < 100, "Short branch badges do not stretch to fill the label column");
+  const oldScroll = scrollTarget;
+  g.configure(fixtureRoot, refs.rows, mainRef, graphCx, false);
+  assert.equal(scrollTarget, oldScroll, "A badge refresh does not reset manual scrolling");
+  g.pressRefs = g.refs; g.pressSelected = g.selected;
+  g.pressX = g.width + g.labels(m)[0].width + 1;
+  g.click(m, graphCx);
+  assert.equal(selectedRef, rowKey(refs.rows.find((r) => rowRef(r) === "refs/remotes/origin/main")), "Clicking the remote label selects that exact remote row");
+  const remote = refs.rows.find((r) => rowRef(r) === "refs/remotes/origin/feature");
+  g.configure(fixtureRoot, [remote], remote, graphCx, true);
+  await settle();
+  assert.deepEqual(new Set(g.rows.map((r) => r.sha)), new Set([c, a]), "Search retains matching-ref ancestry but excludes unrelated history");
+  assert.equal(g.refsAt(m).length, 0, "Excluded ref labels stay hidden");
+  g.inspect(c, graphCx); await settle();
+  assert.equal(g.details.message, "main work");
+  g.handle.focus();
+  calls = [];
+  g.key("j", graphCx); g.key("enter", graphCx); await settle();
+  assert.equal(calls.length, 0, "Graph keyboard navigation and inspection never run a checkout or space command");
+
+  const t = Object.fromEntries(["background", "accent", "border", "selected", "hover", "foreground", "muted", "dim", "raised", "ansi1", "ansi2", "ansi3", "ansi4", "ansi5", "ansi6"].map((key) => [key, "#abcdef"]));
+  g.configure(fixtureRoot, refs.rows, mainRef, graphCx, true); await settle();
+  text.length = 0; icons.length = 0;
+  g.render(t);
+  deferred = true;
+  lists.get("wt-graph-rows").render({ start: 0, end: g.rows.length });
+  deferred = false;
+  assert(icons.includes("mods/worktrees/pencil.svg"));
+  assert(icons.includes("mods/workspace-chrome/branch.svg"));
+  assert(icons.includes("mods/workspace-chrome/server.svg"), "Local and remote labels have distinct icons");
+  assert(!text.some((s) => /edited|opencode|claude|▣/.test(s)), "The graph uses a pencil, not edited text, agent status or a square marker");
+  assert(!text.some((s) => /Selected:|Reveal selected|More history below|Load more|^\d+ commits/.test(s)), "Do not render permanent graph header or pagination information");
+  assert(!buttons.has("wt-reveal") && !buttons.has("wt-graph-more"), "No reveal or manual load-more buttons");
+
+  const popup = new main.namespace.default();
+  popup.init({}, { ...graphCx, spawn() {} });
+  Object.assign(popup, { repo: { root: fixtureRoot, top: fixtureRoot }, rows: refs.rows, names, def: "main", view: "list", preview: 0, loadPreview() {} });
+  popup.cursor = refs.rows.indexOf(remote);
+  let opened, launched;
+  popup.openNew = (_cx, fromRemote) => { opened = fromRemote; };
+  popup.launch = (spec) => { launched = spec; };
+  popup.open(graphCx);
+  assert.equal(opened, true, "A colliding remote ref opens New from remote instead of opening the local branch");
+  assert(!launched);
+  const onlyRemote = refs.rows.find((r) => r.remote === "backup");
+  popup.names = { ...names, local: new Set() };
+  popup.cursor = refs.rows.indexOf(onlyRemote);
+  popup.open(graphCx);
+  assert.equal(launched.base, "refs/remotes/backup/feature");
+  assert.equal(launched.remote, "backup", "Same-named refs on different remotes remain exact targets");
+  popup.names = names;
+  text.length = 0; icons.length = 0;
+  popup.header(t, popup.ui(t));
+  assert(text.includes("Esc"), "Use the same Esc close indicator as the other dialogs");
+  assert(!text.some((s) => /^\d+ of \d+$/.test(s)), "Do not show the branch counter beside the close control");
+  assert(!icons.includes("mods/workspace-chrome/x.svg"));
+  let escaped = 0;
+  const escape = popup.escape;
+  popup.escape = () => escaped++;
+  buttons.get("wt-close").on_click[0]({}, graphCx);
+  assert.equal(escaped, 1, "Clicking Esc uses the same action as the Escape key");
+  popup.escape = escape;
+  Object.assign(popup, { selections: { claude: {} }, agent: "claude", saveDraft() {} });
+  popup.cursor = refs.rows.indexOf(remote);
+  main.namespace.default.prototype.openNew.call(popup, graphCx, true);
+  assert.equal(popup.base.value(), "refs/remotes/origin/feature");
+  assert.equal(popup.branch.value(), "feature-2");
+  popup.prompt.set_value("Work from the remote tip");
+  popup.submitNew(graphCx);
+  assert.equal(launched.createFromBase, true, "A New from remote form cannot silently reuse a newly colliding local worktree");
+  popup.branch.set_value("feature");
+  launched = null;
+  popup.submitNew(graphCx);
+  assert(!launched);
+  assert.match(popup.message, /unused local branch/);
+  popup.view = "list";
+  popup.filter.set_value("origin/feature");
+  assert.deepEqual(Array.from(popup.visible(), rowName), ["origin/feature"], "Search includes the remote prefix");
+  popup.filter.set_value(""); popup.cursor = 0;
+  let openedOnClick = 0;
+  popup.open = () => openedOnClick++;
+  popup.listView(t, popup.ui(t));
+  const click = lists.get("wt-rows").on_item_click[0];
+  click(rowKey(refs.rows[0]), graphCx); click(rowKey(refs.rows[0]), graphCx);
+  assert.equal(openedOnClick, 0, "Repeated single clicks only select");
+  popup.graph.handle.focus(); popup.tabKey(1, graphCx);
+  assert(popup.handle.is_focused(), "Tab wraps from graph to list when details are closed");
+  popup.graph.details = { sha: m }; popup.graph.handle.focus(); popup.tabKey(1, graphCx);
+  assert(popup.graph.detailsHandle.is_focused(), "Tab reaches open commit details");
+  popup.graph.detailsHandle.focus(); popup.tabKey(-1, graphCx);
+  assert(popup.graph.handle.is_focused());
+  popup.rows[0].pr = 123;
+  popup.setRows("main", popup.rows.map((r) => ({ ...r, pr: 0 })));
+  assert.equal(popup.rows[0].pr, 123, "Local-only polling keeps forge metadata already loaded");
+  g.inspect(m, graphCx); await settle();
+  g.detailsHandle.focus();
+  let detailAt;
+  g.detailsScroll = { scroll_to_item(index) { detailAt = index; } };
+  g.key("end", graphCx);
+  assert.equal(detailAt, g.detailLines().length - 1, "Commit details can be scrolled with the keyboard");
+  testPanes = [{ pane: "busy-pane", cwd: fixtureRoot }];
+  testSpaces = []; testAgents = [{ pane: "busy-pane", status: "working", app: "opencode" }];
+  const attached = data.namespace.attach(refs.rows.map((r) => ({ ...r, spaces: [] })));
+  assert(attached.find((r) => r.path === fixtureRoot).busy, "Hiding agent badges does not remove busy-agent safety checks");
+  testAgents = [];
+
+  let longTip = m;
+  for (let i = 0; i < 310; i++) longTip = fixtureGit("commit-tree", tree, "-p", longTip, "-m", `history ${i}`);
+  const longRefs = [{ branch: "long", sha: longTip }, { branch: "old", sha: a }];
+  const autoPoll = polling.length;
+  const automatic = new graph.namespace.Graph(graphCx, () => {});
+  automatic.configure(fixtureRoot, [longRefs[0]], longRefs[0], graphCx, true);
+  await settle();
+  assert.equal(automatic.rows.length, history.namespace.PAGE);
+  automatic.render(t);
+  lists.get("wt-graph-rows").render({ start: 0, end: 20 });
+  polling[autoPoll](graphCx); await settle();
+  assert.equal(automatic.rows.length, history.namespace.PAGE, "Do not load older history before scrolling near the bottom");
+  lists.get("wt-graph-rows").render({ start: history.namespace.PAGE - 10, end: history.namespace.PAGE });
+  polling[autoPoll](graphCx); await settle();
+  assert(automatic.rows.length > history.namespace.PAGE, "Scrolling to the bottom loads the next page without a button");
+  g.configure(fixtureRoot, longRefs, longRefs[1], graphCx, true);
+  await settle();
+  assert(g.rows.length > history.namespace.PAGE, "Selecting an old tip automatically loads beyond the first page");
+  assert.equal(g.rows[scrollTarget[0]].sha, a);
+  let release;
+  historyGate = new Promise((resolve) => { release = resolve; });
+  g.configure(fixtureRoot, [longRefs[0]], longRefs[0], graphCx, true);
+  g.cancel(graphCx);
+  release(); await settle(); historyGate = null;
+  assert.equal(g.rows.length, 0, "Cancelled responses cannot replace the graph");
+  assert(!g.loading);
+  g.reveal(graphCx); await settle();
+  assert(g.rows.length > 0, "Reveal can resume after cancellation");
+  g.configure(fixtureRoot, [], null, graphCx, true); await settle();
+  assert.equal(g.rows.length, 0); assert(!g.more); assert(!g.loading);
+  assert.equal(g.refs.length, 0, "A no-match search empties both graph roots and labels");
+  const fetchPopup = new main.namespace.default();
+  fetchPopup.repo = { root };
+  fetchPopup.reload = async () => {};
+  const beforeFetch = gitCalls.filter((call) => call.args[0] === "fetch").length;
+  fetchPopup.fetchAll(graphCx); fetchPopup.fetchAll(graphCx); await settle();
+  const fetches = gitCalls.filter((call) => call.args[0] === "fetch");
+  assert.equal(fetches.length, beforeFetch + 1, "Ignore repeated Fetch presses while one fetch runs");
+  assert.deepEqual(Array.from(fetches.at(-1).args), ["fetch", "--all", "--no-prune", "--no-prune-tags"]);
+  await assert.rejects(history.namespace.commitDetails(fixtureRoot, "not-a-sha"), /Invalid commit ID/);
+  console.log("Graph: real Git refs, merges, first-parent lanes, pagination, detached and shallow history, details, filtering, reverse selection, cancellation, keyboard focus, clean badges, and busy protection passed.");
+} finally {
+  await rm(fixtureRoot, { recursive: true, force: true });
+  fixtureRoot = null;
+}

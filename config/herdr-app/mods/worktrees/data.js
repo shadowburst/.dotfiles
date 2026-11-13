@@ -4,7 +4,7 @@ import { agents, appHome, exec, home, panes, readTextFile, spaces } from "herdr"
 
 // The agents in the New form. Each must be on PATH.
 export const AGENT_KINDS = ["claude", "codex", "opencode"];
-export const PREVIEW_MODES = ["diff", "log", "changes"];
+export const PREVIEW_MODES = ["graph", "diff", "changes"];
 const PREVIEW_LINES = 500;
 const DEFAULT_NAMING = ["textgen"];
 
@@ -65,31 +65,39 @@ export async function detectRepo(cwd) {
   return { root, name: root.split("/").pop(), base, top };
 }
 
-// `wt list` as rows: a worktree, a local branch, or a branch only a remote has.
-// A remote row with a local branch of the same name is dropped.
+export const rowName = (r) => r.remote ? `${r.remote}/${r.branch}` : r.branch || "(detached)";
+export const rowRef = (r) => r.branch ? `refs/${r.remote ? `remotes/${r.remote}` : "heads"}/${r.branch}` : r.sha;
+export const rowKey = (r) => r.branch ? JSON.stringify([rowRef(r), r.path || ""]) : r.path;
+
+function rowData(it) {
+  const w = it.worktree, d = it.default_branch, c = w?.changes ?? {};
+  return {
+    branch: it.branch ?? "",
+    remote: it.remote ?? "",
+    sha: it.head?.sha ?? "",
+    upstream: it.upstream?.remote ? `${it.upstream.remote}/${it.upstream.branch}` : "",
+    path: w?.path ?? "",
+    main: Boolean(w?.main),
+    dirty: Boolean(c.staged || c.modified || c.untracked || c.renamed || c.deleted || c.conflicted),
+    merged: Boolean(d?.integration),
+    ahead: d?.ahead ?? 0,
+    behind: d?.behind ?? 0,
+    pr: it.pr?.number ?? 0,
+    busy: false,
+    spaces: [],
+  };
+}
+
+function remoteParts(ref, remotes) {
+  const short = ref.slice(13);
+  const remote = remotes.find((name) => short.startsWith(`${name}/`)) ?? short.split("/")[0];
+  return { remote, branch: short.slice(remote.length + 1) };
+}
+
+// Keep full ref identities: local and remote branches can have different tips.
 export function parseRows(raw) {
   const list = JSON.parse(raw);
-  const local = new Set(list.items.filter((it) => !it.remote && it.branch).map((it) => it.branch));
-  const rows = [];
-  for (const it of list.items) {
-    if (it.remote && local.has(it.branch)) continue;
-    const w = it.worktree, d = it.default_branch, c = w?.changes ?? {};
-    rows.push({
-      branch: it.branch ?? "",
-      remote: it.remote ?? "",
-      path: w?.path ?? "",
-      main: Boolean(w?.main),
-      dirty: Boolean(c.staged || c.modified || c.untracked || c.renamed || c.deleted || c.conflicted),
-      merged: Boolean(d?.integration),
-      ahead: d?.ahead ?? 0,
-      behind: d?.behind ?? 0,
-      pr: it.pr?.number ?? 0,
-      agent: "",
-      busy: false,
-      spaces: [],
-    });
-  }
-  return { def: list.repo?.default_branch ?? "", rows };
+  return { def: list.repo?.default_branch ?? "", rows: list.items.map(rowData) };
 }
 
 // `full` also asks the forge for the PRs, which needs the network.
@@ -98,7 +106,30 @@ export async function loadRows(repo, full) {
   try {
     const r = await exec("wt", args, { cwd: repo });
     if (r.code !== 0) return { error: `wt list: ${(r.stderr || r.stdout).trim()}` };
-    return parseRows(r.stdout);
+    const list = parseRows(r.stdout);
+    // wt can omit matching remote tips. Git is the authoritative ref catalog.
+    const [refs, remoteList] = await Promise.all([
+      git(repo, ["for-each-ref", "--format=%(refname)%00%(objectname)%00%(upstream:short)%00%(symref)", "refs/heads", "refs/remotes"]),
+      git(repo, ["remote"]),
+    ]);
+    if (!refs.ok) return { error: refs.err };
+    if (!remoteList.ok) return { error: remoteList.err };
+    const remotes = remoteList.out.trim().split("\n").filter(Boolean).sort((a, b) => b.length - a.length);
+    const byRef = new Map();
+    for (const row of list.rows) byRef.set(rowRef(row), [...(byRef.get(rowRef(row)) ?? []), row]);
+    for (const line of refs.out.trim().split("\n")) {
+      const [ref, sha, upstream, symbolic] = line.split("\0");
+      if (!ref || symbolic) continue;
+      const { remote, branch } = ref.startsWith("refs/remotes/") ? remoteParts(ref, remotes) : { remote: "", branch: ref.slice(11) };
+      if (remote && branch === "HEAD") continue;
+      let rows = byRef.get(ref);
+      if (!rows) {
+        rows = [rowData({ branch, remote })];
+        list.rows.push(...rows);
+      }
+      for (const row of rows) { row.sha = sha ?? row.sha; row.upstream = upstream ?? row.upstream; }
+    }
+    return list;
   } catch (e) {
     return { error: `wt list: ${e}` };
   }
@@ -127,24 +158,36 @@ export function attach(rows) {
     const r = holder(cwd[a.pane]);
     if (!r) continue;
     const busy = a.status === "working" || a.status === "blocked";
-    if (!r.agent || (busy && !r.busy)) r.agent = a.program?.key ?? a.app ?? "agent";
     r.busy ||= busy;
   }
   return rows;
 }
 
-// Local branches, and remote ones without the remote's name.
+// Choices keep remote prefixes; the bare sets are also used for generated names.
 export async function loadBranches(repo) {
-  const r = await git(repo, ["for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes"]);
-  const local = new Set(), remote = new Set();
+  const [r, remoteList] = await Promise.all([
+    git(repo, ["for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes"]),
+    git(repo, ["remote"]),
+  ]);
+  const remotes = remoteList.out.trim().split("\n").filter(Boolean).sort((a, b) => b.length - a.length);
+  const local = new Set(), remote = new Set(), qualified = [];
   for (const ref of r.out.split("\n")) {
     if (ref.startsWith("refs/heads/")) local.add(ref.slice(11));
     else if (ref.startsWith("refs/remotes/")) {
-      const name = ref.slice(13).split("/").slice(1).join("/");
-      if (name && name !== "HEAD") remote.add(name);
+      const name = remoteParts(ref, remotes).branch;
+      if (name && name !== "HEAD") { remote.add(name); qualified.push(ref); }
     }
   }
-  return { local, remote, names: [...new Set([...local, ...remote])].sort() };
+  return { local, remote, names: [...new Set([...local, ...qualified])].sort() };
+}
+
+export async function lastFetch(repo) {
+  const path = await git(repo, ["rev-parse", "--path-format=absolute", "--git-path", "FETCH_HEAD"]);
+  if (!path.ok) return null;
+  try {
+    const r = await exec("stat", ["-c", "%Y", "--", path.out.trim()], { cwd: repo });
+    return r.code === 0 && Number(r.stdout) > 0 ? Number(r.stdout) * 1000 : null;
+  } catch { return null; }
 }
 
 // The base that a New launch recorded for the branch.
@@ -154,13 +197,11 @@ export async function mergeBase(repo, branch) {
 
 // Lines with a kind for coloring: "+", "-", "@" or "".
 export async function loadPreview(repo, def, row, mode) {
-  const [dir, ref] = !row.branch ? [row.path, "HEAD"] : row.remote ? [repo, `${row.remote}/${row.branch}`] : [repo, row.branch];
+  const [dir, ref] = !row.branch ? [row.path, "HEAD"] : [repo, rowRef(row)];
   let out = "";
   if (PREVIEW_MODES[mode] === "diff") {
     if (def && ref !== def) out = (await git(dir, ["diff", "--stat", "--patch", `${def}...${ref}`])).out;
-  } else if (PREVIEW_MODES[mode] === "log") {
-    out = (await git(dir, ["log", "--oneline", "--decorate", "-n", "200", def && ref !== def ? `${def}..${ref}` : ref])).out;
-  } else if (row.path) {
+  } else if (PREVIEW_MODES[mode] === "changes" && row.path) {
     out = (await git(row.path, ["status", "--short"])).out + (await git(row.path, ["diff", "HEAD"])).out;
   }
   if (!out.trim()) return [];
