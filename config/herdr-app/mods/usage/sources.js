@@ -301,7 +301,7 @@ export async function writeCache(key, entry) {
   }
 }
 
-// ---- pace and text ------------------------------------------------------------
+// ---- pacing tick and text -----------------------------------------------------
 
 /** Share of the window still to run, 0..100, or null without a reset time and length. */
 export function timeLeftPercent(window, now) {
@@ -309,20 +309,6 @@ export function timeLeftPercent(window, now) {
   const left = (window.resetsAt - now) / (window.minutes * 60_000);
   return Math.round(Math.max(0, Math.min(1, left)) * 100);
 }
-
-/** T3 Code's pace: more than 5 points from even spending is ahead or under. */
-export function paceOf(window, now) {
-  const timeLeft = timeLeftPercent(window, now);
-  if (timeLeft === null) return null;
-  const gap = window.usedPercent - (100 - timeLeft);
-  return gap > 5 ? "ahead" : gap < -5 ? "under" : "on";
-}
-
-export const PACE = {
-  ahead: { icon: "mods/usage/trending-up.svg", label: "Ahead of pace: spending faster than the window elapses" },
-  on: { icon: "mods/usage/gauge.svg", label: "On pace with the window" },
-  under: { icon: "mods/usage/trending-down.svg", label: "Under pace: headroom left for the rest of the window" },
-};
 
 export function duration(ms) {
   const minutes = Math.max(0, Math.round(ms / 60_000));

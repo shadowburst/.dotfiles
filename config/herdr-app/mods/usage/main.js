@@ -1,12 +1,12 @@
 // Usage: a row above Settings in the sidebar that opens the subscription limits
 // of every logged-in account, after T3 Code's Usage → Limits page: one section
-// per provider, one card per window with what is left, its pace and its reset.
-// The same mod with props {view: true} is that dialog.
-// Key command: "usage.open".
+// per provider, one card per window with what is left, a pacing tick and its reset.
+// The same mod in an overlay is that dialog.
+// Key command: "mod.open:usage" (toggles).
 
 import { View, div, image, svg } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
-import { closeOverlay, layout, nextCommand, openOverlay, props, setShared, shared, theme } from "herdr";
+import { closeOverlay, layout, props, run, setShared, shared, theme } from "herdr";
 import * as usage from "./sources.js";
 
 // T3 Code's rule: opening checks again only when the last check is older.
@@ -23,23 +23,12 @@ function find(node, id) {
 
 const narrow = () => (find(layout(), "sidebar")?.size?.px ?? Infinity) < 160;
 
-function openUsage() {
-  openOverlay({ mod: "usage", kind: "dialog", props: { view: true }, width: 0.8, height: 0.85 });
-}
-
 export default class Usage extends View {
   init(_props, cx) {
     // Herdr gives a mod its props through props(), not through init's argument.
-    if (props()?.view) return this.initView(cx);
+    if (props()?.overlay) return this.initView(cx);
     // The earlier sidebar bar kept its last reading here.
     if (shared("usage.view")) setShared("usage.view", null);
-    cx.spawn(async (cx) => {
-      for (;;) {
-        const command = await nextCommand();
-        cx.notify(); // a replaced build's loop stops here, before it acts
-        if (command === "open") openUsage();
-      }
-    });
   }
 
   // ---- the dialog ------------------------------------------------------------
@@ -99,16 +88,13 @@ export default class Usage extends View {
     const remaining = Math.round(100 - window.usedPercent);
     const stale = Boolean(row.error);
     const color = stale ? t.dim : usage.fillColor(remaining, base, t);
-    const pace = usage.paceOf(window, this.now);
     const id = `${row.account.key}-${window.id}`;
     return h_flex().id(`card-${id}`).gap(24).items_center().p(16).rounded(8).border(1).border_color(t.border)
       .child(v_flex().w(176).flex_none().gap(2)
         .child(div().text_size(13).font_medium().text_color(t.foreground).truncate().child(window.label))
         .child(h_flex().items_baseline().gap(8)
           .child(div().text_size(28).font_semibold().text_color(stale ? t.dim : usage.fillColor(remaining, t.foreground, t)).child(`${remaining}%`))
-          .child(div().text_size(13).text_color(t.muted).child("left"))
-          .when(Boolean(pace), (el) => el.child(div().id(`pace-${id}`).text_color(t.muted).tooltip(usage.PACE[pace].label)
-            .child(svg(usage.PACE[pace].icon).size(14))))))
+          .child(div().text_size(13).text_color(t.muted).child("left"))))
       .child(v_flex().flex_1().min_w(0).gap(4)
         .child(this.bar(`bar-${id}`, window, remaining, color, t))
         .child(div().text_size(11.5).text_color(t.dim).child(usage.resetText(window, this.now))));
@@ -175,13 +161,13 @@ export default class Usage extends View {
   // ---- the sidebar row -------------------------------------------------------
 
   render() {
-    if (props()?.view) return this.renderView();
+    if (props()?.overlay) return this.renderView();
     const t = theme();
     return v_flex().size_full().bg(t.chrome).border_t(1).border_color(t.border).px(8).justify_center()
       .child(h_flex().id("usage-open").h(28).px(8).gap(9).items_center().rounded(8).text_size(13)
         .text_color(t.muted).hover((s) => s.bg(t.hover).text_color(t.foreground)).cursor_pointer()
         .when(narrow(), (el) => el.tooltip("Usage"))
-        .on_click(() => openUsage())
+        .on_click(() => run("mod.open", { name: "usage" }))
         .child(svg("mods/usage/gauge.svg").size(14))
         .when(!narrow(), (el) => el.child("Usage")));
   }

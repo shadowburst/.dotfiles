@@ -410,6 +410,7 @@ in
             "alt-left" = "sidebar-switch.left";
             "alt-right" = "sidebar-switch.right";
             "alt-shift-s" = "t3-inbox.settle";
+            "alt-u" = "mod.open:usage";
 
             # The app's own keys, kept from its defaults.
             "ctrl-shift-p" = "app.palette";

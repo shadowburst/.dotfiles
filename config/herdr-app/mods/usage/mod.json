@@ -1,1 +1,1 @@
-{ "place": "none", "title": "Usage" }
+{ "place": "none", "title": "Usage", "overlay": { "kind": "dialog", "width": 0.8, "height": 0.85 } }
