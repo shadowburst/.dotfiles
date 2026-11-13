@@ -20,16 +20,12 @@ Run `git status --short`. Keep unrelated changes out: limit the review to the ch
 
 ## 2. Pick the reviewer
 
-The reviewer comes from the other provider:
+The reviewer is the other provider's model: Sol for a Claude model, Opus for an OpenAI model, or the model and effort the user names.
 
-| You run in | Reviewer | Provider argument |
-| --- | --- | --- |
-| Claude Code | Sol (Codex default model) | `codex` |
-| Codex | Opus | `claude` |
+- When your harness can start a subagent on that model, run each round as a read-only subagent.
+- Otherwise run `<skill-directory>/scripts/run-reviewer.sh PROVIDER REPO_DIR BRIEF_FILE OUTPUT_FILE`, with PROVIDER `codex` or `claude`, and a 1800-second timeout. The script keeps the reviewer read-only and, for Claude, sets the `CLAUDE_CODE_ENTRYPOINT` label that keeps headless usage at the interactive rate. `CROSS_REVIEW_CLAUDE_MODEL`, `CROSS_REVIEW_CODEX_MODEL`, and `CROSS_REVIEW_EFFORT` carry the user's model and effort.
 
-Run each round with `<skill-directory>/scripts/run-reviewer.sh PROVIDER REPO_DIR BRIEF_FILE OUTPUT_FILE` and a 1800-second timeout. The script keeps the reviewer read-only and, for Claude, sets the `CLAUDE_CODE_ENTRYPOINT` label that keeps headless usage at the interactive rate. `CROSS_REVIEW_CLAUDE_MODEL`, `CROSS_REVIEW_CODEX_MODEL`, and `CROSS_REVIEW_EFFORT` override the defaults when the user names them.
-
-When the other provider's CLI is missing or fails twice, report the blocker. A same-provider model is no substitute, and a timeout or empty reply is no approval. Leave scoped files untouched while a round runs.
+When the reviewer cannot start or fails twice, report the blocker. A same-provider model is no substitute, and a timeout or a reply without a `VERDICT:` line is no approval. Leave scoped files untouched while a round runs.
 
 Round 1 brief, written to a temporary file:
 
@@ -66,7 +62,7 @@ Start one only while budget remains and a blocker or should is open, behavior co
 ## 5. Stop
 
 - **Agreed:** `VERDICT: APPROVE` on the current behavior diff, no blocker or should open, no concern of your own.
-- **Stuck:** an item stays disputed after two replies, or the budget ends. Ask the user with `AskUserQuestion`, showing both sides in 2-3 lines each and your recommendation first. Budget end is no approval.
+- **Stuck:** an item stays disputed after two replies, or the budget ends. Ask the user with the question tool (`AskUserQuestion` in Claude Code, `request_user_input` in Codex), showing both sides in 2-3 lines each and your recommendation first. Budget end is no approval.
 
 Push only when the user or a calling skill asked to publish. On a PR, add one line to the PR body above any model line: `Cross-reviewed: <N> rounds with <model>. Verdict: approved`.
 

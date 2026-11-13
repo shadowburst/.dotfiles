@@ -33,7 +33,7 @@ One watcher per PR; it prints one line per real event (failed check, all checks 
 
 - `ready` (default): required checks green, Greptile or Macroscope reviewed the head, no unresolved threads. Use `green` when the repo has neither bot.
 - Exit 0: condition met or PR merged. Exit 1: needs action. Exit 2: bad input or another watcher holds the PR.
-- In Claude Code, run it with the `Monitor` tool (`timeout_ms: 3600000`) so each line wakes you; elsewhere, run it as one long command. Start it again after each push, after handling an exit 1, and after a resume; it remembers what it already reported.
+- In Claude Code, run it with the `Monitor` tool (`timeout_ms: 3600000`) so each line wakes you; elsewhere, run it as one long command with no timeout. Start it again after each push, after handling an exit 1, and after a resume; it remembers what it already reported.
 
 When GraphQL is used up (`gh api rate_limit --jq .resources.graphql`), read through REST: `gh api repos/<owner>/<repo>/pulls/<n>` and `.../commits/<sha>/check-runs`.
 
