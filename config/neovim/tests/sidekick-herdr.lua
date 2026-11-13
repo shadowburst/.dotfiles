@@ -379,6 +379,8 @@ local snacks, pack_add = _G.Snacks, vim.pack.add
 _G.Snacks = { keymap = { set = function(_, key, cb) maps[key] = cb end } }
 vim.pack.add = function() end
 local plugin = vim.fn.stdpath("config") .. "/plugin/50-sidekick.lua"
+local hc_terminal = vim.env.HC_TERMINAL_ID
+vim.env.HC_TERMINAL_ID = nil
 reset()
 dofile(plugin)
 pane_list()
@@ -425,5 +427,6 @@ assert(#issued("tab create") == 0, "prompts must reuse Claude rather than start 
 assert(#issued("send-text") == 1, "prompt must reach the existing agent")
 
 _G.Snacks, vim.pack.add = snacks, pack_add
+vim.env.HC_TERMINAL_ID = hc_terminal
 vim.system, vim.notify, vim.ui.select = system, notify, select
 print("sidekick-herdr: all assertions passed")

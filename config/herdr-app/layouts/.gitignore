@@ -1,0 +1,5 @@
+# Herdr writes its shipped layouts and click state here. Track only our own.
+/*
+!/.gitignore
+!/inbox.json
+!/inbox.svg

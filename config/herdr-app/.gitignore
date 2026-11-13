@@ -1,0 +1,7 @@
+# The Herdr desktop app's home (~/.config/herdr-app links here). The app writes
+# its own files here, and Nix links the generated keys, settings, theme and
+# worktree config. Track only the layouts and mods that are ours.
+/*
+!/.gitignore
+!/layouts/
+!/mods/

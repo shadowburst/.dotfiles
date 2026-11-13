@@ -1,0 +1,10 @@
+# Herdr writes its shipped mods here on every start. Track only our own.
+/*
+!/.gitignore
+!/sidebar-switch/
+!/spaces-pr/
+!/t3-inbox/
+!/worktrees/
+# Type files the app writes into every mod folder.
+*.d.ts
+jsconfig.json
