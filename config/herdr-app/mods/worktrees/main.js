@@ -3,7 +3,7 @@
 // Remove views for the selected row. Every view has its buttons at the bottom.
 // / filters both panes, p changes the preview, and Tab moves keyboard focus.
 //
-// New runs `wt switch` (with the repo's hooks), then opens a space in the checkout.
+// New queues setup and naming in herdr-core; Tasks opens the ready agent on request.
 // Merge and remove run `wt` in a hidden herdr-core terminal; its output shows here.
 //
 // In the New form, Tab and Shift+Tab go to the next or previous control.
@@ -13,11 +13,12 @@ import { View, div, image, svg } from "gpui-kit";
 import { h_flex, v_flex, h_resizable, resizable_panel, Button, Combobox, Input, InputState, Popup, Scrollbar, Textarea, TextareaState, VirtualListScrollHandle, v_virtual_list } from "gpui-base";
 import { closeOverlay, focused, panes, props, run, settings, shared, spaces, theme } from "herdr";
 import {
-  AGENT_KINDS, PREVIEW_MODES, agentArgv, attach, branchSlug, detectRepo, generateBranch, git, loadBranches,
-  lastFetch, loadConfig, loadOpencodeModels, loadPreview, loadRows, mergeBase, promptCommand, rowKey, rowName, rowRef, uniqueName,
+  AGENT_KINDS, PREVIEW_MODES, attach, detectRepo, git, loadBranches,
+  lastFetch, loadConfig, loadOpencodeModels, loadPreview, loadRows, mergeBase, rowKey, rowName, rowRef, uniqueName,
 } from "./data.js";
 import { Job } from "./job.js";
 import { Graph } from "./graph.js";
+import { startCreation } from "./create.js";
 
 const CHOICES = ["workspace", "agent", "model", "effort", "branch", "base"];
 const CHOICE_KEYS = ["up", "down", "enter", "escape", "tab", "shift-tab"];
@@ -59,6 +60,7 @@ function fuzzy(s, q) {
 
 // Why the row cannot be merged or removed, or "".
 function refusal(r, view) {
+  if (r.pending) return "Worktree status is still loading.";
   if (r.main) return "This is the main checkout.";
   if (r.remote) return `This branch is only on ${r.remote}.`;
   if (view === "merge" && !r.path) return "This branch has no worktree.";
@@ -117,6 +119,9 @@ export default class Worktrees extends View {
     this.filtering = false;
 
     this.prompt = TextareaState.new({ placeholder: "What should the agent do?" });
+    this.prompt.on("submit", (event, cx) => {
+      if (event.secondary && !event.shift && this.view === "new") this.submitNew(cx);
+    });
     this.promptEmpty = true;
     this.prompt.on("change", (_e, cx) => {
       this.draftSave?.cancel();
@@ -126,7 +131,7 @@ export default class Worktrees extends View {
       this.promptEmpty = empty;
       cx.notify();
     });
-    this.branch = InputState.new({ placeholder: "Generated from the task" });
+    this.branch = InputState.new({ placeholder: "Named in the background" });
     this.base = InputState.new({});
     this.target = InputState.new({});
     this.base.on("change", (_e, cx) => { this.saveDraft(); cx.notify(); });
@@ -157,6 +162,8 @@ export default class Worktrees extends View {
         keystroke, action: `wt_${keystroke.replace("-", "_")}`, context: "Worktrees",
       })),
       { keystroke: "ctrl-enter", action: "wt_launch", context: "Worktrees" },
+      { keystroke: "ctrl-enter", action: "wt_launch", context: "WtPrompt > Input" },
+      { keystroke: "ctrl-shift-v", action: "wt_prompt_paste", context: "WtPrompt > Input" },
       ...["enter", "shift-enter"].map((keystroke) => ({ keystroke, action: "wt_newline", context: "WtPrompt > Input" })),
       ...["up", "down", "enter"].map((keystroke) => ({
         keystroke, action: `wt_branch_${keystroke}`, context: "WtBranch > Input",
@@ -177,16 +184,19 @@ export default class Worktrees extends View {
       this.cfg = await loadConfig();
       this.repo = await detectRepo(props()?.folder ?? callerFolder(this.workspace), this.machine);
       if (!this.repo) return cx.notify();
-      this.names = await loadBranches(this.repo.root, this.machine);
+      const repo = this.repo;
+      await this.reload(cx, true);
+      if (this.repo !== repo) return;
       this.restoreForm();
       this.refreshOpencode(cx);
       await this.reload(cx);
+      if (this.repo !== repo) return;
       // PR numbers need the network: after the first draw.
-      const repo = this.repo;
       const full = await loadRows(repo.root, true, repo.machine);
       if (this.repo !== repo) return;
+      const locals = new Map(this.rows.filter((r) => !r.remote).map((r) => [r.branch, r]));
       for (const r of full.rows ?? []) {
-        const mine = this.rows.find((m) => m.branch === r.branch && !m.remote && !r.remote);
+        const mine = !r.remote && locals.get(r.branch);
         if (mine) mine.pr = r.pr;
       }
       cx.notify();
@@ -216,17 +226,21 @@ export default class Worktrees extends View {
     });
   }
 
-  async reload(cx) {
-    if (this.reloading) return;
-    this.reloading = true;
+  async reload(cx, localOnly = false) {
+    if (this.reloading === this.repo) return;
     const repo = this.repo;
-    const [r, names, fetched] = await Promise.all([loadRows(repo.root, false, repo.machine), loadBranches(repo.root, repo.machine), lastFetch(repo.root, repo.machine)]);
-    if (this.repo !== repo) { this.reloading = false; return; }
+    this.reloading = repo;
+    this.loadingRemotes = !localOnly;
+    cx.notify();
+    // Git's name catalog is cheap and keeps naming safe before remote rows arrive.
+    const [r, names, fetched] = await Promise.all([loadRows(repo.root, false, repo.machine, !localOnly), loadBranches(repo.root, repo.machine), localOnly ? this.fetched : lastFetch(repo.root, repo.machine)]);
+    if (this.repo !== repo) return;
     const before = this.current() && rowKey(this.current());
     if (r.error) this.setMessage(r.error, false);
     else { this.setRows(r.def, attach(r.rows, repo.machine)); this.names = names; }
     this.fetched = fetched;
     this.reloading = false;
+    this.loadingRemotes = false;
     this.loadPreview(cx, true, !before || before !== (this.current() && rowKey(this.current())));
     cx.notify();
   }
@@ -531,9 +545,10 @@ export default class Worktrees extends View {
         const machine = spaces().find((s) => s.id === value)?.machine ?? null;
         const repo = await detectRepo(callerFolder(value), machine);
         if (!repo) throw new Error("Cannot read this workspace's Git repository. Check its folder and machine connection.");
-        const [names, list] = await Promise.all([loadBranches(repo.root, machine), loadRows(repo.root, false, machine)]);
+        const [names, list] = await Promise.all([loadBranches(repo.root, machine), loadRows(repo.root, false, machine, false)]);
         if (list.error) throw new Error(list.error);
         this.repo = repo;
+        this.loadingRemotes = false;
         this.machine = machine;
         this.opencode = store(this.modelCacheKey(), null);
         this.opencodeError = "";
@@ -550,6 +565,7 @@ export default class Worktrees extends View {
         this.setMessage("", false);
         this.setField(this.fields().indexOf("workspace"));
         this.refreshOpencode(cx);
+        cx.spawn((cx) => this.reload(cx));
       } catch (e) {
         this.setMessage(String(e.message ?? e), false);
       }
@@ -658,69 +674,27 @@ export default class Worktrees extends View {
     cx.notify();
   }
 
-  // Opens the worktree of spec.branch (a new one from spec.base if the branch
-  // does not exist; a name from the prompt if it is empty) and starts the agent.
+  // The core owns creation, even when checking out a branch without an agent task.
   launch(spec, cx) {
     if (this.busy) return;
-    this.busy = spec.prompt && !spec.branch ? "Naming the branch…" : "Starting…";
+    this.busy = "Queuing the worktree…";
+    const repo = this.repo;
+    const mergeBase = this.rows.find((r) => r.remote && rowRef(r) === spec.base)?.branch ?? spec.base;
     cx.notify();
     cx.spawn(async (cx) => {
       try {
-        const taken = (n) => this.names.local.has(n) || this.names.remote.has(n);
-        const branch = spec.branch || uniqueName(await generateBranch(this.cfg, spec.prompt, this.repo.machine), taken);
-        const valid = await git(this.repo.root, ["check-ref-format", "--branch", branch], this.repo.machine);
-        if (!valid.ok) throw new Error(valid.err || "Invalid branch name.");
-        const slug = branchSlug(branch);
-        const checkout = async () => {
-          const list = await git(this.repo.root, ["worktree", "list", "--porcelain"], this.repo.machine);
-          if (!list.ok) throw new Error(list.err);
-          return list.out.split("\n\n").find((b) => b.split("\n").includes(`branch refs/heads/${branch}`))?.match(/^worktree (.*)$/m)?.[1];
-        };
-        let path = spec.remote || spec.createFromBase ? null : await checkout();
-        if (!path) {
-          const exists = !spec.remote && !spec.createFromBase && this.names.local.has(branch);
-          if (!exists) {
-            // Forge tools expect a branch name here, not refs/remotes/<remote>/….
-            const target = this.rows.find((r) => r.remote && rowRef(r) === spec.base)?.branch ?? spec.base;
-            const config = await git(this.repo.root, ["config", `branch.${branch}.gh-merge-base`, target], this.repo.machine);
-            if (!config.ok) throw new Error(config.err);
-          }
-          this.busy = "Setting up the worktree…";
-          cx.notify();
-          const argv = ["wt", "switch", ...(exists ? [branch] : ["--create", branch, "--base", spec.base]), "--yes", "--no-cd"];
-          let output = [];
-          const code = await Job.run(this.repo.root, argv, (lines) => {
-            output = lines;
-            this.busy = lines.filter((l) => l.trim()).at(-1) || "Setting up the worktree…";
-            cx.notify();
-          }, this.repo.machine);
-          if (code !== 0) throw new Error(`Worktree setup failed with exit code ${code}. ${output.slice(-10).join("\n")}`);
-          if (spec.remote) {
-            const upstream = await git(this.repo.root, ["branch", `--set-upstream-to=${spec.base}`, branch], this.repo.machine);
-            if (!upstream.ok) throw new Error(`The worktree was created, but its upstream could not be set: ${upstream.err}`);
-          }
-          path = await checkout();
-          if (!path) throw new Error(`No worktree found for ${branch}.`);
-        }
-        // Start directly in the checkout: a long-lived `wt -x` hides the agent's
-        // cwd behind wt's foreground process, so Herdr cannot nest its space.
-        const row = this.rows.find((r) => r.path === path) ?? { path, spaces: [] };
-        if (!spec.prompt) this.showCheckout(row);
-        else {
-          const command = await promptCommand(agentArgv(spec.agent, spec.sel), spec.prompt, this.repo.machine);
-          if (row.spaces.length) run("tab.new", { space: row.spaces[0], folder: path, name: slug, argv: command });
-          else run("space.new", { folder: path, tab: slug, argv: command, machine: this.repo.machine ?? "" });
-        }
+        await startCreation({ ...spec, mergeBase }, repo, this.cfg);
         if (spec.prompt) {
-          localStorage.removeItem("draft");
+          this.draftSave?.cancel();
           this.prompt.set_value("");
           this.branch.set_value("");
+          localStorage.removeItem("draft");
         }
         this.busy = null;
         this.close();
-      } catch (e) {
+      } catch (error) {
         this.busy = null;
-        this.fail(String(e.message ?? e), cx);
+        this.fail(String(error.message ?? error), cx);
       }
     });
   }
@@ -729,7 +703,7 @@ export default class Worktrees extends View {
 
   openAction(view, cx) {
     const r = this.current();
-    if (!r) return;
+    if (!r || r.pending) return;
     Object.assign(this, { view, sel: r, out: [], running: false, failed: false });
     this.setMessage("", false);
     if (view === "merge" && !refusal(r, view)) {
@@ -887,6 +861,10 @@ export default class Worktrees extends View {
       .on_action("wt_escape", (_e, cx) => this.escape(cx))
       .on_action("wt_enter", (_e, cx) => this.enter(cx))
       .on_action("wt_launch", (_e, cx) => { if (this.view === "new") this.submitNew(cx); })
+      .on_action("wt_prompt_paste", (_e, cx) => {
+        const text = cx.read_from_clipboard();
+        if (text !== undefined) this.prompt.replace(text);
+      })
       .on_action("wt_newline", () => this.prompt.replace("\n"))
       .on_action("wt_tab", (_e, cx) => this.tabKey(1, cx))
       .on_action("wt_shift_tab", (_e, cx) => this.tabKey(-1, cx))
@@ -958,12 +936,15 @@ export default class Worktrees extends View {
   }
 
   footer(t, actions) {
-    const text = this.busy || this.message;
-    const color = this.busy ? t.muted : this.ok ? t.ansi2 : t.blocked;
+    const loading = this.fetching ? "Fetching remotes…" : this.loadingRemotes ? "Loading remote branches…" : "";
+    const error = this.message && !this.ok;
+    const text = this.busy || (error ? this.message : loading || this.message);
+    const spinning = Boolean(this.busy || (!error && loading));
+    const color = spinning ? t.muted : this.ok ? t.ansi2 : t.blocked;
     return h_flex().flex_none().h(60).px(20).gap(8).items_center().border_t(1).border_color(t.border).bg(alpha(t.background, 0.35))
       .child(h_flex().flex_1().min_w(0).gap(8).items_center().text_size(12.5).text_color(color)
-        .when(Boolean(this.busy), (el) => el.child(svg(ICON("spinner")).size(14).spin(900)))
-        .when(Boolean(text) && !this.busy, (el) => el.child(svg(ICON(this.ok ? "circle-check" : "x")).size(14)))
+        .when(spinning, (el) => el.child(svg(ICON("spinner")).size(14).spin(900)))
+        .when(Boolean(text) && !spinning, (el) => el.child(svg(ICON(this.ok ? "circle-check" : "x")).size(14)))
         .child(div().truncate().when(Boolean(text), (el) => el.tooltip(text)).child(text || "")))
       .children(actions);
   }
@@ -980,8 +961,8 @@ export default class Worktrees extends View {
     const r = this.current();
     const none = !r;
     return [
-      ui.button("remove", "Remove", "x", (cx) => this.openAction("remove", cx), "", none),
-      ui.button("merge", "Merge", "m", (cx) => this.openAction("merge", cx), "", none),
+      ui.button("remove", "Remove", "x", (cx) => this.openAction("remove", cx), "", none || r.pending),
+      ui.button("merge", "Merge", "m", (cx) => this.openAction("merge", cx), "", none || r.pending),
       ui.button("new", "New", "n", (cx) => this.openNew(cx)),
       ui.button("open", r?.remote && this.names.local.has(r.branch) ? "New from remote" : r && !r.path ? "Check out" : "Open", "↵", (cx) => this.open(cx), "primary", none),
     ];

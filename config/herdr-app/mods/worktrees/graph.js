@@ -169,20 +169,24 @@ export class Graph {
 
   labels(sha, catalog = this.refs, selected = this.selected) {
     const refs = this.refsAt(sha, catalog);
-    const primary = refs.find((r) => rowKey(r) === (selected && rowKey(selected))) ?? refs.find((r) => !r.remote) ?? refs[0];
+    let primary = refs.find((r) => rowKey(r) === (selected && rowKey(selected))) ?? refs.find((r) => !r.remote) ?? refs[0];
     if (!primary) return [];
-    const companion = primary.upstream && refs.find((r) => r.remote && rowName(r) === primary.upstream);
-    const shown = companion ? [primary, companion] : [primary];
-    const extra = refs.length - shown.length;
+    if (primary.remote) primary = refs.find((r) => !r.remote && (r.upstream === rowName(primary) || r.branch === primary.branch)) ?? primary;
+    const remotes = primary.remote ? [] : refs.filter((r) => r.remote && (rowName(r) === primary.upstream || r.branch === primary.branch));
+    const extra = refs.length - 1 - remotes.length;
     const room = LABELS - 12 - (extra ? 38 : 0);
-    return [...shown.map((r) => ({ ref: r, width: Math.min(room / shown.length, rowName(r).length * 6.5 + 38 + (r.dirty ? 16 : 0)) })), ...(extra ? [{ extra, width: 38 }] : [])];
+    return [{ ref: primary, remotes, width: Math.min(room, rowName(primary).length * 6.5 + 38 + (primary.dirty ? 16 : 0) + (remotes.length ? 15 : 0)) }, ...(extra ? [{ extra, width: 38 }] : [])];
   }
 
   click(sha, cx) {
     this.handle.focus();
     let x = this.pressX - this.width;
     for (const label of this.labels(sha, this.pressRefs, this.pressSelected)) {
-      if (x >= 0 && x < label.width && label.ref) { this.selectRef(rowKey(label.ref), cx); return; }
+      if (x >= 0 && x < label.width && label.ref) {
+        const remote = label.remotes.find((r) => rowKey(r) === (this.pressSelected && rowKey(this.pressSelected))) ?? label.remotes[0];
+        this.selectRef(rowKey(remote && x >= 24 && x < 39 ? remote : label.ref), cx);
+        return;
+      }
       x -= label.width;
     }
     this.inspect(sha, cx);
@@ -208,10 +212,12 @@ export class Graph {
     const labels = h_flex().flex_none().w(LABELS).h_full().items_center();
     for (const label of this.labels(row.sha)) {
       const r = label.ref;
-      const on = r && this.selected && rowKey(r) === rowKey(this.selected);
+      const on = r && this.selected && [r, ...label.remotes].some((r) => rowKey(r) === rowKey(this.selected));
       labels.child(h_flex().w(label.width).flex_none().px(4).child(h_flex().flex_none().max_w(label.width - 8).h(21).px(5).gap(4).items_center().rounded(5).border(1)
         .border_color(on ? t.accent : t.border).bg(on ? t.selected : t.raised).text_size(10.5).text_color(on ? t.foreground : t.muted)
         .when(Boolean(r), (el) => el.child(svg(`mods/workspace-chrome/${r.remote ? "server" : "branch"}.svg`).size(11).flex_none().accessibility_label(r.remote ? "Remote branch" : "Local branch")))
+        .when(Boolean(label.remotes?.length), (el) => el.child(svg("mods/workspace-chrome/server.svg").size(11).flex_none()
+          .accessibility_label(`Matching remote branches: ${label.remotes.map(rowName).join(", ")}`).tooltip(label.remotes.map(rowName).join(", "))))
         .child(div().truncate().child(r ? rowName(r) : `+${label.extra}`))
         .when(Boolean(r?.dirty), (el) => el.child(svg("mods/worktrees/pencil.svg").size(11).flex_none().text_color(t.ansi3).accessibility_label("Uncommitted changes")))));
     }

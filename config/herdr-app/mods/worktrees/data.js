@@ -100,27 +100,40 @@ export function parseRows(raw) {
   return { def: list.repo?.default_branch ?? "", rows: list.items.map(rowData) };
 }
 
+// Local identities are fast; wt adds status and remote rows afterwards.
 // `full` also asks the forge for the PRs, which needs the network.
-export async function loadRows(repo, full, on) {
-  const args = ["-C", repo, "list", "--format=json", "--branches", "--remotes", ...(full ? ["--full"] : [])];
+export async function loadRows(repo, full, on, remotes = true) {
   try {
-    const r = await exec("wt", args, { cwd: repo, on });
-    if (r.code !== 0) return { error: `wt list: ${(r.stderr || r.stdout).trim()}` };
-    const list = parseRows(r.stdout);
+    let list;
+    if (remotes) {
+      const args = ["-C", repo, "list", "--format=json", "--branches", "--remotes", ...(full ? ["--full"] : ["--config-set", "list.full=false"])];
+      const r = await exec("wt", args, { cwd: repo, on });
+      if (r.code !== 0) return { error: `wt list: ${(r.stderr || r.stdout).trim()}` };
+      list = parseRows(r.stdout);
+    } else {
+      const r = await git(repo, ["worktree", "list", "--porcelain", "-z"], on);
+      if (!r.ok) return { error: r.err };
+      list = { def: "", rows: r.out.split("\0\0").filter(Boolean).map((record) => {
+        const fields = record.split("\0");
+        const value = (key) => fields.find((f) => f.startsWith(`${key} `))?.slice(key.length + 1) ?? "";
+        const path = value("worktree");
+        return rowData({ branch: value("branch").replace(/^refs\/heads\//, ""), head: { sha: value("HEAD") }, worktree: { path, main: path === repo } });
+      }) };
+    }
     // wt can omit matching remote tips. Git is the authoritative ref catalog.
     const [refs, remoteList] = await Promise.all([
-      git(repo, ["for-each-ref", "--format=%(refname)%00%(objectname)%00%(upstream:short)%00%(symref)", "refs/heads", "refs/remotes"], on),
-      git(repo, ["remote"], on),
+      git(repo, ["for-each-ref", "--format=%(refname)%00%(objectname)%00%(upstream:short)%00%(symref)", "refs/heads", ...(remotes ? ["refs/remotes"] : [])], on),
+      remotes ? git(repo, ["remote"], on) : { ok: true, out: "" },
     ]);
     if (!refs.ok) return { error: refs.err };
     if (!remoteList.ok) return { error: remoteList.err };
-    const remotes = remoteList.out.trim().split("\n").filter(Boolean).sort((a, b) => b.length - a.length);
+    const remoteNames = remoteList.out.trim().split("\n").filter(Boolean).sort((a, b) => b.length - a.length);
     const byRef = new Map();
     for (const row of list.rows) byRef.set(rowRef(row), [...(byRef.get(rowRef(row)) ?? []), row]);
     for (const line of refs.out.trim().split("\n")) {
       const [ref, sha, upstream, symbolic] = line.split("\0");
       if (!ref || symbolic) continue;
-      const { remote, branch } = ref.startsWith("refs/remotes/") ? remoteParts(ref, remotes) : { remote: "", branch: ref.slice(11) };
+      const { remote, branch } = ref.startsWith("refs/remotes/") ? remoteParts(ref, remoteNames) : { remote: "", branch: ref.slice(11) };
       if (remote && branch === "HEAD") continue;
       let rows = byRef.get(ref);
       if (!rows) {
@@ -129,6 +142,7 @@ export async function loadRows(repo, full, on) {
       }
       for (const row of rows) { row.sha = sha ?? row.sha; row.upstream = upstream ?? row.upstream; }
     }
+    if (!remotes) for (const row of list.rows) row.pending = true;
     return list;
   } catch (e) {
     return { error: `wt list: ${e}` };

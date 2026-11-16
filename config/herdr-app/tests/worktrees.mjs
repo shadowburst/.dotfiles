@@ -4,10 +4,14 @@ import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import vm from "node:vm";
 
-const root = "/repo", checkout = "/worktrees/fix-test";
-let created, failSetup, calls, jobs;
+const root = "/repo";
+let failTaskStart, calls, jobs;
 let testSpaces = [], testPanes = [], testFocus = null;
-let testAgents = [], fixtureRoot, fixtureItems, historyGate;
+let testAgents = [], fixtureRoot, fixtureItems, historyGate, remoteGate;
+let testTerminals = [];
+let testPanel, testPanelBody, testLayout;
+const taskNotices = [];
+const taskFinalStates = {};
 const gitCalls = [];
 const execCalls = [];
 const hcCalls = [];
@@ -21,11 +25,13 @@ let virtualLists = 0;
 const actions = new Map();
 const buttons = new Map();
 const lists = new Map();
+const elementRecords = new Map();
 const text = [], icons = [];
 let deferred = false;
-const element = (record) => new Proxy({}, { get: (_target, method) => (...args) => {
+const element = (record = {}) => new Proxy({}, { get: (_target, method) => (...args) => {
   assert(!(deferred && method.startsWith("on_")), "Virtual rows must not install handlers during native layout");
   if (record && typeof record === "object") record[method] = args;
+  if (method === "id") elementRecords.set(args[0], record);
   if (method === "child" && typeof args[0] === "string") text.push(args[0]);
   if (method === "on_action") actions.set(args[0], args[1]);
   if (method === "when" && args[0]) return args[1](element(record));
@@ -35,7 +41,7 @@ context.window = { paint_path: element };
 const kit = module({ View: class {}, div: element, image: element, svg(path) { icons.push(path); return element(); }, PathBuilder: { stroke: element } });
 const state = (opts = {}) => {
   const handlers = {};
-  return { on(event, fn) { (handlers[event] ??= []).push(fn); }, emit(event, cx) { for (const fn of handlers[event] ?? []) fn({}, cx); },
+  return { on(event, fn) { (handlers[event] ??= []).push(fn); }, emit(event, cx, data = {}) { for (const fn of handlers[event] ?? []) fn(data, cx); },
     focus() {}, value() { return opts.value ?? ""; }, set_value(v) { opts.value = v; }, replace(v) { opts.value = (opts.value ?? "") + v; } };
 };
 const base = module({ ...Object.fromEntries([
@@ -46,26 +52,41 @@ const base = module({ ...Object.fromEntries([
   v_virtual_list(id, count, sizes, key, render) { virtualLists++; const record = { count, sizes, key, render }; lists.set(id, record); return element(record); },
   InputState: { new: state }, TextareaState: { new: state }, VirtualListScrollHandle: { new: () => ({ scroll_to_item() {} }) } });
 const herdr = module({
-  agents() { return testAgents; }, appHome() {}, home() { return "/home/test"; }, panes() { return testPanes; }, readTextFile() {}, spaces() { return testSpaces; },
+  agents() { return testAgents; }, appHome() { return "/config/herdr-app"; }, home() { return "/home/test"; }, panes() { return testPanes; },
+  terminals() { return testTerminals; }, notify(notice) { taskNotices.push(notice); },
+  async readTextFile(path) { if (path.endsWith("/create.py")) return readFile(new URL("../mods/worktrees/create.py", import.meta.url), "utf8"); }, spaces() { return testSpaces; },
   closeOverlay() {}, focused() { return testFocus; }, props() {}, settings() { return {}; }, theme() { return {}; },
   shared(key) { return testShared[key]; }, setShared(key, value) { testShared[key] = value; },
   machines() { return []; }, openOverlay() {}, async hc(args) {
     hcCalls.push(Array.from(args));
-    if (args[0] === "run") return { stdout: JSON.stringify({ address: "t99" }) };
-    if (args[0] === "get") return { stdout: JSON.stringify({ state: "finished", exit_code: 0 }) };
-    return { stdout: "done\n" };
-  }, watchFolder() {}, window() {}, layout() {},
-  run(command, args) { calls.push({ command, args }); },
+    if (args[0] === "run") return failTaskStart ? { code: 1, stdout: "", stderr: "Cannot start test worker" } : { code: 0, stdout: JSON.stringify({ address: "t99" }) };
+    if (args[0] === "get") return { code: 0, stdout: JSON.stringify(taskFinalStates[args[1]] || { state: "finished", exit_code: 0 }) };
+    return { code: 0, stdout: "done\n" };
+  }, watchFolder() {}, window() {}, layout() { return testLayout; },
+  run(command, args) {
+    calls.push({ command, args });
+    if (command === "layout.select" && args.stack === "panel-body" && testPanelBody) testPanelBody.active = args.child;
+    if (["layout.show", "layout.hide"].includes(command) && args.id === "panel" && testPanel) testPanel.hidden = command === "layout.hide";
+  },
   async exec(command, args, { cwd, on } = {}) {
     execCalls.push({ command, args, cwd, on });
     if (command === "git") gitCalls.push({ cwd, args, on });
     if (fixtureRoot && cwd?.startsWith(fixtureRoot)) {
-      if (command === "wt") return { code: 0, stdout: JSON.stringify({ repo: { default_branch: "main" }, items: fixtureItems }) };
+      if (command === "wt") {
+        if (args.includes("--remotes") && remoteGate) {
+          const gate = remoteGate;
+          gate.enter(); await gate.wait;
+          if (gate.error) return { code: 1, stdout: "", stderr: gate.error };
+        }
+        return { code: 0, stdout: JSON.stringify({ repo: { default_branch: "main" }, items: fixtureItems }) };
+      }
       if (command === "git" && args[0] === "log" && historyGate) await historyGate;
       const r = spawnSync(command, args, { cwd, encoding: "utf8", env: gitEnv });
       return { code: r.status, stdout: r.stdout ?? "", stderr: r.stderr ?? String(r.error ?? "") };
     }
     if (command === "python3") return { code: 1, stdout: "", stderr: "no fetch yet" };
+    if (command === "rm") return { code: 0, stdout: "", stderr: "" };
+    if (command === "tail") return { code: 0, stdout: "Saved setup output", stderr: "" };
     if (command === "sh") return { code: 0, stdout: args.includes("/api/model") || args.includes("/api/provider") ? '{"data":[]}' : "/target-home/.cache/herdr-worktrees/prompt-abc", stderr: "" };
     if (command === "wt") return { code: 0, stdout: JSON.stringify({ repo: { default_branch: "develop" }, items: [{ branch: "develop", worktree: { path: cwd, main: true } }] }) };
     assert.equal(command, "git");
@@ -73,14 +94,13 @@ const herdr = module({
     if (args[0] === "rev-parse") return { code: 0, stdout: args.includes("--git-common-dir") ? `${cwd}/.git` : cwd };
     if (args[0] === "branch") return { code: 0, stdout: "develop" };
     if (args[0] === "for-each-ref") return { code: 0, stdout: "refs/heads/develop\n" };
-    return { code: 0, stdout: args[0] === "worktree" && created ? `worktree ${checkout}\nbranch refs/heads/fix/test\n\n` : "", stderr: "" };
+    if (args[0] === "worktree" && args.includes("-z")) return { code: 0, stdout: `worktree ${cwd}\0HEAD ${"a".repeat(40)}\0branch refs/heads/develop\0\0` };
+    return { code: 0, stdout: "", stderr: "" };
   },
 });
 const job = module({ Job: { async run(cwd, argv, onLines, on) {
   jobs.push({ cwd, argv, on });
   onLines(["Setting up…"]);
-  if (failSetup) return 1;
-  created = true;
   return 0;
 } } });
 const data = new vm.SourceTextModule(await readFile(new URL("../mods/worktrees/data.js", import.meta.url), "utf8"), { context });
@@ -89,19 +109,19 @@ const history = new vm.SourceTextModule(await readFile(new URL("../mods/worktree
 await history.link(() => data);
 const graph = new vm.SourceTextModule(await readFile(new URL("../mods/worktrees/graph.js", import.meta.url), "utf8"), { context });
 await graph.link((name) => ({ "gpui-kit": kit, "gpui-base": base, herdr, "./data.js": data, "./history.js": history })[name]);
+const creation = new vm.SourceTextModule(await readFile(new URL("../mods/worktrees/create.js", import.meta.url), "utf8"), { context });
+await creation.link((name) => ({ herdr, "./data.js": data })[name]);
 const main = new vm.SourceTextModule(await readFile(new URL("../mods/worktrees/main.js", import.meta.url), "utf8"), { context });
-await main.link((name) => ({ "gpui-kit": kit, "gpui-base": base, herdr, "./data.js": data, "./job.js": job, "./graph.js": graph })[name]);
+await main.link((name) => ({ "gpui-kit": kit, "gpui-base": base, herdr, "./data.js": data, "./job.js": job, "./graph.js": graph, "./create.js": creation })[name]);
 await main.evaluate();
 
-async function launch(existing = false, failure = false, prompt = "", remote = "", machine = null) {
-  created = existing;
-  failSetup = failure;
+async function launch(prompt = "", remote = "", machine = null) {
   calls = [];
   jobs = [];
   const view = new main.namespace.default();
   Object.assign(view, {
     repo: { root, machine }, names: { local: new Set(), remote: new Set() }, rows: remote ? [{ branch: "fix/test", remote }] : [],
-    close() {}, prompt: { set_value() {} }, branch: { set_value() {} },
+    close() {}, prompt: state({ value: prompt }), branch: state({ value: "fix/test" }),
   });
   let task;
   const cx = { notify() {}, spawn(fn) { task = fn(cx); } };
@@ -111,21 +131,25 @@ async function launch(existing = false, failure = false, prompt = "", remote = "
 }
 
 await launch();
-assert.equal(calls[0]?.command, "space.new");
-assert.equal(calls[0]?.args.folder, checkout, "Start the space in the worktree, not in wt's original folder");
-assert.equal(jobs.length, 1);
-assert(!jobs[0].argv.includes("-x"), "wt must finish before the agent starts");
-await launch(true);
-assert.equal(jobs.length, 0, "Reuse an existing worktree");
-assert.equal(calls[0]?.args.folder, checkout);
-const failed = await launch(false, true);
-assert.equal(calls.length, 0, "Do not open a space when setup fails");
-assert.match(failed.message, /failed/i);
-await launch(false, false, "Fix this");
-assert.equal(calls[0]?.args.folder, checkout);
-assert.equal(calls[0]?.args.argv[0], "sh");
-assert(!calls[0]?.args.argv.includes("wt"));
-console.log("Worktree launch: new, existing, and failed setup passed.");
+assert.equal(jobs.length, 0, "Plain branch checkouts also run outside the popup");
+assert(!calls.some((c) => c.command === "space.new"));
+assert.equal(JSON.parse(execCalls.at(-1).args.at(-1)).agent.length, 0, "A plain checkout must not start a coding agent");
+await launch("Fix this");
+assert.equal(jobs.length, 0, "Setup no longer belongs to the popup's task lifetime");
+assert(!calls.some((c) => ["space.new", "tab.new", "space.select"].includes(c.command)), "Queuing a task must not steal focus");
+assert(hcCalls.at(-1).includes("--outlive-parent"), "The task must survive the popup closing");
+assert(hcCalls.at(-1).includes("task.state=running"));
+assert.equal(JSON.parse(execCalls.at(-1).args.at(-1)).prompt, "Fix this");
+failTaskStart = true;
+const failedSubmission = await launch("Keep this draft");
+failTaskStart = false;
+assert.equal(failedSubmission.prompt.value(), "Keep this draft", "Keep the draft when the core refuses the submission");
+assert.match(failedSubmission.message, /Cannot start test worker/);
+assert.equal(execCalls.at(-1).command, "rm", "Remove the private submission file if starting the worker fails");
+await creation.namespace.startCreation({ branch: "", base: "main", prompt: "An automatic name", agent: "codex" }, { root }, {});
+const automaticTask = JSON.parse(execCalls.at(-1).args.at(-1));
+assert(automaticTask.rename && automaticTask.branch.startsWith("worktree/"), "Use a temporary branch immediately and rename it in the worker");
+console.log("Worktree submission: background checkout and agent tasks, temporary naming, retained focus, and failed submission passed.");
 
 const view = new main.namespace.default();
 view.graph = { enabled: false };
@@ -222,11 +246,12 @@ Object.assign(workspaceView, {
 });
 workspaceView.prompt.set_value("Keep this task");
 workspaceView.branch.set_value("fix/task");
-let workspaceTask;
-const workspaceCx = { notify() {}, spawn(fn) { workspaceTask = fn(workspaceCx); } };
+const workspaceTasks = [];
+const workspaceCx = { notify() {}, spawn(fn) { workspaceTasks.push(fn(workspaceCx)); } };
+const settleWorkspaces = async () => { while (workspaceTasks.length) await Promise.all(workspaceTasks.splice(0)); };
 workspaceView.pickChoice("workspace", "other", workspaceCx);
 assert(workspaceView.busy, "Block launch until the new repository is ready");
-await workspaceTask;
+await settleWorkspaces();
 assert.equal(workspaceView.workspace, "other");
 assert.equal(workspaceView.repo.root, "/other", "Resolve the selected space's live terminal folder, not the focused space or stale saved folder");
 assert.equal(workspaceView.base.value(), "develop");
@@ -239,7 +264,7 @@ workspaceView.showChoice("workspace", true, workspaceCx);
 workspaceView.pickChoice("workspace", "other", workspaceCx);
 assert.equal(workspaceView.dropdown, null, "Selecting the current workspace closes the menu");
 workspaceView.pickChoice("workspace", "invalid", workspaceCx);
-await workspaceTask;
+await settleWorkspaces();
 assert.equal(workspaceView.workspace, "other", "Reject a non-repository without changing the launch target");
 assert.equal(workspaceView.repo.root, "/other");
 assert.match(workspaceView.message, /Git repository/);
@@ -248,7 +273,7 @@ noRepoView.init({}, initCx);
 noRepoView.repo = null;
 noRepoView.refreshOpencode = () => {};
 noRepoView.pickChoice("workspace", "other", workspaceCx);
-await workspaceTask;
+await settleWorkspaces();
 assert.equal(noRepoView.view, "new", "Allow a new worktree for another workspace when the current space is not a repository");
 assert.equal(noRepoView.repo.root, "/other");
 assert.equal(noRepoView.agent, "claude");
@@ -256,21 +281,22 @@ console.log("Workspaces: current default, target repository, base branch, preser
 
 execCalls.length = 0;
 workspaceView.pickChoice("workspace", "remote", workspaceCx);
-await workspaceTask;
+await settleWorkspaces();
 assert.equal(workspaceView.repo.machine, "server");
 assert.equal(workspaceView.repo.root, "/remote");
 assert(execCalls.length && execCalls.every((c) => c.on === "server"), "Repository detection, branches and rows run on the selected machine");
 assert(workspaceView.rows[0].spaces.includes("remote"));
 assert.equal(workspaceView.modelCacheKey(), "opencode-models:server");
 execCalls.length = 0;
-await launch(false, false, "Remote task", "", "server");
-assert.equal(jobs[0].on, "server", "Setup runs on the target machine");
-assert.equal(calls[0].args.machine, "server", "The new agent space stays on the target machine");
+await launch("Remote task", "", "server");
+assert.deepEqual(hcCalls.at(-1).slice(0, 3), ["run", "--on", "server"], "Background setup and the agent run on the target machine");
+assert(!calls.some((c) => ["space.new", "tab.new"].includes(c.command)));
 assert(execCalls.every((c) => c.on === "server"), "Git and the private prompt file stay on the target machine");
-assert(calls[0].args.argv.includes("/target-home/.cache/herdr-worktrees/prompt-abc"));
+assert(hcCalls.at(-1).includes("/target-home/.cache/herdr-worktrees/prompt-abc"));
 
 const realJob = new vm.SourceTextModule(await readFile(new URL("../mods/worktrees/job.js", import.meta.url), "utf8"), { context });
 await realJob.link(() => herdr); await realJob.evaluate();
+hcCalls.length = 0;
 assert.equal(await realJob.namespace.Job.run("/repo", ["wt", "switch", "topic"], () => {}, "server"), 0);
 assert.deepEqual(hcCalls[0].slice(0, 3), ["run", "--on", "server"]);
 assert(hcCalls.slice(1).every((args) => args[1] === "server/t99"), "Wait, get, read and cleanup use the qualified remote terminal address");
@@ -290,7 +316,7 @@ assert(execCalls.every((c) => c.on === "server"));
 assert(!execCalls.some((c) => c.args.includes("/nix/store/local-only/bin/textgen")), "Do not send a local Nix store path to another machine");
 for (const action of ["merge", "remove"]) {
   Object.assign(workspaceView, { view: action, sel: { path: "/worktree", branch: "topic", spaces: [] }, target: state({ value: "main" }), handle, finished() {} });
-  workspaceView.confirm(workspaceCx); await workspaceTask;
+  workspaceView.confirm(workspaceCx); await settleWorkspaces();
   assert.equal(jobs.at(-1).on, "server", `${action} runs on the target machine`);
 }
 console.log("Machines: workspace switching, setup, prompt files, agent launch, terminal cleanup and busy detection passed.");
@@ -446,6 +472,15 @@ assert.equal(submitted, 0, "New lines never submit the task");
 const launchBinding = bindings.find((b) => b.keystroke === "ctrl-enter");
 actions.get(launchBinding.action)({}, cx);
 assert.equal(submitted, 1, "Ctrl+Enter still launches the task");
+const promptLaunch = bindings.find((b) => b.keystroke === "ctrl-enter" && b.context === "WtPrompt > Input");
+assert(promptLaunch, "Ctrl+Enter must override the native task field's key binding");
+actions.get(promptLaunch.action)({}, cx);
+assert.equal(submitted, 2);
+const hexPaste = bindings.find((b) => b.keystroke === "ctrl-shift-v" && b.context === "WtPrompt > Input");
+assert(hexPaste, "Accept the Ctrl+Shift+V shortcut Hex sends");
+const beforePaste = view.prompt.value();
+actions.get(hexPaste.action)({}, { ...cx, read_from_clipboard: () => "Dictated text" });
+assert.equal(view.prompt.value(), beforePaste + "Dictated text");
 console.log("Task input: closed dropdowns skip list construction; plain Enter does not submit.");
 
 let focusedField;
@@ -527,7 +562,9 @@ let launchSpec;
 branchView.prompt.set_value("Fix this");
 branchView.base.set_value("main");
 branchView.launch = (spec) => { launchSpec = spec; };
-branchView.submitNew(branchCx);
+branchView.prompt.emit("submit", branchCx);
+assert(!launchSpec, "Plain native Enter must not submit the task");
+branchView.prompt.emit("submit", branchCx, { secondary: true });
 assert.equal(launchSpec.branch, "", "Submit keeps the automatic-naming path");
 branchView.branch.set_value("fix/custom");
 branchView.submitNew(branchCx);
@@ -547,11 +584,12 @@ assert.equal(launchSpec, null, "Base must still be an existing branch");
 assert.match(branchView.message, /existing base branch/);
 console.log("Editable branch: matching, free input, explicit selection, cancellation, automatic naming, and action-button Tab stops passed.");
 
-await launch(false, false, "", "origin");
-assert.deepEqual(Array.from(jobs[0].argv), ["wt", "switch", "--create", "fix/test", "--base", "refs/remotes/origin/fix/test", "--yes", "--no-cd"]);
-assert(gitCalls.some((c) => c.args.includes("--set-upstream-to=refs/remotes/origin/fix/test")), "Set the upstream to the selected remote, not Git's guessed remote");
-assert(gitCalls.some((c) => c.args[0] === "config" && c.args[1] === "branch.fix/test.gh-merge-base" && c.args[2] === "fix/test"), "Keep forge branch names separate from exact Git base refs");
-console.log("Remote checkout: explicit creation, exact remote base, and explicit upstream passed.");
+await launch("", "origin");
+const remoteTask = JSON.parse(execCalls.at(-1).args.at(-1));
+assert.equal(remoteTask.remote, "origin");
+assert.equal(remoteTask.base, "refs/remotes/origin/fix/test");
+assert.equal(remoteTask.mergeBase, "fix/test", "Keep forge branch names separate from exact Git base refs");
+console.log("Remote checkout submission: exact remote identity and base passed.");
 
 const gitEnv = { ...process.env, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1", GIT_AUTHOR_NAME: "Graph Test", GIT_AUTHOR_EMAIL: "graph@example.invalid", GIT_COMMITTER_NAME: "Graph Test", GIT_COMMITTER_EMAIL: "graph@example.invalid" };
 fixtureRoot = await mkdtemp("/tmp/opencode/herdr-graph-");
@@ -610,6 +648,86 @@ try {
   assert.equal(rowName(refs.rows.find((r) => r.remote === "origin" && r.branch === "feature")), "origin/feature");
   assert.notEqual(rowKey({ branch: "main", path: "/one" }), rowKey({ branch: "main", path: "/two" }), "Multiple worktrees on one branch have distinct list keys");
 
+  const detachedPath = `${fixtureRoot}/checkout with\nnewline`;
+  fixtureGit("worktree", "add", "--detach", detachedPath, detached);
+  execCalls.length = 0;
+  const localSnapshot = await loadRows(fixtureRoot, false, undefined, false);
+  assert(localSnapshot.rows.every((r) => !r.remote && r.pending));
+  assert.equal(localSnapshot.rows.find((r) => r.path === fixtureRoot).sha, m);
+  assert(localSnapshot.rows.some((r) => r.branch === "topic" && !r.path), "Include local branches without worktrees");
+  assert(localSnapshot.rows.some((r) => r.path === detachedPath && !r.branch && r.sha === detached), "Keep detached worktrees and paths with spaces or newlines");
+  assert(execCalls.every((c) => c.command === "git" && !c.args.includes("refs/remotes")), "The first snapshot skips wt and remote row processing");
+
+  const progressiveTasks = [];
+  const holdRemotes = (error = "") => {
+    let enter, release;
+    const entered = new Promise((resolve) => { enter = resolve; });
+    remoteGate = { enter, error, wait: new Promise((resolve) => { release = resolve; }) };
+    return { entered, release };
+  };
+  const held = holdRemotes();
+  const progressiveCx = { ...initCx, notify() {}, spawn(fn) {
+    const task = Promise.resolve().then(() => fn(progressiveCx));
+    progressiveTasks.push(task);
+    return task;
+  } };
+  testSpaces = [{ id: "progressive", active: true, folder: fixtureRoot, tabs: [] }];
+  testFocus = { space: "progressive", cwd: fixtureRoot };
+  const progressive = new main.namespace.default();
+  progressive.init({}, progressiveCx);
+  await held.entered;
+  assert(progressive.rows.some((r) => r.path === fixtureRoot), "Show local worktrees before the remote branch load finishes");
+  assert(!progressive.rows.some((r) => r.remote), "The first draw contains only local rows");
+  assert(progressive.names.local.has("main"), "Local branch choices are ready during remote loading");
+  text.length = 0; icons.length = 0;
+  progressive.footer({}, []);
+  assert(text.includes("Loading remote branches…"), "Show remote loading in the bottom-left status area");
+  assert(icons.includes("mods/workspace-chrome/spinner.svg"));
+  progressive.openAction("remove", progressiveCx);
+  assert.equal(progressive.view, "list", "Do not allow destructive actions before worktree status is ready");
+  progressive.filter.set_value("feature");
+  const selectedLocal = progressive.current();
+  held.release();
+  while (progressiveTasks.length) await Promise.all(progressiveTasks.splice(0));
+  remoteGate = null;
+  assert(progressive.rows.some((r) => r.remote === "origin" && r.branch === "feature"), "Add remote rows automatically");
+  assert.equal(rowKey(progressive.current()), rowKey(selectedLocal), "Keep the selected local row when remote rows arrive");
+  assert.equal(progressive.filter.value(), "feature", "Keep the active search");
+  assert(progressive.names.names.includes("refs/remotes/origin/feature"), "Update remote base choices too");
+  assert(!progressive.loadingRemotes, "Clear remote loading after completion");
+  assert(progressive.rows.every((r) => !r.pending), "Replace pending local identities with real status data");
+
+  const failedRemote = holdRemotes("remote list unavailable");
+  const loadedRows = progressive.rows;
+  const failedReload = progressive.reload(progressiveCx);
+  await failedRemote.entered;
+  failedRemote.release(); await failedReload;
+  assert.equal(progressive.rows, loadedRows, "A failed remote load keeps the existing rows");
+  assert.match(progressive.message, /remote list unavailable/);
+  assert(!progressive.loadingRemotes && !progressive.reloading, "A failed load clears the loading state");
+
+  const stale = holdRemotes("old workspace error");
+  const staleReload = progressive.reload(progressiveCx);
+  await stale.entered;
+  const next = holdRemotes();
+  testSpaces.push({ id: "next-workspace", machine: "server", folder: fixtureRoot, tabs: [] });
+  progressive.selectWorkspace("next-workspace", progressiveCx);
+  await next.entered;
+  assert.equal(progressive.repo.machine, "server");
+  assert(!progressive.busy, "Workspace switching is usable before remote rows finish loading");
+  assert(progressive.rows.length && progressive.rows.every((r) => !r.remote && r.pending));
+  progressive.prompt.set_value("Keep edits made during remote loading");
+  stale.release(); await staleReload;
+  assert(progressive.loadingRemotes, "An old workspace response cannot clear the new workspace's loading state");
+  assert(!progressive.message.includes("old workspace error"));
+  next.release();
+  while (progressiveTasks.length) await Promise.all(progressiveTasks.splice(0));
+  remoteGate = null;
+  assert(progressive.rows.some((r) => r.remote));
+  assert.equal(progressive.prompt.value(), "Keep edits made during remote loading");
+  assert(!progressive.loadingRemotes && !progressive.reloading);
+  console.log("Progressive loading: fast local snapshot, loading status, remote rows, stable selection, safe actions, failure recovery, and workspace switching passed.");
+
   const full = await history.namespace.history(fixtureRoot, [m], 0, 100);
   assert.equal(full.commits.length, 4);
   const page1 = await history.namespace.history(fixtureRoot, [m], 0, 2);
@@ -663,13 +781,18 @@ try {
   assert.equal(g.rows.length, 5, "Unreferenced detached worktree HEADs are graph roots too");
   assert.equal(g.rows[scrollTarget[0]].sha, m);
   assert.equal(scrollTarget[1], "center");
-  assert.equal(g.labels(m).filter((l) => l.ref).length, 2, "Combine the local label and matching upstream only at the same commit");
+  assert.equal(g.labels(m).filter((l) => l.ref).length, 1, "Use one tag for a local branch and matching remote tips at the same commit");
+  assert(g.labels(m)[0].remotes.some((r) => rowRef(r) === "refs/remotes/origin/main"));
+  assert(!g.labels(b)[0].remotes.some((r) => rowRef(r) === "refs/remotes/origin/feature"), "Do not combine branches at different commits");
+  text.length = 0;
+  g.renderRow(g.rows.find((r) => r.sha === m), {});
+  assert(text.includes("main") && !text.includes("origin/main"), "A matching remote uses an icon, not a second name");
   assert(g.labels(m)[0].width < 100, "Short branch badges do not stretch to fill the label column");
   const oldScroll = scrollTarget;
   g.configure(fixtureRoot, refs.rows, mainRef, graphCx, false);
   assert.equal(scrollTarget, oldScroll, "A badge refresh does not reset manual scrolling");
   g.pressRefs = g.refs; g.pressSelected = g.selected;
-  g.pressX = g.width + g.labels(m)[0].width + 1;
+  g.pressX = g.width + 28;
   g.click(m, graphCx);
   assert.equal(selectedRef, rowKey(refs.rows.find((r) => rowRef(r) === "refs/remotes/origin/main")), "Clicking the remote label selects that exact remote row");
   const remote = refs.rows.find((r) => rowRef(r) === "refs/remotes/origin/feature");
@@ -823,3 +946,94 @@ try {
   await rm(fixtureRoot, { recursive: true, force: true });
   fixtureRoot = null;
 }
+
+const taskData = new vm.SourceTextModule(await readFile(new URL("../mods/tasks/data.js", import.meta.url), "utf8"), { context });
+await taskData.link(() => herdr);
+const tasksMod = new vm.SourceTextModule(await readFile(new URL("../mods/tasks/main.js", import.meta.url), "utf8"), { context });
+await tasksMod.link((name) => ({ "gpui-kit": kit, "gpui-base": base, herdr, "./data.js": taskData })[name]);
+await tasksMod.evaluate();
+const tabsMod = new vm.SourceTextModule(await readFile(new URL("../mods/tabs-tasks/main.js", import.meta.url), "utf8"), { context });
+await tabsMod.link((name) => ({ "gpui-kit": kit, "gpui-base": base, herdr })[name]);
+await tabsMod.evaluate();
+delete testShared["tasks.records"];
+testTerminals = [
+  { address: "running", created_ms: 1, state: "live", labels: { "task.kind": "worktree", "task.state": "running" } },
+  { address: "ready", created_ms: 2, state: "live", labels: { "task.kind": "worktree", "task.state": "ready", "task.path": "/new-worktree", "task.branch": "feat/new" } },
+  { address: "failed", created_ms: 3, state: "finished", exit_code: 7, labels: { "task.kind": "worktree", "task.state": "running" } },
+  { address: "other", created_ms: 4, state: "finished", exit_code: 0, labels: { "task.kind": "build" } },
+  { address: "unrelated", created_ms: 5, state: "live", labels: {} },
+];
+const entries = taskData.namespace.taskEntries();
+assert.equal(entries.length, 4, "Tasks include other job kinds, but not unrelated terminals");
+assert.equal(entries.filter((t) => t.active).length, 1);
+assert(entries.find((t) => t.address === "failed").failed, "A process that exits before updating its label still shows failure");
+const taskPolling = [];
+const taskSyncJobs = [];
+const taskSyncCx = { timer: { every(_ms, fn) { taskPolling.push(fn); } }, spawn(fn) { taskSyncJobs.push(fn(taskSyncCx)); } };
+testPanelBody = { id: "panel-body", active: "files" };
+testPanel = { id: "panel", hidden: true, children: [testPanelBody] };
+testLayout = { children: [testPanel] };
+const taskTabs = new tabsMod.namespace.default();
+taskTabs.init({}, taskSyncCx);
+await Promise.all(taskSyncJobs.splice(0));
+assert(!testPanel.hidden && testPanelBody.active === "tasks", "Open Tasks when active tasks arrive");
+calls = [];
+taskPolling[0](taskSyncCx);
+await Promise.all(taskSyncJobs.splice(0));
+assert.equal(taskNotices.length, 3, "Notify once for each ready or failed task, even with the Tasks panel closed");
+assert.equal(calls.length, 0, "Notifications do not change spaces or keyboard focus");
+assert(taskNotices.some((n) => n.level === "error"));
+testTerminals = testTerminals.filter((t) => t.state !== "finished");
+testShared["tasks.records"].short = { address: "short", created_ms: 6, state: "live", labels: { "task.kind": "worktree", "task.state": "running" } };
+taskFinalStates.short = { state: "finished", exit_code: 7, labels: { "task.kind": "worktree", "task.state": "failed" } };
+taskTabs.syncTasks(taskSyncCx);
+await Promise.all(taskSyncJobs.splice(0));
+assert(taskData.namespace.taskEntries().find((t) => t.address === "short").failed, "Keep an immediate failure after it disappears from the live API");
+assert(taskData.namespace.taskEntries().some((t) => t.address === "other"), "Keep completed generic tasks too");
+assert.equal(taskNotices.length, 4);
+const taskView = new tasksMod.namespace.default();
+const taskJobs = [];
+const taskCx = { ...initCx, notify() {}, spawn(fn) { taskJobs.push(fn(taskCx)); } };
+taskView.init({}, taskCx);
+text.length = 0;
+taskView.render();
+assert.equal(elementRecords.get("tasks")?.text_size?.[0], 13, "Use the same 13 px base text as Files and Changes");
+assert.equal(elementRecords.get("tasks")?.rounded?.[0], 10, "Match the rounded side-panel frame");
+assert(elementRecords.get("tasks")?.overflow_hidden, "Clip content to the rounded panel frame");
+assert(elementRecords.get("tasks")?.border_1, "Use the same thin border as Files and Changes");
+assert(text.includes("Failed (exit 7)"), "Do not label a failed process as Ready");
+taskView.open(entries.find((t) => t.address === "ready"), taskCx);
+await Promise.all(taskJobs.splice(0));
+assert.equal(calls.length, 0, "Wait for core adoption before focusing a newly opened worktree");
+assert(hcCalls.at(-1).some((arg) => arg.startsWith("herdr.space=sp-task-")));
+testPanes = [{ terminal: "ready" }];
+taskView.render();
+assert.equal(calls.at(-1).command, "agent.focus");
+assert.equal(calls.at(-1).args.terminal, "ready", "Only Open moves focus to the worktree agent");
+testTerminals.find((t) => t.address === "ready").labels["task.log"] = "/private/setup.log";
+taskView.readLog("ready", taskCx);
+await Promise.all(taskJobs.splice(0));
+assert.equal(taskView.logs.ready, "Saved setup output", "Keep setup logs separate from the coding agent's screen");
+
+testPanel.hidden = true;
+testTerminals.push({ address: "new-job", created_ms: 7, state: "live", labels: { "task.kind": "build", "task.state": "running" } });
+taskTabs.syncTasks(taskSyncCx);
+await Promise.all(taskSyncJobs.splice(0));
+assert(!testPanel.hidden && testPanelBody.active === "tasks", "A new task reopens the Tasks panel even when another task is already running");
+testTerminals.filter((t) => t.labels["task.kind"]).forEach((t) => { t.labels["task.state"] = "ready"; });
+taskTabs.syncTasks(taskSyncCx);
+await Promise.all(taskSyncJobs.splice(0));
+assert(testPanel.hidden, "Close Tasks when the last active task finishes");
+testPanel.hidden = false;
+taskTabs.syncTasks(taskSyncCx);
+await Promise.all(taskSyncJobs.splice(0));
+assert(!testPanel.hidden, "Allow the person to reopen completed task history");
+testTerminals.push({ address: "last-job", created_ms: 8, state: "live", labels: { "task.kind": "build", "task.state": "running" } });
+taskTabs.syncTasks(taskSyncCx);
+await Promise.all(taskSyncJobs.splice(0));
+testPanelBody.active = "files";
+testTerminals.find((t) => t.address === "last-job").labels["task.state"] = "failed";
+taskTabs.syncTasks(taskSyncCx);
+await Promise.all(taskSyncJobs.splice(0));
+assert(!testPanel.hidden && testPanelBody.active === "files", "Completion must not close Files or Changes after the person switches panels");
+console.log("Tasks: generic jobs, running/ready/failed states, one notification, retained focus, and explicit Open passed.");
