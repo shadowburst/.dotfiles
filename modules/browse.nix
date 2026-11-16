@@ -11,5 +11,15 @@ _: {
           "mcp"
         ];
       };
+
+      programs.claude-code.mcpServers.browse = {
+        command = "${pkgs.browse}/bin/browse";
+        args = [ "mcp" ];
+      };
+
+      programs.codex.settings.mcp_servers.browse = {
+        command = "${pkgs.browse}/bin/browse";
+        args = [ "mcp" ];
+      };
     };
 }
