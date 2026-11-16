@@ -1,16 +1,36 @@
 import { View, div, svg } from "gpui-kit";
 import { Button, h_flex, v_flex } from "gpui-base";
-import { exec, hc, panes, run, spaces, theme } from "herdr";
-import { taskEntries } from "./data.js";
+import { exec, hc, panes, run, spaces, terminals, theme } from "herdr";
+import { placeTask, taskEntries } from "./data.js";
 
 export default class Tasks extends View {
   init(_props, cx) {
     this.hidden = JSON.parse(localStorage.getItem("hidden") || "[]");
     this.logs = {};
     this.sources = {};
+    this.placed = JSON.parse(localStorage.getItem("placed") || "{}");
     cx.timer.every(2000, (cx) => {
       const task = taskEntries().find((t) => t.address === this.selected);
       if (task && (task.active || this.sources[task.address] !== (task.log || task.state))) this.readLog(task.address, cx);
+      this.placeReady(cx);
+    });
+  }
+
+  // A ready worktree's agent goes into a tab by itself, once: closing that tab later is the person's choice.
+  // The tabs mod shows this panel when a task starts, so this copy runs before the task is ready.
+  placeReady(cx) {
+    const live = new Set(terminals().filter((t) => t.state !== "finished").map((t) => t.address));
+    const ready = taskEntries().filter((t) => t.labels["task.kind"] === "worktree" && live.has(t.address)
+      && t.labels["task.state"] === "ready" && !t.labels["herdr.space"] && !this.placed[t.address]);
+    if (!ready.length) return;
+    for (const task of ready) this.placed[task.address] = true;
+    localStorage.setItem("placed", JSON.stringify(this.placed));
+    cx.spawn(async (cx) => {
+      for (const task of ready) {
+        try { await placeTask(task); }
+        catch (error) { this.logs[task.address] = String(error); this.selected = task.address; }
+      }
+      cx.notify();
     });
   }
 
@@ -49,11 +69,7 @@ export default class Tasks extends View {
     this.opening = task.address;
     cx.spawn(async (cx) => {
       try {
-        if (!task.labels["herdr.space"]) {
-          const id = `${task.address.replaceAll("/", "-")}-${task.created_ms}`;
-          const space = existing?.id.split("/").at(-1) ?? `sp-task-${id}`;
-          await hc(["label", task.address, `herdr.space=${space}`, `herdr.tab=tb-task-${id}`]);
-        }
+        if (!task.labels["herdr.space"]) await placeTask(task);
       } catch (error) {
         this.logs[task.address] = String(error);
         this.selected = task.address;
