@@ -2,16 +2,16 @@
 
 ## Prepare
 
-Capture runs inside Pest's in-process Laravel app. Before running, confirm an isolated test database and browser-test refresh protection (`RefreshDatabase` or equivalent). Reuse the project's factories, states, seeders, `actingAs`, shared setup, and page wrappers; ask before adding reusable setup. Use synthetic data and keep secrets/personal data out of every asset.
+Capture runs inside Pest's in-process Laravel app. Before running, confirm an isolated test database and browser-test refresh protection (`RefreshDatabase` or equivalent). Reuse the project's factories, states, seeders, `actingAs`, shared setup, and page wrappers; report reusable setup that is missing as a gap. Use synthetic data and keep secrets/personal data out of every asset.
 
-Use the project's working Pest 5 browser stack with Playwright >=1.63 and installed browsers. Prefer installed `pestphp/pest-plugin-agent` for both screenshots and recordings. Missing prerequisites (including the Playwright executable or frontend build) are setup gaps: report them or ask before installs. Retain project configuration and TIA settings.
+Use the project's working Pest 5 browser stack with Playwright >=1.63 and installed browsers. Prefer installed `pestphp/pest-plugin-agent` for both screenshots and recordings. Missing prerequisites (including the Playwright executable or frontend build) are setup gaps: report them and install nothing. Retain project configuration and TIA settings.
 
-- Run one `--agent` flow per process from the project root; teardown occurs at process termination. Do not batch capture paths in parallel or add unnecessary flags such as `--compact`.
+- Run one `--agent` flow per process from the project root; teardown occurs at process termination. Add no unnecessary flags such as `--compact`.
 - Agent snippets inherit resolved TestCase classes/traits (Browser preferred), but not path-scoped hooks. Explicitly reuse any required setup from those hooks.
 - Keep `$page = visit(...)` as a visible statement in the snippet for browser discovery; wrap its result with the project's existing page wrapper when needed.
 - If an installed agent plugin fails, surface the error; do not switch runners. Only when it is missing, use the temporary Browser test below.
 
-Keep assets and diagnostics under `~/.cache/publish-pr/<repository>/`; clean temporary capture files on success and failure. Replace example placeholders with absolute paths visible to PHP, including the helper path. Containers must see the project, helper, cache, and upload files at those paths. Lerd shares `$HOME` and the project, not host `/tmp` or arbitrary host environment variables.
+Replace example placeholders with absolute paths visible to PHP, including the helper path. Containers must see the project, helper, cache, and upload files at those paths. Lerd shares `$HOME` and the project, not host `/tmp` or arbitrary host environment variables.
 
 Use [Pest's browser API](https://pestphp.com/docs/browser-testing) and project conventions for selectors, interactions, and assertions. Prove each intended state with assertions before capturing it. For recordings, wait about two seconds after meaningful asserted states, including initial/final states when helpful. These waits belong in capture-only flows, not ordinary regression tests.
 
@@ -30,11 +30,11 @@ $page->assertSee("Notifications")
 '
 ```
 
-After success, move the PNGs into the cache and remove the capture subfolder. For a before state, when the screen exists at the PR base, create a base-commit worktree through the environment's worktree tool, confirm its dependencies/assets are ready, and run the same flow there with `-before` filenames, then remove the worktree.
+After success, move the PNGs into the cache and remove the capture subfolder. For a before state, run the same flow in the base checkout with `-before` filenames.
 
 ## Recordings
 
-Record the PR head's focused changed interaction, with separate captures for materially changed error, validation, or alternate branches. Aim for a compact native WebM under 10 MB.
+Aim for a compact native WebM under 10 MB.
 
 Require `<skill-directory>/scripts/record.php` inside the Pest snippet/test. Its public helper is `\PublishPr\record(object $page, string $output, \Closure $flow): void`. Pass an already-visited, asserted Pest page (or the project's existing wrapper providing `page()`):
 
@@ -78,4 +78,4 @@ Reuse the Browser setup and the same recording helper/flow.
 
 ## Inspect and finish
 
-Visually inspect **every** screenshot and generated recording frame, including the final state. Each must show the claimed state; error pages, debug output, login screens, or private data invalidate the asset even if assertions passed. Publish only successful, verified captures. Offer to retain useful tests only with approval and following project conventions.
+Visually inspect **every** screenshot and generated recording frame, including the final state. Each must show the claimed state; error pages, debug output, login screens, or private data invalidate the asset even if assertions passed. When a capture flow would make a useful regression test, say so in the claim's `NOTE:`.

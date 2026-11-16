@@ -12,14 +12,14 @@ The user is not watching this thread. Updates and the final message go unread un
 A "deliver" request gives permission to:
 
 - Create a branch, commit, push, merge the base into the branch, and fix conflicts on this task's branch.
-- Use the test methods that evidence needs without asking first: running the app or a dev server, browser automation, screenshots, and visual checks. Rules that name _how_ to test (the command, fixture, or check) still apply; only the ask-first step is lifted, and only for this task.
+- Use the test methods that evidence needs without asking first: the evidence agent, running the app or a dev server, browser automation, screenshots, and visual checks. Rules that name _how_ to test (the command, fixture, or check) still apply; only the ask-first step is lifted, and only for this task.
 
 Outside the grant, always: merging, auto-merge, merge queues, pushes to the default branch, branch-protection bypasses, deleting data, touching production, changing things outside the repo, closing a PR, force-pushing any branch. Disable auto-merge and leave any merge queue before work begins and before each push; report it. When automatic merging cannot be prevented, report the blocker first.
 
 ## Steps
 
 1. **Finish the change.** Work in the current checkout with all its uncommitted changes. Resolve the base from the user's choice, existing PR, then `branch.<head>.gh-merge-base`; ask if unknown. Record the base there and align any existing PR. Make the smallest change that meets the request.
-2. **Gather evidence.** Observe evidence for every change before it is pushed; see [Evidence](#evidence).
+2. **Gather evidence.** Commit the change, then gather evidence for it; see [Evidence](#evidence).
 3. **Cross-review.** Run the `cross-review` skill until it agrees or asks the user.
 4. **Publish.** Before every `publish-pr` run, here and in step 5, fetch the recorded base and, when it moved, merge it into the branch, then gather evidence again for what the merge touched, including conflict fixes. Run the `publish-pr` skill and ask it for ready for review, so review bots see code that cross-review already approved. Keep the cross-review line in the PR body.
 5. **Watch.** Run the `watch-pr` skill until the PR is ready to merge or blocked. Gather evidence for each fix before it is pushed.
@@ -31,12 +31,12 @@ Stay active from step 1 to step 6. Ending the turn while checks or bots are pend
 
 ## Evidence
 
-Select evidence with step 2 and the execution evidence format of `publish-pr`'s `EVIDENCE.md`, and observe it yourself in this session; `publish-pr` later publishes it. Two additions hold here:
+Gather evidence with steps 2–4 of `publish-pr`'s `EVIDENCE.md`, on the committed head and the recorded base: the evidence agent captures it, and you check it. `publish-pr` reuses the checked report for the same head and runs the agent again only for the claims that later commits touch. Every change has evidence before it is pushed. Two additions hold here:
 
-- When the behavior has no test and the repo has a test setup, add one focused test that fails without the change.
-- For UI and runtime behavior, run the app and look at it; green mocked tests show nothing about the user experience.
+- When the behavior has no test and the repo has a test setup, add one focused test that fails without the change, as part of the change.
+- Put UI and runtime behavior in the brief's intent as results to observe in the running app; green mocked tests show nothing about the user experience.
 
-A change without evidence is a change without full confidence: ask the user.
+A `failed` claim is a defect in the change: fix it, commit, and gather evidence again. A change without evidence is a change without full confidence: ask the user.
 
 ## Merge gate
 

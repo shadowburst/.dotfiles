@@ -30,9 +30,12 @@ claude)
     ;;
 codex)
     command -v codex >/dev/null || { echo 'codex CLI is unavailable' >&2; exit 3; }
-    codex exec \
+    # Skip config.toml, like --strict-mcp-config above: its MCP servers read
+    # OAuth tokens from the keyring, and a locked keyring hangs codex until
+    # the timeout. Without the config the effort defaults to none, so set it.
+    codex exec --ignore-user-config \
         ${CROSS_REVIEW_CODEX_MODEL:+-m "$CROSS_REVIEW_CODEX_MODEL"} \
-        ${CROSS_REVIEW_EFFORT:+-c "model_reasoning_effort=\"$CROSS_REVIEW_EFFORT\""} \
+        -c "model_reasoning_effort=\"${CROSS_REVIEW_EFFORT:-high}\"" \
         -C "$repo" -s read-only --ephemeral \
         -o "$output" - <"$brief" >/dev/null 2>"$output.log" ||
         { printf 'codex exec failed; see %s\n' "$output.log" >&2; exit 4; }
