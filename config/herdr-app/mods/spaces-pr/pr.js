@@ -63,7 +63,6 @@ export class PullRequests {
       .items_center()
       .text_color(color)
       .when(approved, (el) => el.font_semibold())
-      .child(svg("mods/workspace-chrome/git-compare.svg").size(11))
       .child(div().child(`#${pr.number}`))
       .when(approved, (el) => el.child(svg("mods/workspace-chrome/check.svg").size(11)))
       .when(changes, (el) => el.child(svg("mods/workspace-chrome/x.svg").size(11)));

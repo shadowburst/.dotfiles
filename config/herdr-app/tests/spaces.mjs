@@ -82,6 +82,7 @@ assert(rendered.attrs.accessibility_label.includes("main"), "Include the branch 
 assert(nodes(rendered).some(n => n.attrs.tooltip === mixed.label), "Full counts stay available on hover");
 assert.equal(rendered.attrs.py, 8);
 assert(!("h" in rendered.attrs), "Let extra lines set the row height");
+assert.equal(nodes(rendered).filter(n => n.kind === "mods/workspace-chrome/branch.svg").length, 1, "Keep one branch icon on the main checkout's Git line");
 const cx = { notify() {} };
 rendered.handlers["on_mouse_down:left"]();
 rendered.handlers["on_mouse_up:left"]({}, cx);
@@ -94,6 +95,8 @@ rendered.handlers["on_mouse_up:left"]({}, cx);
 assert.equal(calls.at(-1).command, "space.move");
 assert.equal(calls.at(-1).args.index, 2);
 assert(!text(rendered).includes("Untitled agent"), "No task line without an agent");
+assert.equal(nodes(rendered).filter(n => n.kind === "mods/workspace-chrome/branch.svg").length, 1, "Worktrees need only the Git details branch icon");
+assert.equal(rendered.children.find(n => n.attrs.h === 20).attrs.pl, 44, "Keep worktree titles aligned with their detail lines");
 
 const missing = row(root, null);
 assert(text(view.row(missing, t, activity([]))).includes("Checking Git…"));
@@ -121,4 +124,18 @@ assert(text(updated[1]).includes("Finished task"));
 assert.equal(calls.length, 0, "Status changes must not move spaces");
 const layout = JSON.parse(await readFile(new URL("../layouts/inbox.json", import.meta.url), "utf8"));
 assert.equal(layout.children.find(n => n.id === "sidebar").size.px, 340);
-console.log("Spaces: status priority/counts, task titles, branches, missing Git, grouping, updates, compact mode, selection and drag passed.");
+const prModule = new vm.SourceTextModule(await readFile(new URL("../mods/spaces-pr/pr.js", import.meta.url), "utf8"), { context });
+await prModule.link(name => ({ "gpui-kit": kit, "gpui-base": base, herdr })[name]);
+await prModule.evaluate();
+const prs = new prModule.namespace.PullRequests();
+for (const state of ["OPEN", "MERGED", "CLOSED"]) {
+  prs.pr.test = { number: 42, state, reviewDecision: "APPROVED" };
+  const badge = prs.badge("test", t);
+  if (state === "CLOSED") assert.equal(badge, null);
+  else {
+    assert(text(badge).includes("#42"), "Keep PR numbers");
+    assert(!nodes(badge).some(n => n.kind === "mods/workspace-chrome/git-compare.svg"), "Do not repeat a Git icon in PR badges");
+    assert(nodes(badge).some(n => n.kind === "mods/workspace-chrome/check.svg"), "Keep review status marks");
+  }
+}
+console.log("Spaces: status, tasks, one branch icon per row, plain PR numbers, Git details, grouping, compact mode, selection and drag passed.");

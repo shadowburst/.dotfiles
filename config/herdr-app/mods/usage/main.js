@@ -34,6 +34,9 @@ export default class Usage extends View {
   // ---- the dialog ------------------------------------------------------------
 
   initView(cx) {
+    this.handle = cx.focus_handle();
+    cx.bind_keys([{ keystroke: "ctrl-r", action: "usage_refresh", context: "Usage" }]);
+    this.handle.focus();
     this.rows = null; // [{ account, entry, error, loading }]
     this.discoveryErrors = [];
     this.now = Date.now();
@@ -74,7 +77,7 @@ export default class Usage extends View {
     const t = theme();
     return div().id(id).size(28).flex_none().flex().items_center().justify_center().rounded(6)
       .text_color(t.muted).cursor_pointer().hover((s) => s.bg(t.hover).text_color(t.foreground))
-      .tooltip(tip).on_click(action).child(icon);
+      .role("button").accessibility_label(tip).tooltip(tip).on_click(action).child(icon);
   }
 
   bar(id, window, remaining, color, t) {
@@ -148,12 +151,16 @@ export default class Usage extends View {
           .filter(([, rows]) => rows.length > 0)
           .map(([provider, rows]) => this.section(provider, rows, t));
     body.push(...(this.discoveryErrors ?? []).map((error) => div().text_size(12).text_color(t.blocked).child(error)));
-    return v_flex().id("usage-view").size_full()
-      .child(h_flex().flex_none().h(48).pl(20).pr(10).gap(8).items_center().border_b(1).border_color(t.border)
-        .child(svg("mods/usage/gauge.svg").size(16).text_color(t.muted))
-        .child(div().text_size(14).font_semibold().text_color(t.foreground).child("Usage limits"))
-        .child(div().flex_1())
-        .child(this.iconButton("usage-refresh", loading ? refreshIcon.spin(900) : refreshIcon, "Refresh limits", (_e, cx) => {
+    return v_flex().id("usage-view").size_full().bg(t.popover).text_color(t.foreground)
+      .key_context("Usage").track_focus(this.handle)
+      .on_action("usage_refresh", (_e, cx) => cx.spawn((cx) => this.refresh(cx, 0)))
+      .child(h_flex().flex_none().h(60).px(20).gap(12).items_center().border_b(1).border_color(t.border)
+        .child(div().flex_none().size(34).rounded(9).bg(`${t.accent}29`).flex().items_center().justify_center()
+          .child(svg("mods/usage/gauge.svg").size(17).text_color(t.accent)))
+        .child(v_flex().flex_1().min_w(0).gap(1)
+          .child(div().text_size(14.5).font_semibold().child("Usage limits"))
+          .child(div().text_size(12).text_color(t.muted).truncate().child("Subscription limits across your accounts")))
+        .child(this.iconButton("usage-refresh", loading ? refreshIcon.spin(900) : refreshIcon, "Refresh limits (Ctrl+R)", (_e, cx) => {
           cx.spawn((cx) => this.refresh(cx, 0));
         }))
         .child(this.iconButton("usage-close", div().text_size(11).text_color(t.dim).child("Esc"), "Close (Esc)", () => closeOverlay(props().overlay))))

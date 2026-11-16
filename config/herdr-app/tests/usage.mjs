@@ -68,7 +68,7 @@ const herdr = module({
     if (args.at(-1) === "codex") return { code: 0, stdout: JSON.stringify({ account: { account: { email: "remote@example.invalid" } }, limits: {} }) };
     return { code: 0, stdout: JSON.stringify({ usage: { rate_limits: { five_hour: { utilization: 25 } } } }) };
   },
-  closeOverlay(id) { closed.push(id); }, layout() {}, props: () => testProps, setShared() {}, shared() {}, theme: () => ({}),
+  closeOverlay(id) { closed.push(id); }, layout() {}, props: () => testProps, setShared() {}, shared() {}, theme: () => ({ accent: "#aabbcc" }),
   run(command, args) { calls.push({ command, args }); },
 });
 const sources = new vm.SourceTextModule(await readFile(new URL("../mods/usage/sources.js", import.meta.url), "utf8"), { context });
@@ -79,22 +79,69 @@ const main = new vm.SourceTextModule(await readFile(new URL("../mods/usage/main.
 await main.link((name) => ({ "gpui-kit": kit, "gpui-base": base, herdr, "./sources.js": sources })[name]);
 await main.evaluate();
 const view = new main.namespace.default();
-const cx = { notify() {}, spawn() {}, timer: { every() {} } };
+const bindings = [];
+let focused = false;
+const cx = {
+  notify() {}, spawn() {}, timer: { every() {} },
+  focus_handle: () => ({ focus() { focused = true; } }),
+  bind_keys(keys) { bindings.push(...keys); },
+};
 view.init({}, cx);
+assert.equal(bindings.length, 0, "The sidebar must not capture Ctrl+R");
 view.render();
 elements.find((el) => el.id?.[0] === "usage-open").on_click[0]();
 assert.equal(calls[0].command, "mod.open", "The sidebar button must use the same native toggle");
 assert.equal(calls[0].args.name, "usage");
 testProps = { overlay: "usage-dialog" };
 view.init({}, cx);
+assert(focused, "The dialog must take keyboard focus");
+assert.equal(bindings[0].keystroke, "ctrl-r");
+assert.equal(bindings[0].context, "Usage", "Ctrl+R must apply only inside the Usage dialog");
 assert.equal(view.rows, null, "An overlay must initialize the usage dialog, not the sidebar row");
 elements.length = 0;
 view.render();
 assert(elements.some((el) => el.id?.[0] === "usage-view"), "The native toggle must render the usage dialog");
 assert(elements.some((el) => el.child?.[0] === "Esc"), "Dialogs use the same Esc close indicator");
 assert(!icons.includes("mods/usage/x.svg"));
+assert(elements.some((el) => el.h?.[0] === 60 && el.px?.[0] === 20), "Match the Worktrees header height and padding");
+assert(elements.some((el) => el.size?.[0] === 34 && el.rounded?.[0] === 9 && el.bg?.[0] === "#aabbcc29"), "Match the Worktrees accent icon tile");
+assert(elements.some((el) => el.child?.[0] === "Subscription limits across your accounts"), "Keep a subtitle below the title");
+const dialog = elements.find((el) => el.id?.[0] === "usage-view");
+assert.equal(dialog.key_context[0], "Usage");
+assert.equal(dialog.track_focus[0], view.handle);
+assert.equal(dialog.on_action[0], bindings[0].action);
+const refreshButton = elements.find((el) => el.id?.[0] === "usage-refresh");
+assert.match(refreshButton.tooltip[0], /Ctrl\+R/);
 elements.find((el) => el.id?.[0] === "usage-close").on_click[0]();
 assert.equal(closed.at(-1), "usage-dialog", "The Esc indicator remains clickable");
+
+const loads = [], tasks = [];
+let release;
+const pending = new Promise(resolve => { release = resolve; });
+view.rows = ["claude", "chatgpt", "failed"].map(key => ({
+  account: { key, async load() {
+    loads.push(key);
+    await pending;
+    if (key === "failed") throw new Error("Provider unavailable");
+    return { windows: [{ id: "session", usedPercent: 20 }] };
+  } },
+  entry: { snapshot: { windows: [] }, fetchedAt: Date.now() }, error: null, loading: false,
+}));
+const stale = view.rows[2].entry;
+await view.refresh(cx, 300_000);
+assert.equal(loads.length, 0, "Opening keeps fresh cached limits");
+const refreshCx = { ...cx, spawn(fn) { tasks.push(fn(refreshCx)); } };
+dialog.on_action[1]({}, refreshCx);
+assert.deepEqual(loads, ["claude", "chatgpt", "failed"], "Ctrl+R must bypass the cache for every provider");
+refreshButton.on_click[0]({}, refreshCx);
+assert.equal(loads.length, 3, "Repeated refreshes must not duplicate in-flight requests");
+release();
+await Promise.all(tasks);
+assert.equal(view.rows[0].entry.snapshot.windows[0].usedPercent, 20);
+assert.equal(view.rows[1].entry.snapshot.windows[0].usedPercent, 20);
+assert.equal(view.rows[2].entry, stale, "Keep previous limits when a provider fails");
+assert.match(view.rows[2].error, /Provider unavailable/);
+assert(view.rows.every(row => !row.loading));
 
 view.now = 1_000_000;
 for (const usedPercent of [10, 50, 90]) {
@@ -117,4 +164,4 @@ assert.equal((await claude.load()).windows[0].usedPercent, 25);
 assert(ioCalls.some((c) => c.path === "/remote/.codex/auth.json" && c.on === "server"));
 assert(ioCalls.some((c) => c.command === "python3" && c.on === "server" && c.args.includes("# probe fixture")), "Send the local probe source to the remote machine");
 assert(!ioCalls.some((c) => c.on === "sandbox"), "Skip temporary machines");
-console.log("Usage: native toggle, dialog, pacing, remote discovery and probes, shared-account fallback and offline errors pass.");
+console.log("Usage: native toggle, header, scoped Ctrl+R, cache bypass, concurrent refreshes, provider errors, pacing and remote accounts pass.");
