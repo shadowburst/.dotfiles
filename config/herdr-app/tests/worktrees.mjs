@@ -902,6 +902,82 @@ try {
   fixtureRoot = null;
 }
 
+fixtureRoot = await mkdtemp("/tmp/opencode/herdr-pull-");
+try {
+  const at = (cwd) => (...args) => {
+    const r = spawnSync("git", args, { cwd, encoding: "utf8", env: gitEnv });
+    assert.equal(r.status, 0, r.stderr);
+    return r.stdout.trim();
+  };
+  const fg = at(fixtureRoot);
+  const commit = async (name) => { await writeFile(`${fixtureRoot}/${name}.txt`, `${name}\n`); fg("add", "."); fg("commit", "-m", name); return fg("rev-parse", "HEAD"); };
+  fg("init", "--initial-branch=main");
+  const old = await commit("root");
+  fg("checkout", "-b", "base"); await commit("base-work");
+  fg("checkout", "-b", "child"); await commit("child-work");
+  fg("checkout", "main"); await commit("main-work");
+  fg("config", "branch.child.gh-merge-base", "base");
+  fg("branch", "ghost", old);
+  fg("update-ref", "refs/remotes/origin/far", fg("rev-parse", "base"));
+  fg("config", "branch.ghost.gh-merge-base", "far");
+  const row = (branch, extra = {}) => ({ branch, remote: "", path: "", sha: fg("rev-parse", branch), ...extra });
+  const d = data.namespace;
+
+  assert.deepEqual({ ...await d.diffBase(fixtureRoot, "main", row("child")) }, { ref: "refs/heads/base", name: "base" }, "Diff compares a branch with its recorded base");
+  assert.deepEqual({ ...await d.diffBase(fixtureRoot, "main", row("ghost")) }, { ref: "refs/remotes/origin/far", name: "far" }, "A base only on a remote uses the remote ref");
+  assert.deepEqual({ ...await d.diffBase(fixtureRoot, "main", row("base")) }, { ref: "main", name: "main" }, "Without a recorded base, Diff uses the default branch");
+  const lines = (await d.loadPreview(fixtureRoot, "main", row("child"), 1)).map((l) => l.text);
+  assert.equal(lines[0], "@@ base: base");
+  assert(lines.some((l) => l.includes("child-work.txt")) && !lines.some((l) => l.includes("base-work.txt")), "The diff holds only the branch's own commits");
+  assert.equal((await d.loadPreview(fixtureRoot, "main", row("main"), 1)).length, 0, "The default branch has no diff with itself");
+
+  // A branch without a worktree fast-forwards from its upstream; one without upstream is refused.
+  fg("branch", "lag", old);
+  fg("config", "branch.lag.remote", "."); fg("config", "branch.lag.merge", "refs/heads/main");
+  assert((await d.pull(fixtureRoot, row("lag"))).ok);
+  assert.equal(fg("rev-parse", "lag"), fg("rev-parse", "main"), "Pull fast-forwards a branch without a worktree");
+  const none = await d.pull(fixtureRoot, row("base"));
+  assert(!none.ok && /no upstream/.test(none.err));
+  // A worktree runs `git pull` in its own folder.
+  const wtPath = `${fixtureRoot}/.wt-lag2`;
+  fg("worktree", "add", "-b", "lag2", wtPath, old);
+  at(wtPath)("config", "branch.lag2.remote", "."); at(wtPath)("config", "branch.lag2.merge", "refs/heads/main");
+  const pulled = await d.pull(fixtureRoot, row("lag2", { path: wtPath }));
+  assert(pulled.ok, pulled.err);
+  assert.equal(fg("rev-parse", "lag2"), fg("rev-parse", "main"), "Pull updates a worktree's branch");
+  assert(gitCalls.some((c) => c.cwd === wtPath && c.args[0] === "pull"));
+
+  // Keys: H and L change the preview, p pulls, Tab keeps moving the focus.
+  const tasks = [];
+  const cx = {
+    notify() {}, bind_keys() {},
+    focus_handle() { const h = { focus() {}, is_focused() { return false; } }; return h; },
+    timer: { every() {}, after() { return { cancel() {} }; } },
+    spawn(fn) { const t = Promise.resolve().then(() => fn(cx)); tasks.push(t); return t; },
+  };
+  const popup = new main.namespace.default();
+  popup.init({}, { ...cx, spawn() {} });
+  let reloads = 0;
+  Object.assign(popup, { repo: { root: fixtureRoot, top: fixtureRoot }, rows: [row("child"), row("main", { remote: "origin" })], def: "main", view: "list", preview: 0, loadPreview() {}, reload: async () => { reloads++; } });
+  popup.listKey("L", cx); assert.equal(popup.preview, 1);
+  popup.listKey("L", cx); popup.listKey("L", cx); assert.equal(popup.preview, 0, "L wraps from Changes to Graph");
+  popup.listKey("H", cx); assert.equal(popup.preview, 2, "H wraps from Graph to Changes");
+  const before = gitCalls.length;
+  popup.listKey("p", cx);
+  assert.equal(popup.busy, "Pulling child…");
+  while (tasks.length) await Promise.all(tasks.splice(0));
+  assert(!popup.busy && !popup.ok && /no upstream/.test(popup.message), "A failed pull shows Git's reason");
+  assert.equal(reloads, 1);
+  assert(gitCalls.slice(before).every((c) => c.args[0] !== "fetch" && c.args[0] !== "pull"));
+  popup.cursor = 1;
+  popup.listKey("p", cx);
+  assert(!popup.busy && /only on origin/.test(popup.message), "A remote-only row is not pulled");
+  console.log("Pull and diff base: recorded, remote and default bases, fast-forward and worktree pulls, refusals, and H/L/p keys passed.");
+} finally {
+  await rm(fixtureRoot, { recursive: true, force: true });
+  fixtureRoot = null;
+}
+
 {
   calls = []; jobs = []; hcCalls.length = 0;
   delete testShared["tasks.records"];

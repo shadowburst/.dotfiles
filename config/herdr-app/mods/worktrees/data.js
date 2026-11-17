@@ -210,12 +210,38 @@ export async function mergeBase(repo, branch, on) {
   return (await git(repo, ["config", "--get", `branch.${branch}.gh-merge-base`], on)).out.trim();
 }
 
+// The ref that a branch's Diff compares with: the base that New recorded for it
+// (a local branch, else the same name on a remote), else the default branch.
+export async function diffBase(repo, def, row, on) {
+  const base = row.branch && !row.remote ? await mergeBase(repo, row.branch, on) : "";
+  if (base) {
+    const r = await git(repo, ["for-each-ref", "--format=%(refname)", `refs/heads/${base}`, `refs/remotes/*/${base}`], on);
+    const refs = r.out.split("\n").filter(Boolean);
+    const found = refs.find((ref) => ref.startsWith("refs/heads/")) ?? refs[0];
+    if (found) return { ref: found, name: base };
+  }
+  return def ? { ref: def, name: def } : null;
+}
+
+// Updates a branch from its upstream: `git pull` in its worktree, else a fast-forward fetch.
+export async function pull(repo, row, on) {
+  if (row.path) return git(row.path, ["pull"], on);
+  const config = async (key) => (await git(repo, ["config", "--get", `branch.${row.branch}.${key}`], on)).out.trim();
+  const [remote, merge] = await Promise.all([config("remote"), config("merge")]);
+  if (!remote || !merge) return { ok: false, out: "", err: `${row.branch} has no upstream.` };
+  return git(repo, ["fetch", remote, `${merge}:refs/heads/${row.branch}`], on);
+}
+
 // Lines with a kind for coloring: "+", "-", "@" or "".
 export async function loadPreview(repo, def, row, mode, on) {
   const [dir, ref] = !row.branch ? [row.path, "HEAD"] : [repo, rowRef(row)];
   let out = "";
   if (PREVIEW_MODES[mode] === "diff") {
-    if (def && ref !== def) out = (await git(dir, ["diff", "--stat", "--patch", `${def}...${ref}`], on)).out;
+    const base = await diffBase(repo, def, row, on);
+    if (base && ref !== base.ref && ref !== `refs/heads/${base.name}`) {
+      const r = await git(dir, ["diff", "--stat", "--patch", `${base.ref}...${ref}`], on);
+      if (r.out.trim()) out = `@@ base: ${base.name}\n${r.out}`;
+    }
   } else if (PREVIEW_MODES[mode] === "changes" && row.path) {
     out = (await git(row.path, ["status", "--short"], on)).out + (await git(row.path, ["diff", "HEAD"], on)).out;
   }

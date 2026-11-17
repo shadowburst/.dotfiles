@@ -1,7 +1,8 @@
 // Worktrees: the Herdr TUI worktree plugin as a native popup. The list of
 // worktrees and branches is the home view; n, m and x open the New, Merge and
 // Remove views for the selected row. Every view has its buttons at the bottom.
-// / filters both panes, p changes the preview, and Tab moves keyboard focus.
+// / filters both panes, H and L change the preview, p pulls the selected branch,
+// and Tab moves keyboard focus.
 //
 // New queues setup and naming in herdr-core; Tasks opens the ready agent on request.
 // Remove is a background task too: the popup closes, and the task's Open button
@@ -16,7 +17,7 @@ import { h_flex, v_flex, h_resizable, resizable_panel, Button, Combobox, Input, 
 import { closeOverlay, focused, panes, props, run, settings, shared, spaces, theme } from "herdr";
 import {
   AGENT_KINDS, PREVIEW_MODES, attach, detectRepo, git, loadBranches,
-  lastFetch, loadConfig, loadOpencodeModels, loadPreview, loadRows, mergeBase, rowKey, rowName, rowRef, uniqueName,
+  lastFetch, loadConfig, loadOpencodeModels, loadPreview, loadRows, mergeBase, pull, rowKey, rowName, rowRef, uniqueName,
 } from "./data.js";
 import { Job } from "./job.js";
 import { Graph } from "./graph.js";
@@ -263,6 +264,25 @@ export default class Worktrees extends View {
     cx.notify();
   }
 
+  // Updates the selected branch from its upstream, then reloads the list.
+  pullCurrent(cx) {
+    const r = this.current();
+    if (!r || this.busy) return;
+    if (r.pending) return this.fail("Worktree status is still loading.", cx);
+    if (r.remote) return this.fail(`This branch is only on ${r.remote}. Fetch updates it.`, cx);
+    if (!r.branch) return this.fail("This worktree has no branch.", cx);
+    const repo = this.repo;
+    this.busy = `Pulling ${rowName(r)}…`;
+    cx.notify();
+    cx.spawn(async (cx) => {
+      const res = await pull(repo.root, r, repo.machine);
+      this.busy = null;
+      if (this.repo !== repo) return;
+      this.setMessage(res.ok ? `Pulled ${rowName(r)}.` : `Pull failed: ${res.err}`, res.ok);
+      await this.reload(cx);
+    });
+  }
+
   // Keeps the selected row when it is still there, else selects the caller's checkout.
   setRows(def, rows) {
     const current = this.current();
@@ -366,7 +386,9 @@ export default class Worktrees extends View {
       case "G": case "end": return this.move(this.rows.length, cx);
       case "ctrl-d": this.scrollPreview(page); return cx.notify();
       case "ctrl-u": this.scrollPreview(-page); return cx.notify();
-      case "p": return this.setPreview(this.preview + 1, cx);
+      case "L": return this.setPreview(this.preview + 1, cx);
+      case "H": return this.setPreview(this.preview - 1, cx);
+      case "p": return this.pullCurrent(cx);
       case "f": return this.fetchAll(cx);
       case "/": return this.startFilter(cx);
       case "enter": return this.open(cx);
@@ -825,7 +847,9 @@ export default class Worktrees extends View {
     if (this.busy || key === "tab" || key === "shift-tab" || key === "escape") return;
     if (graphFocus || previewFocus) {
       if (graphFocus && this.graph.key(key, cx)) return;
-      if (key === "p") this.setPreview(this.preview + 1, cx);
+      if (key === "L") this.setPreview(this.preview + 1, cx);
+      else if (key === "H") this.setPreview(this.preview - 1, cx);
+      else if (key === "p") this.pullCurrent(cx);
       else if (key === "f") this.fetchAll(cx);
       else if (key === "/") this.startFilter(cx);
       else if (previewFocus && key === "ctrl-d") { this.scrollPreview(10); cx.notify(); }
@@ -1003,6 +1027,7 @@ export default class Worktrees extends View {
     return [
       ui.button("remove", "Remove", "x", (cx) => this.openAction("remove", cx), "", none || r.pending),
       ui.button("merge", "Merge", "m", (cx) => this.openAction("merge", cx), "", none || r.pending),
+      ui.button("pull", "Pull", "p", (cx) => this.pullCurrent(cx), "", none || r.pending || Boolean(r.remote) || !r.branch),
       ui.button("new", "New", "n", (cx) => this.openNew(cx)),
       ui.button("open", r?.remote && this.names.local.has(r.branch) ? "New from remote" : r && !r.path ? "Check out" : "Open", "↵", (cx) => this.open(cx), "primary", none),
     ];
