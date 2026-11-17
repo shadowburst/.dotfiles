@@ -5,7 +5,6 @@ import { agents, appHome, exec, panes, readTextFile, spaces } from "herdr";
 // The agents in the New form. Each must be on PATH.
 export const AGENT_KINDS = ["claude", "codex", "opencode"];
 export const PREVIEW_MODES = ["graph", "diff", "changes"];
-const PREVIEW_LINES = 500;
 const DEFAULT_NAMING = ["textgen"];
 
 export async function git(cwd, args, on) {
@@ -232,24 +231,196 @@ export async function pull(repo, row, on) {
   return git(repo, ["fetch", remote, `${merge}:refs/heads/${row.branch}`], on);
 }
 
-// Lines with a kind for coloring: "+", "-", "@" or "".
-export async function loadPreview(repo, def, row, mode, on) {
-  const [dir, ref] = !row.branch ? [row.path, "HEAD"] : [repo, rowRef(row)];
-  let out = "";
-  if (PREVIEW_MODES[mode] === "diff") {
-    const base = await diffBase(repo, def, row, on);
-    if (base && ref !== base.ref && ref !== `refs/heads/${base.name}`) {
-      const r = await git(dir, ["diff", "--stat", "--patch", `${base.ref}...${ref}`], on);
-      if (r.out.trim()) out = `@@ base: ${base.name}\n${r.out}`;
-    }
-  } else if (PREVIEW_MODES[mode] === "changes" && row.path) {
-    out = (await git(row.path, ["status", "--short"], on)).out + (await git(row.path, ["diff", "HEAD"], on)).out;
+// Sends a branch to its upstream. Without one, it goes to origin (else the only remote)
+// and becomes the upstream. `rejected`: the remote has commits that the branch does not
+// have, so only a force push can replace them.
+export async function push(repo, row, on, force = false) {
+  const cwd = row.path || repo;
+  const config = async (key) => (await git(repo, ["config", "--get", `branch.${row.branch}.${key}`], on)).out.trim();
+  const [remote, merge] = await Promise.all([config("remote"), config("merge")]);
+  const lease = force ? ["--force-with-lease"] : [];
+  let r;
+  if (remote && merge) r = await git(cwd, ["push", ...lease, remote, `refs/heads/${row.branch}:${merge}`], on);
+  else {
+    const remotes = (await git(repo, ["remote"], on)).out.split("\n").filter(Boolean);
+    const to = remotes.includes("origin") ? "origin" : remotes.length === 1 ? remotes[0] : "";
+    if (!to) return { ok: false, out: "", err: remotes.length ? `${row.branch} has no upstream, and there is no origin remote.` : "This repository has no remote." };
+    r = await git(cwd, ["push", ...lease, "--set-upstream", to, `refs/heads/${row.branch}:refs/heads/${row.branch}`], on);
   }
-  if (!out.trim()) return [];
-  return out.replace(/\n+$/, "").replaceAll("\t", "    ").split("\n").slice(0, PREVIEW_LINES).map((text) => {
-    const kind = /^(\+\+\+|---)/.test(text) ? "" : text.startsWith("@@") ? "@" : text[0] === "+" ? "+" : text[0] === "-" ? "-" : "";
-    return { kind, text };
+  return { ...r, rejected: !r.ok && /\[rejected\]|non-fast-forward|fetch first/.test(r.err) };
+}
+
+// The Neovim AI commit prompt (config/neovim/plugin/50-neogit.lua).
+export const COMMIT_PROMPT = `Write a git commit message for the staged diff below. Reply with the message only, without code fences.
+Use this format:
+
+<type>(<optional-scope>): <imperative summary>
+
+<short intent-focused body>
+
+The type is a Conventional Commit type. The summary has at most 72 characters.`;
+
+// `git diff --cached <args>` of every change in a worktree (untracked files too), as
+// `git add -A` would commit it. A copy of the index takes the changes, so the real
+// index does not change.
+async function diffAll(path, args, on) {
+  const script = `set -e
+index=$(git rev-parse --path-format=absolute --git-path index)
+tmp=$(mktemp); trap 'rm -f "$tmp"' EXIT
+if [ -f "$index" ]; then cp "$index" "$tmp"; else rm -f "$tmp"; fi
+export GIT_INDEX_FILE="$tmp"
+git add -A
+git diff --cached --no-color --no-ext-diff "$@"`;
+  try {
+    const r = await exec("sh", ["-c", script, "sh", ...args], { cwd: path, on });
+    return { ok: r.code === 0, out: r.stdout ?? "", err: (r.stderr || "").trim() };
+  } catch (e) {
+    return { ok: false, out: "", err: String(e) };
+  }
+}
+
+export const commitDiff = (path, on) => diffAll(path, [], on);
+
+// A commit message from `textgen`, as Neovim's AI commit writes it.
+export async function generateCommit(path, on) {
+  const diff = await commitDiff(path, on);
+  if (!diff.ok) return { ok: false, err: diff.err || "Cannot read the changes." };
+  if (!diff.out.trim()) return { ok: false, err: "There are no changes to commit." };
+  const prompt = `${COMMIT_PROMPT}\n\n<diff>\n${diff.out.slice(0, 60000)}\n</diff>\n`;
+  try {
+    // exec has no stdin: the prompt goes through an argument. It must end in 30 s.
+    const r = await exec("sh", ["-c", 'printf "%s" "$1" | timeout 25 textgen', "sh", prompt], { cwd: path, on });
+    const message = (r.stdout ?? "").replace(/^\s*```\w*\n/, "").replace(/\n```\s*$/, "").trim();
+    if (r.code !== 0 || !message) return { ok: false, err: (r.stderr || "").trim().slice(-500) || `textgen exited with code ${r.code}.` };
+    return { ok: true, message };
+  } catch (e) {
+    return { ok: false, err: String(e) };
+  }
+}
+
+// Commits every change in a worktree (`git add -A`).
+export async function commit(path, message, on) {
+  const add = await git(path, ["add", "-A"], on);
+  if (!add.ok) return add;
+  return git(path, ["commit", "-m", message], on);
+}
+
+// The files of `git diff --raw --numstat -z --no-abbrev`: status letter, path (and
+// old path), blob ids ("" for a missing side), and line counts (null: binary).
+export function parseFiles(out) {
+  const t = out.split("\0");
+  const files = [];
+  let i = 0;
+  const blob = (id) => (/^0+$/.test(id) ? "" : id);
+  while (t[i]?.startsWith(":")) {
+    const [, , left, right, code] = t[i].slice(1).split(" ");
+    const status = code[0], moved = status === "R" || status === "C";
+    files.push({ status, old: t[i + 1], path: t[moved ? i + 2 : i + 1], left: blob(left), right: blob(right), add: null, del: null });
+    i += moved ? 3 : 2;
+  }
+  for (const f of files) {
+    const [add, del, path] = (t[i] ?? "").split("\t");
+    i += path ? 1 : 3; // a rename puts its two paths in the next two fields
+    if (add !== "-") Object.assign(f, { add: Number(add), del: Number(del) });
+  }
+  return files;
+}
+
+// What the Diff or Changes tab lists: { base, cwd, files, err }. Diff: the branch's own
+// commits since its base. Changes: every change in the worktree, untracked files too.
+export async function loadPreview(repo, def, row, mode, on) {
+  const args = ["--raw", "--numstat", "-z", "--no-abbrev", "-M"];
+  let r, cwd, base = "";
+  if (PREVIEW_MODES[mode] === "diff") {
+    const ref = row.branch ? rowRef(row) : "HEAD";
+    const b = await diffBase(repo, def, row, on);
+    if (!b || ref === b.ref || ref === `refs/heads/${b.name}`) return { base, cwd, files: [] };
+    [cwd, base] = [row.branch ? repo : row.path, b.name];
+    r = await git(cwd, ["diff", "--no-color", "--no-ext-diff", ...args, `${b.ref}...${ref}`], on);
+  } else if (PREVIEW_MODES[mode] === "changes" && row.path) {
+    cwd = row.path;
+    r = await diffAll(cwd, args, on);
+  } else return { base, cwd, files: [] };
+  return { base, cwd, files: r.ok ? parseFiles(r.out) : [], err: r.ok ? "" : r.err };
+}
+
+// Both sides of a file and CodeDiff's changes between them, as side-by-side rows.
+// codediff.lua runs codediff.nvim's engine in a headless Neovim on the target machine.
+export async function loadFileDiff(cwd, file, on) {
+  const source = await readTextFile(`${appHome()}/mods/worktrees/codediff.lua`);
+  const script = `f=$(mktemp) && printf '%s' "$1" > "$f" || exit 1
+VSCODE_DIFF_NO_AUTO_INSTALL=1 nvim -u NONE -i NONE -l "$f" "$2" "$3"; code=$?
+rm -f "$f"; exit $code`;
+  try {
+    const r = await exec("sh", ["-c", script, "sh", source ?? "", file.left, file.right], { cwd, on });
+    if (r.code !== 0) return { err: (r.stderr || r.stdout || "").trim() || `Neovim exited with code ${r.code}.` };
+    const d = JSON.parse(r.stdout);
+    return { rows: diffRows(list(d.left), list(d.right), list(d.changes)) };
+  } catch (e) {
+    return { err: String(e) };
+  }
+}
+
+// Lua's JSON writes an empty list as {}.
+const list = (v) => (Array.isArray(v) ? v : []);
+
+// A line as parts [text, marked]: `marks` are [from, to) UTF-16 ranges.
+export function lineParts(text, marks = []) {
+  text = text.replace(/\r$/, "");
+  const parts = [];
+  let at = 0;
+  for (const [from, to] of [...marks].sort((a, b) => a[0] - b[0])) {
+    const a = Math.max(from, at), b = Math.min(to, text.length);
+    if (a > at) parts.push([text.slice(at, a), false]);
+    if (b > a) parts.push([text.slice(a, b), true]);
+    at = Math.max(at, b);
+  }
+  if (at < text.length || !parts.length) parts.push([text.slice(at), false]);
+  return parts.map(([s, marked]) => [s.replaceAll("\t", "    "), marked]);
+}
+
+// CodeDiff's side-by-side view in compact mode: each change with `context` unchanged
+// lines around it. A row is { left, right, change } (a side is { n, parts }, or null
+// in front of lines that the other side adds) or { gap: n hidden unchanged lines }.
+export function diffRows(left, right, changes, context = 3) {
+  // The engine finds no change when a side is empty: an added or a deleted file.
+  if (!left.length !== !right.length) changes = [{ original: { start_line: 1, end_line: left.length + 1 }, modified: { start_line: 1, end_line: right.length + 1 } }];
+  const rows = [];
+  const side = (lines, n, marks) => ({ n, parts: lineParts(lines[n - 1] ?? "", marks?.get(n)) });
+  let o = 1, m = 1;
+  const same = (n) => { rows.push({ left: side(left, o++), right: side(right, m++), change: false }); };
+  const unchanged = (count, first, last) => {
+    const head = first ? 0 : Math.min(context, count);
+    const tail = last ? 0 : Math.min(context, count - head);
+    for (let k = 0; k < head; k++) same();
+    if (count - head - tail > 0) rows.push({ gap: count - head - tail });
+    o += count - head - tail; m += count - head - tail;
+    for (let k = 0; k < tail; k++) same();
+  };
+  changes.forEach((c, k) => {
+    unchanged(c.original.start_line - o, k === 0, false);
+    const marks = [new Map(), new Map()];
+    for (const inner of list(c.inner_changes)) {
+      [[inner.original, left, 0], [inner.modified, right, 1]].forEach(([r, lines, s]) => {
+        for (let n = r.start_line; n <= r.end_line; n++) {
+          const from = n === r.start_line ? r.start_col - 1 : 0;
+          const to = n === r.end_line ? r.end_col - 1 : (lines[n - 1] ?? "").length;
+          if (to > from) marks[s].set(n, [...(marks[s].get(n) ?? []), [from, to]]);
+        }
+      });
+    }
+    const a = c.original.end_line - c.original.start_line, b = c.modified.end_line - c.modified.start_line;
+    for (let i = 0; i < Math.max(a, b); i++) {
+      rows.push({
+        left: i < a ? side(left, c.original.start_line + i, marks[0]) : null,
+        right: i < b ? side(right, c.modified.start_line + i, marks[1]) : null,
+        change: true,
+      });
+    }
+    [o, m] = [c.original.end_line, c.modified.end_line];
   });
+  if (changes.length) unchanged(left.length + 1 - o, false, true);
+  return rows;
 }
 
 export function uniqueName(name, taken) {

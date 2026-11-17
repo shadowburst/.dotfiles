@@ -55,7 +55,7 @@ const base = module({ ...Object.fromEntries([
 const herdr = module({
   agents() { return testAgents; }, appHome() { return "/config/herdr-app"; }, home() { return "/home/test"; }, panes() { return testPanes; },
   terminals() { return testTerminals; }, notify(notice) { taskNotices.push(notice); },
-  async readTextFile(path) { if (path.endsWith("/create.py")) return readFile(new URL("../mods/worktrees/create.py", import.meta.url), "utf8"); }, spaces() { return testSpaces; },
+  async readTextFile(path) { for (const name of ["create.py", "codediff.lua"]) if (path.endsWith(`/${name}`)) return readFile(new URL(`../mods/worktrees/${name}`, import.meta.url), "utf8"); }, spaces() { return testSpaces; },
   closeOverlay() {}, focused() { return testFocus; }, props() {}, settings() { return {}; }, theme() { return {}; },
   shared(key) { return testShared[key]; }, setShared(key, value) { testShared[key] = value; },
   machines() { return []; }, openOverlay(spec) { overlays.push(spec); }, async hc(args) {
@@ -926,10 +926,12 @@ try {
   assert.deepEqual({ ...await d.diffBase(fixtureRoot, "main", row("child")) }, { ref: "refs/heads/base", name: "base" }, "Diff compares a branch with its recorded base");
   assert.deepEqual({ ...await d.diffBase(fixtureRoot, "main", row("ghost")) }, { ref: "refs/remotes/origin/far", name: "far" }, "A base only on a remote uses the remote ref");
   assert.deepEqual({ ...await d.diffBase(fixtureRoot, "main", row("base")) }, { ref: "main", name: "main" }, "Without a recorded base, Diff uses the default branch");
-  const lines = (await d.loadPreview(fixtureRoot, "main", row("child"), 1)).map((l) => l.text);
-  assert.equal(lines[0], "@@ base: base");
-  assert(lines.some((l) => l.includes("child-work.txt")) && !lines.some((l) => l.includes("base-work.txt")), "The diff holds only the branch's own commits");
-  assert.equal((await d.loadPreview(fixtureRoot, "main", row("main"), 1)).length, 0, "The default branch has no diff with itself");
+  const plain = (v) => JSON.parse(JSON.stringify(v));
+  const childDiff = await d.loadPreview(fixtureRoot, "main", row("child"), 1);
+  assert.equal(childDiff.base, "base");
+  assert.deepEqual(plain(childDiff.files.map((f) => [f.status, f.path, f.add, f.del])), [["A", "child-work.txt", 1, 0]], "The diff holds only the branch's own commits");
+  assert.equal(childDiff.files[0].left, "", "An added file has no left blob");
+  assert.equal((await d.loadPreview(fixtureRoot, "main", row("main"), 1)).files.length, 0, "The default branch has no diff with itself");
 
   // A branch without a worktree fast-forwards from its upstream; one without upstream is refused.
   fg("branch", "lag", old);
@@ -972,8 +974,198 @@ try {
   popup.cursor = 1;
   popup.listKey("p", cx);
   assert(!popup.busy && /only on origin/.test(popup.message), "A remote-only row is not pulled");
-  console.log("Pull and diff base: recorded, remote and default bases, fast-forward and worktree pulls, refusals, and H/L/p keys passed.");
+  // Diff and Changes: closed files with CodeDiff's side-by-side rows.
+  {
+    const rows = d.diffRows(["a", "b", "c", "d", "e", "f", "g", "h", "x y", "j"], ["a", "b", "c", "d", "e", "f", "g", "h", "x z", "new", "j"], [{
+      original: { start_line: 9, end_line: 10 }, modified: { start_line: 9, end_line: 11 },
+      inner_changes: [{ original: { start_line: 9, start_col: 3, end_line: 9, end_col: 4 }, modified: { start_line: 9, start_col: 3, end_line: 10, end_col: 4 } }],
+    }], 3);
+    assert.deepEqual(plain(rows[0]), { gap: 5 }, "Unchanged lines before the first change fold into a gap");
+    assert.deepEqual(plain(rows.slice(1, 4).map((r) => [r.left.n, r.right.n, r.change])), [[6, 6, false], [7, 7, false], [8, 8, false]], "Three context lines before a change");
+    assert.deepEqual(plain(rows[4].left.parts), [["x ", false], ["y", true]]);
+    assert.deepEqual(plain(rows[4].right.parts), [["x ", false], ["z", true]], "Changed characters are marked");
+    assert.equal(rows[5].left, null, "An added line has a filler on the left");
+    assert.deepEqual(plain(rows[5].right.parts), [["new", true]]);
+    assert.deepEqual(plain([rows[6].left.n, rows[6].right.n, rows.length]), [10, 11, 7], "Context after the last change, without a gap");
+    assert.deepEqual(plain(d.lineParts("\tab\r", [[1, 2]])), [["    ", false], ["a", true], ["b", false]], "Tabs widen after the marks; CR goes");
+    assert.deepEqual(plain(d.diffRows(["a"], ["a"], [])), [], "A file without changes has no rows");
+
+    fg("checkout", "child");
+    await writeFile(`${fixtureRoot}/child-work.txt`, "child work\nmore\n");
+    await writeFile(`${fixtureRoot}/fresh.txt`, "fresh\n");
+    fg("mv", "base-work.txt", "moved.txt");
+    const changes = await d.loadPreview(fixtureRoot, "main", row("child", { path: fixtureRoot }), 2);
+    assert.deepEqual(plain(changes.files.filter((f) => !f.path.startsWith(".wt-")).map((f) => [f.status, f.old, f.path]).sort()), [["A", "fresh.txt", "fresh.txt"], ["M", "child-work.txt", "child-work.txt"], ["R", "base-work.txt", "moved.txt"]], "Changes lists untracked files and renames");
+    assert.equal(fg("status", "--porcelain", "--", "fresh.txt"), "?? fresh.txt", "Changes leaves the index alone");
+    const modified = changes.files.find((f) => f.path === "child-work.txt");
+    const codediff = spawnSync("nvim", ["-u", "NONE", "-i", "NONE", "--headless", "+lua vim.cmd.packadd('codediff.nvim') require('codediff.core.diff')", "+qa!"], { encoding: "utf8" });
+    if (codediff.status === 0 && !codediff.stderr) {
+      const diff = await d.loadFileDiff(fixtureRoot, modified);
+      assert(!diff.err, diff.err);
+      assert.deepEqual(plain(diff.rows.map((r) => [r.left?.parts, r.right?.parts])), [
+        [[["child", false], ["-", true], ["work", false]], [["child", false], [" ", true], ["work", false]]],
+        [null, [["more", true]]],
+      ], "CodeDiff compares the blobs");
+      const added = await d.loadFileDiff(fixtureRoot, changes.files.find((f) => f.path === "fresh.txt"));
+      assert.deepEqual(plain(added.rows.map((r) => [r.left, r.right.n])), [[null, 1]], "An added file has only right lines");
+    } else console.log("CodeDiff: codediff.nvim is not installed; its diff was not checked.");
+    const broken = await d.loadFileDiff(fixtureRoot, { left: "f".repeat(40), right: modified.right });
+    assert(broken.err, "A failed CodeDiff gives an error");
+    fg("reset", "--hard"); fg("clean", "-fd");
+
+    // The files are closed; a click or Enter opens one, and j/k move between them.
+    const popup = new main.namespace.default();
+    const cx = {
+      notify() {}, bind_keys() {}, spawn(fn) { fn(cx); },
+      focus_handle() { return { focus() {}, is_focused() { return false; } }; },
+      timer: { every() {}, after() { return { cancel() {} }; } },
+    };
+    popup.init({}, { ...cx, spawn() {} });
+    const r = row("child", { path: fixtureRoot });
+    Object.assign(popup, { repo: { root: fixtureRoot, top: fixtureRoot, machine: null }, rows: [r], def: "main", view: "list", preview: 2 });
+    const key = popup.previewKey(r);
+    popup.previews[key] = { base: "", cwd: fixtureRoot, files: [{ status: "M", old: "a", path: "a", left: "1", right: "2", add: 1, del: 1 }, { status: "A", old: "b", path: "b", left: "", right: "3", add: null, del: null }] };
+    popup.fileDiffs[JSON.stringify([null, fixtureRoot, "1", "2"])] = { rows: [{ gap: 2 }] };
+    const kinds = () => popup.previewItems(popup.previewFiles()).map((it) => it.kind);
+    assert.deepEqual(plain(kinds()), ["summary", "file", "file"], "Every file starts closed");
+    popup.toggleFile(0, cx);
+    assert.deepEqual(plain(kinds()), ["summary", "file", "row", "file"], "An open file shows its CodeDiff rows");
+    popup.previewHandle.is_focused = () => true;
+    popup.key({ key_char: "j", modifiers: {}, keystroke: "j" }, cx);
+    popup.key({ key_char: " ", modifiers: {}, keystroke: "space" }, cx);
+    assert.equal(popup.fileCursor, 1);
+    assert.deepEqual(plain(popup.previewItems(popup.previewFiles()).at(-1).text), "Binary file.", "Space opens the file under the cursor");
+    popup.toggleFile(0, cx);
+    assert.deepEqual(plain(kinds()), ["summary", "file", "file", "note"], "A second toggle closes the file");
+    popup.toggleFile(0, cx);
+    popup.fileDiffs[JSON.stringify([null, fixtureRoot, "1", "2"])] = { rows: plain(d.diffRows(["a x"], ["a y", "b"], [{ original: { start_line: 1, end_line: 2 }, modified: { start_line: 1, end_line: 3 }, inner_changes: [] }])) };
+    const t = Object.fromEntries(["background", "accent", "border", "selected", "hover", "foreground", "muted", "dim", "raised", "blocked", "input", "ansi1", "ansi2", "ansi3", "ansi4"].map((k) => [k, "#abcdef"]));
+    popup.listView(t, popup.ui(t));
+    const preview = lists.get("wt-preview");
+    assert.equal(preview.count, 6, "Summary, two headers, two diff rows and a note");
+    deferred = true;
+    preview.render({ start: 0, end: preview.count });
+    deferred = false;
+    preview.on_item_click[0]("file:0", cx);
+    assert.deepEqual(plain(kinds()), ["summary", "file", "file", "note"], "A click on a header closes the file");
+  }
+
+  console.log("Pull and diff base: recorded, remote and default bases, collapsible CodeDiff files, fast-forward and worktree pulls, refusals, and H/L/p keys passed.");
 } finally {
+  await rm(fixtureRoot, { recursive: true, force: true });
+  fixtureRoot = null;
+}
+
+fixtureRoot = await mkdtemp("/tmp/opencode/herdr-push-");
+const savedPath = gitEnv.PATH;
+try {
+  const at = (cwd) => (...args) => {
+    const r = spawnSync("git", args, { cwd, encoding: "utf8", env: gitEnv });
+    assert.equal(r.status, 0, r.stderr);
+    return r.stdout.trim();
+  };
+  const remote = `${fixtureRoot}/remote.git`, work = `${fixtureRoot}/work`, other = `${fixtureRoot}/other`;
+  spawnSync("git", ["init", "--bare", "--initial-branch=main", remote], { env: gitEnv });
+  spawnSync("git", ["init", "--initial-branch=main", work], { env: gitEnv });
+  const fg = at(work);
+  fg("remote", "add", "origin", remote);
+  await writeFile(`${work}/a.txt`, "a\n"); fg("add", "."); fg("commit", "-m", "a");
+  const d = data.namespace;
+  const row = (branch, extra = {}) => ({ branch, remote: "", path: work, sha: fg("rev-parse", branch), ...extra });
+
+  // Without an upstream, push goes to origin and sets it.
+  const first = await d.push(work, row("main"));
+  assert(first.ok, first.err);
+  assert.equal(fg("config", "--get", "branch.main.remote"), "origin", "Push sets origin as the upstream");
+  assert.equal(at(remote)("rev-parse", "main"), fg("rev-parse", "main"));
+
+  // Another clone moves the remote ahead: a plain push is rejected, a push with lease after a fetch wins.
+  spawnSync("git", ["clone", remote, other], { env: gitEnv });
+  await writeFile(`${other}/b.txt`, "b\n"); at(other)("add", "."); at(other)("commit", "-m", "b"); at(other)("push");
+  fg("fetch");
+  fg("commit", "--amend", "-m", "a2");
+  const rejected = await d.push(work, row("main"));
+  assert(!rejected.ok && rejected.rejected, "A non-fast-forward push is a rejection");
+  const forced = await d.push(work, row("main"), null, true);
+  assert(forced.ok, forced.err);
+  assert.equal(at(remote)("rev-parse", "main"), fg("rev-parse", "main"), "Force push with lease replaces the remote commits");
+  // An auth or network error is not a rejection.
+  fg("remote", "set-url", "origin", `${fixtureRoot}/missing.git`);
+  const broken = await d.push(work, row("main"));
+  assert(!broken.ok && !broken.rejected, "Other failures do not offer a force push");
+  fg("remote", "set-url", "origin", remote);
+
+  // The diff holds tracked and untracked changes; the real index does not change.
+  await writeFile(`${work}/a.txt`, "a changed\n");
+  await writeFile(`${work}/new.txt`, "new\n");
+  const diff = await d.commitDiff(work);
+  assert(diff.ok, diff.err);
+  assert(diff.out.includes("a changed") && diff.out.includes("new.txt"), "The AI diff has every change");
+  assert.equal(fg("diff", "--cached", "--name-only"), "", "The AI diff does not stage");
+
+  // textgen gets the Neovim prompt on stdin; the code fence is removed.
+  const bin = `${fixtureRoot}/bin`;
+  spawnSync("mkdir", [bin]);
+  await writeFile(`${bin}/textgen`, `#!/bin/sh\ncat > "${fixtureRoot}/prompt.txt"\nprintf '\`\`\`\\nfeat(a): change a\\n\\nAdd new.\\n\`\`\`\\n'\n`, { mode: 0o755 });
+  gitEnv.PATH = `${bin}:${savedPath}`;
+  const gen = await d.generateCommit(work);
+  assert(gen.ok, gen.err);
+  assert.equal(gen.message, "feat(a): change a\n\nAdd new.");
+  const sent = await readFile(`${fixtureRoot}/prompt.txt`, "utf8");
+  assert(sent.startsWith(d.COMMIT_PROMPT) && sent.includes("<diff>") && sent.includes("new.txt"), "textgen reads the prompt and the diff");
+
+  // Keys: c opens Commit, Ctrl+G fills it, Ctrl+Enter commits all; P after a rejection asks for force.
+  const tasks = [];
+  const cx = {
+    notify() {}, bind_keys() {},
+    focus_handle() { return { focus() {}, is_focused() { return false; } }; },
+    timer: { every() {}, after() { return { cancel() {} }; } },
+    spawn(fn) { const t = Promise.resolve().then(() => fn(cx)); tasks.push(t); return t; },
+  };
+  const settle = async () => { while (tasks.length) await Promise.all(tasks.splice(0)); };
+  const popup = new main.namespace.default();
+  popup.init({}, { ...cx, spawn() {} });
+  Object.assign(popup, { repo: { root: work, top: work }, rows: [row("main"), row("main", { remote: "origin", path: "" })], def: "main", view: "list", preview: 0, loadPreview() {}, reload: async () => {} });
+  popup.listKey("c", cx);
+  assert.equal(popup.view, "commit");
+  popup.render();
+  actions.get("wt_launch")({}, cx);
+  assert(/empty/.test(popup.message), "An empty message is refused");
+  actions.get("wt_generate")({}, cx);
+  assert(popup.generating);
+  await settle();
+  assert.equal(popup.commitMsg.value(), "feat(a): change a\n\nAdd new.");
+  actions.get("wt_launch")({}, cx);
+  await settle();
+  assert.equal(popup.view, "list");
+  assert(popup.ok && /Committed main: feat\(a\): change a/.test(popup.message));
+  assert.equal(fg("status", "--porcelain"), "", "Commit takes every change");
+  assert.equal(fg("log", "-1", "--format=%B").trim(), "feat(a): change a\n\nAdd new.");
+
+  at(other)("pull", "--rebase"); await writeFile(`${other}/c.txt`, "c\n"); at(other)("add", "."); at(other)("commit", "-m", "c"); at(other)("push");
+  fg("fetch");
+  popup.listKey("P", cx);
+  assert.equal(popup.busy, "Pushing main…");
+  await settle();
+  assert.equal(popup.view, "push", "A rejected push asks for a force push");
+  assert(popup.out.some((l) => /rejected/.test(l)));
+  popup.handle = { focus() {}, is_focused() { return true; } };
+  popup.key({ key_char: "y", modifiers: {}, keystroke: "y" }, cx);
+  await settle();
+  assert.equal(popup.view, "list");
+  assert(popup.ok && /Pushed main/.test(popup.message), popup.message);
+  assert.equal(at(remote)("rev-parse", "main"), fg("rev-parse", "main"));
+  popup.cursor = 1;
+  popup.listKey("P", cx);
+  assert(/only on origin/.test(popup.message), "A remote-only row is not pushed");
+  popup.listKey("c", cx);
+  assert.equal(popup.view, "commit");
+  assert.equal(popup.commitActions(popup.ui({})).length, 1, "A remote-only row offers only Back");
+  popup.submitCommit(cx);
+  assert.equal(popup.busy, null, "A remote-only row cannot be committed");
+  console.log("Push and commit: upstream setup, rejection and force with lease, AI diff and textgen prompt, commit of all changes, and c/P keys passed.");
+} finally {
+  gitEnv.PATH = savedPath;
   await rm(fixtureRoot, { recursive: true, force: true });
   fixtureRoot = null;
 }

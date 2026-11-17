@@ -2,7 +2,11 @@
 // worktrees and branches is the home view; n, m and x open the New, Merge and
 // Remove views for the selected row. Every view has its buttons at the bottom.
 // / filters both panes, H and L change the preview, p pulls the selected branch,
-// and Tab moves keyboard focus.
+// Diff and Changes list the files, closed: a click, or Enter and Space with j and k in
+// the focused preview, opens a file's CodeDiff side-by-side diff (codediff.lua),
+// P pushes it (a rejected push asks for a force push with lease), c opens the
+// Commit view (all changes; its AI button writes the message with `textgen`, as
+// Neovim does), and Tab moves keyboard focus.
 //
 // New queues setup and naming in herdr-core; Tasks opens the ready agent on request.
 // Remove is a background task too: the popup closes, and the task's Open button
@@ -17,7 +21,7 @@ import { h_flex, v_flex, h_resizable, resizable_panel, Button, Combobox, Input, 
 import { closeOverlay, focused, panes, props, run, settings, shared, spaces, theme } from "herdr";
 import {
   AGENT_KINDS, PREVIEW_MODES, attach, detectRepo, git, loadBranches,
-  lastFetch, loadConfig, loadOpencodeModels, loadPreview, loadRows, mergeBase, pull, rowKey, rowName, rowRef, uniqueName,
+  commit, generateCommit, lastFetch, loadConfig, loadFileDiff, loadOpencodeModels, loadPreview, loadRows, mergeBase, pull, push, rowKey, rowName, rowRef, uniqueName,
 } from "./data.js";
 import { Job } from "./job.js";
 import { Graph } from "./graph.js";
@@ -29,6 +33,8 @@ const CHOICE_KEYS = ["up", "down", "enter", "escape", "tab", "shift-tab"];
 const LABELS = { workspace: "Workspace", prompt: "Task", agent: "Harness", model: "Model", effort: "Effort", branch: "Branch", base: "Base" };
 const AGENT_NAMES = { claude: "Claude Code", codex: "Codex", opencode: "OpenCode" };
 const ICON = (name) => `mods/workspace-chrome/${name}.svg`;
+const OWN = (name) => `mods/worktrees/${name}.svg`;
+const SUMMARY_MAX = 72;
 
 const store = (key, fallback) => {
   try {
@@ -62,9 +68,15 @@ function fuzzy(s, q) {
   return i === q.length;
 }
 
-// Why the row cannot be merged or removed, or "".
+// Why the row cannot be merged, removed, pushed or committed, or "".
 function refusal(r, view) {
   if (r.pending) return "Worktree status is still loading.";
+  if (view === "push" || view === "commit") {
+    if (r.remote) return `This branch is only on ${r.remote}.`;
+    if (view === "commit" && !r.path) return "This branch has no worktree.";
+    if (view === "push" && !r.branch) return "This worktree has no branch.";
+    return "";
+  }
   if (r.main) return "This is the main checkout.";
   if (r.remote) return `This branch is only on ${r.remote}.`;
   if (view === "merge" && !r.path) return "This branch has no worktree.";
@@ -83,6 +95,9 @@ export default class Worktrees extends View {
     this.preview = 0;
     this.scroll = 0;
     this.previews = {};
+    this.opened = new Set(); // the open files of the Diff and Changes tabs
+    this.fileDiffs = {}; // CodeDiff's rows by blob pair: null while it loads
+    this.fileCursor = 0;
     this.message = "";
     this.ok = false;
     this.cfg = { naming_command: [], agents: {}, opencodeProviders: [] };
@@ -135,6 +150,11 @@ export default class Worktrees extends View {
       this.promptEmpty = empty;
       cx.notify();
     });
+    // The Commit view's message; it stays while the same row is committed again.
+    this.commitMsg = TextareaState.new({ placeholder: "type(scope): summary\n\nWhy this change" });
+    this.commitMsg.on("change", (_e, cx) => cx.notify());
+    this.commitFor = null;
+    this.generating = false;
     this.branch = InputState.new({ placeholder: "Named in the background" });
     this.base = InputState.new({});
     this.target = InputState.new({});
@@ -168,6 +188,8 @@ export default class Worktrees extends View {
       { keystroke: "ctrl-enter", action: "wt_launch", context: "Worktrees" },
       { keystroke: "ctrl-enter", action: "wt_launch", context: "WtPrompt > Input" },
       { keystroke: "ctrl-shift-v", action: "wt_prompt_paste", context: "WtPrompt > Input" },
+      { keystroke: "ctrl-g", action: "wt_generate", context: "Worktrees" },
+      { keystroke: "ctrl-g", action: "wt_generate", context: "WtPrompt > Input" },
       ...["enter", "shift-enter"].map((keystroke) => ({ keystroke, action: "wt_newline", context: "WtPrompt > Input" })),
       ...["up", "down", "enter"].map((keystroke) => ({
         keystroke, action: `wt_branch_${keystroke}`, context: "WtBranch > Input",
@@ -283,6 +305,94 @@ export default class Worktrees extends View {
     });
   }
 
+  // Sends the selected branch to its upstream (or makes origin its upstream).
+  // A rejected push opens the Push view, which offers a force push with lease.
+  pushCurrent(cx) {
+    const r = this.current();
+    if (!r || this.busy) return;
+    const why = refusal(r, "push");
+    if (why) return this.fail(why, cx);
+    this.runPush(r, false, cx);
+  }
+
+  runPush(r, force, cx) {
+    const repo = this.repo;
+    this.busy = `${force ? "Force pushing" : "Pushing"} ${rowName(r)}…`;
+    cx.notify();
+    cx.spawn(async (cx) => {
+      const res = await push(repo.root, r, repo.machine, force);
+      this.busy = null;
+      if (this.repo !== repo) return;
+      if (res.rejected && !force) {
+        Object.assign(this, { view: "push", sel: r, out: res.err.split("\n"), running: false, failed: false });
+        this.setMessage("The remote rejected the push.", false);
+        this.handle.focus();
+        return cx.notify();
+      }
+      if (this.view === "push") this.back(cx);
+      this.setMessage(res.ok ? `Pushed ${rowName(r)}.` : `${force ? "Force push" : "Push"} failed: ${res.err}`, res.ok);
+      await this.reload(cx);
+    });
+  }
+
+  // The Commit view: every change of the selected worktree goes into the commit.
+  openCommit(cx) {
+    const r = this.current();
+    if (!r || r.pending || this.busy) return;
+    if (this.commitFor !== rowKey(r)) {
+      this.commitMsg.set_value("");
+      this.commitFor = rowKey(r);
+    }
+    Object.assign(this, { view: "commit", sel: r, out: [], running: false, failed: false });
+    this.setMessage("", false);
+    if (refusal(r, "commit")) this.handle.focus();
+    else this.commitMsg.focus();
+    cx.notify();
+  }
+
+  // Writes the message from the worktree's changes with `textgen` (as Neovim's AI commit).
+  generateMessage(cx) {
+    const r = this.sel, repo = this.repo;
+    if (this.view !== "commit" || this.generating || this.busy || refusal(r, "commit")) return;
+    this.generating = true;
+    this.setMessage("", false);
+    cx.notify();
+    cx.spawn(async (cx) => {
+      const res = await generateCommit(r.path, repo.machine);
+      this.generating = false;
+      if (this.repo !== repo || this.sel !== r || this.view !== "commit") return cx.notify();
+      if (res.ok) {
+        this.commitMsg.set_value(res.message);
+        this.commitMsg.focus();
+      } else this.setMessage(`AI message failed: ${res.err}`, false);
+      cx.notify();
+    });
+  }
+
+  submitCommit(cx) {
+    const r = this.sel, repo = this.repo;
+    if (this.view !== "commit" || this.busy || this.generating || refusal(r, "commit")) return;
+    const message = this.commitMsg.value().trim();
+    if (!message) return this.fail("The commit message is empty.", cx);
+    this.busy = `Committing ${rowName(r)}…`;
+    this.out = [];
+    cx.notify();
+    cx.spawn(async (cx) => {
+      const res = await commit(r.path, message, repo.machine);
+      this.busy = null;
+      if (this.repo !== repo) return;
+      if (!res.ok) {
+        this.out = res.err.split("\n");
+        return this.fail("Commit failed.", cx);
+      }
+      this.commitMsg.set_value("");
+      this.commitFor = null;
+      this.back(cx);
+      this.setMessage(`Committed ${rowName(r)}: ${message.split("\n")[0]}`, true);
+      cx.notify();
+    });
+  }
+
   // Keeps the selected row when it is still there, else selects the caller's checkout.
   setRows(def, rows) {
     const current = this.current();
@@ -322,6 +432,7 @@ export default class Worktrees extends View {
     const n = this.visible().length;
     this.cursor = Math.min(Math.max(this.cursor + d, 0), Math.max(n - 1, 0));
     this.listScroll.scroll_to_item(this.cursor);
+    this.fileCursor = 0;
     this.scrollPreview(-Infinity);
     this.loadPreview(cx, false, true);
     cx.notify();
@@ -334,6 +445,7 @@ export default class Worktrees extends View {
 
   setPreview(mode, cx) {
     this.preview = (mode + PREVIEW_MODES.length) % PREVIEW_MODES.length;
+    this.fileCursor = 0;
     this.scrollPreview(-Infinity);
     this.loadPreview(cx, false, this.preview === 0);
     this.handle.focus();
@@ -351,10 +463,83 @@ export default class Worktrees extends View {
     const key = this.previewKey(r);
     const repo = this.repo;
     if (!(key in this.previews)) this.previews[key] = null;
+    const mode = this.preview;
     cx.spawn(async (cx) => {
-      this.previews[key] = await loadPreview(repo.root, this.def, r, this.preview, repo.machine);
+      const p = this.previews[key] = await loadPreview(repo.root, this.def, r, mode, repo.machine);
+      for (const f of p.files) if (this.opened.has(this.openKey(r, mode, f))) this.loadFile(p, f, cx);
       cx.notify();
     });
+  }
+
+  openKey(r, mode, f) {
+    return JSON.stringify([this.repo.machine, rowKey(r), mode, f.path]);
+  }
+
+  diffKey(p, f) {
+    return JSON.stringify([this.repo.machine, p.cwd, f.left, f.right]);
+  }
+
+  // The selected row and its Diff or Changes file list, else null (Graph, or loading).
+  previewFiles() {
+    const r = this.current();
+    const p = r && this.preview !== 0 ? this.previews[this.previewKey(r)] : null;
+    return p ? { r, p } : null;
+  }
+
+  loadFile(p, f, cx) {
+    const key = this.diffKey(p, f);
+    if (f.add === null || key in this.fileDiffs) return;
+    this.fileDiffs[key] = null;
+    const on = this.repo.machine;
+    cx.spawn(async (cx) => {
+      this.fileDiffs[key] = await loadFileDiff(p.cwd, f, on);
+      cx.notify();
+    });
+  }
+
+  // Opens or closes a file of the Diff or Changes tab.
+  toggleFile(i, cx) {
+    const sel = this.previewFiles(), f = sel?.p.files[i];
+    if (!f) return;
+    this.fileCursor = i;
+    const key = this.openKey(sel.r, this.preview, f);
+    if (this.opened.has(key)) this.opened.delete(key);
+    else {
+      this.opened.add(key);
+      this.loadFile(sel.p, f, cx);
+    }
+    cx.notify();
+  }
+
+  moveFile(d, cx) {
+    const sel = this.previewFiles();
+    if (!sel?.p.files.length) return;
+    this.fileCursor = Math.min(Math.max(this.fileCursor + d, 0), sel.p.files.length - 1);
+    const at = this.previewItems(sel).findIndex((it) => it.kind === "file" && it.i === this.fileCursor);
+    this.previewScroll.scroll_to_item(at, "center");
+    cx.notify();
+  }
+
+  // The rows of the Diff and Changes tabs: a summary, then each file's header and,
+  // when it is open, its diff rows or a note.
+  previewItems({ r, p }) {
+    const items = [];
+    if (!p.files.length) return items;
+    const sum = (k) => p.files.reduce((n, f) => n + (f[k] ?? 0), 0);
+    items.push({ kind: "summary", key: "summary", size: 30, add: sum("add"), del: sum("del") });
+    p.files.forEach((f, i) => {
+      const open = this.opened.has(this.openKey(r, this.preview, f));
+      items.push({ kind: "file", key: `file:${i}`, size: 30, f, i, open });
+      if (!open) return;
+      const note = (text, tone) => items.push({ kind: "note", key: `note:${i}`, size: 30, text, tone });
+      const diff = this.fileDiffs[this.diffKey(p, f)];
+      if (f.add === null) note("Binary file.");
+      else if (!diff) note("Loading CodeDiff…");
+      else if (diff.err) note(`CodeDiff failed: ${diff.err}`, "error");
+      else if (!diff.rows.length) note(f.status === "R" ? "Renamed without changes." : "No content changes.");
+      else diff.rows.forEach((row, j) => items.push({ kind: "row", key: `row:${i}:${j}`, size: 18, row }));
+    });
+    return items;
   }
 
   selectRef(key, cx) {
@@ -389,6 +574,8 @@ export default class Worktrees extends View {
       case "L": return this.setPreview(this.preview + 1, cx);
       case "H": return this.setPreview(this.preview - 1, cx);
       case "p": return this.pullCurrent(cx);
+      case "P": return this.pushCurrent(cx);
+      case "c": return this.openCommit(cx);
       case "f": return this.fetchAll(cx);
       case "/": return this.startFilter(cx);
       case "enter": return this.open(cx);
@@ -745,8 +932,9 @@ export default class Worktrees extends View {
 
   confirm(cx) {
     const r = this.sel;
-    if (this.running || refusal(r, this.view)) return;
+    if (this.running || this.busy || refusal(r, this.view)) return;
     if (this.view === "remove") return this.remove(cx);
+    if (this.view === "push") return this.runPush(r, true, cx);
     const target = this.target.value().trim();
     if (!target) return this.fail("The target is empty.", cx);
     this.running = true;
@@ -850,8 +1038,13 @@ export default class Worktrees extends View {
       if (key === "L") this.setPreview(this.preview + 1, cx);
       else if (key === "H") this.setPreview(this.preview - 1, cx);
       else if (key === "p") this.pullCurrent(cx);
+      else if (key === "P") this.pushCurrent(cx);
+      else if (key === "c") this.openCommit(cx);
       else if (key === "f") this.fetchAll(cx);
       else if (key === "/") this.startFilter(cx);
+      else if (previewFocus && ["j", "down"].includes(key)) this.moveFile(1, cx);
+      else if (previewFocus && ["k", "up"].includes(key)) this.moveFile(-1, cx);
+      else if (previewFocus && ["enter", "space", "o"].includes(key)) this.toggleFile(this.fileCursor, cx);
       else if (previewFocus && key === "ctrl-d") { this.scrollPreview(10); cx.notify(); }
       else if (previewFocus && key === "ctrl-u") { this.scrollPreview(-10); cx.notify(); }
       return;
@@ -869,7 +1062,8 @@ export default class Worktrees extends View {
     else if (this.failed) { if (key === "enter") this.back(cx); }
     else if (this.running) return;
     else if (this.view === "remove" && ["enter", "y", "x", "d", "X"].includes(key)) this.confirm(cx);
-    else if (this.view === "remove" && key === "n") this.back(cx);
+    else if (this.view === "push" && ["enter", "y"].includes(key)) this.confirm(cx);
+    else if (["remove", "push"].includes(this.view) && key === "n") this.back(cx);
     cx.notify();
   }
 
@@ -914,6 +1108,7 @@ export default class Worktrees extends View {
       .child(this.emptyView(t, `Not a Git repository: ${callerFolder(this.workspace) ?? "no folder"}`)),
       [ui.button("close", "Close", "Esc", () => this.close())]];
     else if (this.view === "new") [body, actions] = [this.formView(t, ui), this.formActions(ui)];
+    else if (this.view === "commit") [body, actions] = [this.commitView(t, ui), this.commitActions(ui)];
     else if (this.view !== "list") [body, actions] = [this.actionView(t, ui), this.actionActions(ui)];
     else [body, actions] = [this.listView(t, ui), this.listActions(ui)];
 
@@ -924,12 +1119,16 @@ export default class Worktrees extends View {
       .on_key_down((e, cx) => this.key(e, cx))
       .on_action("wt_escape", (_e, cx) => this.escape(cx))
       .on_action("wt_enter", (_e, cx) => this.enter(cx))
-      .on_action("wt_launch", (_e, cx) => { if (this.view === "new") this.submitNew(cx); })
+      .on_action("wt_launch", (_e, cx) => {
+        if (this.view === "new") this.submitNew(cx);
+        else if (this.view === "commit") this.submitCommit(cx);
+      })
+      .on_action("wt_generate", (_e, cx) => this.generateMessage(cx))
       .on_action("wt_prompt_paste", (_e, cx) => {
         const text = cx.read_from_clipboard();
-        if (text !== undefined) this.prompt.replace(text);
+        if (text !== undefined) (this.view === "commit" ? this.commitMsg : this.prompt).replace(text);
       })
-      .on_action("wt_newline", () => this.prompt.replace("\n"))
+      .on_action("wt_newline", () => (this.view === "commit" ? this.commitMsg : this.prompt).replace("\n"))
       .on_action("wt_tab", (_e, cx) => this.tabKey(1, cx))
       .on_action("wt_shift_tab", (_e, cx) => this.tabKey(-1, cx))
       .on_action("wt_down", (_e, cx) => this.move(1, cx))
@@ -978,11 +1177,11 @@ export default class Worktrees extends View {
   }
 
   header(t, ui) {
-    const title = { list: "Worktrees", new: "New worktree", merge: "Merge worktree", remove: "Remove worktree" }[this.view] ?? "Worktrees";
-    const icon = { new: "plus", merge: "git-compare", remove: "archive" }[this.view] ?? "git-branch";
+    const title = { list: "Worktrees", new: "New worktree", merge: "Merge worktree", remove: "Remove worktree", commit: "Commit", push: "Push rejected" }[this.view] ?? "Worktrees";
+    const icon = { new: ICON("plus"), merge: ICON("git-compare"), remove: ICON("archive"), commit: OWN("git-commit"), push: OWN("upload") }[this.view] ?? ICON("git-branch");
     return h_flex().flex_none().h(60).px(20).gap(12).items_center().border_b(1).border_color(t.border)
       .child(div().flex_none().size(34).rounded(9).bg(alpha(t.accent, 0.16)).flex().items_center().justify_center()
-        .child(svg(ICON(icon)).size(17).text_color(t.accent)))
+        .child(svg(icon).size(17).text_color(t.accent)))
       .child(v_flex().flex_1().min_w(0).gap(1)
         .child(div().font_semibold().text_size(14.5).child(title))
         .child(h_flex().gap(6).items_center().text_size(12).text_color(t.muted)
@@ -1027,7 +1226,9 @@ export default class Worktrees extends View {
     return [
       ui.button("remove", "Remove", "x", (cx) => this.openAction("remove", cx), "", none || r.pending),
       ui.button("merge", "Merge", "m", (cx) => this.openAction("merge", cx), "", none || r.pending),
+      ui.button("commit", "Commit", "c", (cx) => this.openCommit(cx), "", none || Boolean(refusal(r, "commit"))),
       ui.button("pull", "Pull", "p", (cx) => this.pullCurrent(cx), "", none || r.pending || Boolean(r.remote) || !r.branch),
+      ui.button("push", "Push", "⇧P", (cx) => this.pushCurrent(cx), "", none || Boolean(refusal(r, "push"))),
       ui.button("new", "New", "n", (cx) => this.openNew(cx)),
       ui.button("open", r?.remote && this.names.local.has(r.branch) ? "New from remote" : r && !r.path ? "Check out" : "Open", "↵", (cx) => this.open(cx), "primary", none),
     ];
@@ -1060,7 +1261,7 @@ export default class Worktrees extends View {
         .child(this.rows.length ? "No branch matches." : this.rowsLoaded ? "No branches yet." : "Loading…"));
 
     const r = this.current();
-    const lines = (r && this.previews[this.previewKey(r)]) ?? null;
+    const sel = this.previewFiles();
     const tabs = h_flex().flex_none().p(3).gap(2).rounded(8).bg(alpha(t.foreground, 0.05)).children(PREVIEW_MODES.map((m, i) =>
       h_flex().id(`wt-mode-${m}`).px(12).h(24).items_center().rounded(6).text_size(12).cursor_pointer()
         .text_color(i === this.preview ? t.foreground : t.muted)
@@ -1068,17 +1269,21 @@ export default class Worktrees extends View {
         .when(i !== this.preview, (el) => el.hover((s) => s.text_color(t.foreground)))
         .on_click((_e, cx) => this.setPreview(i, cx))
         .child(m[0].toUpperCase() + m.slice(1))));
-    const code = this.preview === 0 ? this.graph.render(t) : lines === null
+    const items = sel ? this.previewItems(sel) : [];
+    const code = this.preview === 0 ? this.graph.render(t) : r && !sel
       ? v_flex().flex_1().items_center().justify_center().text_color(t.dim).child(svg(ICON("spinner")).size(18).spin(900))
-      : !lines.length
-        ? v_flex().flex_1().items_center().justify_center().text_color(t.dim).child(r ? "Nothing to show." : "")
+      : !items.length
+        ? v_flex().flex_1().items_center().justify_center().text_color(sel?.p.err ? t.blocked : t.dim).child(sel?.p.err || (r ? "Nothing to show." : ""))
         : div().flex_1().min_h(0).relative().font_family(mono).text_size(11.5)
-          .child(v_virtual_list("wt-preview", lines.length, 18, (i) => String(i), (range) => lines.slice(range.start, range.end).map(({ kind, text }) =>
-            div().h(18).w_full().px(12).truncate()
-              .when(kind === "+", (el) => el.bg(alpha(t.ansi2, 0.08)))
-              .when(kind === "-", (el) => el.bg(alpha(t.ansi1, 0.08)))
-              .text_color(kind === "+" ? t.ansi2 : kind === "-" ? t.ansi1 : kind === "@" ? t.ansi4 : t.foreground)
-              .child(text || " "))).track_scroll(this.previewScroll).size_full())
+          .child(v_virtual_list("wt-preview", items.length, items.map((it) => it.size), (i) => items[i].key,
+            (range) => items.slice(range.start, range.end).map((it) => this.previewItemView(it, sel.p, t)))
+            .track_scroll(this.previewScroll).size_full()
+            .on_item_click((key, cx) => {
+              const [kind, i] = key.split(":");
+              if (kind !== "file") return;
+              this.previewHandle.focus();
+              this.toggleFile(Number(i), cx);
+            }))
           .child(Scrollbar.vertical("wt-preview").absolute().inset_0());
     const preview = v_flex().flex_1().min_w(0).h_full().ml(8).rounded(10).border(1).border_color(t.border).bg(t.background).overflow_hidden()
       .child(h_flex().flex_none().h(44).px(10).gap(10).items_center().border_b(1).border_color(t.border)
@@ -1090,6 +1295,53 @@ export default class Worktrees extends View {
     return h_resizable("wt-list-preview").size_full()
       .child(resizable_panel().size(390).size_range(250).child(left))
       .child(resizable_panel().size_range(360).child(preview));
+  }
+
+  previewItemView(it, p, t) {
+    const counts = (add, del) => h_flex().flex_none().gap(6)
+      .when(add > 0, (el) => el.child(div().text_color(t.ansi2).child(`+${add}`)))
+      .when(del > 0, (el) => el.child(div().text_color(t.ansi1).child(`−${del}`)));
+    if (it.kind === "summary") {
+      const n = p.files.length;
+      return h_flex().h(30).px(12).gap(8).items_center().text_color(t.muted)
+        .child(div().flex_1().truncate().child(`${n} ${n === 1 ? "file" : "files"} changed${p.base ? ` since ${p.base}` : ""}`))
+        .child(counts(it.add, it.del));
+    }
+    if (it.kind === "file") {
+      const { f } = it;
+      const tone = { A: t.ansi2, D: t.ansi1, R: t.ansi4, C: t.ansi4 }[f.status] ?? t.ansi3;
+      const cursor = it.i === this.fileCursor && this.previewHandle.is_focused();
+      const slash = f.path.lastIndexOf("/");
+      return h_flex().h(30).px(10).gap(8).items_center().cursor_pointer().border_t(1).border_color(t.border)
+        .bg(cursor ? t.selected : it.open ? alpha(t.foreground, 0.04) : t.background)
+        .hover((s) => s.bg(cursor ? t.selected : t.hover))
+        .child(svg(ICON(it.open ? "chevron-down" : "chevron-right")).size(13).flex_none().text_color(t.dim))
+        .child(div().flex_none().w(14).font_semibold().text_color(tone).child(f.status))
+        .child(h_flex().flex_1().min_w(0).overflow_hidden()
+          .when(f.path !== f.old, (el) => el.child(div().flex_none().text_color(t.dim).child(`${f.old} → `)))
+          .child(div().flex_none().text_color(t.muted).child(f.path.slice(0, slash + 1)))
+          .child(div().flex_none().text_color(t.foreground).child(f.path.slice(slash + 1))))
+        .child(f.add === null ? div().flex_none().text_color(t.dim).child("binary") : counts(f.add, f.del));
+    }
+    if (it.kind === "note") {
+      return h_flex().h(30).px(36).items_center().text_color(it.tone === "error" ? t.blocked : t.dim)
+        .child(div().truncate().child(it.text));
+    }
+    const { row } = it;
+    if (row.gap) {
+      return h_flex().h(18).px(12).items_center().justify_center().bg(alpha(t.foreground, 0.03)).text_color(t.dim)
+        .child(`⋯ ${row.gap} unchanged ${row.gap === 1 ? "line" : "lines"}`);
+    }
+    // One side of a CodeDiff row: line number, then the line with its changed characters.
+    const side = (s, tone, border) => {
+      const el = h_flex().flex_1().min_w(0).h_full().overflow_hidden().when(border, (el) => el.border_l(1).border_color(t.border));
+      if (!s) return el.bg(alpha(t.foreground, 0.035));
+      return el.when(row.change, (el) => el.bg(alpha(tone, 0.1)))
+        .child(div().flex_none().w(42).pr(8).text_right().text_color(row.change ? tone : t.dim).child(String(s.n)))
+        .child(h_flex().flex_none().text_color(t.foreground).children(s.parts.map(([text, marked]) =>
+          div().flex_none().whitespace_nowrap().when(marked && row.change, (el) => el.bg(alpha(tone, 0.32))).child(text || " "))));
+    };
+    return h_flex().h(18).w_full().child(side(row.left, t.ansi1, false)).child(side(row.right, t.ansi2, true));
   }
 
   rowView(r, selected, t, ui) {
@@ -1203,21 +1455,24 @@ export default class Worktrees extends View {
         .child(row("base", this.choiceView("base", on("base"), t))));
   }
 
-  // ---------------------------------------------------------------- merge, remove view
+  // ---------------------------------------------------------------- merge, remove, push view
 
   actionActions(ui) {
     if (this.failed) return [ui.button("back", "Back", "↵", (cx) => this.back(cx), "primary")];
     if (this.running) return this.following ? [ui.button("hide", "Hide", "Esc", () => this.close())] : [];
     if (refusal(this.sel, this.view)) return [ui.button("back", "Back", "Esc", (cx) => this.back(cx))];
+    if (this.view === "push") return [
+      ui.button("back", "Cancel", "n", (cx) => this.back(cx), "", Boolean(this.busy)),
+      ui.button("force", "Force push with lease", "↵", (cx) => this.confirm(cx), "danger", Boolean(this.busy)),
+    ];
     return this.view === "merge"
       ? [ui.button("back", "Cancel", "Esc", (cx) => this.back(cx)), ui.button("merge", "Merge", "↵", (cx) => this.confirm(cx), "primary")]
       : [ui.button("back", "Cancel", "n", (cx) => this.back(cx)), ui.button("remove", this.removeBranch ? "Remove with branch" : "Remove", "↵", (cx) => this.confirm(cx), "danger")];
   }
 
-  actionView(t, ui) {
-    const r = this.sel;
-    const why = refusal(r, this.view);
-    const card = h_flex().flex_none().gap(12).items_center().p(14).rounded(10).border(1).border_color(t.border).bg(t.background)
+  // The selected row as a card: name, folder, ahead/behind, changes and PR.
+  rowCard(t, ui, r) {
+    return h_flex().flex_none().gap(12).items_center().p(14).rounded(10).border(1).border_color(t.border).bg(t.background)
       .child(div().flex_none().size(34).rounded(9).bg(alpha(t.accent, 0.14)).flex().items_center().justify_center()
         .child(svg(ICON(r.path ? "git-branch" : "branch")).size(17).text_color(t.accent)))
       .child(v_flex().flex_1().min_w(0)
@@ -1227,26 +1482,85 @@ export default class Worktrees extends View {
       .when(r.behind > 0, (el) => el.child(ui.badge(`↓${r.behind}`, t.ansi1)))
       .when(r.dirty, (el) => el.child(ui.badge("uncommitted", t.ansi3, "square-pen")))
       .when(r.pr > 0, (el) => el.child(ui.badge(`#${r.pr}`, t.ansi5, "git-compare")));
+  }
+
+  note(t, [text, color]) {
+    return h_flex().flex_none().gap(10).items_center().px(12).py(9).rounded(8).bg(alpha(color, 0.1)).text_color(color)
+      .child(svg(ICON(color === t.blocked ? "x" : "circle-check")).size(14).flex_none())
+      .child(div().flex_1().child(text));
+  }
+
+  // Git's or wt's output, below the view.
+  outView(t) {
+    return v_flex().id("wt-out").flex_1().min_h(0).p(12).rounded(10).border(1).border_color(t.border)
+      .bg(t.background).overflow_y_scroll()
+      .font_family(settings().font_family ?? "JetBrains Mono").text_size(11.5).text_color(t.muted)
+      .children(this.out.slice(-300).map((l) => div().truncate().child(l || " ")));
+  }
+
+  actionView(t, ui) {
+    const r = this.sel;
+    const why = refusal(r, this.view);
     const notes = [];
     if (why) notes.push([why, t.blocked]);
     else if (this.view === "remove") {
       notes.push([this.removeBranch ? "The worktree and the branch will be removed." : "The worktree will be removed. The branch stays.", t.muted]);
       if (r.dirty) notes.push(["Uncommitted changes will be lost.", t.blocked]);
       if ((!r.path && !r.remote && !r.merged) || (this.removeBranch && !r.merged)) notes.push(["Unmerged commits will be lost.", t.blocked]);
+    } else if (this.view === "push") {
+      notes.push([`The remote has commits that ${rowName(r)} does not have.`, t.blocked]);
+      notes.push(["A force push with lease replaces them, but only if the remote did not change since your last fetch.", t.muted]);
     }
-    const note = ([text, color]) => h_flex().flex_none().gap(10).items_center().px(12).py(9).rounded(8).bg(alpha(color, 0.1)).text_color(color)
-      .child(svg(ICON(color === t.blocked ? "x" : "circle-check")).size(14).flex_none())
-      .child(div().flex_1().child(text));
     return v_flex().size_full().gap(12)
-      .child(card)
-      .children(notes.map(note))
+      .child(this.rowCard(t, ui, r))
+      .children(notes.map((n) => this.note(t, n)))
       .when(this.view === "merge" && !why, (el) => el.child(h_flex().flex_none().gap(14).items_center()
         .child(div().flex_none().w(76).text_size(12.5).text_color(t.muted).child("Into"))
         .child(h_flex().flex_1().h(36).px(10).items_center().rounded(8).border(1).border_color(t.accent).bg(t.background)
           .child(Input.new(this.target).flex_1().h(32).text_color(t.foreground)))))
-      .when(this.out.length > 0, (el) => el.child(v_flex().id("wt-out").flex_1().min_h(0).p(12).rounded(10).border(1).border_color(t.border)
-        .bg(t.background).overflow_y_scroll()
-        .font_family(settings().font_family ?? "JetBrains Mono").text_size(11.5).text_color(t.muted)
-        .children(this.out.slice(-300).map((l) => div().truncate().child(l || " ")))));
+      .when(this.out.length > 0, (el) => el.child(this.outView(t)));
+  }
+
+  // ---------------------------------------------------------------- commit view
+
+  commitActions(ui) {
+    const why = refusal(this.sel, "commit");
+    if (why) return [ui.button("back", "Back", "Esc", (cx) => this.back(cx))];
+    const empty = !this.commitMsg.value().trim();
+    return [
+      ui.button("back", "Cancel", "Esc", (cx) => this.back(cx), "", Boolean(this.busy)),
+      ui.button("commit", "Commit", "Ctrl ↵", (cx) => this.submitCommit(cx), "primary", Boolean(this.busy || this.generating) || empty),
+    ];
+  }
+
+  // The AI button: an accent pill with a sparkles icon, a spinner while textgen runs.
+  aiButton(t, ui) {
+    const off = Boolean(this.busy || this.generating);
+    return h_flex().id("btn-ai").flex_none().h(30).px(10).gap(7).items_center().rounded_full()
+      .border(1).border_color(alpha(t.accent, 0.45)).bg(alpha(t.accent, 0.12)).text_color(t.accent).font_medium().text_size(12)
+      .accessibility_label("Write the commit message with AI").tooltip("Write the message from the changes with textgen (Ctrl+G)")
+      .when(off, (el) => el.opacity(this.generating ? 1 : 0.45))
+      .when(!off, (el) => el.cursor_pointer().hover((s) => s.bg(alpha(t.accent, 0.2))).on_click((_e, cx) => this.generateMessage(cx)))
+      .child(this.generating ? svg(ICON("spinner")).size(14).spin(900) : svg(OWN("sparkles")).size(14))
+      .child(this.generating ? "Writing…" : "AI message")
+      .when(!this.generating, (el) => el.child(ui.kbd("Ctrl G", t.accent, alpha(t.accent, 0.14))));
+  }
+
+  commitView(t, ui) {
+    const r = this.sel;
+    const why = refusal(r, "commit");
+    const summary = this.commitMsg.value().split("\n")[0].trim().length;
+    const box = v_flex().flex_1().min_h(160).rounded(14).border(1).border_color(t.accent).bg(t.background)
+      .child(div().key_context("WtPrompt").flex_1().min_h(0).px(16).py(14)
+        .child(Textarea.new(this.commitMsg).size_full().accessibility_label("Commit message").text_color(t.foreground)))
+      .child(h_flex().flex_none().p(10).gap(8).items_center()
+        .child(div().flex_1().min_w(0).truncate().text_size(11.5).text_color(summary > SUMMARY_MAX ? t.blocked : t.dim)
+          .child(summary ? `Summary: ${summary}/${SUMMARY_MAX}` : "First line: the summary. Then a blank line and the body."))
+        .child(this.aiButton(t, ui)));
+    return v_flex().size_full().max_w(900).mx_auto().gap(12)
+      .child(this.rowCard(t, ui, r))
+      .child(this.note(t, why ? [why, t.blocked] : ["All changes will be committed, untracked files too (git add -A).", t.muted]))
+      .when(!why, (el) => el.child(box))
+      .when(this.out.length > 0, (el) => el.child(div().flex_none().h(140).child(this.outView(t))));
   }
 }
