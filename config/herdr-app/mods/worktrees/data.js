@@ -223,12 +223,23 @@ export async function diffBase(repo, def, row, on) {
 }
 
 // Updates a branch from its upstream: `git pull` in its worktree, else a fast-forward fetch.
+// Without upstream, it uses the branch of the same name on the push remote (else origin),
+// and that branch becomes the upstream, as push does.
 export async function pull(repo, row, on) {
-  if (row.path) return git(row.path, ["pull"], on);
-  const config = async (key) => (await git(repo, ["config", "--get", `branch.${row.branch}.${key}`], on)).out.trim();
-  const [remote, merge] = await Promise.all([config("remote"), config("merge")]);
-  if (!remote || !merge) return { ok: false, out: "", err: `${row.branch} has no upstream.` };
-  return git(repo, ["fetch", remote, `${merge}:refs/heads/${row.branch}`], on);
+  const config = async (key) => (await git(repo, ["config", "--get", key], on)).out.trim();
+  let [remote, merge] = await Promise.all([config(`branch.${row.branch}.remote`), config(`branch.${row.branch}.merge`)]);
+  const tracked = Boolean(remote && merge);
+  if (!tracked) {
+    remote = (await config(`branch.${row.branch}.pushRemote`)) || (await config("remote.pushDefault")) || "origin";
+    merge = `refs/heads/${row.branch}`;
+    const known = await git(repo, ["show-ref", "--verify", "--quiet", `refs/remotes/${remote}/${row.branch}`], on);
+    if (!known.ok) return { ok: false, out: "", err: `${row.branch} has no upstream, and ${remote} has no ${row.branch} branch. Push it first.` };
+  }
+  const r = row.path
+    ? await git(row.path, tracked ? ["pull"] : ["pull", remote, merge], on)
+    : await git(repo, ["fetch", remote, `${merge}:refs/heads/${row.branch}`], on);
+  if (r.ok && !tracked) await git(repo, ["branch", `--set-upstream-to=${remote}/${row.branch}`, row.branch], on);
+  return r;
 }
 
 // Sends a branch to its upstream. Without one, it goes to origin (else the only remote)

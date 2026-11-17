@@ -3,9 +3,10 @@
 // Remove views for the selected row. Every view has its buttons at the bottom.
 // / filters both panes, H and L change the preview, p pulls the selected branch,
 // Diff and Changes list the files, closed: a click, or Enter and Space with j and k in
-// the focused preview, opens a file's CodeDiff side-by-side diff (codediff.lua),
+// the focused preview, opens a file's CodeDiff side-by-side diff (codediff.lua). The
+// Commit view shows the same Changes list beside the message,
 // P pushes it (a rejected push asks for a force push with lease), c opens the
-// Commit view (all changes; its AI button writes the message with `textgen`, as
+// Commit view (all changes; its Generate button writes the message with `textgen`, as
 // Neovim does), and Tab moves keyboard focus.
 //
 // New queues setup and naming in herdr-core; Tasks opens the ready agent on request.
@@ -34,7 +35,7 @@ const LABELS = { workspace: "Workspace", prompt: "Task", agent: "Harness", model
 const AGENT_NAMES = { claude: "Claude Code", codex: "Codex", opencode: "OpenCode" };
 const ICON = (name) => `mods/workspace-chrome/${name}.svg`;
 const OWN = (name) => `mods/worktrees/${name}.svg`;
-const SUMMARY_MAX = 72;
+const CHANGES = PREVIEW_MODES.indexOf("changes");
 
 const store = (key, fallback) => {
   try {
@@ -343,8 +344,10 @@ export default class Worktrees extends View {
       this.commitMsg.set_value("");
       this.commitFor = rowKey(r);
     }
-    Object.assign(this, { view: "commit", sel: r, out: [], running: false, failed: false });
+    Object.assign(this, { view: "commit", sel: r, out: [], running: false, failed: false, fileCursor: 0 });
     this.setMessage("", false);
+    this.scrollPreview(-Infinity);
+    if (!refusal(r, "commit")) this.loadFiles(r, CHANGES, true, cx);
     if (refusal(r, "commit")) this.handle.focus();
     else this.commitMsg.focus();
     cx.notify();
@@ -364,7 +367,7 @@ export default class Worktrees extends View {
       if (res.ok) {
         this.commitMsg.set_value(res.message);
         this.commitMsg.focus();
-      } else this.setMessage(`AI message failed: ${res.err}`, false);
+      } else this.setMessage(`Generate failed: ${res.err}`, false);
       cx.notify();
     });
   }
@@ -452,18 +455,22 @@ export default class Worktrees extends View {
     cx.notify();
   }
 
-  previewKey(r) {
-    return JSON.stringify([this.repo.machine, this.repo.root, this.preview, rowKey(r), r.sha]);
+  previewKey(r, mode = this.preview) {
+    return JSON.stringify([this.repo.machine, this.repo.root, mode, rowKey(r), r.sha]);
   }
 
   loadPreview(cx, refresh = false, reveal = false) {
     const r = this.current();
     this.graph.configure(this.repo.root, this.visible(), r, cx, reveal, this.repo.machine);
-    if (this.preview === 0 || !r || (!refresh && this.previewKey(r) in this.previews)) return;
-    const key = this.previewKey(r);
+    this.loadFiles(r, this.preview, refresh, cx);
+  }
+
+  // The file list of a row in the Diff or Changes mode.
+  loadFiles(r, mode, refresh, cx) {
+    if (mode === 0 || !r || (!refresh && this.previewKey(r, mode) in this.previews)) return;
+    const key = this.previewKey(r, mode);
     const repo = this.repo;
     if (!(key in this.previews)) this.previews[key] = null;
-    const mode = this.preview;
     cx.spawn(async (cx) => {
       const p = this.previews[key] = await loadPreview(repo.root, this.def, r, mode, repo.machine);
       for (const f of p.files) if (this.opened.has(this.openKey(r, mode, f))) this.loadFile(p, f, cx);
@@ -479,11 +486,12 @@ export default class Worktrees extends View {
     return JSON.stringify([this.repo.machine, p.cwd, f.left, f.right]);
   }
 
-  // The selected row and its Diff or Changes file list, else null (Graph, or loading).
+  // The file list on screen: the selected row's Diff or Changes tab, or the Changes of
+  // the row that the Commit view commits. Null on the Graph tab, or while it loads.
   previewFiles() {
-    const r = this.current();
-    const p = r && this.preview !== 0 ? this.previews[this.previewKey(r)] : null;
-    return p ? { r, p } : null;
+    const [r, mode] = this.view === "commit" ? [this.sel, CHANGES] : [this.current(), this.preview];
+    const p = r && mode !== 0 ? this.previews[this.previewKey(r, mode)] : null;
+    return p ? { r, p, mode } : null;
   }
 
   loadFile(p, f, cx) {
@@ -502,7 +510,7 @@ export default class Worktrees extends View {
     const sel = this.previewFiles(), f = sel?.p.files[i];
     if (!f) return;
     this.fileCursor = i;
-    const key = this.openKey(sel.r, this.preview, f);
+    const key = this.openKey(sel.r, sel.mode, f);
     if (this.opened.has(key)) this.opened.delete(key);
     else {
       this.opened.add(key);
@@ -522,13 +530,13 @@ export default class Worktrees extends View {
 
   // The rows of the Diff and Changes tabs: a summary, then each file's header and,
   // when it is open, its diff rows or a note.
-  previewItems({ r, p }) {
+  previewItems({ r, p, mode }) {
     const items = [];
     if (!p.files.length) return items;
     const sum = (k) => p.files.reduce((n, f) => n + (f[k] ?? 0), 0);
     items.push({ kind: "summary", key: "summary", size: 30, add: sum("add"), del: sum("del") });
     p.files.forEach((f, i) => {
-      const open = this.opened.has(this.openKey(r, this.preview, f));
+      const open = this.opened.has(this.openKey(r, mode, f));
       items.push({ kind: "file", key: `file:${i}`, size: 30, f, i, open });
       if (!open) return;
       const note = (text, tone) => items.push({ kind: "note", key: `note:${i}`, size: 30, text, tone });
@@ -1026,7 +1034,7 @@ export default class Worktrees extends View {
   // Keys while no text field has the keyboard. Tab comes as an action.
   key(e, cx) {
     const graphFocus = this.view === "list" && this.preview === 0 && (this.graph.handle.is_focused() || this.graph.detailsHandle.is_focused());
-    const previewFocus = this.view === "list" && this.preview !== 0 && this.previewHandle.is_focused();
+    const previewFocus = ((this.view === "list" && this.preview !== 0) || this.view === "commit") && this.previewHandle.is_focused();
     if (!this.handle.is_focused() && !graphFocus && !previewFocus && !Object.values(this.choiceHandles).some((h) => h.is_focused())) return;
     // A printable key by its character, so G, X and / work on every keyboard layout.
     const m = e.modifiers;
@@ -1035,18 +1043,19 @@ export default class Worktrees extends View {
     if (this.busy || key === "tab" || key === "shift-tab" || key === "escape") return;
     if (graphFocus || previewFocus) {
       if (graphFocus && this.graph.key(key, cx)) return;
-      if (key === "L") this.setPreview(this.preview + 1, cx);
+      if (previewFocus && ["j", "down"].includes(key)) this.moveFile(1, cx);
+      else if (previewFocus && ["k", "up"].includes(key)) this.moveFile(-1, cx);
+      else if (previewFocus && ["enter", "space", "o"].includes(key)) this.toggleFile(this.fileCursor, cx);
+      else if (previewFocus && key === "ctrl-d") { this.scrollPreview(10); cx.notify(); }
+      else if (previewFocus && key === "ctrl-u") { this.scrollPreview(-10); cx.notify(); }
+      else if (this.view !== "list") return;
+      else if (key === "L") this.setPreview(this.preview + 1, cx);
       else if (key === "H") this.setPreview(this.preview - 1, cx);
       else if (key === "p") this.pullCurrent(cx);
       else if (key === "P") this.pushCurrent(cx);
       else if (key === "c") this.openCommit(cx);
       else if (key === "f") this.fetchAll(cx);
       else if (key === "/") this.startFilter(cx);
-      else if (previewFocus && ["j", "down"].includes(key)) this.moveFile(1, cx);
-      else if (previewFocus && ["k", "up"].includes(key)) this.moveFile(-1, cx);
-      else if (previewFocus && ["enter", "space", "o"].includes(key)) this.toggleFile(this.fileCursor, cx);
-      else if (previewFocus && key === "ctrl-d") { this.scrollPreview(10); cx.notify(); }
-      else if (previewFocus && key === "ctrl-u") { this.scrollPreview(-10); cx.notify(); }
       return;
     }
     if (this.message && !this.failed) this.message = "";
@@ -1070,6 +1079,11 @@ export default class Worktrees extends View {
   tabKey(step, cx) {
     if (this.busy) return;
     if (this.view === "new") return this.tab(step, cx);
+    if (this.view === "commit" && !refusal(this.sel, "commit")) {
+      if (this.previewHandle.is_focused()) this.commitMsg.focus();
+      else this.previewHandle.focus();
+      return cx.notify();
+    }
     if (this.view === "list") {
       if (this.filtering) this.stopFilter(false, cx);
       const handles = this.preview === 0 ? [this.handle, this.graph.handle, ...(this.graph.details ? [this.graph.detailsHandle] : [])] : [this.handle, this.previewHandle];
@@ -1269,22 +1283,7 @@ export default class Worktrees extends View {
         .when(i !== this.preview, (el) => el.hover((s) => s.text_color(t.foreground)))
         .on_click((_e, cx) => this.setPreview(i, cx))
         .child(m[0].toUpperCase() + m.slice(1))));
-    const items = sel ? this.previewItems(sel) : [];
-    const code = this.preview === 0 ? this.graph.render(t) : r && !sel
-      ? v_flex().flex_1().items_center().justify_center().text_color(t.dim).child(svg(ICON("spinner")).size(18).spin(900))
-      : !items.length
-        ? v_flex().flex_1().items_center().justify_center().text_color(sel?.p.err ? t.blocked : t.dim).child(sel?.p.err || (r ? "Nothing to show." : ""))
-        : div().flex_1().min_h(0).relative().font_family(mono).text_size(11.5)
-          .child(v_virtual_list("wt-preview", items.length, items.map((it) => it.size), (i) => items[i].key,
-            (range) => items.slice(range.start, range.end).map((it) => this.previewItemView(it, sel.p, t)))
-            .track_scroll(this.previewScroll).size_full()
-            .on_item_click((key, cx) => {
-              const [kind, i] = key.split(":");
-              if (kind !== "file") return;
-              this.previewHandle.focus();
-              this.toggleFile(Number(i), cx);
-            }))
-          .child(Scrollbar.vertical("wt-preview").absolute().inset_0());
+    const code = this.preview === 0 ? this.graph.render(t) : this.filesView(r, sel, t, mono);
     const preview = v_flex().flex_1().min_w(0).h_full().ml(8).rounded(10).border(1).border_color(t.border).bg(t.background).overflow_hidden()
       .child(h_flex().flex_none().h(44).px(10).gap(10).items_center().border_b(1).border_color(t.border)
         .child(tabs)
@@ -1295,6 +1294,24 @@ export default class Worktrees extends View {
     return h_resizable("wt-list-preview").size_full()
       .child(resizable_panel().size(390).size_range(250).child(left))
       .child(resizable_panel().size_range(360).child(preview));
+  }
+
+  // The Diff or Changes file list (see previewItems), or a spinner or a note.
+  filesView(r, sel, t, mono) {
+    const items = sel ? this.previewItems(sel) : [];
+    if (r && !sel) return v_flex().flex_1().items_center().justify_center().text_color(t.dim).child(svg(ICON("spinner")).size(18).spin(900));
+    if (!items.length) return v_flex().flex_1().items_center().justify_center().text_color(sel?.p.err ? t.blocked : t.dim).child(sel?.p.err || (r ? "Nothing to show." : ""));
+    return div().flex_1().min_h(0).relative().font_family(mono).text_size(11.5)
+      .child(v_virtual_list("wt-preview", items.length, items.map((it) => it.size), (i) => items[i].key,
+        (range) => items.slice(range.start, range.end).map((it) => this.previewItemView(it, sel.p, t)))
+        .track_scroll(this.previewScroll).size_full()
+        .on_item_click((key, cx) => {
+          const [kind, i] = key.split(":");
+          if (kind !== "file") return;
+          this.previewHandle.focus();
+          this.toggleFile(Number(i), cx);
+        }))
+      .child(Scrollbar.vertical("wt-preview").absolute().inset_0());
   }
 
   previewItemView(it, p, t) {
@@ -1533,34 +1550,43 @@ export default class Worktrees extends View {
     ];
   }
 
-  // The AI button: an accent pill with a sparkles icon, a spinner while textgen runs.
+  // The Generate button: an accent pill with a sparkles icon, a spinner while textgen runs.
   aiButton(t, ui) {
     const off = Boolean(this.busy || this.generating);
     return h_flex().id("btn-ai").flex_none().h(30).px(10).gap(7).items_center().rounded_full()
       .border(1).border_color(alpha(t.accent, 0.45)).bg(alpha(t.accent, 0.12)).text_color(t.accent).font_medium().text_size(12)
-      .accessibility_label("Write the commit message with AI").tooltip("Write the message from the changes with textgen (Ctrl+G)")
+      .accessibility_label("Generate the commit message").tooltip("Write the message from the changes with textgen (Ctrl+G)")
       .when(off, (el) => el.opacity(this.generating ? 1 : 0.45))
       .when(!off, (el) => el.cursor_pointer().hover((s) => s.bg(alpha(t.accent, 0.2))).on_click((_e, cx) => this.generateMessage(cx)))
       .child(this.generating ? svg(ICON("spinner")).size(14).spin(900) : svg(OWN("sparkles")).size(14))
-      .child(this.generating ? "Writing…" : "AI message")
+      .child(this.generating ? "Generating…" : "Generate")
       .when(!this.generating, (el) => el.child(ui.kbd("Ctrl G", t.accent, alpha(t.accent, 0.14))));
   }
 
   commitView(t, ui) {
     const r = this.sel;
     const why = refusal(r, "commit");
-    const summary = this.commitMsg.value().split("\n")[0].trim().length;
     const box = v_flex().flex_1().min_h(160).rounded(14).border(1).border_color(t.accent).bg(t.background)
       .child(div().key_context("WtPrompt").flex_1().min_h(0).px(16).py(14)
         .child(Textarea.new(this.commitMsg).size_full().accessibility_label("Commit message").text_color(t.foreground)))
-      .child(h_flex().flex_none().p(10).gap(8).items_center()
-        .child(div().flex_1().min_w(0).truncate().text_size(11.5).text_color(summary > SUMMARY_MAX ? t.blocked : t.dim)
-          .child(summary ? `Summary: ${summary}/${SUMMARY_MAX}` : "First line: the summary. Then a blank line and the body."))
-        .child(this.aiButton(t, ui)));
-    return v_flex().size_full().max_w(900).mx_auto().gap(12)
+      .child(h_flex().flex_none().p(10).justify_end().child(this.aiButton(t, ui)));
+    if (why) return v_flex().size_full().max_w(900).mx_auto().gap(12)
       .child(this.rowCard(t, ui, r))
-      .child(this.note(t, why ? [why, t.blocked] : ["All changes will be committed, untracked files too (git add -A).", t.muted]))
-      .when(!why, (el) => el.child(box))
+      .child(this.note(t, [why, t.blocked]));
+    // The commit's content: the same list as the Changes tab, beside the message.
+    const sel = this.previewFiles();
+    const files = v_flex().flex_1().min_w(0).h_full().ml(8).rounded(10).border(1).border_color(t.border).bg(t.background).overflow_hidden()
+      .child(h_flex().flex_none().h(44).px(14).gap(8).items_center().border_b(1).border_color(t.border)
+        .child(div().flex_1().font_medium().text_size(12.5).child("Changes to commit"))
+        .when(this.previewHandle.is_focused(), (el) => el.child(div().text_size(11).text_color(t.dim).child("j/k move · ↵ open · Tab message"))))
+      .child(v_flex().flex_1().min_h(0).track_focus(this.previewHandle).py(6)
+        .child(this.filesView(r, sel, t, settings().font_family ?? "JetBrains Mono")));
+    const left = v_flex().w_full().h_full().pr(8).gap(12)
+      .child(this.rowCard(t, ui, r))
+      .child(box)
       .when(this.out.length > 0, (el) => el.child(div().flex_none().h(140).child(this.outView(t))));
+    return h_resizable("wt-commit").size_full()
+      .child(resizable_panel().size(420).size_range(320).child(left))
+      .child(resizable_panel().size_range(360).child(files));
   }
 }

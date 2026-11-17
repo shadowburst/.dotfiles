@@ -948,6 +948,29 @@ try {
   assert(pulled.ok, pulled.err);
   assert.equal(fg("rev-parse", "lag2"), fg("rev-parse", "main"), "Pull updates a worktree's branch");
   assert(gitCalls.some((c) => c.cwd === wtPath && c.args[0] === "pull"));
+  // Without upstream, pull uses the branch of the same name on the push remote, then tracks it.
+  const bare = `${fixtureRoot}.remote.git`;
+  spawnSync("git", ["init", "--bare", bare], { encoding: "utf8", env: gitEnv });
+  fg("remote", "add", "origin", bare);
+  fg("push", "origin", "main:refs/heads/shared", "main:refs/heads/loose");
+  fg("fetch", "origin");
+  const wtShared = `${fixtureRoot}/.wt-shared`;
+  fg("worktree", "add", "-b", "shared", wtShared, old);
+  fg("config", "branch.shared.pushRemote", "origin");
+  const sharedPull = await d.pull(fixtureRoot, row("shared", { path: wtShared }));
+  assert(sharedPull.ok, sharedPull.err);
+  assert.equal(fg("rev-parse", "shared"), fg("rev-parse", "main"), "A worktree without upstream pulls its branch from the push remote");
+  assert.equal(fg("rev-parse", "--abbrev-ref", "shared@{upstream}"), "origin/shared", "The pulled branch becomes the upstream");
+  fg("branch", "loose", old);
+  assert((await d.pull(fixtureRoot, row("loose"))).ok);
+  assert.equal(fg("rev-parse", "loose"), fg("rev-parse", "main"), "A branch without worktree or upstream fast-forwards from origin");
+  // A worktree whose branch is on no remote is refused before `git pull` runs.
+  const wtNone = `${fixtureRoot}/.wt-none`;
+  fg("worktree", "add", "-b", "none", wtNone, old);
+  const callsBefore = gitCalls.length;
+  const noneWt = await d.pull(fixtureRoot, row("none", { path: wtNone }));
+  assert(!noneWt.ok && /no upstream/.test(noneWt.err), noneWt.err);
+  assert(gitCalls.slice(callsBefore).every((c) => c.args[0] !== "pull"));
 
   // Keys: H and L change the preview, p pulls, Tab keeps moving the focus.
   const tasks = [];
@@ -1053,6 +1076,7 @@ try {
   console.log("Pull and diff base: recorded, remote and default bases, collapsible CodeDiff files, fast-forward and worktree pulls, refusals, and H/L/p keys passed.");
 } finally {
   await rm(fixtureRoot, { recursive: true, force: true });
+  await rm(`${fixtureRoot}.remote.git`, { recursive: true, force: true });
   fixtureRoot = null;
 }
 
@@ -1128,7 +1152,18 @@ try {
   Object.assign(popup, { repo: { root: work, top: work }, rows: [row("main"), row("main", { remote: "origin", path: "" })], def: "main", view: "list", preview: 0, loadPreview() {}, reload: async () => {} });
   popup.listKey("c", cx);
   assert.equal(popup.view, "commit");
+  await settle();
+  assert.deepEqual(JSON.parse(JSON.stringify(popup.previewFiles().p.files.map((f) => [f.status, f.path]))), [["M", "a.txt"], ["A", "new.txt"]], "Commit lists the changes that it commits");
   popup.render();
+  assert.equal(lists.get("wt-preview").count, 3, "The Commit view shows the Changes list: a summary and two closed files");
+  assert(!text.some((l) => /git add -A/.test(l)), "No card about git add");
+  popup.previewHandle.is_focused = () => true;
+  popup.key({ key_char: "j", modifiers: {}, keystroke: "j" }, cx);
+  popup.key({ key_char: "p", modifiers: {}, keystroke: "p" }, cx);
+  assert.equal(popup.fileCursor, 1, "j moves between the files of the commit");
+  assert.equal(popup.busy, undefined, "List keys do nothing in the Commit view");
+  popup.tabKey(1, cx);
+  popup.previewHandle.is_focused = () => false;
   actions.get("wt_launch")({}, cx);
   assert(/empty/.test(popup.message), "An empty message is refused");
   actions.get("wt_generate")({}, cx);
