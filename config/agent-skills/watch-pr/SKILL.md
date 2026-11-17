@@ -13,7 +13,7 @@ The grant: commit, push, merge the base into the branch, and fix conflicts on th
 
 ## Waiting
 
-Wait with `<github-pr-skill-directory>/scripts/pr-wait`, one per PR, as that skill describes; it is the only waiter, since hand-written polling loops share the same GitHub rate limit and lose events. Use `--until green` when the repo has no Greptile or Macroscope. When an event needs no action, end the turn silently.
+Wait with `<github-pr-skill-directory>/scripts/pr-wait`, one per PR, as that skill describes; it is the only waiter, since hand-written polling loops share the same GitHub rate limit and lose events. When an event needs no action, end the turn silently.
 
 ## On each event
 

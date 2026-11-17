@@ -13,14 +13,18 @@ Progress and errors that do not end the run go to stderr.
   green       required checks passed on the current head (every CI check when
               the base branch requires none)
   ready      green, Greptile or Macroscope reviewed the current head, and no
-              review thread is unresolved (default)
+              review thread is unresolved (default). When neither bot has
+              reviewed this PR or the repo's recent PRs, green is ready. When a
+              bot is expected but has not reviewed the head 15 minutes after
+              green, pr-wait exits 1 instead of waiting forever.
   any-change  stop after the first poll that prints an event
 
 Exit codes
   0  the --until condition is met, or the PR merged
   1  the condition cannot be met without action: a required check failed, the
      branch conflicts with its base, the PR closed, `ready` is blocked by
-     unresolved threads or a BEHIND branch, or GitHub stayed unreachable
+     unresolved threads, a BEHIND branch, or a review bot that never came, or
+     GitHub stayed unreachable
   2  bad arguments, unknown PR, or another pr-wait already watches this PR
 
 Events
@@ -69,6 +73,8 @@ STATE_DIR = Path.home() / ".local" / "state" / "pr-wait"
 # instead of replaying hours of comments as new events.
 STALE_STATE_SECONDS = 6 * 3600
 MAX_FAILED_POLLS = 10
+# How long `ready` waits for an expected review bot after the head is green.
+BOT_GRACE_SECONDS = 15 * 60
 TRANSIENT = re.compile(
     r"HTTP (5\d\d|429)|rate limit|timed? ?out|connection (reset|refused)|EOF|"
     r"temporar|could not resolve host|TLS handshake|Something went wrong",
@@ -96,6 +102,21 @@ query($owner: String!, $name: String!, $number: Int!) {
           isResolved path line
           comments(first: 100) { nodes { id url body author { login __typename } } }
         }
+      }
+    }
+  }
+}
+"""
+
+# Recent PRs of the repo, to learn whether it uses Greptile or Macroscope at all.
+REPO_BOTS_QUERY = """
+query($owner: String!, $name: String!) {
+  repository(owner: $owner, name: $name) {
+    pullRequests(last: 20) {
+      nodes {
+        comments(last: 30) { nodes { author { login } } }
+        reviews(last: 30) { nodes { author { login } } }
+        commits(last: 1) { nodes { commit { checkSuites(first: 30) { nodes { app { slug } } } } } }
       }
     }
   }
@@ -261,6 +282,9 @@ class Watcher:
         self.required: set[str] | None = None
         self.prev_snapshot: list[tuple[str, str]] | None = None
         self.pr_files: dict[str, set[str]] = {}
+        self.repo_bots: list[str] | None = None
+        self.green_head: str | None = None
+        self.green_since = 0.0
 
     def load(self) -> Json | None:
         try:
@@ -320,6 +344,26 @@ class Watcher:
             if current is None or RANK.get(row["bucket"], 2) > RANK.get(current["bucket"], 2):
                 checks[row["name"]] = row
         return checks
+
+    def fetch_repo_bots(self) -> list[str]:
+        """Gating review bots seen on the repo's recent PRs. On error, assume
+        both, so `ready` keeps waiting and the grace period still ends it."""
+        try:
+            proc = gh([
+                "api", "graphql", "-f", f"query={REPO_BOTS_QUERY}", "-f", f"owner={self.owner}", "-f", f"name={self.name}",
+            ])
+            prs = json.loads(proc.stdout)["data"]["repository"]["pullRequests"]["nodes"]
+        except (GhError, KeyError, TypeError, ValueError) as error:
+            log(f"could not read review bots from recent PRs: {error}")
+            return list(GATING_BOTS)
+        names: list[str | None] = []
+        for pr in prs:
+            for kind in ("comments", "reviews"):
+                names += [(n.get("author") or {}).get("login") for n in pr[kind]["nodes"]]
+            for commit in pr["commits"]["nodes"]:
+                names += [(s.get("app") or {}).get("slug") for s in commit["commit"]["checkSuites"]["nodes"]]
+        found = {bot_name(n) for n in names}
+        return [bot for bot in GATING_BOTS if bot in found]
 
     def base_overlap(self, head: str, old: str, new: str) -> list[str]:
         """Files this PR touches that the new base commits also touch."""
@@ -418,6 +462,7 @@ class Watcher:
         # summary names the head.
         bot_status: dict[str, str] = {}
         reviewed: list[str] = []
+        expected: list[str] = []  # gating bots seen anywhere on this PR
         for bot in GATING_BOTS + ADVISORY_BOTS:
             own_checks = {name: c for name, c in checks.items() if bot_name(name) == bot}
             summaries = [c for c in comments if bot_name(who(c)[0]) == bot]
@@ -428,6 +473,8 @@ class Watcher:
             else:
                 done = on_head or any(short in s["body"] for s in summaries)
             seen = bool(own_checks or summaries or own_reviews)
+            if seen and bot in GATING_BOTS:
+                expected.append(bot)
             if bot in ADVISORY_BOTS and own_checks:
                 desc = next(iter(own_checks.values()))
                 bot_status[bot] = f"{bot} {desc['description'] or desc['bucket']} (advisory)"
@@ -504,14 +551,30 @@ class Watcher:
             if green and self.until == "green":
                 self.reported.add(checks_key)
                 self.finish(0, [f"green on {short}: {summary}{self.behind(base, base_oid, head)}"])
-            # ready waits for Greptile or Macroscope, never for CodeRabbit.
-            if green and reviewed:
+            # ready waits for Greptile or Macroscope, never for CodeRabbit, and
+            # only when the PR or the repo shows that one of them reviews here.
+            if not green:
+                self.green_head = None
+            elif self.green_head != head:
+                self.green_head, self.green_since = head, time.time()
+            if green and not reviewed and not expected and self.repo_bots is None:
+                self.repo_bots = self.fetch_repo_bots()
+            no_bots = not expected and self.repo_bots == []
+            if green and (reviewed or no_bots):
                 if unresolved:
                     self.finish(1, [f"blocked by {len(unresolved)} unresolved threads on {short}: {' '.join(unresolved)}"])
                 if merge_state == "BEHIND":
                     self.finish(1, [behind_line])
                 self.reported.add(checks_key)
-                self.finish(0, [f"ready on {short}: {summary}{self.behind(base, base_oid, head)}"])
+                note = "; no Greptile or Macroscope reviews this repo, so green is ready" if no_bots and not reviewed else ""
+                self.finish(0, [f"ready on {short}: {summary}{self.behind(base, base_oid, head)}{note}"])
+            waited = time.time() - self.green_since
+            if green and waited >= BOT_GRACE_SECONDS:
+                bots = " or ".join(expected or self.repo_bots or GATING_BOTS)
+                self.finish(1, [
+                    f"green on {short}, but {bots} has not reviewed this head after {int(waited // 60)} min: "
+                    f"{summary}. Request the review again, or wait with --until green"
+                ])
         if all_done and (stable or self.baseline):
             self.emit(checks_key, f"checks finished on {short}: {summary}")
         if self.until == "any-change" and self.events:

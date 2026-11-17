@@ -31,9 +31,9 @@ Prints JSON with `.pr` (including `head_sha`) and `.feedback`: every submitted r
 
 One watcher per PR; it prints one line per real event (failed check, all checks done, new comment, review or thread, bot finished, base moved onto this PR's files, BEHIND or DIRTY, merged or closed).
 
-- `ready` (default): required checks green, Greptile or Macroscope reviewed the head, no unresolved threads. Use `green` when the repo has neither bot.
+- `ready` (default): required checks green, Greptile or Macroscope reviewed the head, no unresolved threads. When neither bot reviews the PR or the repo's recent PRs, green is ready. When a bot is expected but has not reviewed the head 15 minutes after green, it exits 1.
 - Exit 0: condition met or PR merged. Exit 1: needs action. Exit 2: bad input or another watcher holds the PR.
-- In Claude Code, run it with the `Monitor` tool (`timeout_ms: 3600000`) so each line wakes you; elsewhere, run it as one long command with no timeout. Start it again after each push, after handling an exit 1, and after a resume; it remembers what it already reported.
+- In Claude Code, run it with the `Monitor` tool (`timeout_ms: 3600000`) so each line wakes you; load `Monitor` with `ToolSearch` when it is deferred. A background `Bash` does not wake you on event lines, only on exit. Elsewhere, run it as one long command with no timeout. Start it again after each push, after handling an exit 1, and after a resume; it remembers what it already reported.
 
 When GraphQL is used up (`gh api rate_limit --jq .resources.graphql`), read through REST: `gh api repos/<owner>/<repo>/pulls/<n>` and `.../commits/<sha>/check-runs`.
 
