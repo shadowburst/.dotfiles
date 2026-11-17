@@ -797,6 +797,15 @@ try {
   popup.open(graphCx);
   assert.equal(opened, true, "A colliding remote ref opens New from remote instead of opening the local branch");
   assert(!launched);
+  let shown;
+  const { showCheckout, close } = popup;
+  Object.assign(popup, { showCheckout(row) { shown = row; }, close() {} });
+  opened = undefined;
+  popup.cursor = refs.rows.findIndex((r) => r.remote === "origin" && r.branch === "main");
+  popup.open(graphCx);
+  assert.equal(opened, undefined, "A remote ref that the local branch tracks does not open New from remote");
+  assert.equal(shown?.path, fixtureRoot, "A remote ref that the local branch tracks opens the local checkout");
+  Object.assign(popup, { showCheckout, close });
   const onlyRemote = refs.rows.find((r) => r.remote === "backup");
   popup.names = { ...names, local: new Set() };
   popup.cursor = refs.rows.indexOf(onlyRemote);

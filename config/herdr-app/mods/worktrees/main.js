@@ -596,8 +596,13 @@ export default class Worktrees extends View {
     }
   }
 
+  // The local branch that tracks a remote row: opening the remote row opens it.
+  tracker(r) {
+    return r?.remote ? this.rows.find((l) => !l.remote && l.branch === r.branch && l.upstream === rowName(r)) : null;
+  }
+
   open(cx) {
-    const r = this.current();
+    const r = this.tracker(this.current()) ?? this.current();
     if (!r) return;
     if (r.path) {
       this.showCheckout(r);
@@ -1244,7 +1249,7 @@ export default class Worktrees extends View {
       ui.button("pull", "Pull", "p", (cx) => this.pullCurrent(cx), "", none || r.pending || Boolean(r.remote) || !r.branch),
       ui.button("push", "Push", "⇧P", (cx) => this.pushCurrent(cx), "", none || Boolean(refusal(r, "push"))),
       ui.button("new", "New", "n", (cx) => this.openNew(cx)),
-      ui.button("open", r?.remote && this.names.local.has(r.branch) ? "New from remote" : r && !r.path ? "Check out" : "Open", "↵", (cx) => this.open(cx), "primary", none),
+      ui.button("open", r?.remote && !this.tracker(r) && this.names.local.has(r.branch) ? "New from remote" : r && !(this.tracker(r) ?? r).path ? "Check out" : "Open", "↵", (cx) => this.open(cx), "primary", none),
     ];
   }
 
