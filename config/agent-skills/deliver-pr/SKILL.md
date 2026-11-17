@@ -11,27 +11,25 @@ The user is not watching this thread. Updates and the final message go unread un
 
 A "deliver" request gives permission to:
 
-- Create a branch, commit, push, merge the base into the branch, and fix conflicts on this task's branch.
+- Create a branch, commit, push, rebase, fix conflicts, and use `--force-with-lease` on this task's branch.
 - Use the test methods that evidence needs without asking first: the evidence agent, running the app or a dev server, browser automation, screenshots, and visual checks. Rules that name _how_ to test (the command, fixture, or check) still apply; only the ask-first step is lifted, and only for this task.
 
-Outside the grant, always: merging, auto-merge, merge queues, pushes to the default branch, branch-protection bypasses, deleting data, touching production, changing things outside the repo, closing a PR, force-pushing any branch. Disable auto-merge and leave any merge queue before work begins and before each push; report it. When automatic merging cannot be prevented, report the blocker first.
+Outside the grant, always: merging, auto-merge, merge queues, pushes to the default branch, branch-protection bypasses, deleting data, touching production, changing things outside the repo, closing a PR, force-pushing any other branch. Disable auto-merge and leave any merge queue before work begins and before each push; report it. When automatic merging cannot be prevented, report the blocker first.
 
 ## Steps
 
 1. **Finish the change.** Work in the current checkout with all its uncommitted changes. Resolve the base from the user's choice, existing PR, then `branch.<head>.gh-merge-base`; ask if unknown. Record the base there and align any existing PR. Make the smallest change that meets the request.
-2. **Gather evidence.** Commit the change, then gather evidence for it; see [Evidence](#evidence).
-3. **Cross-review.** Run the `cross-review` skill until it agrees or asks the user.
-4. **Publish.** Before every `publish-pr` run, here and in step 5, fetch the recorded base and, when it moved, merge it into the branch, then gather evidence again for what the merge touched, including conflict fixes. Run the `publish-pr` skill and ask it for ready for review, so review bots see code that cross-review already approved. Keep the cross-review line in the PR body.
+2. **Start evidence.** Commit the change, run step 1 of the `cross-review` skill, then start the evidence agent in the background; see [Evidence](#evidence).
+3. **Cross-review.** Continue `cross-review` from its step 2 until it agrees or asks the user, committing each fix on top. Then join the evidence agent, check its report, and gather evidence for the commits cross-review added.
+4. **Publish.** Before every `publish-pr` run, here and in step 5, fetch the recorded base and rebase onto it when it moved, then gather evidence again for what the rebase touched. Run the `publish-pr` skill and ask it for ready for review, so review bots see code that cross-review already approved. Keep the cross-review line in the PR body.
 5. **Watch.** Run the `watch-pr` skill until the PR is ready to merge or blocked. Gather evidence for each fix before it is pushed.
 6. **Hand off.** See [Handoff](#handoff).
-
-Add new commits on top of pushed ones; never rebase or amend a pushed commit. History that keeps every pushed commit lets `publish-pr` push without force and keeps test-impact caches such as Pest TIA valid.
 
 Stay active from step 1 to step 6. Ending the turn while checks or bots are pending stops the work, because nobody will prompt you again; `watch-pr`'s waiter is what wakes you.
 
 ## Evidence
 
-Gather evidence with steps 2–4 of `publish-pr`'s `EVIDENCE.md`, on the committed head and the recorded base: the evidence agent captures it, and you check it. `publish-pr` reuses the checked report for the same head and runs the agent again only for the claims that later commits touch. Every change has evidence before it is pushed. Two additions hold here:
+Gather evidence with steps 2–4 of `publish-pr`'s `EVIDENCE.md`, on the committed head and the recorded base: the evidence agent captures it, and you check it. Run the agent from a worktree at the head SHA, created through the environment's worktree tool, so the checkout stays free for cross-review fixes; remove the worktree after the check. The agent and your tests share the test database: hold every test run, including cross-review's check re-runs, until the agent exits. `publish-pr` reuses the checked report for the same head and runs the agent again only for the claims that later commits touch. Every change has evidence before it is pushed. Two additions hold here:
 
 - When the behavior has no test and the repo has a test setup, add one focused test that fails without the change, as part of the change.
 - Put UI and runtime behavior in the brief's intent as results to observe in the running app; green mocked tests show nothing about the user experience.
