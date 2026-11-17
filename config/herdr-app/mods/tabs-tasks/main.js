@@ -29,7 +29,7 @@ export default class Tabs extends View {
         const previous = this.activeTasks || new Set();
         const records = { ...(shared("tasks.records") || {}) };
         const live = terminals().filter((task) => task.labels?.["task.kind"]);
-        for (const task of live) records[task.address] = {
+        for (const task of live) records[task.address] = { ...records[task.address],
           address: task.address, name: task.name, created_ms: task.created_ms ?? records[task.address]?.created_ms ?? Date.now(),
           state: task.state, exit_code: task.exit_code, labels: task.labels,
         };
@@ -62,6 +62,12 @@ export default class Tabs extends View {
           const failed = labels["task.state"] === "failed" || (task.state === "finished" && task.exit_code !== 0);
           this.taskSeen[task.address] = true;
           localStorage.setItem("task-notices", JSON.stringify(this.taskSeen));
+          // A launcher's follow-up commands (e.g. close the removed worktree's spaces) run once, on success.
+          if (task.onSuccess) {
+            if (!failed) for (const c of task.onSuccess) run(c.name, c.args);
+            const { onSuccess: _done, ...rest } = task;
+            setShared("tasks.records", { ...(shared("tasks.records") || {}), [task.address]: rest });
+          }
           notify({ title: failed ? "Background task failed" : "Background task ready",
             body: labels["task.error"] || labels["task.warning"] || labels["task.branch"] || labels["task.title"] || task.name || "Background task", level: failed ? "error" : "info",
             ...(task.state !== "finished" ? { action: { name: "terminal.peek", args: { terminal: task.address } } } : {}) });

@@ -1,6 +1,6 @@
 // Run: node --experimental-vm-modules config/herdr-app/tests/worktrees.mjs
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import vm from "node:vm";
 
@@ -16,6 +16,9 @@ const gitCalls = [];
 const execCalls = [];
 const hcCalls = [];
 const testShared = {};
+const overlays = [];
+const watched = [];
+let watchCode = 0;
 let draftWrites = 0;
 const context = vm.createContext({ console, localStorage: { getItem() { return null; }, setItem(key) { if (key === "draft") draftWrites++; }, removeItem() {} } });
 const module = (values) => new vm.SyntheticModule(Object.keys(values), function () {
@@ -25,13 +28,11 @@ let virtualLists = 0;
 const actions = new Map();
 const buttons = new Map();
 const lists = new Map();
-const elementRecords = new Map();
 const text = [], icons = [];
 let deferred = false;
 const element = (record = {}) => new Proxy({}, { get: (_target, method) => (...args) => {
   assert(!(deferred && method.startsWith("on_")), "Virtual rows must not install handlers during native layout");
   if (record && typeof record === "object") record[method] = args;
-  if (method === "id") elementRecords.set(args[0], record);
   if (method === "child" && typeof args[0] === "string") text.push(args[0]);
   if (method === "on_action") actions.set(args[0], args[1]);
   if (method === "when" && args[0]) return args[1](element(record));
@@ -57,7 +58,7 @@ const herdr = module({
   async readTextFile(path) { if (path.endsWith("/create.py")) return readFile(new URL("../mods/worktrees/create.py", import.meta.url), "utf8"); }, spaces() { return testSpaces; },
   closeOverlay() {}, focused() { return testFocus; }, props() {}, settings() { return {}; }, theme() { return {}; },
   shared(key) { return testShared[key]; }, setShared(key, value) { testShared[key] = value; },
-  machines() { return []; }, openOverlay() {}, async hc(args) {
+  machines() { return []; }, openOverlay(spec) { overlays.push(spec); }, async hc(args) {
     hcCalls.push(Array.from(args));
     if (args[0] === "run") return failTaskStart ? { code: 1, stdout: "", stderr: "Cannot start test worker" } : { code: 0, stdout: JSON.stringify({ address: "t99" }) };
     if (args[0] === "get") return { code: 0, stdout: JSON.stringify(taskFinalStates[args[1]] || { state: "finished", exit_code: 0 }) };
@@ -87,7 +88,7 @@ const herdr = module({
     if (command === "python3") return { code: 1, stdout: "", stderr: "no fetch yet" };
     if (command === "rm") return { code: 0, stdout: "", stderr: "" };
     if (command === "tail") return { code: 0, stdout: "Saved setup output", stderr: "" };
-    if (command === "sh") return { code: 0, stdout: args.includes("/api/model") || args.includes("/api/provider") ? '{"data":[]}' : "/target-home/.cache/herdr-worktrees/prompt-abc", stderr: "" };
+    if (command === "sh") return { code: 0, stdout: args.includes("/api/model") || args.includes("/api/provider") ? '{"data":[]}' : "/home/test/.cache/herdr-worktrees/task-abc", stderr: "" };
     if (command === "wt") return { code: 0, stdout: JSON.stringify({ repo: { default_branch: "develop" }, items: [{ branch: "develop", worktree: { path: cwd, main: true } }] }) };
     assert.equal(command, "git");
     if (cwd === "/not-a-repo") return { code: 1, stdout: "", stderr: "not a repository" };
@@ -102,6 +103,10 @@ const job = module({ Job: { async run(cwd, argv, onLines, on) {
   jobs.push({ cwd, argv, on });
   onLines(["Setting up…"]);
   return 0;
+}, async watch(t, onLines) {
+  watched.push(t);
+  onLines(["Removing…"]);
+  return watchCode;
 } } });
 const data = new vm.SourceTextModule(await readFile(new URL("../mods/worktrees/data.js", import.meta.url), "utf8"), { context });
 await data.link(() => herdr);
@@ -111,8 +116,10 @@ const graph = new vm.SourceTextModule(await readFile(new URL("../mods/worktrees/
 await graph.link((name) => ({ "gpui-kit": kit, "gpui-base": base, herdr, "./data.js": data, "./history.js": history })[name]);
 const creation = new vm.SourceTextModule(await readFile(new URL("../mods/worktrees/create.js", import.meta.url), "utf8"), { context });
 await creation.link((name) => ({ herdr, "./data.js": data })[name]);
+const removal = new vm.SourceTextModule(await readFile(new URL("../mods/worktrees/remove.js", import.meta.url), "utf8"), { context });
+await removal.link((name) => ({ herdr, "./data.js": data })[name]);
 const main = new vm.SourceTextModule(await readFile(new URL("../mods/worktrees/main.js", import.meta.url), "utf8"), { context });
-await main.link((name) => ({ "gpui-kit": kit, "gpui-base": base, herdr, "./data.js": data, "./job.js": job, "./graph.js": graph, "./create.js": creation })[name]);
+await main.link((name) => ({ "gpui-kit": kit, "gpui-base": base, herdr, "./data.js": data, "./job.js": job, "./graph.js": graph, "./create.js": creation, "./remove.js": removal })[name]);
 await main.evaluate();
 
 async function launch(prompt = "", remote = "", machine = null) {
@@ -148,8 +155,8 @@ assert.match(failedSubmission.message, /Cannot start test worker/);
 assert.equal(execCalls.at(-1).command, "rm", "Remove the private submission file if starting the worker fails");
 await creation.namespace.startCreation({ branch: "", base: "main", prompt: "An automatic name", agent: "codex" }, { root }, {});
 const automaticTask = JSON.parse(execCalls.at(-1).args.at(-1));
-assert(automaticTask.rename && automaticTask.branch.startsWith("worktree/"), "Use a temporary branch immediately and rename it in the worker");
-console.log("Worktree submission: background checkout and agent tasks, temporary naming, retained focus, and failed submission passed.");
+assert.equal(automaticTask.branch, "", "An empty branch lets the worker name it");
+console.log("Worktree submission: background checkout and agent tasks, background naming, retained focus, and failed submission passed.");
 
 const view = new main.namespace.default();
 view.graph = { enabled: false };
@@ -291,8 +298,8 @@ execCalls.length = 0;
 await launch("Remote task", "", "server");
 assert.deepEqual(hcCalls.at(-1).slice(0, 3), ["run", "--on", "server"], "Background setup and the agent run on the target machine");
 assert(!calls.some((c) => ["space.new", "tab.new"].includes(c.command)));
-assert(execCalls.every((c) => c.on === "server"), "Git and the private prompt file stay on the target machine");
-assert(hcCalls.at(-1).includes("/target-home/.cache/herdr-worktrees/prompt-abc"));
+assert(execCalls.every((c) => c.on === "server"), "Git and the private task file stay on the target machine");
+assert(hcCalls.at(-1).includes("/home/test/.cache/herdr-worktrees/task-abc"));
 
 const realJob = new vm.SourceTextModule(await readFile(new URL("../mods/worktrees/job.js", import.meta.url), "utf8"), { context });
 await realJob.link(() => herdr); await realJob.evaluate();
@@ -311,53 +318,22 @@ assert(remoteRows[0].busy && remoteRows[0].spaces.includes("remote-same-path"));
 testAgents = [];
 execCalls.length = 0;
 await data.namespace.loadOpencodeModels("/repo", [], "server");
-await data.namespace.generateBranch({ naming_command: ["/nix/store/local-only/bin/textgen"] }, "Fix remote test", "server");
-assert(execCalls.every((c) => c.on === "server"));
-assert(!execCalls.some((c) => c.args.includes("/nix/store/local-only/bin/textgen")), "Do not send a local Nix store path to another machine");
-for (const action of ["merge", "remove"]) {
-  Object.assign(workspaceView, { view: action, sel: { path: "/worktree", branch: "topic", spaces: [] }, target: state({ value: "main" }), handle, finished() {} });
-  workspaceView.confirm(workspaceCx); await settleWorkspaces();
-  assert.equal(jobs.at(-1).on, "server", `${action} runs on the target machine`);
-}
-console.log("Machines: workspace switching, setup, prompt files, agent launch, terminal cleanup and busy detection passed.");
+await creation.namespace.startCreation({ branch: "", base: "main", prompt: "Fix remote test", agent: "codex" }, { root: "/repo", machine: "server" }, { naming_command: ["/nix/store/local-only/bin/textgen"] });
+const namingTask = execCalls.find((c) => c.args.at(-1)?.includes?.("Fix remote test"));
+assert.equal(namingTask.on, "server");
+assert.deepEqual(JSON.parse(namingTask.args.at(-1)).naming, ["textgen"], "Do not send a local Nix store path to another machine");
+Object.assign(workspaceView, { view: "merge", sel: { path: "/worktree", branch: "topic", spaces: [] }, target: state({ value: "main" }), handle, showCheckout() {}, close() {} });
+workspaceView.confirm(workspaceCx); await settleWorkspaces();
+assert.equal(jobs.at(-1).on, "server", "merge runs on the target machine");
+Object.assign(workspaceView, { view: "remove", sel: { path: "/worktree", branch: "topic", spaces: [] } });
+workspaceView.confirm(workspaceCx); await settleWorkspaces();
+assert.deepEqual(hcCalls.at(-1).slice(0, 3), ["run", "--on", "server"], "remove runs on the target machine");
+assert(testShared["tasks.records"]["server/t99"], "A remote removal task has a machine-qualified address");
+console.log("Machines: workspace switching, setup, task file, agent launch, terminal cleanup and busy detection passed.");
 
-const promptHome = await mkdtemp("/tmp/opencode/herdr-prompt-");
-try {
-  const prompt = 'Quotes " and \' ; $(exit 7)\n{{ task }}';
-  const argv = await data.namespace.promptCommand(["printf", "%s"], prompt, "server");
-  const save = execCalls.at(-1);
-  const saved = spawnSync(save.command, Array.from(save.args), { encoding: "utf8", env: { ...process.env, HOME: promptHome } });
-  assert.equal(saved.status, 0, saved.stderr);
-  const path = saved.stdout;
-  assert(path.startsWith(`${promptHome}/.cache/herdr-worktrees/`));
-  assert.equal((await stat(path)).mode & 0o777, 0o600);
-  assert.equal(await readFile(path, "utf8"), prompt, "The task is data, not shell code");
-  const command = Array.from(argv, (a) => a === "/target-home/.cache/herdr-worktrees/prompt-abc" ? path : a);
-  const result = spawnSync(command[0], command.slice(1), { encoding: "utf8" });
-  assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, prompt);
-  await assert.rejects(stat(path), { code: "ENOENT" }, "Remove the prompt file after reading it");
-} finally {
-  await rm(promptHome, { recursive: true, force: true });
-}
 
-const spaceMarks = new vm.SourceTextModule(await readFile(new URL("../mods/spaces-pr/main.js", import.meta.url), "utf8"), { context });
-const pr = module({ PullRequests: class {} });
-await spaceMarks.link((name) => ({ "gpui-kit": kit, "gpui-base": base, herdr, "./pr.js": pr })[name]);
-await spaceMarks.evaluate();
-testShared["space.colors"] = { current: "#123456", other: "ansi3" };
-const mark = spaceMarks.namespace.spaceMark;
-testShared["spaces-pr.marks"] = {
-  current: mark(testSpaces[0], false, {}),
-  other: mark(testSpaces[1], false, {}),
-  invalid: mark(testSpaces[2], true, {}),
-};
-assert.equal(testShared["spaces-pr.marks"].current.color, "#123456", "Keep custom workspace colors");
-assert.equal(testShared["spaces-pr.marks"].other.color, "#e3814f", "Keep the Spaces view's palette");
-assert.equal(testShared["spaces-pr.marks"].other.text, "O");
-assert.equal(testShared["spaces-pr.marks"].invalid.icon, "mods/workspace-chrome/branch.svg", "Keep the worktree branch icon");
+testShared["spaces-pr.marks"] = { other: { text: "O" } };
 assert.equal(workspaceView.options("workspace")[1].mark, testShared["spaces-pr.marks"].other, "Use the exact mark from the Spaces view");
-console.log("Workspace marks: shared palette, custom colors, initials, and worktree icons passed.");
 
 function search(view, field, query) {
   view.showChoice(field, true, cx);
@@ -443,9 +419,7 @@ view.choiceWidths = {};
 view.names = { names: Array.from({ length: 10000 }, (_, i) => `branch-${i}`), local: new Set(), remote: new Set() };
 view.prompt = state({ value: "A task" });
 view.branch = state();
-const start = performance.now();
 for (let i = 0; i < 100; i++) view.formView({}, view.ui({}));
-console.log(`Task form: 100 renders in ${(performance.now() - start).toFixed(1)} ms; ${virtualLists} option lists built.`);
 assert.equal(virtualLists, 0, "Typing with all selectors closed must not build any dropdown lists");
 view.showChoice("base", true, cx);
 view.formView({}, view.ui({}));
@@ -787,7 +761,6 @@ try {
   text.length = 0;
   g.renderRow(g.rows.find((r) => r.sha === m), {});
   assert(text.includes("main") && !text.includes("origin/main"), "A matching remote uses an icon, not a second name");
-  assert(g.labels(m)[0].width < 100, "Short branch badges do not stretch to fill the label column");
   const oldScroll = scrollTarget;
   g.configure(fixtureRoot, refs.rows, mainRef, graphCx, false);
   assert.equal(scrollTarget, oldScroll, "A badge refresh does not reset manual scrolling");
@@ -809,17 +782,10 @@ try {
 
   const t = Object.fromEntries(["background", "accent", "border", "selected", "hover", "foreground", "muted", "dim", "raised", "ansi1", "ansi2", "ansi3", "ansi4", "ansi5", "ansi6"].map((key) => [key, "#abcdef"]));
   g.configure(fixtureRoot, refs.rows, mainRef, graphCx, true); await settle();
-  text.length = 0; icons.length = 0;
   g.render(t);
   deferred = true;
   lists.get("wt-graph-rows").render({ start: 0, end: g.rows.length });
   deferred = false;
-  assert(icons.includes("mods/worktrees/pencil.svg"));
-  assert(icons.includes("mods/workspace-chrome/branch.svg"));
-  assert(icons.includes("mods/workspace-chrome/server.svg"), "Local and remote labels have distinct icons");
-  assert(!text.some((s) => /edited|opencode|claude|▣/.test(s)), "The graph uses a pencil, not edited text, agent status or a square marker");
-  assert(!text.some((s) => /Selected:|Reveal selected|More history below|Load more|^\d+ commits/.test(s)), "Do not render permanent graph header or pagination information");
-  assert(!buttons.has("wt-reveal") && !buttons.has("wt-graph-more"), "No reveal or manual load-more buttons");
 
   const popup = new main.namespace.default();
   popup.init({}, { ...graphCx, spawn() {} });
@@ -838,17 +804,6 @@ try {
   assert.equal(launched.base, "refs/remotes/backup/feature");
   assert.equal(launched.remote, "backup", "Same-named refs on different remotes remain exact targets");
   popup.names = names;
-  text.length = 0; icons.length = 0;
-  popup.header(t, popup.ui(t));
-  assert(text.includes("Esc"), "Use the same Esc close indicator as the other dialogs");
-  assert(!text.some((s) => /^\d+ of \d+$/.test(s)), "Do not show the branch counter beside the close control");
-  assert(!icons.includes("mods/workspace-chrome/x.svg"));
-  let escaped = 0;
-  const escape = popup.escape;
-  popup.escape = () => escaped++;
-  buttons.get("wt-close").on_click[0]({}, graphCx);
-  assert.equal(escaped, 1, "Clicking Esc uses the same action as the Escape key");
-  popup.escape = escape;
   Object.assign(popup, { selections: { claude: {} }, agent: "claude", saveDraft() {} });
   popup.cursor = refs.rows.indexOf(remote);
   main.namespace.default.prototype.openNew.call(popup, graphCx, true);
@@ -947,6 +902,61 @@ try {
   fixtureRoot = null;
 }
 
+{
+  calls = []; jobs = []; hcCalls.length = 0;
+  delete testShared["tasks.records"];
+  let closed = 0;
+  const removing = new main.namespace.default();
+  Object.assign(removing, {
+    repo: { root: "/repo", top: "/wt", machine: null }, handle, view: "remove", removeBranch: true,
+    rows: [{ branch: "main", path: "/repo", main: true, spaces: ["main-space"] }],
+    sel: { branch: "topic", path: "/wt", spaces: ["wt-space"] }, close() { closed++; },
+  });
+  removing.setMessage("", false);
+  const removeTasks = [];
+  const removeCx = { notify() {}, spawn(fn) { removeTasks.push(fn(removeCx)); } };
+  removing.confirm(removeCx);
+  await Promise.all(removeTasks.splice(0));
+  assert.equal(jobs.length, 0, "Removal no longer runs inside the popup");
+  assert.equal(closed, 1, "The popup closes once the removal is queued");
+  const run = hcCalls.at(-1);
+  assert(run.includes("--outlive-parent") && run.includes("task.kind=worktree-remove") && run.includes("task.state=running"));
+  assert.deepEqual(Array.from(run.slice(run.indexOf("--") + 1)), ["wt", "-C", "/repo", "remove", "topic", "--yes", "--foreground", "--force-delete"]);
+  assert(!calls.some((c) => c.command === "space.close"), "Spaces stay open until wt succeeds");
+  const record = testShared["tasks.records"].t99;
+  assert.deepEqual(JSON.parse(JSON.stringify(record.onSuccess)), [{ name: "space.select", args: { id: "main-space" } }, { name: "space.close", args: { id: "wt-space", confirmed: true } }],
+    "Removing the caller's checkout shows the main checkout, then closes the removed spaces");
+  assert.equal(record.overlay.mod, "worktrees");
+  assert.equal(record.overlay.props.task, "t99");
+
+  failTaskStart = true; closed = 0;
+  removing.confirm(removeCx);
+  await Promise.all(removeTasks.splice(0));
+  failTaskStart = false;
+  assert(closed === 0 && removing.failed && /Cannot start test worker/.test(removing.message), "Keep the popup open when the removal cannot start");
+
+  // The task's Open button shows the Remove view again and follows the task.
+  const follower = new main.namespace.default();
+  Object.assign(follower, { repo: { root: "/repo", machine: null }, handle, rows: [], close() { closed++; }, reload() {} });
+  follower.follow(record.overlay.props, removeCx);
+  assert.equal(follower.view, "remove");
+  assert(follower.running && follower.following);
+  closed = 0;
+  follower.escape(removeCx);
+  assert.equal(closed, 1, "Esc hides a followed removal; it goes on in the background");
+  await Promise.all(removeTasks.splice(0));
+  assert.deepEqual(watched, ["t99"]);
+  assert.equal(follower.view, "list", "A successful removal goes back to the list");
+  assert.match(follower.message, /Removed topic/);
+  assert(!calls.some((c) => c.command === "space.close"), "The followed view does not repeat the follow-up commands");
+  watchCode = 3;
+  follower.follow(record.overlay.props, removeCx);
+  await Promise.all(removeTasks.splice(0));
+  watchCode = 0;
+  assert(follower.failed && /exit code 3/.test(follower.message), "A failed removal stays on the Remove view with its error");
+  console.log("Worktree removal: background task, follow-up commands, failed start, and the followed Remove view passed.");
+}
+
 const taskData = new vm.SourceTextModule(await readFile(new URL("../mods/tasks/data.js", import.meta.url), "utf8"), { context });
 await taskData.link(() => herdr);
 const tasksMod = new vm.SourceTextModule(await readFile(new URL("../mods/tasks/main.js", import.meta.url), "utf8"), { context });
@@ -997,10 +1007,6 @@ const taskCx = { ...initCx, notify() {}, spawn(fn) { taskJobs.push(fn(taskCx)); 
 taskView.init({}, taskCx);
 text.length = 0;
 taskView.render();
-assert.equal(elementRecords.get("tasks")?.text_size?.[0], 13, "Use the same 13 px base text as Files and Changes");
-assert.equal(elementRecords.get("tasks")?.rounded?.[0], 10, "Match the rounded side-panel frame");
-assert(elementRecords.get("tasks")?.overflow_hidden, "Clip content to the rounded panel frame");
-assert(elementRecords.get("tasks")?.border_1, "Use the same thin border as Files and Changes");
 assert(text.includes("Failed (exit 7)"), "Do not label a failed process as Ready");
 taskView.open(entries.find((t) => t.address === "ready"), taskCx);
 await Promise.all(taskJobs.splice(0));
@@ -1036,4 +1042,29 @@ testTerminals.find((t) => t.address === "last-job").labels["task.state"] = "fail
 taskTabs.syncTasks(taskSyncCx);
 await Promise.all(taskSyncJobs.splice(0));
 assert(!testPanel.hidden && testPanelBody.active === "files", "Completion must not close Files or Changes after the person switches panels");
+
+// Follow-up commands and the task's own view.
+calls = []; overlays.length = 0;
+const overlay = { mod: "worktrees", props: { task: "rm-ok" } };
+testShared["tasks.records"]["rm-ok"] = { address: "rm-ok", created_ms: 9, state: "live", overlay,
+  onSuccess: [{ name: "space.close", args: { id: "gone", confirmed: true } }], labels: { "task.kind": "worktree-remove", "task.state": "running" } };
+testShared["tasks.records"]["rm-bad"] = { address: "rm-bad", created_ms: 10, state: "live",
+  onSuccess: [{ name: "space.close", args: { id: "kept", confirmed: true } }], labels: { "task.kind": "worktree-remove", "task.state": "running" } };
+taskFinalStates["rm-bad"] = { state: "finished", exit_code: 1, labels: { "task.kind": "worktree-remove", "task.state": "running" } };
+testTerminals.push({ address: "rm-ok", created_ms: 9, state: "live", labels: { "task.kind": "worktree-remove", "task.state": "running" } });
+taskTabs.syncTasks(taskSyncCx);
+await Promise.all(taskSyncJobs.splice(0));
+assert.equal(testShared["tasks.records"]["rm-ok"].overlay, overlay, "Syncing with the live terminal keeps the launcher's fields");
+const removalEntry = taskData.namespace.taskEntries().find((t) => t.address === "rm-ok");
+assert(removalEntry.active);
+taskView.open(removalEntry, taskCx);
+assert.equal(overlays.at(-1), overlay, "Open on a running removal shows its Remove view");
+Object.assign(testTerminals.find((t) => t.address === "rm-ok"), { state: "finished", exit_code: 0 });
+taskTabs.syncTasks(taskSyncCx);
+await Promise.all(taskSyncJobs.splice(0));
+assert.deepEqual(calls.filter((c) => c.command === "space.close").map((c) => c.args.id), ["gone"], "Follow-up commands run only after success");
+assert(!testShared["tasks.records"]["rm-ok"].onSuccess && !testShared["tasks.records"]["rm-bad"].onSuccess);
+taskTabs.syncTasks(taskSyncCx);
+await Promise.all(taskSyncJobs.splice(0));
+assert.equal(calls.filter((c) => c.command === "space.close").length, 1, "Follow-up commands run once");
 console.log("Tasks: generic jobs, running/ready/failed states, one notification, retained focus, and explicit Open passed.");

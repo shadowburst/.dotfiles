@@ -1,6 +1,6 @@
 import { View, div, svg } from "gpui-kit";
 import { Button, h_flex, v_flex } from "gpui-base";
-import { exec, hc, panes, run, spaces, terminals, theme } from "herdr";
+import { exec, hc, openOverlay, panes, run, spaces, terminals, theme } from "herdr";
 import { placeTask, taskEntries } from "./data.js";
 
 export default class Tasks extends View {
@@ -53,6 +53,8 @@ export default class Tasks extends View {
   }
 
   open(task, cx) {
+    // A launcher can give its running task a view of its own (the worktrees mod's Remove view).
+    if (task.overlay && task.active) return openOverlay(task.overlay);
     const machine = task.address.includes("/") ? task.address.split("/")[0] : null;
     const existing = spaces().find((s) => {
       if ((s.machine ?? null) !== machine) return false;
@@ -94,8 +96,8 @@ export default class Tasks extends View {
       .child(v_flex().id("task-list").flex_1().min_h(0).p(10).gap(10).overflow_y_scrollbar()
         .when(!tasks.length, (el) => el.child(div().p(12).text_size(12).text_color(t.muted).child("No background tasks.")))
         .children(tasks.map((task) => {
-          let status = task.branch || "Ready";
-          if (task.active) status = task.labels["task.kind"] === "worktree" ? "Setting up and naming…" : "Running…";
+          let status = task.branch || (task.labels["task.kind"] === "worktree" ? "Ready" : "Done");
+          if (task.active) status = task.labels["task.kind"] !== "worktree" ? "Running…" : task.branch ? `Setting up ${task.branch}…` : "Naming the branch…";
           if (task.failed) status = `Failed (exit ${task.exit_code ?? "unknown"})`;
           return v_flex().gap(6).p(10).rounded(8).border(1).border_color(t.border).bg(t.surface)
           .child(h_flex().gap(7).items_center()
@@ -104,7 +106,7 @@ export default class Tasks extends View {
           .child(div().text_size(11).text_color(task.failed ? t.blocked : t.muted).child(task.error || task.warning || status))
           .when(Boolean(task.path), (el) => el.child(div().truncate().text_size(10.5).text_color(t.dim).tooltip(task.path).child(task.path)))
           .child(h_flex().gap(6)
-            .when(!task.active && !task.failed && (Boolean(task.path) || task.state !== "finished"), (el) => el.child(button(`open-${task.address}`, "Open", (cx) => this.open(task, cx))))
+            .when(task.overlay ? task.active : !task.active && !task.failed && (Boolean(task.path) || task.state !== "finished"), (el) => el.child(button(`open-${task.address}`, "Open", (cx) => this.open(task, cx))))
             .child(button(`logs-${task.address}`, this.selected === task.address ? "Hide logs" : "Logs", (cx) => {
               this.selected = this.selected === task.address ? null : task.address;
               if (this.selected) this.readLog(this.selected, cx);

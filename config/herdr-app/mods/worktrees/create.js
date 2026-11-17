@@ -7,8 +7,8 @@ export async function startCreation(spec, repo, cfg) {
   if (!source) throw new Error("The worktree task runner is missing.");
   const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const title = `New worktree · ${repo.name || repo.root.split("/").pop()}`;
-  const task = { ...spec, root: repo.root, branch: spec.branch || `worktree/${id}`,
-    rename: !spec.branch, naming: repo.machine ? ["textgen"] : cfg?.naming_command?.length ? cfg.naming_command : ["textgen"],
+  const task = { ...spec, root: repo.root,
+    naming: repo.machine ? ["textgen"] : cfg?.naming_command,
     agent: spec.prompt ? agentArgv(spec.agent, spec.sel) : [] };
   const saved = await exec("sh", ["-c", 'umask 077 && d="$HOME/.cache/herdr-worktrees" && mkdir -p "$d" && f=$(mktemp "$d/task-XXXXXXXX") && printf %s "$1" > "$f" && printf %s "$f"', "sh", JSON.stringify(task)], { on: repo.machine });
   if (saved.code !== 0 || !saved.stdout.trim()) throw new Error(`Cannot save the background task: ${saved.stderr}`);

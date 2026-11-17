@@ -4,7 +4,9 @@
 // / filters both panes, p changes the preview, and Tab moves keyboard focus.
 //
 // New queues setup and naming in herdr-core; Tasks opens the ready agent on request.
-// Merge and remove run `wt` in a hidden herdr-core terminal; its output shows here.
+// Remove is a background task too: the popup closes, and the task's Open button
+// shows the Remove view again (props.task) until wt ends.
+// Merge runs `wt` in a hidden herdr-core terminal; its output shows here.
 //
 // In the New form, Tab and Shift+Tab go to the next or previous control.
 // Choices open with Enter, Space or an arrow; Up/Down select, Enter confirms.
@@ -19,6 +21,7 @@ import {
 import { Job } from "./job.js";
 import { Graph } from "./graph.js";
 import { startCreation } from "./create.js";
+import { startRemoval } from "./remove.js";
 
 const CHOICES = ["workspace", "agent", "model", "effort", "branch", "base"];
 const CHOICE_KEYS = ["up", "down", "enter", "escape", "tab", "shift-tab"];
@@ -85,7 +88,7 @@ export default class Worktrees extends View {
     this.names = { local: new Set(), remote: new Set(), names: [] };
     this.repo = undefined; // undefined: looking; null: not a repo
     this.workspace = props()?.space ?? focused()?.space ?? spaces().find((s) => s.active)?.id;
-    this.machine = spaces().find((s) => s.id === this.workspace)?.machine ?? null;
+    this.machine = props()?.task ? props().machine ?? null : spaces().find((s) => s.id === this.workspace)?.machine ?? null;
     // OpenCode's providers and models: the last list at once, then the service's.
     this.opencode = store(this.modelCacheKey(), null);
     this.opencodeError = "";
@@ -184,6 +187,7 @@ export default class Worktrees extends View {
       this.cfg = await loadConfig();
       this.repo = await detectRepo(props()?.folder ?? callerFolder(this.workspace), this.machine);
       if (!this.repo) return cx.notify();
+      if (props()?.task) this.follow(props(), cx);
       const repo = this.repo;
       await this.reload(cx, true);
       if (this.repo !== repo) return;
@@ -232,7 +236,7 @@ export default class Worktrees extends View {
     this.reloading = repo;
     this.loadingRemotes = !localOnly;
     cx.notify();
-    // Git's name catalog is cheap and keeps naming safe before remote rows arrive.
+    // Git's name catalog is cheap and keeps new names unique before remote rows arrive.
     const [r, names, fetched] = await Promise.all([loadRows(repo.root, false, repo.machine, !localOnly), loadBranches(repo.root, repo.machine), localOnly ? this.fetched : lastFetch(repo.root, repo.machine)]);
     if (this.repo !== repo) return;
     const before = this.current() && rowKey(this.current());
@@ -720,24 +724,16 @@ export default class Worktrees extends View {
   confirm(cx) {
     const r = this.sel;
     if (this.running || refusal(r, this.view)) return;
-    let argv, cwd;
-    if (this.view === "merge") {
-      const target = this.target.value().trim();
-      if (!target) return this.fail("The target is empty.", cx);
-      [argv, cwd] = [["wt", "-C", r.path, "merge", target, "--yes"], r.path];
-    } else {
-      argv = ["wt", "-C", this.repo.root, "remove", r.branch, "--yes", "--foreground"];
-      if (r.dirty) argv.push("--force");
-      if (this.removeBranch || (!r.path && !r.remote && !r.merged)) argv.push("--force-delete");
-      cwd = this.repo.root;
-    }
+    if (this.view === "remove") return this.remove(cx);
+    const target = this.target.value().trim();
+    if (!target) return this.fail("The target is empty.", cx);
     this.running = true;
     this.handle.focus();
     cx.notify();
     cx.spawn(async (cx) => {
       let code = 1;
       try {
-        code = await Job.run(cwd, argv, (lines) => { this.out = lines; cx.notify(); }, this.repo.machine);
+        code = await Job.run(r.path, ["wt", "-C", r.path, "merge", target, "--yes"], (lines) => { this.out = lines; cx.notify(); }, this.repo.machine);
       } catch (e) {
         this.out.push(String(e.message ?? e));
       }
@@ -746,20 +742,62 @@ export default class Worktrees extends View {
         this.failed = true;
         return this.fail(`wt failed with exit code ${code}.`, cx);
       }
-      this.finished(cx);
+      // After a merge the main checkout is shown and the popup closes.
+      this.showCheckout(this.rows.find((m) => m.main) ?? { path: this.repo.root, spaces: [] });
+      for (const id of r.spaces) run("space.close", { id, confirmed: true });
+      this.close();
     });
   }
 
-  // After a merge, and after the removal of the caller's checkout, the main
-  // checkout is shown and the popup closes. Another removal goes back to the list.
-  finished(cx) {
-    const r = this.sel;
-    const focusMain = this.view === "merge" || (r.path && r.path === this.repo.top);
-    if (focusMain) this.showCheckout(this.rows.find((m) => m.main) ?? { path: this.repo.root, spaces: [] });
-    for (const id of r.spaces) run("space.close", { id, confirmed: true });
-    if (focusMain) return this.close();
-    this.back(cx);
-    this.setMessage(`Removed ${rowName(r)}`, true);
+  // The removal goes to the background and the popup closes. After wt succeeds,
+  // the removed checkout's spaces close; if the popup came from that checkout,
+  // the main checkout is shown first.
+  remove(cx) {
+    const r = this.sel, repo = this.repo;
+    const after = [];
+    if (r.path && r.path === repo.top) {
+      const main = this.rows.find((m) => m.main);
+      after.push(main?.spaces.length ? { name: "space.select", args: { id: main.spaces[0] } }
+        : { name: "space.new", args: { folder: main?.path ?? repo.root, machine: repo.machine ?? "" } });
+    }
+    for (const id of r.spaces) after.push({ name: "space.close", args: { id, confirmed: true } });
+    this.running = true;
+    cx.notify();
+    cx.spawn(async (cx) => {
+      try {
+        await startRemoval(r, repo, this.removeBranch, after);
+        this.running = false;
+        this.close();
+      } catch (e) {
+        this.running = false;
+        this.failed = true;
+        this.fail(String(e.message ?? e), cx);
+      }
+    });
+  }
+
+  // Shows the Remove view of a background removal and follows its output.
+  // The tabs mod runs the commands that come after it; this view only shows it.
+  follow({ task, row, removeBranch }, cx) {
+    Object.assign(this, { view: "remove", sel: row, removeBranch: Boolean(removeBranch), out: [], running: true, failed: false, following: true });
+    this.setMessage("", false);
+    this.handle.focus();
+    cx.notify();
+    cx.spawn(async (cx) => {
+      let code = 1;
+      try {
+        code = await Job.watch(task, (lines) => { this.out = lines; cx.notify(); });
+      } catch (e) {
+        this.out.push(String(e.message ?? e));
+      }
+      Object.assign(this, { running: false, following: false });
+      if (code !== 0) {
+        this.failed = true;
+        return this.fail(`wt failed with exit code ${code}.`, cx);
+      }
+      this.back(cx);
+      this.setMessage(`Removed ${rowName(row)}`, true);
+    });
   }
 
   back(cx) {
@@ -824,6 +862,8 @@ export default class Worktrees extends View {
   }
 
   escape(cx) {
+    // A followed removal keeps running in the background without this popup.
+    if (this.following && this.running) return this.close();
     if (this.busy || this.running) return;
     if (this.dropdown) return this.showChoice(this.dropdown, false, cx);
     if (this.view === "list" && this.filtering) return this.stopFilter(true, cx);
@@ -1142,7 +1182,7 @@ export default class Worktrees extends View {
 
   actionActions(ui) {
     if (this.failed) return [ui.button("back", "Back", "↵", (cx) => this.back(cx), "primary")];
-    if (this.running) return [];
+    if (this.running) return this.following ? [ui.button("hide", "Hide", "Esc", () => this.close())] : [];
     if (refusal(this.sel, this.view)) return [ui.button("back", "Back", "Esc", (cx) => this.back(cx))];
     return this.view === "merge"
       ? [ui.button("back", "Cancel", "Esc", (cx) => this.back(cx)), ui.button("merge", "Merge", "↵", (cx) => this.confirm(cx), "primary")]

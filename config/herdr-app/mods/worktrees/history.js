@@ -3,8 +3,7 @@ import { git } from "./data.js";
 
 export const PAGE = 300;
 export const HEIGHT = 30;
-export const STEP = 14;
-export const laneX = (lane) => 12 + lane * STEP;
+export const laneX = (lane) => 12 + lane * 14;
 
 export async function history(repo, tips, skip = 0, count = PAGE, on) {
   if (!tips.length) return { commits: [], more: false };

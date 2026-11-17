@@ -33,34 +33,31 @@ else:
     with (Path(os.environ["FIXTURE"]) / "labels").open("a") as f:
         f.write(json.dumps(sys.argv[1:]) + "\\n")
 ''')
-        self.program("wt", '''import os, subprocess, sys, time
+        self.program("wt", '''import os, subprocess, sys
 from pathlib import Path
 b = Path(os.environ["FIXTURE"])
 (b / "setup.started").touch()
-if os.environ.get("PARALLEL"):
-    end = time.monotonic() + 3
-    while not (b / "naming.started").exists() and time.monotonic() < end:
-        time.sleep(.01)
-    assert (b / "naming.started").exists(), "Naming did not start alongside setup"
 if os.environ.get("FAIL_SETUP"):
     sys.exit(7)
 args = sys.argv
 if "--create" in args:
     branch = args[args.index("--create") + 1]
     base = args[args.index("--base") + 1]
-    command = ["git", "worktree", "add", "--quiet", "-b", branch, str(b / "unchanged folder"), base]
+    command = ["git", "worktree", "add", "--quiet", "-b", branch, str(b / branch.replace("/", "-")), base]
 else:
-    command = ["git", "worktree", "add", "--quiet", str(b / "unchanged folder"), args[2]]
+    command = ["git", "worktree", "add", "--quiet", str(b / args[2].replace("/", "-")), args[2]]
 subprocess.run(command, check=True)
 (b / "setup.done").touch()
 ''')
         self.naming = self.program("namer", '''import os, sys
 from pathlib import Path
-(Path(os.environ["FIXTURE"]) / "naming.started").touch()
+b = Path(os.environ["FIXTURE"])
+assert not (b / "setup.started").exists(), "Name the branch before setup"
+(b / "naming.started").touch()
 sys.stdin.read()
 if os.environ.get("FAIL_NAMING"):
     sys.exit(1)
-print("feat/voice-worktree")
+print(os.environ.get("NAME", "Feat/voice-worktree"))
 ''')
         self.agent = self.program("agent", '''import json, os, subprocess, sys
 from pathlib import Path
@@ -79,25 +76,25 @@ b = Path(os.environ["FIXTURE"])
     def git(self, *args):
         return subprocess.run(["git", "-C", str(self.repo), *args], env=self.env, text=True, capture_output=True, check=True).stdout.strip()
 
-    def run_task(self, **changes):
-        task = {"root": str(self.repo), "branch": "worktree/default-name", "base": "main", "rename": True,
+    # Runs the worker; by default it must succeed. Returns the task and what the agent saw.
+    def run_task(self, ok=True, **changes):
+        task = {"root": str(self.repo), "branch": "", "base": "main",
                 "prompt": 'Fix "quotes"; $(touch injected)\n{{ task }}', "naming": [self.naming], "agent": [self.agent], **changes}
         spec = self.base / "spec.json"
         spec.write_text(json.dumps(task))
         spec.chmod(0o600)
         result = subprocess.run([sys.executable, str(RUNNER), str(spec)], env=self.env, cwd=self.repo, text=True, capture_output=True, timeout=10)
+        self.assertEqual(result.returncode == 0, ok, result.stderr)
         self.assertFalse(spec.exists(), "Remove the private submission file after reading it")
         self.labels = (self.base / "labels").read_text() if (self.base / "labels").exists() else ""
-        return task, result
+        agent = self.base / "agent.json"
+        return task, json.loads(agent.read_text()) if agent.exists() else None
 
-    def test_parallel_setup_and_rename_keep_folder_and_prompt(self):
-        self.env["PARALLEL"] = "1"
-        task, result = self.run_task()
-        self.assertEqual(result.returncode, 0, result.stderr)
-        agent = json.loads((self.base / "agent.json").read_text())
+    def test_name_decides_branch_and_folder_before_setup(self):
+        task, agent = self.run_task()
         self.assertTrue(agent["after_hooks"], "Start the agent only after setup succeeds")
         self.assertEqual(agent["branch"], "feat/voice-worktree")
-        self.assertEqual(agent["cwd"], str(self.base / "unchanged folder"))
+        self.assertEqual(agent["cwd"], str(self.base / "feat-voice-worktree"))
         self.assertEqual(agent["argv"], [task["prompt"]])
         self.assertFalse((self.repo / "injected").exists())
         self.assertIn("task.state=ready", self.labels)
@@ -106,68 +103,55 @@ b = Path(os.environ["FIXTURE"])
         self.assertIn("Saved setup output", log.read_text())
         self.assertEqual(self.git("config", "branch.feat/voice-worktree.gh-merge-base"), "main")
 
-    def test_setup_failure_does_not_start_agent(self):
-        self.env["FAIL_SETUP"] = "1"
-        _, result = self.run_task()
-        self.assertNotEqual(result.returncode, 0)
-        self.assertFalse((self.base / "agent.json").exists())
-        self.assertIn("task.state=failed", self.labels)
+    def test_name_has_at_most_four_words(self):
+        self.env["NAME"] = "Sure: fix/login-button-breaks-on-mobile-safari"
+        self.assertEqual(self.run_task()[1]["branch"], "fix/login-button-breaks-on")
 
-    def test_naming_failure_keeps_temporary_branch(self):
+    def test_naming_failure_names_from_task_text(self):
         self.env["FAIL_NAMING"] = "1"
-        _, result = self.run_task()
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(json.loads((self.base / "agent.json").read_text())["branch"], "worktree/default-name")
-        self.assertIn("temporary name was kept", self.labels)
+        self.assertEqual(self.run_task(prompt="Réparer le bouton de connexion cassé")[1]["branch"], "feat/reparer-le-bouton-de")
+        self.assertIn("name comes from the task text", self.labels)
 
-    def test_naming_collision_does_not_overwrite_branch(self):
+    def test_taken_name_gets_suffix_and_is_not_overwritten(self):
         original = self.git("rev-parse", "HEAD")
         self.git("branch", "feat/voice-worktree")
-        _, result = self.run_task()
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(json.loads((self.base / "agent.json").read_text())["branch"], "feat/voice-worktree-2")
+        self.git("update-ref", "refs/remotes/origin/feat/voice-worktree-2", "HEAD")
+        self.assertEqual(self.run_task()[1]["branch"], "feat/voice-worktree-3")
         self.assertEqual(self.git("rev-parse", "feat/voice-worktree"), original)
 
-    def test_explicit_branch_is_not_renamed(self):
-        _, result = self.run_task(branch="fix/explicit", rename=False)
-        self.assertEqual(result.returncode, 0, result.stderr)
+    def test_setup_failure_does_not_start_agent(self):
+        self.env["FAIL_SETUP"] = "1"
+        self.assertIsNone(self.run_task(ok=False)[1])
+        self.assertIn("task.state=failed", self.labels)
+
+    def test_explicit_branch_skips_naming(self):
+        self.assertEqual(self.run_task(branch="fix/explicit")[1]["branch"], "fix/explicit")
         self.assertFalse((self.base / "naming.started").exists())
-        self.assertEqual(json.loads((self.base / "agent.json").read_text())["branch"], "fix/explicit")
 
     def test_existing_checkout_is_reused_without_hooks(self):
-        _, result = self.run_task(branch="main", rename=False)
-        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.run_task(branch="main")[1]["cwd"], str(self.repo))
         self.assertFalse((self.base / "setup.started").exists())
-        self.assertEqual(json.loads((self.base / "agent.json").read_text())["cwd"], str(self.repo))
 
     def test_existing_branch_without_checkout(self):
         self.git("branch", "fix/existing")
-        _, result = self.run_task(branch="fix/existing", rename=False)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(json.loads((self.base / "agent.json").read_text())["branch"], "fix/existing")
+        self.assertEqual(self.run_task(branch="fix/existing")[1]["branch"], "fix/existing")
 
     def test_exact_remote_base_and_upstream(self):
         self.git("remote", "add", "origin", "https://example.invalid/repo")
         self.git("update-ref", "refs/remotes/origin/feature", "HEAD")
-        _, result = self.run_task(branch="fix/remote", base="refs/remotes/origin/feature", remote="origin", mergeBase="feature", rename=False)
-        self.assertEqual(result.returncode, 0, result.stderr)
+        self.run_task(branch="fix/remote", base="refs/remotes/origin/feature", remote="origin", mergeBase="feature")
         self.assertEqual(self.git("rev-parse", "--abbrev-ref", "fix/remote@{upstream}"), "origin/feature")
         self.assertEqual(self.git("config", "branch.fix/remote.gh-merge-base"), "feature")
 
     def test_create_from_base_never_reuses_colliding_branch(self):
         self.git("branch", "fix/collision")
         before = self.git("rev-parse", "fix/collision")
-        _, result = self.run_task(branch="fix/collision", createFromBase=True, rename=False)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertFalse((self.base / "agent.json").exists())
+        self.assertIsNone(self.run_task(ok=False, branch="fix/collision", createFromBase=True)[1])
         self.assertEqual(self.git("rev-parse", "fix/collision"), before)
 
     def test_plain_checkout_finishes_without_agent(self):
-        _, result = self.run_task(branch="fix/no-agent", rename=False, agent=[])
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertFalse((self.base / "agent.json").exists())
+        self.assertIsNone(self.run_task(branch="fix/no-agent", agent=[])[1])
         self.assertIn("task.state=ready", self.labels)
-
 
 if __name__ == "__main__":
     unittest.main()

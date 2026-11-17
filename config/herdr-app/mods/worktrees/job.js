@@ -17,6 +17,13 @@ export class Job {
     const started = json(await hc(["run", ...(on ? ["--on", on] : []), "--bg", "--json", "--no-notify", "--name", `worktrees-${Date.now()}`, "--cwd", cwd, "--", ...argv]));
     if (!started?.address) throw new Error(`Cannot start ${argv.slice(0, 3).join(" ")} in herdr-core.`);
     const t = on && !started.address.startsWith(`${on}/`) ? `${on}/${started.address}` : started.address;
+    const code = await Job.watch(t, onLines);
+    await hc(["rm", t]);
+    return code;
+  }
+
+  // Follows a terminal that is already running (a background task) until it ends.
+  static async watch(t, onLines) {
     let state = null;
     for (;;) {
       await hc(["wait", t, "--timeout", "1", "--json"]);
@@ -25,7 +32,6 @@ export class Job {
       onLines(screen.replace(/\s+$/, "").split("\n"));
       if (!state || state.state === "finished") break;
     }
-    await hc(["rm", t]);
     return state?.exit_code ?? 1;
   }
 }
