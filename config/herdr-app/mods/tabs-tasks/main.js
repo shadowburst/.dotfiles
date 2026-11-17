@@ -26,14 +26,12 @@ export default class Tabs extends View {
     cx.spawn(async (cx) => {
       try {
         const isActive = (task) => task.state !== "finished" && !["ready", "failed"].includes(task.labels?.["task.state"]);
-        const previous = this.activeTasks || new Set();
         const records = { ...(shared("tasks.records") || {}) };
         const live = terminals().filter((task) => task.labels?.["task.kind"]);
         for (const task of live) records[task.address] = { ...records[task.address],
           address: task.address, name: task.name, created_ms: task.created_ms ?? records[task.address]?.created_ms ?? Date.now(),
           state: task.state, exit_code: task.exit_code, labels: task.labels,
         };
-        const closeWhenDone = this.activeTasks === undefined || previous.size > 0 || Object.values(records).some(isActive);
         for (const task of Object.values(records)) {
           if (task.state === "finished" || live.some((t) => t.address === task.address)) continue;
           try {
@@ -47,15 +45,7 @@ export default class Tabs extends View {
         }
         const next = { ...(shared("tasks.records") || {}), ...records };
         if (JSON.stringify(next) !== JSON.stringify(shared("tasks.records") || {})) setShared("tasks.records", next);
-        const active = Object.values(next).filter(isActive);
-        this.activeTasks = new Set(active.map((task) => task.address));
-        if (active.some((task) => !previous.has(task.address))) {
-          run("layout.select", { stack: "panel-body", child: "tasks" });
-          run("layout.show", { id: "panel" });
-        } else if (closeWhenDone && !active.length) {
-          const root = layout(), panel = find(root, "panel");
-          if (panel && !panel.hidden && find(root, "panel-body")?.active === "tasks") run("layout.hide", { id: "panel" });
-        }
+        // The Tasks panel never opens or closes by itself: the Tasks (n) counter shows progress.
         for (const task of Object.values(next)) {
           const labels = task.labels || {};
           if (!labels["task.kind"] || this.taskSeen[task.address] || (!["ready", "failed"].includes(labels["task.state"]) && task.state !== "finished")) continue;
