@@ -21,7 +21,8 @@ function element(kind) {
 }
 const text = node => typeof node === "string" ? node : (node?.children ?? []).map(text).join(" | ");
 const nodes = node => typeof node === "object" && node ? [node, ...node.children.flatMap(nodes)] : [];
-const context = vm.createContext({ console });
+const store = {};
+const context = vm.createContext({ console, localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); } } });
 const module = values => new vm.SyntheticModule(Object.keys(values), function () {
   for (const [key, value] of Object.entries(values)) this.setExport(key, value);
 }, { context });
@@ -59,7 +60,7 @@ assert.equal(activity(list.filter(a => ["idle", "working"].includes(a.status))).
 assert.equal(activity([agent("working", "First"), agent("working", "Second")]).agent.title, "First", "Keep equal-priority titles stable");
 
 const view = new Spaces();
-Object.assign(view, { pressed: null, over: null, git: {}, unsure: new Set(), prs: { badge: () => element("pr").child("#42") }, shown: new Set(), born: {}, machines: [], reconnecting: {}, folded: new Set() });
+Object.assign(view, { pressed: null, over: null, git: {}, unsure: new Set(), prs: { badge: () => element("pr").child("#42") }, shown: new Set(), born: {}, machines: [], reconnecting: {}, folded: new Set(), foldedRepos: new Set() });
 const root = { id: "root", name: "Project", folder: "/repo", tabs: [], active: true };
 const child = { id: "child", name: "feature/a-very-long-branch-name", folder: "/worktrees/feature", tabs: [], active: false };
 const row = (w, g, tree = null) => ({ w, i: w === root ? 0 : 1, g, tree, key: JSON.stringify([null, w.folder]) });
@@ -83,20 +84,27 @@ assert(nodes(rendered).some(n => n.attrs.tooltip === mixed.label), "Full counts 
 assert.equal(rendered.attrs.py, 8);
 assert(!("h" in rendered.attrs), "Let extra lines set the row height");
 assert.equal(nodes(rendered).filter(n => n.kind === "mods/workspace-chrome/branch.svg").length, 1, "Keep one branch icon on the main checkout's Git line");
-const cx = { notify() {} };
+const cx = { notify() {}, stop_propagation() {} };
 rendered.handlers["on_mouse_down:left"]();
 rendered.handlers["on_mouse_up:left"]({}, cx);
 assert.equal(calls.at(-1).command, "space.select");
 assert.equal(calls.at(-1).args.id, root.id);
 view.pressed = root.id;
 view.over = child.id;
-rendered = view.row(row(child, { ...git, branch: child.name }, "└─"), t, activity([]));
+rendered = view.worktree(row(child, { ...git, branch: "feat/b", linked: true }, "└─"), t, activity([]), true);
 rendered.handlers["on_mouse_up:left"]({}, cx);
 assert.equal(calls.at(-1).command, "space.move");
 assert.equal(calls.at(-1).args.index, 2);
 assert(!text(rendered).includes("Untitled agent"), "No task line without an agent");
-assert.equal(nodes(rendered).filter(n => n.kind === "mods/workspace-chrome/branch.svg").length, 1, "Worktrees need only the Git details branch icon");
-assert.equal(rendered.children.find(n => n.attrs.h === 20).attrs.pl, 44, "Keep worktree titles aligned with their detail lines");
+assert(text(rendered).includes("No agents"));
+assert(text(rendered).includes("feat/b"), "A worktree is titled by its branch");
+assert(!text(rendered).includes(child.name), "Not by its folder too");
+assert(nodes(rendered).some(n => String(n.attrs.tooltip).includes(child.name)), "Its folder shows on hover");
+assert(text(rendered).includes("#42") && text(rendered).includes("↑2") && text(rendered).includes("↓1"), "PR and ahead/behind stay on the title line");
+assert.equal(nodes(rendered).filter(n => n.kind === "mods/workspace-chrome/branch.svg").length, 0, "No branch line on a worktree");
+assert.equal(rendered.children.filter(n => n.kind === "row").length, 2, "A worktree takes two lines");
+rendered = view.worktree(row(child, { ...git, branch: "feat/b", linked: true }, "└─"), t, activity([agent("working", "Write tests", "child")]), true);
+assert(text(rendered).includes("Write tests") && text(rendered).includes("Working"), "The task and its status share the second line");
 
 const missing = row(root, null);
 assert(text(view.row(missing, t, activity([]))).includes("Checking Git…"));
@@ -122,6 +130,30 @@ const updated = view.grouped(t, false);
 assert.equal(updated[0].attrs.id, "space-root");
 assert(text(updated[1]).includes("Finished task"));
 assert.equal(calls.length, 0, "Status changes must not move spaces");
+
+// Folding a repo's worktrees: the toggle under its avatar, a rail to each worktree.
+const toggleOf = r => nodes(r).find(n => n.attrs.id === "fold-root");
+assert(toggleOf(updated[0]), "A repo with worktrees has a fold toggle");
+assert(nodes(toggleOf(updated[0])).some(n => n.kind === "mods/workspace-chrome/chevron-down.svg"), "Open: a down arrow");
+toggleOf(updated[0]).handlers["on_mouse_down:left"]({}, cx);
+toggleOf(updated[0]).handlers["on_click:"]({}, cx);
+assert(view.foldedRepos.has("repo"));
+assert.equal(calls.length, 0, "Folding selects nothing");
+let folded = view.grouped(t, false);
+assert.deepEqual(Array.from(folded, r => r.attrs.id), ["space-root"], "Folded: the worktrees are hidden");
+assert(nodes(toggleOf(folded[0])).some(n => n.kind === "mods/workspace-chrome/circle-check.svg"), "Folded: a finished agent shows as a check");
+allAgents = [agent("working", "Busy", "child")];
+assert(nodes(toggleOf(view.grouped(t, false)[0])).some(n => n.kind === "mods/workspace-chrome/spinner.svg"), "Folded: a working agent shows as a spinner");
+allAgents = [agent("blocked", "Ask", "child")];
+assert(nodes(toggleOf(view.grouped(t, false)[0])).some(n => n.kind === "mods/spaces-pr/circle-alert.svg"), "Folded: a blocked agent shows as an alert");
+allAgents = [];
+assert(nodes(toggleOf(view.grouped(t, false)[0])).some(n => n.kind === "mods/workspace-chrome/layers.svg"), "Folded and quiet: a stack");
+child.active = true;
+assert.deepEqual(Array.from(view.grouped(t, false), r => r.attrs.id), ["space-root", "space-child"], "Folded: the active worktree stays");
+child.active = false;
+toggleOf(view.grouped(t, false)[0]).handlers["on_click:"]({}, cx);
+assert.deepEqual(Array.from(view.grouped(t, false), r => r.attrs.id), ["space-root", "space-child"], "Unfold shows them again");
+assert(!toggleOf(view.row(row(root, git), t, mixed)), "No toggle without worktrees");
 const layout = JSON.parse(await readFile(new URL("../layouts/inbox.json", import.meta.url), "utf8"));
 assert.equal(layout.children.find(n => n.id === "sidebar").size.px, 340);
 const prModule = new vm.SourceTextModule(await readFile(new URL("../mods/spaces-pr/pr.js", import.meta.url), "utf8"), { context });
@@ -138,4 +170,4 @@ for (const state of ["OPEN", "MERGED", "CLOSED"]) {
     assert(nodes(badge).some(n => n.kind === "mods/workspace-chrome/check.svg"), "Keep review status marks");
   }
 }
-console.log("Spaces: status, tasks, one branch icon per row, plain PR numbers, Git details, grouping, compact mode, selection and drag passed.");
+console.log("Spaces: status, tasks, one branch icon per row, worktree folding, plain PR numbers, Git details, grouping, compact mode, selection and drag passed.");

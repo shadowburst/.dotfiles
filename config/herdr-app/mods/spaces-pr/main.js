@@ -2,6 +2,7 @@
 // (pr.js), as in the Herdr TUI, and shared marks for workspace pickers.
 //
 // Workspace spaces: stable colored avatars, worktrees under their checkout,
+// joined to it by a rail and folded away from a toggle under its avatar,
 // grouped by machine when more than one is known. Separate lines show the space's
 // state, Git details and agent session title. Click to switch, right-click for
 // its menu, drag to reorder.
@@ -54,6 +55,18 @@ export function tone(t, status) {
   return t[status] ?? t.unknown;
 }
 
+// The rail from a repo's avatar to its worktrees, and the fold toggle on it.
+const RAIL_X = 16; // the avatar's center: 8 px row padding + 9, minus half a px
+const TOGGLE_TOP = 31; // centered on the repo's branch line
+const TOGGLE = 18; // as wide as the avatar
+const WORKTREE_X = 52; // where a worktree's title starts
+// What a folded repo's toggle shows when one of its hidden worktrees needs a look.
+const FOLDED = {
+  working: "mods/workspace-chrome/spinner.svg",
+  blocked: "mods/spaces-pr/circle-alert.svg",
+  done: "mods/workspace-chrome/circle-check.svg",
+};
+
 const STATES = { blocked: "Needs input", done: "Finished", working: "Working", idle: "Idle", unknown: "Unknown" };
 
 export function activity(list) {
@@ -92,6 +105,7 @@ export default class Spaces extends View {
     this.reconnecting = JSON.parse(localStorage.getItem("machines.reconnecting") ?? "{}");
     for (const state of Object.values(this.reconnecting)) state.busy = false;
     this.folded = new Set(JSON.parse(localStorage.getItem("machines.folded") ?? "[]"));
+    this.foldedRepos = new Set(JSON.parse(localStorage.getItem("repos.folded") ?? "[]")); // repos whose worktrees are hidden
     this.refreshMachines(cx);
     cx.timer.every(15000, cx => this.refreshMachines(cx));
     // `git status` walks the whole tree, on another machine a process there:
@@ -334,7 +348,7 @@ export default class Spaces extends View {
       if (!bySpace.has(a.space)) bySpace.set(a.space, []);
       bySpace.get(a.space).push(a);
     }
-    const draw = (r) => (collapsed ? this.compact(r, t) : this.row(r, t, activity(bySpace.get(r.w.id) ?? [])));
+    const draw = (list) => (collapsed ? list.map((r) => this.compact(r, t)) : this.tree(list, t, bySpace));
     const remote = [...new Set([...rows.map(r => r.w.machine).filter(Boolean), ...this.machines.map(m => m.name), ...Object.keys(this.reconnecting)])].sort();
     const loading = m => {
       const layout = machines().find(k => k.name === m)?.layout;
@@ -342,7 +356,7 @@ export default class Spaces extends View {
         || spaces().some(s => (s.machine ?? null) === m && !this.shown.has(s.id));
     };
     const loadingRow = m => div().id(`machine-loading-${m ?? "local"}`).h(28).flex_none().px(8).text_size(12).text_color(t.dim).child(collapsed ? "…" : "Loading…");
-    if (!remote.length) return loading(null) && !rows.length ? [loadingRow(null)] : rows.map(draw);
+    if (!remote.length) return loading(null) && !rows.length ? [loadingRow(null)] : draw(rows);
     const machineNames = [null, ...remote];
     return machineNames.flatMap((m) => {
       const mine = rows.filter((r) => (r.w.machine ?? null) === m);
@@ -377,50 +391,68 @@ export default class Spaces extends View {
         .on_click(() => run("space.new", { machine: m ?? "" }))
         .child(svg("mods/workspace-chrome/plus.svg").size(12)).when(!collapsed, el => el.child("New space there"));
       if (!collapsed && rebuilt) return [head];
-      return [head, ...(folded ? [] : mine.length ? mine.map(draw) : [loading(m) ? loadingRow(m) : empty])];
+      return [head, ...(folded ? [] : mine.length ? draw(mine) : [loading(m) ? loadingRow(m) : empty])];
     });
   }
 
-  // Always show the branch, even when the space name already contains it.
-  gitTail(g, tree, name, t, pr) {
-    const same = (a) => a.toLowerCase() === name.toLowerCase();
-    const branch = g.branch === "(detached)" ? "Detached HEAD" : g.branch ?? "Branch unknown";
-    const repo = tree || same(g.name) ? "" : g.name;
-    const where = [repo, branch].filter(Boolean).join(" \u00b7 ");
-    return h_flex()
-      .min_w(0)
-      .gap(5)
-      .items_center()
-      .text_size(11.5)
-      .text_color(t.muted)
-      .child(svg("mods/workspace-chrome/branch.svg").size(12).flex_none())
-      .child(div().flex_1().min_w(0).overflow_hidden().whitespace_nowrap().text_ellipsis_middle().tooltip(where).child(where))
-      .when(Boolean(pr), (el) => el.child(pr))
-      .when(g.ahead > 0, (el) => el.child(div().flex_none().text_color(t.ansi2).child(`\u2191${g.ahead}`)))
-      .when(g.behind > 0, (el) => el.child(div().flex_none().text_color(t.ansi1).child(`\u2193${g.behind}`)));
+  // Each repo with its worktrees under it. A folded repo hides them, all but the
+  // active one, and its toggle tells what the hidden ones are doing.
+  tree(rows, t, bySpace) {
+    const state = (list) => activity(list.flatMap((r) => bySpace.get(r.w.id) ?? []));
+    const out = [];
+    for (let n = 0; n < rows.length;) {
+      const r = rows[n++];
+      if (r.tree) { out.push(this.worktree(r, t, state([r]), true)); continue; } // its repo is elsewhere
+      const kids = [];
+      while (rows[n]?.tree) kids.push(rows[n++]);
+      if (!kids.length) { out.push(this.row(r, t, state([r]))); continue; }
+      const folded = this.foldedRepos.has(r.g.repo);
+      const shown = folded ? kids.filter((k) => k.w.active) : kids;
+      const hidden = kids.filter((k) => !shown.includes(k));
+      out.push(this.row(r, t, state([r]), { toggle: this.foldToggle(r, folded, hidden.length, state(hidden), t), rail: shown.length > 0 }));
+      shown.forEach((k, i) => out.push(this.worktree(k, t, state([k]), i === shown.length - 1)));
+    }
+    return out;
   }
 
-  row({ w, i, g, tree, key }, t, state) {
-    const on = w.active;
-    const fromIndex = this.pressed === null ? -1 : spaces().findIndex(s => s.id === this.pressed);
-    const mark = spaceMark(w, tree, t);
-    const task = state.agent?.title?.trim() || state.agent?.program?.name || "Untitled agent";
-    const program = state.agent?.program;
-    const pic = program?.icon && (program.tint ? svg(program.icon).text_color(t.muted) : image(program.icon)).size(12).flex_none();
-    const indent = tree ? 44 : 27;
-    const git = g ?? (w.branch ? { name: w.name, branch: w.branch, ahead: 0, behind: 0 } : null);
-    return v_flex()
-      .relative()
-      .id(`space-${w.id}`)
-      .px(8)
-      .py(8)
-      .gap(4)
-      .flex_none()
+  // Under the repo's avatar. Open: a down arrow. Folded: what the hidden worktrees
+  // do, the most urgent first (a spinner, an alert, a check), else a stack.
+  foldToggle(r, folded, count, hidden, t) {
+    const repo = r.g.repo;
+    const loud = folded && FOLDED[hidden.status];
+    const what = `${count} worktree${count === 1 ? "" : "s"}`;
+    const icon = !folded ? "mods/workspace-chrome/chevron-down.svg" : loud ?? "mods/workspace-chrome/layers.svg";
+    return h_flex()
+      .id(`fold-${r.w.id}`)
+      .absolute()
+      .left(8)
+      .top(TOGGLE_TOP)
+      .size(TOGGLE)
+      .items_center()
       .justify_center()
-      .rounded(8)
-      .accessibility_label([w.name, state.label, git?.branch, state.agent && task].filter(Boolean).join(", "))
-      .when(on, (el) => el.bg(t.selected))
-      .when(!on, (el) => el.hover((s) => s.bg(t.hover)))
+      .rounded(5)
+      .bg(t.raised)
+      .text_color(loud ? tone(t, hidden.status) : t.dim)
+      .hover((s) => s.bg(t.hover).text_color(t.foreground))
+      .cursor_pointer()
+      .tooltip(folded ? `Show ${what} · ${hidden.label}` : `Hide ${what}`)
+      .accessibility_label(folded ? `Show ${what}` : `Hide ${what}`)
+      // A press here must neither select the repo nor start dragging it.
+      .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+      .on_click((_e, cx) => {
+        cx.stop_propagation();
+        folded ? this.foldedRepos.delete(repo) : this.foldedRepos.add(repo);
+        localStorage.setItem("repos.folded", JSON.stringify([...this.foldedRepos]));
+        cx.notify();
+      })
+      .child(svg(icon).size(12).when(hidden.status === "working" && folded, (el) => el.spin(900)));
+  }
+
+  // Click to switch, drag onto another space of this machine to move it there,
+  // right-click for its menu.
+  pressable(el, w, i, t) {
+    const fromIndex = this.pressed === null ? -1 : spaces().findIndex(s => s.id === this.pressed);
+    return el
       .when(this.pressed === w.id && this.over !== w.id, (el) => el.opacity(0.5))
       .when(this.pressed !== null && this.over === w.id && this.pressed !== w.id, (el) => el.child(
         div().absolute().left(0).right(0).h(2).bg(t.accent)
@@ -450,26 +482,114 @@ export default class Spaces extends View {
         } else if (from === w.id) run("space.select", { id: w.id });
         cx.notify();
       })
-      .on_mouse_down("right", () => this.menu(w))
+      .on_mouse_down("right", () => this.menu(w));
+  }
+
+  // A worktree on two lines, joined to its repo's rail: its branch (the folder on
+  // hover) with its PR and ahead/behind, then its agent's task and status.
+  worktree({ w, i, g, key }, t, state, last) {
+    const branch = g?.branch === "(detached)" ? "Detached HEAD" : g?.branch ?? w.branch ?? w.name;
+    const pr = g ? this.prs.badge(key, t) : null;
+    const task = state.agent?.title?.trim() || state.agent?.program?.name || "Untitled agent";
+    const program = state.agent?.program;
+    const pic = program?.icon && (program.tint ? svg(program.icon).text_color(t.muted) : image(program.icon)).size(12).flex_none();
+    const y = 17; // the title line's center
+    const c = t.input;
+    const rail = last
+      ? [div().absolute().left(RAIL_X).top(0).w(WORKTREE_X - 6 - RAIL_X).h(y + 1).border_l(1).border_b(1).border_color(c).rounded_bl(7)]
+      : [div().absolute().left(RAIL_X).top(0).bottom(0).w(1).bg(c), div().absolute().left(RAIL_X).top(y).w(WORKTREE_X - 6 - RAIL_X).h(1).bg(c)];
+    return this.pressable(v_flex()
+      .relative()
+      .id(`space-${w.id}`)
+      .pl(WORKTREE_X)
+      .pr(8)
+      .py(7)
+      .gap(3)
+      .flex_none()
+      .rounded(8)
+      .accessibility_label([branch, w.name, state.label, state.agent && task].filter(Boolean).join(", "))
+      .when(w.active, (el) => el.bg(t.selected))
+      .when(!w.active, (el) => el.hover((s) => s.bg(t.hover)))
+      .child(rail[0])
+      .when(rail.length > 1, (el) => el.child(rail[1]))
+      .child(h_flex().h(20).min_w(0).gap(6).items_center()
+        .child(div().flex_1().min_w(0).truncate().font_medium().text_color(t.foreground)
+          .tooltip(branch === w.name ? branch : `${branch}\nFolder: ${w.name}`).child(branch))
+        .when(Boolean(pr), (el) => el.child(div().flex_none().text_size(11).child(pr)))
+        .when(g?.ahead > 0, (el) => el.child(div().flex_none().text_size(11).text_color(t.ansi2).child(`\u2191${g.ahead}`)))
+        .when(g?.behind > 0, (el) => el.child(div().flex_none().text_size(11).text_color(t.ansi1).child(`\u2193${g.behind}`))))
+      .child(h_flex().h(18).min_w(0).gap(5).items_center().text_size(12).text_color(t.muted)
+        .when(Boolean(state.agent), (el) => el
+          .when(Boolean(pic), (line) => line.child(pic))
+          .child(div().flex_1().min_w(0).truncate().tooltip(task).child(task))
+          .child(h_flex().flex_none().max_w(110).gap(4).items_center().text_size(11).text_color(tone(t, state.status))
+            .when(state.status === "working", (line) => line.child(svg("mods/workspace-chrome/spinner.svg").size(11).flex_none().spin(900)))
+            .child(div().min_w(0).truncate().tooltip(state.label).child(state.label))))
+        .when(!state.agent, (el) => el.child(div().flex_1().text_size(11.5).text_color(t.dim).child("No agents")))), w, i, t);
+  }
+
+  // Always show the branch, even when the space name already contains it.
+  gitTail(g, tree, name, t, pr) {
+    const same = (a) => a.toLowerCase() === name.toLowerCase();
+    const branch = g.branch === "(detached)" ? "Detached HEAD" : g.branch ?? "Branch unknown";
+    const repo = tree || same(g.name) ? "" : g.name;
+    const where = [repo, branch].filter(Boolean).join(" \u00b7 ");
+    return h_flex()
+      .min_w(0)
+      .gap(5)
+      .items_center()
+      .text_size(11.5)
+      .text_color(t.muted)
+      .child(svg("mods/workspace-chrome/branch.svg").size(12).flex_none())
+      .child(div().flex_1().min_w(0).overflow_hidden().whitespace_nowrap().text_ellipsis_middle().tooltip(where).child(where))
+      .when(Boolean(pr), (el) => el.child(pr))
+      .when(g.ahead > 0, (el) => el.child(div().flex_none().text_color(t.ansi2).child(`\u2191${g.ahead}`)))
+      .when(g.behind > 0, (el) => el.child(div().flex_none().text_color(t.ansi1).child(`\u2193${g.behind}`)));
+  }
+
+  // A space, or a repo's main checkout: name and status, its Git line, its
+  // agent's task. A repo with worktrees gets the fold toggle under its avatar
+  // (`o.toggle`) and, while some show, the rail down to them (`o.rail`).
+  row({ w, i, g, key }, t, state, o = {}) {
+    const mark = spaceMark(w, null, t);
+    const task = state.agent?.title?.trim() || state.agent?.program?.name || "Untitled agent";
+    const program = state.agent?.program;
+    const pic = program?.icon && (program.tint ? svg(program.icon).text_color(t.muted) : image(program.icon)).size(12).flex_none();
+    const indent = 27;
+    const git = g ?? (w.branch ? { name: w.name, branch: w.branch, ahead: 0, behind: 0 } : null);
+    return this.pressable(v_flex()
+      .relative()
+      .id(`space-${w.id}`)
+      .px(8)
+      .py(8)
+      .gap(4)
+      .flex_none()
+      .justify_center()
+      .rounded(8)
+      .accessibility_label([w.name, state.label, git?.branch, state.agent && task].filter(Boolean).join(", "))
+      .when(w.active, (el) => el.bg(t.selected))
+      .when(!w.active, (el) => el.hover((s) => s.bg(t.hover)))
+      .when(Boolean(o.rail), (el) => el.child(div().absolute().left(RAIL_X).top(TOGGLE_TOP + TOGGLE + 2).bottom(0).w(1).bg(t.input)))
       .child(
         h_flex()
           .h(20)
           .gap(9)
           .items_center()
-          .when(Boolean(tree), el => el.pl(indent))
-          .when(!tree, el => el.child(h_flex().size(18).flex_none().rounded(5).bg(mark.color).items_center().justify_center().text_size(10.5).font_bold().text_color("#ffffff").child(mark.text)))
+          .child(h_flex().size(18).flex_none().rounded(5).bg(mark.color).items_center().justify_center().text_size(10.5).font_bold().text_color("#ffffff").child(mark.text))
           .child(div().flex_1().min_w(0).truncate().font_medium().tooltip(w.name).text_color(t.foreground).child(w.name))
           .child(h_flex().max_w(170).min_w(0).gap(4).items_center().text_size(11).text_color(state.status ? tone(t, state.status) : t.dim)
             .when(state.status === "working", el => el.child(svg("mods/workspace-chrome/spinner.svg").size(12).flex_none().spin(900)))
             .child(div().min_w(0).truncate().tooltip(state.label).child(state.label))),
       )
       .child(v_flex().pl(indent).min_w(0)
-        .child(git ? this.gitTail(git, tree, w.name, t, g ? this.prs.badge(key, t) : null)
+        .child(git ? this.gitTail(git, null, w.name, t, g ? this.prs.badge(key, t) : null)
           : div().text_size(11.5).text_color(t.dim).child(this.unsure.has(key) ? "Git unavailable" : key in this.git ? "No Git repository" : "Checking Git…")))
       .when(Boolean(state.agent), el => el.child(h_flex().pl(indent).h(18).min_w(0).gap(5).items_center().text_size(12).text_color(t.muted)
         .when(Boolean(pic), line => line.child(pic))
-        .child(div().flex_1().min_w(0).truncate().tooltip(task).child(task))));
+        .child(div().flex_1().min_w(0).truncate().tooltip(task).child(task))))
+      .when(Boolean(o.toggle), (el) => el.child(o.toggle)), w, i, t);
   }
+
 
   compact({ w, i }, t) {
     return h_flex()
