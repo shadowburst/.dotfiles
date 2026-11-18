@@ -90,11 +90,18 @@ export default class Tasks extends View {
     const t = theme();
     const tasks = taskEntries().filter((task) => !this.hidden.includes(task.address));
     const button = (id, text, click) => Button.new(id).px(8).py(4).rounded(5).bg(t.raised).text_size(11).text_color(t.foreground).cursor_pointer().on_click((_e, cx) => click(cx)).child(text);
+    const dismiss = (addresses, cx) => {
+      this.hidden.push(...addresses); localStorage.setItem("hidden", JSON.stringify(this.hidden)); cx.notify();
+    };
+    const done = tasks.filter((task) => !task.active).map((task) => task.address);
     return v_flex().id("tasks").size_full().min_h(0).rounded(10).overflow_hidden().bg(t.background).border_1().border_color(t.border).text_color(t.foreground).text_size(13)
       .child(h_flex().h(42).flex_none().px(14).gap(8).items_center().border_b(1).border_color(t.border)
-        .child(svg("mods/workspace-chrome/layers.svg").size(14)).child(div().font_semibold().child("Tasks")))
+        .child(svg("mods/workspace-chrome/layers.svg").size(14)).child(div().flex_1().font_semibold().child("Tasks"))
+        .when(done.length > 0, (el) => el.child(button("dismiss-all", "Dismiss all", (cx) => dismiss(done, cx)))))
       .child(v_flex().id("task-list").flex_1().min_h(0).p(10).gap(10).overflow_y_scrollbar()
-        .when(!tasks.length, (el) => el.child(div().p(12).text_size(12).text_color(t.muted).child("No background tasks.")))
+        .when(!tasks.length, (el) => el.child(v_flex().flex_1().items_center().justify_center().gap(10).text_color(t.muted)
+          .child(svg("mods/tasks/inbox-empty.svg").size(40).text_color(t.dim))
+          .child(div().text_size(12).child("No background tasks."))))
         .children(tasks.map((task) => {
           let status = task.branch || (task.labels["task.kind"] === "worktree" ? "Ready" : "Done");
           if (task.active) status = task.labels["task.kind"] !== "worktree" ? "Running…" : task.branch ? `Setting up ${task.branch}…` : "Naming the branch…";
@@ -112,9 +119,7 @@ export default class Tasks extends View {
               if (this.selected) this.readLog(this.selected, cx);
               cx.notify();
             }))
-            .when(!task.active, (el) => el.child(button(`dismiss-${task.address}`, "Dismiss", (cx) => {
-              this.hidden.push(task.address); localStorage.setItem("hidden", JSON.stringify(this.hidden)); cx.notify();
-            }))))
+            .when(!task.active, (el) => el.child(button(`dismiss-${task.address}`, "Dismiss", (cx) => dismiss([task.address], cx)))))
           .when(this.selected === task.address, (el) => el.child(div().id(`task-output-${task.address}`).max_h(300).overflow_y_scrollbar().p(8).rounded(5).bg(t.background).text_size(10.5).font_family("JetBrains Mono").child(this.logs[task.address] || "Loading output…")));
         })));
   }
