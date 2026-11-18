@@ -1,6 +1,6 @@
-// Worktrees: the Herdr TUI worktree plugin as a native popup. The list of
+// Worktrees: a native popup for worktrees and branches. The list of
 // worktrees and branches is the home view; n, m and x open the New, Merge and
-// Remove views for the selected row. Every view has its buttons at the bottom.
+// Remove views for the selected row (on a remote row, x deletes that remote branch). Every view has its buttons at the bottom.
 // / filters both panes, H and L change the preview, p pulls the selected branch,
 // Diff and Changes list the files, closed: a click, or Enter and Space with j and k in
 // the focused preview, opens a file's CodeDiff side-by-side diff (codediff.lua). The
@@ -11,7 +11,7 @@
 //
 // New queues setup and naming in herdr-core; Tasks opens the ready agent on request.
 // Remove is a background task too: the popup closes, and the task's Open button
-// shows the Remove view again (props.task) until wt ends.
+// shows the Remove view again (props.task) until wt (or git push --delete) ends.
 // Merge runs `wt` in a hidden herdr-core terminal; its output shows here.
 //
 // In the New form, Tab and Shift+Tab go to the next or previous control.
@@ -79,7 +79,8 @@ function refusal(r, view) {
     return "";
   }
   if (r.main) return "This is the main checkout.";
-  if (r.remote) return `This branch is only on ${r.remote}.`;
+  // Remove on a remote row deletes that branch on the remote, and nothing else.
+  if (r.remote) return view === "remove" ? "" : `This branch is only on ${r.remote}.`;
   if (view === "merge" && !r.path) return "This branch has no worktree.";
   if (!r.branch) return "This worktree has no branch.";
   if (r.busy) return "An agent is working here.";
@@ -1016,7 +1017,7 @@ export default class Worktrees extends View {
       Object.assign(this, { running: false, following: false });
       if (code !== 0) {
         this.failed = true;
-        return this.fail(`wt failed with exit code ${code}.`, cx);
+        return this.fail(`${row.remote ? "git push" : "wt"} failed with exit code ${code}.`, cx);
       }
       this.back(cx);
       this.setMessage(`Removed ${rowName(row)}`, true);
@@ -1489,7 +1490,7 @@ export default class Worktrees extends View {
     ];
     return this.view === "merge"
       ? [ui.button("back", "Cancel", "Esc", (cx) => this.back(cx)), ui.button("merge", "Merge", "↵", (cx) => this.confirm(cx), "primary")]
-      : [ui.button("back", "Cancel", "n", (cx) => this.back(cx)), ui.button("remove", this.removeBranch ? "Remove with branch" : "Remove", "↵", (cx) => this.confirm(cx), "danger")];
+      : [ui.button("back", "Cancel", "n", (cx) => this.back(cx)), ui.button("remove", this.sel.remote ? `Delete from ${this.sel.remote}` : this.removeBranch ? "Remove with branch" : "Remove", "↵", (cx) => this.confirm(cx), "danger")];
   }
 
   // The selected row as a card: name, folder, ahead/behind, changes and PR.
@@ -1525,8 +1526,10 @@ export default class Worktrees extends View {
     const why = refusal(r, this.view);
     const notes = [];
     if (why) notes.push([why, t.blocked]);
-    else if (this.view === "remove") {
-      notes.push([this.removeBranch ? "The worktree and the branch will be removed." : "The worktree will be removed. The branch stays.", t.muted]);
+    else if (this.view === "remove" && r.remote) {
+      notes.push([`The branch ${r.branch} will be deleted from ${r.remote}, for everyone. Local branches and worktrees stay.`, t.blocked]);
+    } else if (this.view === "remove") {
+      notes.push([this.removeBranch ? `The worktree and the local branch will be removed. The branch on the remote stays.` : "The worktree will be removed. The branch stays.", t.muted]);
       if (r.dirty) notes.push(["Uncommitted changes will be lost.", t.blocked]);
       if ((!r.path && !r.remote && !r.merged) || (this.removeBranch && !r.merged)) notes.push(["Unmerged commits will be lost.", t.blocked]);
     } else if (this.view === "push") {

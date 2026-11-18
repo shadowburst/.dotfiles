@@ -10,7 +10,7 @@ _: {
       programs.worktrunk = {
         enable = true;
         settings = {
-          # The herdr worktree plugin opens each worktree as a herdr Space.
+          # The Herdr app's worktrees mod opens each worktree as a Space.
           worktree-path = "~/.herdr/worktrees/{{ repo }}/{{ branch | sanitize }}";
           commit.generation.command = lib.getExe config.textGeneration.package;
         };

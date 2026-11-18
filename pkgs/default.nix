@@ -1,15 +1,11 @@
 _:
 let
   mkPonytail = import ./ponytail.nix;
-  mkHerdrReviewr = import ./herdr-reviewr.nix;
-  mkHerdrWorktree = import ./herdr-worktree;
   mkDbExport = import ./db-export.nix;
   mkBrowse = import ./browse.nix;
 
   mkPackages = { lib, pkgs }: rec {
     ponytail = mkPonytail { inherit pkgs; };
-    herdr-reviewr = mkHerdrReviewr { inherit pkgs; };
-    herdr-worktree = mkHerdrWorktree { inherit pkgs; };
     herdr-core-resume = import ./herdr-core-resume { inherit pkgs; };
     herdr-resume = import ./herdr-resume {
       inherit pkgs;

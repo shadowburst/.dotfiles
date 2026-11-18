@@ -1266,7 +1266,18 @@ try {
   await Promise.all(removeTasks.splice(0));
   watchCode = 0;
   assert(follower.failed && /exit code 3/.test(follower.message), "A failed removal stays on the Remove view with its error");
-  console.log("Worktree removal: background task, follow-up commands, failed start, and the followed Remove view passed.");
+
+  // A remote row deletes only the branch on its remote; a local removal never pushes.
+  assert(!run.includes("push"), "Removing a worktree and its local branch leaves the remote branch alone");
+  closed = 0;
+  Object.assign(removing, { view: "remove", failed: false, running: false, removeBranch: false, sel: { branch: "topic", remote: "origin", spaces: [] } });
+  removing.confirm(removeCx);
+  await Promise.all(removeTasks.splice(0));
+  assert.equal(closed, 1, "Removing a remote-only branch is allowed");
+  const remoteRun = hcCalls.at(-1);
+  assert.deepEqual(Array.from(remoteRun.slice(remoteRun.indexOf("--") + 1)), ["git", "-C", "/repo", "push", "origin", "--delete", "topic"]);
+  assert(remoteRun.includes("task.title=Delete remote branch · origin/topic"));
+  console.log("Worktree removal: background task, follow-up commands, failed start, the followed Remove view, and remote-only branch deletion passed.");
 }
 
 const taskData = new vm.SourceTextModule(await readFile(new URL("../mods/tasks/data.js", import.meta.url), "utf8"), { context });

@@ -6,11 +6,10 @@ require("sidekick").setup({
   nes = { enabled = false },
 })
 
--- Inside a Herdr desktop app terminal (herdr-core sets HC_TERMINAL_ID) agents
--- are hc terminals; inside the Herdr TUI they are panes. Outside Herdr, setup
--- leaves Sidekick's own terminal backend unchanged.
+-- Inside a Herdr app terminal (herdr-core sets HC_TERMINAL_ID) agents are hc
+-- terminals. Outside Herdr, setup leaves Sidekick's own terminal backend unchanged.
 local Cli = require("sidekick.cli")
-local Herdr = require(vim.env.HC_TERMINAL_ID and vim.env.HC_TERMINAL_ID ~= "" and "sidekick-hc" or "sidekick-herdr")
+local Herdr = require("sidekick-hc")
 
 Herdr.setup()
 

@@ -1,16 +1,39 @@
+local Cli = require("sidekick.cli")
 local Config = require("sidekick.config")
-local Herdr = require("sidekick-herdr")
 local Session = require("sidekick.cli.session")
 local Util = require("sidekick.util")
 
 local M = { BACKEND = "hc", CREATE = "window" }
+
+--- Run a command and decode its JSON response.
+---@param cmd string[]
+---@param opts? {notify?:boolean}
+---@return table?
+function M.json(cmd, opts)
+  opts = opts or {}
+  local lines = Util.exec(cmd, { notify = opts.notify == true })
+  if not lines then
+    return nil
+  end
+  if #lines == 0 then
+    return {}
+  end
+  local ok, ret = pcall(vim.json.decode, table.concat(lines, "\n"))
+  if not ok or type(ret) ~= "table" then
+    if opts.notify ~= false then
+      Util.error(("Failed to parse Herdr response: `%s`"):format(table.concat(cmd, " ")))
+    end
+    return nil
+  end
+  return ret
+end
 
 --- One terminal's full record, or nil when it is not live in `space`.
 ---@param address string
 ---@param space? string
 ---@return table?
 function M.terminal(address, space)
-  local record = Herdr.json({ "hc", "get", "--json", address }, { notify = false })
+  local record = M.json({ "hc", "get", "--json", address }, { notify = false })
   if
     record
     and record.address == address
@@ -50,7 +73,7 @@ end
 ---@param space string
 ---@return table[]
 function M.json_list(space)
-  local ret = Herdr.json({ "hc", "ls", "--json", "--label", "herdr.space=" .. space }, { notify = false })
+  local ret = M.json({ "hc", "ls", "--json", "--label", "herdr.space=" .. space }, { notify = false })
   return ret and ret.terminals or {}
 end
 
@@ -88,7 +111,7 @@ function Backend:start()
     vim.list_extend(cmd, { "env", unpack(env) })
   end
   vim.list_extend(cmd, self.tool.cmd)
-  local record = Herdr.json(cmd, { notify = true })
+  local record = M.json(cmd, { notify = true })
   if not (record and type(record.address) == "string") then
     return
   end
@@ -123,7 +146,7 @@ end
 ---@return boolean
 function Backend:focus()
   return self:terminal() ~= nil
-    and Herdr.json({ "herdr-app", "do", "agent.focus", "--terminal", self.hc_address }, { notify = true }) ~= nil
+    and M.json({ "herdr-app", "do", "agent.focus", "--terminal", self.hc_address }, { notify = true }) ~= nil
 end
 
 ---@type sidekick.cli.session.State[]
@@ -169,12 +192,88 @@ function M.setup()
   if vim.fn.executable("hc") ~= 1 or vim.fn.executable("herdr-app") ~= 1 then
     return false
   end
-  return Herdr.register(M, Backend)
+  -- extend, never replace: sidekick's own tmux/zellij stay valid
+  local validate = Config.validate
+  Config.validate = function(key, t)
+    if key == "cli.mux.backend" and type(t) == "table" then
+      t = vim.list_extend(vim.deepcopy(t), vim.tbl_keys(Session.backends))
+    end
+    return validate(key, t)
+  end
+
+  Session.register(M.BACKEND, Backend)
+  Config.cli.mux.enabled = true
+  Config.cli.mux.backend = M.BACKEND
+  Config.cli.mux.create = M.CREATE
+
+  vim.api.nvim_create_autocmd("User", {
+    group = vim.api.nvim_create_augroup("sidekick_hc", { clear = true }),
+    pattern = "SidekickCliAttach",
+    callback = function()
+      if M.armed then
+        M.armed = false
+        M.focus()
+      end
+    end,
+  })
+  return true
 end
 
-function M.attached() return Herdr.attached(M.BACKEND) end
-function M.focus() return Herdr.focus(M) end
-function M.focus_after_send() return Herdr.focus_after_send(M) end
-function M.prompt_cb() return Herdr.prompt_cb(M) end
+--- The attached hc session, if any. No side effects: `toggle` needs to know
+--- whether something is attached without attaching it.
+---@return sidekick.cli.Session?
+function M.attached()
+  local cwd = Session.cwd()
+  ---@type sidekick.cli.Session?
+  local fallback
+  for _, session in pairs(Session.attached()) do
+    if session.backend == M.BACKEND then
+      if session.cwd == cwd then
+        return session
+      end
+      fallback = fallback or session
+    end
+  end
+  return fallback
+end
+
+--- Bring the app to the attached agent. Silent when there is nothing to
+--- focus: this runs as the last step of a send keymap, not on its own.
+---@return boolean
+function M.focus()
+  local session = M.attached()
+  return session ~= nil and session:focus()
+end
+
+--- Take the user to the agent a send keymap just sent to.
+---
+--- When a session is already attached the send cannot block, so focus straight
+--- away. Otherwise sidekick first has to ask which agent to use, and it only
+--- emits `SidekickCliAttach` once that choice is made -- and not at all when the
+--- session was already attached, so riding that event alone would work exactly
+--- once.
+function M.focus_after_send()
+  local session = M.attached()
+  if session then
+    return session:focus()
+  end
+  M.armed = true
+  -- ponytail: dismissing the picker attaches nothing, so the arm has to expire
+  -- on its own rather than firing on some later, unrelated attach
+  vim.defer_fn(function() M.armed = false end, 2000)
+end
+
+--- Callback for `Cli.prompt`. It is invoked as `(msg, text)` where `text` is the
+--- rendered `sidekick.Text[]` that `Cli.send` wants; `msg` is only the preview
+--- string, and handing that over instead sends an empty prompt.
+---@return fun(msg?:string, text?:sidekick.Text[])
+function M.prompt_cb()
+  return function(_, text)
+    if text then
+      Cli.send({ text = text, filter = { cwd = true } })
+      M.focus_after_send()
+    end
+  end
+end
 
 return M
