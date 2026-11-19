@@ -344,8 +344,16 @@ export default class Spaces extends View {
     return out.filter(r => this.shown.has(r.w.id));
   }
 
-  // The rows, under a header per machine once one isn't this computer.
+  // The rows, under a header per machine once one isn't this computer. The ids
+  // they show, in order, go to "spaces-pr.visible": alt+tab cycles only those.
   grouped(t, collapsed) {
+    const visible = [];
+    const out = this.machineRows(t, collapsed, visible);
+    if (JSON.stringify(shared("spaces-pr.visible")) !== JSON.stringify(visible)) setShared("spaces-pr.visible", visible);
+    return out;
+  }
+
+  machineRows(t, collapsed, visible) {
     const rows = this.ordered();
     // Pickers use the same marks, without a second palette or worktree lookup.
     const marks = Object.fromEntries(rows.map(({ w, tree }) => [w.id, spaceMark(w, tree, t)]));
@@ -355,7 +363,7 @@ export default class Spaces extends View {
       if (!bySpace.has(a.space)) bySpace.set(a.space, []);
       bySpace.get(a.space).push(a);
     }
-    const draw = (list) => (collapsed ? list.map((r) => this.compact(r, t)) : this.tree(list, t, bySpace));
+    const draw = (list) => (collapsed ? list.map((r) => (visible.push(r.w.id), this.compact(r, t))) : this.tree(list, t, bySpace, visible));
     const remote = [...new Set([...rows.map(r => r.w.machine).filter(Boolean), ...this.machines.map(m => m.name), ...Object.keys(this.reconnecting)])].sort();
     const loading = m => {
       const layout = machines().find(k => k.name === m)?.layout;
@@ -405,11 +413,12 @@ export default class Spaces extends View {
   // Each repo with its worktrees under it. A repo shows all of them, only those
   // with agents, or none. The active one always shows, and the toggle tells
   // what the hidden ones are doing.
-  tree(rows, t, bySpace) {
+  tree(rows, t, bySpace, visible = []) {
     const state = (list) => activity(list.flatMap((r) => bySpace.get(r.w.id) ?? []));
     const out = [];
     for (let n = 0; n < rows.length;) {
       const r = rows[n++];
+      visible.push(r.w.id);
       if (r.tree) { out.push(this.worktree(r, t, state([r]), true)); continue; } // its repo is elsewhere
       const kids = [];
       while (rows[n]?.tree) kids.push(rows[n++]);
@@ -419,6 +428,7 @@ export default class Spaces extends View {
       const shown = kids.filter((k) => k.w.active || keep(k));
       const hidden = kids.filter((k) => !shown.includes(k));
       out.push(this.row(r, t, state([r]), { toggle: this.foldToggle(r, mode, hidden.length, state(hidden), t), rail: shown.length > 0 }));
+      visible.push(...shown.map((k) => k.w.id));
       shown.forEach((k, i) => out.push(this.worktree(k, t, state([k]), i === shown.length - 1)));
     }
     return out;

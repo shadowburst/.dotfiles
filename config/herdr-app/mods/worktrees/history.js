@@ -9,12 +9,12 @@ export async function history(repo, tips, skip = 0, count = PAGE, on) {
   if (!tips.length) return { commits: [], more: false };
   // Snapshot hashes, not moving ref names, keep pagination stable during commits.
   if (tips.some((sha) => !/^[a-f0-9]{40,64}$/.test(sha))) throw new Error("A branch has no valid commit ID.");
-  const r = await git(repo, ["log", "--topo-order", "--no-show-signature", "--no-decorate", "--format=%H%x00%P%x00%s%x00%an%x00%aI", `--skip=${skip}`, `--max-count=${count + 1}`, ...tips, "--"], on);
+  const r = await git(repo, ["log", "--topo-order", "--no-show-signature", "--no-decorate", "--format=%H%x00%P%x00%s%x00%an%x00%aI%x00%ae", `--skip=${skip}`, `--max-count=${count + 1}`, ...tips, "--"], on);
   if (!r.ok) throw new Error(r.err);
   const commits = r.out.trimEnd().split("\n").filter(Boolean).map((line) => {
-    const [sha, parents, subject, author, date] = line.split("\0");
-    if (!/^[a-f0-9]{40,64}$/.test(sha) || date === undefined) throw new Error("Cannot read Git history.");
-    return { sha, parents: parents ? parents.split(" ") : [], subject, author, date };
+    const [sha, parents, subject, author, date, email] = line.split("\0");
+    if (!/^[a-f0-9]{40,64}$/.test(sha) || email === undefined) throw new Error("Cannot read Git history.");
+    return { sha, parents: parents ? parents.split(" ") : [], subject, author, date, email: email.toLowerCase() };
   });
   return { commits: commits.slice(0, count), more: commits.length > count };
 }

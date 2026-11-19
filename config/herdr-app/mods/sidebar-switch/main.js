@@ -2,11 +2,12 @@
 // Key commands: "sidebar" switches the stack, "left" / "right" go to Spaces /
 // Inbox (no wrap), "next" / "prev" go to the next or previous space, or agent
 // while the Inbox shows (alt+tab; the props.keys copy), "changes" shows or hides the
-// Changes panel (one key, as the TUI's review pane).
+// Changes panel (one key, as the TUI's review pane). Spaces cycle among those
+// the spaces sidebar shows ("spaces-pr.visible"), not the ones it folds away.
 
 import { View, div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { agents, layout, nextCommand, props, run, theme } from "herdr";
+import { agents, layout, nextCommand, props, run, shared, spaces, theme } from "herdr";
 
 const STACK = "sidebar-lists";
 
@@ -21,6 +22,18 @@ function find(node, id) {
 
 const active = () => find(layout(), STACK)?.active ?? "lists";
 const narrow = () => (find(layout(), "sidebar")?.size?.px ?? Infinity) < 160;
+
+// The next or previous space the sidebar shows, with wrap. Without that list
+// (another sidebar), the app's own order.
+export function cycle(command) {
+  const all = new Set(spaces().map((s) => s.id));
+  const ids = (shared("spaces-pr.visible") ?? []).filter((id) => all.has(id));
+  if (!ids.length) return run(`space.${command}`, {});
+  const at = ids.indexOf(spaces().find((s) => s.active)?.id);
+  const step = command === "next" ? 1 : -1;
+  const to = at < 0 ? (step > 0 ? 0 : ids.length - 1) : (at + step + ids.length) % ids.length;
+  if (ids[to] !== ids[at]) run("space.select", { id: ids[to] });
+}
 
 function show(child) {
   run("layout.select", { stack: STACK, child });
@@ -44,7 +57,7 @@ export default class SidebarSwitch extends View {
         const command = await nextCommand();
         if (this.keys) {
           // The next space, or the next agent of the Inbox while it shows.
-          if (command === "next" || command === "prev") run(`${active() === "inbox" ? "agent" : "space"}.${command}`, {});
+          if (command === "next" || command === "prev") active() === "inbox" ? run(`agent.${command}`, {}) : cycle(command);
           continue;
         }
         if (command === "sidebar") show(active() === "inbox" ? "lists" : "inbox");

@@ -1,11 +1,25 @@
-import { div, svg, PathBuilder } from "gpui-kit";
+import { div, image, svg, PathBuilder } from "gpui-kit";
 import { h_flex, v_flex, Button, Scrollbar, VirtualListScrollHandle, v_virtual_list } from "gpui-base";
 import { settings } from "herdr";
 import { rowKey, rowName } from "./data.js";
 import { commitDetails, firstParents, HEIGHT, history, laneX, layout, PAGE } from "./history.js";
+import { Avatars } from "./avatars.js";
 
 const LABELS = 264;
+const AUTHOR = 150;
+const DATE = 116;
 const tones = (t) => [t.ansi4, t.ansi2, t.ansi5, t.ansi3, t.ansi6, t.ansi1];
+
+// "3 days ago"; the full date goes in the tooltip.
+function ago(iso) {
+  const s = Math.max(0, (Date.now() - Date.parse(iso)) / 1000);
+  const steps = [[60, "second"], [60, "minute"], [24, "hour"], [7, "day"], [4.35, "week"], [12, "month"], [Infinity, "year"]];
+  let n = s;
+  for (const [size, unit] of steps) {
+    if (n < size) { const k = Math.floor(n); return unit === "second" ? "just now" : `${k} ${unit}${k === 1 ? "" : "s"} ago`; }
+    n /= size;
+  }
+}
 
 // One graph per popup. It owns pagination, selection and read-only inspection.
 export class Graph {
@@ -22,9 +36,14 @@ export class Graph {
     this.version = 0;
     this.width = 40;
     this.enabled = true;
+    this.avatars = new Avatars();
     // The renderer records the visible range; start I/O outside native layout.
     cx.timer.every(300, (cx) => {
       if (this.enabled && !this.loading && !this.cancelled && !this.error && this.more && this.visibleEnd >= this.rows.length - 5) this.load(cx);
+      const shown = this.rows.slice(this.visibleStart ?? 0, this.visibleEnd ?? 0);
+      if (this.enabled && this.avatars.needs(this.repo, shown)) {
+        cx.spawn(async (cx) => { await this.avatars.resolve(this.repo, shown, this.machine, () => cx.notify()); });
+      }
     });
   }
 
@@ -224,14 +243,31 @@ export class Graph {
     return h_flex().h(HEIGHT).w_full().items_center()
       .bg(this.cursor === row.sha ? t.selected : selected ? t.hover : "#00000000")
       .role("list_box_option").aria_selected(this.cursor === row.sha)
-      .accessibility_label(`${row.subject}; ${this.refsAt(row.sha).map(rowName).join(", ")}; ${row.sha}`)
+      .accessibility_label(`${row.subject}; ${this.refsAt(row.sha).map(rowName).join(", ")}; ${row.author}; ${ago(row.date)}; ${row.sha}`)
       .child(lines).child(labels)
-      .child(div().flex_1().min_w(0).pr(12).truncate().text_size(12).text_color(related ? t.foreground : t.muted).child(row.subject));
+      .child(div().flex_1().min_w(0).pr(12).truncate().text_size(12).text_color(related ? t.foreground : t.muted).child(row.subject))
+      .child(this.authorCell(row, palette, t))
+      .child(div().flex_none().w(DATE).pr(12).truncate().text_right().text_size(11).text_color(t.muted).tooltip(row.date.replace("T", " ")).child(ago(row.date)));
+  }
+
+  // The commit author: the GitHub picture once loaded, the initial until then.
+  authorCell(row, palette, t) {
+    const pic = this.avatars.path(row.email);
+    const login = this.avatars.login(row.email);
+    const name = row.author || row.email || "?";
+    const tone = palette[[...(row.email || name)].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7) % palette.length];
+    const face = pic
+      ? image(pic).size(18).flex_none().rounded_full()
+      : div().size(18).flex_none().rounded_full().bg(tone).flex().items_center().justify_center()
+        .text_size(10).font_weight(700).text_color(t.background).child(name.trim().charAt(0).toUpperCase());
+    return h_flex().flex_none().w(AUTHOR).pr(8).gap(6).items_center().text_size(11).text_color(t.muted)
+      .tooltip(login ? `${name} (@${login}) <${row.email}>` : `${name} <${row.email}>`)
+      .child(face).child(div().flex_1().min_w(0).truncate().child(name));
   }
 
   render(t) {
     const rows = this.rows;
-    const totalWidth = Math.max(620, this.width + LABELS + 300);
+    const totalWidth = Math.max(620, this.width + LABELS + 240 + AUTHOR + DATE);
     const list = div().flex_1().min_h(0).relative().overflow_x_scrollbar()
       .child(v_flex().w_full().min_w(totalWidth).h_full().relative()
         .on_mouse_down("left", (e) => {

@@ -147,6 +147,7 @@ allAgents = [agent("idle", "Waiting", "child")];
 assert.deepEqual(ids(), ["space-root", "space-child"], "Agents only: an idle agent counts too");
 allAgents = [];
 assert.deepEqual(ids(), ["space-root"], "Agents only: a worktree without agents is hidden");
+assert.deepEqual(Array.from(shared["spaces-pr.visible"]), ["root"], "Hidden worktrees are not in the alt+tab cycle");
 child.active = true;
 assert.deepEqual(ids(), ["space-root", "space-child"], "Agents only: the active worktree stays");
 child.active = false;
@@ -168,10 +169,32 @@ child.active = false;
 click();
 assert(!("repo" in view.repoFold), "Back to expanded");
 assert.deepEqual(ids(), ["space-root", "space-child"], "Expanded shows them again");
+assert.deepEqual(Array.from(shared["spaces-pr.visible"]), ["root", "child"], "Shown worktrees are in the alt+tab cycle");
 view.repoFold = { repo: "bogus" };
 assert.deepEqual(ids(), ["space-root", "space-child"], "An unknown mode shows all");
 view.repoFold = {};
 assert(!toggleOf(view.row(row(root, git), t, mixed)), "No toggle without worktrees");
+// alt+tab: the next or previous visible space, with wrap.
+const switchHerdr = module({
+  agents: () => [], layout: () => ({}), nextCommand: () => new Promise(() => {}), props: () => ({}), theme: () => t,
+  run: (command, args) => calls.push({ command, args }), shared: key => shared[key], spaces: () => sp,
+});
+const switchMod = new vm.SourceTextModule(await readFile(new URL("../mods/sidebar-switch/main.js", import.meta.url), "utf8"), { context });
+await switchMod.link(name => ({ "gpui-kit": kit, "gpui-base": base, herdr: switchHerdr })[name]);
+await switchMod.evaluate();
+const { cycle } = switchMod.namespace;
+const third = { id: "third", name: "Other", folder: "/other", tabs: [], active: false };
+sp = [root, child, third];
+const cycled = (command, visible) => { shared["spaces-pr.visible"] = visible; calls = []; cycle(command); return calls[0] && JSON.parse(JSON.stringify(calls[0])); };
+assert.deepEqual(cycled("next", ["root", "third"]), { command: "space.select", args: { id: "third" } }, "Skip hidden spaces");
+assert.deepEqual(cycled("prev", ["root", "third"]), { command: "space.select", args: { id: "third" } }, "Wrap backward");
+root.active = false; third.active = true;
+assert.deepEqual(cycled("next", ["root", "third"]), { command: "space.select", args: { id: "root" } }, "Wrap forward");
+third.active = false; child.active = true;
+assert.deepEqual(cycled("next", ["root", "third"]), { command: "space.select", args: { id: "root" } }, "From a hidden space, the first visible");
+assert.deepEqual(cycled("next", ["gone"]), { command: "space.next", args: {} }, "No list: the app's order");
+assert.equal(cycled("next", ["child"]), undefined, "One visible space: stay");
+child.active = false; root.active = true;
 const layout = JSON.parse(await readFile(new URL("../layouts/inbox.json", import.meta.url), "utf8"));
 assert.equal(layout.children.find(n => n.id === "sidebar").size.px, 340);
 const prModule = new vm.SourceTextModule(await readFile(new URL("../mods/spaces-pr/pr.js", import.meta.url), "utf8"), { context });
@@ -188,4 +211,4 @@ for (const state of ["OPEN", "MERGED", "CLOSED"]) {
     assert(nodes(badge).some(n => n.kind === "mods/workspace-chrome/check.svg"), "Keep review status marks");
   }
 }
-console.log("Spaces: status, tasks, one branch icon per row, worktree folding, plain PR numbers, Git details, grouping, compact mode, selection and drag passed.");
+console.log("Spaces: status, tasks, one branch icon per row, worktree folding, visible-only alt+tab, plain PR numbers, Git details, grouping, compact mode, selection and drag passed.");
