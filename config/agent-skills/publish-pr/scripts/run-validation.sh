@@ -27,6 +27,28 @@ for script in "${scripts[@]}"; do
     name=$(printf '%s' "${script##*/}" | tr '\r\n|`<>' '______')
     printf '| `%s` | %s | %s |\n' "$name" "$result" "$duration"
 done
+# The full-suite row: the approved full run, or after it the focused rerun (see SKILL.md step 7).
+if jq -e '.scripts.test' composer.json >/dev/null 2>&1; then
+    full_suite=()
+    if [[ ${FULL_SUITE_APPROVED:-} == 1 ]]; then full_suite=(composer test)
+    elif [[ -n ${FULL_SUITE_FILES:-} ]]; then read -ra files <<<"$FULL_SUITE_FILES"; full_suite=(php artisan test --compact "${files[@]}")
+    fi
+    if ((${#full_suite[@]})); then
+        if ((failed)); then
+            result='⏭️'
+            duration='—'
+        else
+            printf '\nRunning %s\n' "${full_suite[*]}" >&2
+            check_started=$SECONDS
+            if "${full_suite[@]}" >&2; then result='✅'
+            else result='❌'; failed=1; fi
+            duration=$(format_duration "$((SECONDS - check_started))")
+            # Later heads rerun only the tests of the commits since this run.
+            [[ ${FULL_SUITE_APPROVED:-} != 1 ]] || git config "branch.${PR_HEAD_BRANCH:-$(git branch --show-current)}.full-suite-sha" "$sha"
+        fi
+        printf '| `full-suite` | %s | %s |\n' "$result" "$duration"
+    fi
+fi
 if [[ $(git rev-parse HEAD) != "$sha" ]] || ! git diff --quiet HEAD --; then
     printf '| Checkout changed during checks | ❌ | — |\n'
     failed=1

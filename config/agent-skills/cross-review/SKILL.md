@@ -16,7 +16,7 @@ Make the change more correct before it is published: one reviewer from the other
 
 ## 1. Scope
 
-Run `git status --short`. Keep unrelated changes out: limit the review to the change paths when they separate cleanly; otherwise ask. After `git fetch origin`, select the base from the PR, `branch.<head>.gh-merge-base`, or the default branch, in that order. Review from `git merge-base HEAD origin/<base>` through the working tree in those paths, including untracked files; use one diff command in every round. Run the covering checks and note missing or pre-failing ones in the brief.
+Run `git status --short`. Keep unrelated changes out: limit the review to the change paths when they separate cleanly; otherwise ask. After `git fetch origin`, select the base from the PR, `branch.<head>.gh-merge-base`, or the default branch, in that order. Review from `git merge-base HEAD origin/<base>` through the working tree in those paths, including untracked files; use one diff command in every round. Run the focused tests that cover the change, by the repository's test rules, and note missing or pre-failing ones in the brief.
 
 ## 2. Pick the reviewer
 
@@ -53,7 +53,7 @@ Check each finding and its severity yourself; another path, rare case, or small 
 - Disagree: say why with evidence (file:line, test, output).
 - Out of scope or nit: decline in one line and list it as a follow-up.
 
-Update the ledger, re-run checks and `git diff --shortstat <base>`. When review grew the diff, cut first.
+Update the ledger, re-run the focused tests of the code that changed, and run `git diff --shortstat <base>`. When review grew the diff, cut first.
 
 ## 4. Next round
 
