@@ -2,7 +2,8 @@
 // (pr.js), as in the Herdr TUI, and shared marks for workspace pickers.
 //
 // Workspace spaces: stable colored avatars, worktrees under their checkout,
-// joined to it by a rail and folded away from a toggle under its avatar,
+// joined to it by a rail. A toggle under its avatar cycles them: all, only
+// those with agents, none. Spaces are
 // grouped by machine when more than one is known. Separate lines show the space's
 // state, Git details and agent session title. Click to switch, right-click for
 // its menu, drag to reorder.
@@ -67,6 +68,9 @@ const FOLDED = {
   done: "mods/workspace-chrome/circle-check.svg",
 };
 
+// The fold toggle cycles: all worktrees, only those with agents, none.
+const FOLD_NEXT = { expanded: "agents", agents: "collapsed", collapsed: "expanded" };
+
 const STATES = { blocked: "Needs input", done: "Finished", working: "Working", idle: "Idle", unknown: "Unknown" };
 
 export function activity(list) {
@@ -105,7 +109,10 @@ export default class Spaces extends View {
     this.reconnecting = JSON.parse(localStorage.getItem("machines.reconnecting") ?? "{}");
     for (const state of Object.values(this.reconnecting)) state.busy = false;
     this.folded = new Set(JSON.parse(localStorage.getItem("machines.folded") ?? "[]"));
-    this.foldedRepos = new Set(JSON.parse(localStorage.getItem("repos.folded") ?? "[]")); // repos whose worktrees are hidden
+    // How each repo shows its worktrees: "agents" (only those with agents) or
+    // "collapsed" (none). Not listed: all of them.
+    this.repoFold = JSON.parse(localStorage.getItem("repos.fold") ?? "null")
+      ?? Object.fromEntries(JSON.parse(localStorage.getItem("repos.folded") ?? "[]").map((repo) => [repo, "collapsed"]));
     this.refreshMachines(cx);
     cx.timer.every(15000, cx => this.refreshMachines(cx));
     // `git status` walks the whole tree, on another machine a process there:
@@ -395,8 +402,9 @@ export default class Spaces extends View {
     });
   }
 
-  // Each repo with its worktrees under it. A folded repo hides them, all but the
-  // active one, and its toggle tells what the hidden ones are doing.
+  // Each repo with its worktrees under it. A repo shows all of them, only those
+  // with agents, or none. The active one always shows, and the toggle tells
+  // what the hidden ones are doing.
   tree(rows, t, bySpace) {
     const state = (list) => activity(list.flatMap((r) => bySpace.get(r.w.id) ?? []));
     const out = [];
@@ -406,22 +414,31 @@ export default class Spaces extends View {
       const kids = [];
       while (rows[n]?.tree) kids.push(rows[n++]);
       if (!kids.length) { out.push(this.row(r, t, state([r]))); continue; }
-      const folded = this.foldedRepos.has(r.g.repo);
-      const shown = folded ? kids.filter((k) => k.w.active) : kids;
+      const mode = FOLD_NEXT[this.repoFold[r.g.repo]] ? this.repoFold[r.g.repo] : "expanded";
+      const keep = { expanded: () => true, agents: (k) => bySpace.has(k.w.id), collapsed: () => false }[mode];
+      const shown = kids.filter((k) => k.w.active || keep(k));
       const hidden = kids.filter((k) => !shown.includes(k));
-      out.push(this.row(r, t, state([r]), { toggle: this.foldToggle(r, folded, hidden.length, state(hidden), t), rail: shown.length > 0 }));
+      out.push(this.row(r, t, state([r]), { toggle: this.foldToggle(r, mode, hidden.length, state(hidden), t), rail: shown.length > 0 }));
       shown.forEach((k, i) => out.push(this.worktree(k, t, state([k]), i === shown.length - 1)));
     }
     return out;
   }
 
-  // Under the repo's avatar. Open: a down arrow. Folded: what the hidden worktrees
-  // do, the most urgent first (a spinner, an alert, a check), else a stack.
-  foldToggle(r, folded, count, hidden, t) {
+  // Under the repo's avatar; a click goes to the next mode. Expanded: a down
+  // arrow. Agents only: a bot. Collapsed: what the hidden worktrees do, the most
+  // urgent first (a spinner, an alert, a check), else a stack.
+  foldToggle(r, mode, count, hidden, t) {
     const repo = r.g.repo;
+    const folded = mode === "collapsed";
     const loud = folded && FOLDED[hidden.status];
     const what = `${count} worktree${count === 1 ? "" : "s"}`;
-    const icon = !folded ? "mods/workspace-chrome/chevron-down.svg" : loud ?? "mods/workspace-chrome/layers.svg";
+    const icon = { expanded: "mods/workspace-chrome/chevron-down.svg", agents: "icons/agent.svg" }[mode] ?? loud ?? "mods/workspace-chrome/layers.svg";
+    const next = FOLD_NEXT[mode];
+    const tip = {
+      expanded: "Show only worktrees with agents",
+      agents: `${count ? `${what} without agents hidden` : "All worktrees have agents"} · Click to collapse`,
+      collapsed: `Show all worktrees · ${what} hidden · ${hidden.label}`,
+    }[mode];
     return h_flex()
       .id(`fold-${r.w.id}`)
       .absolute()
@@ -435,14 +452,15 @@ export default class Spaces extends View {
       .text_color(loud ? tone(t, hidden.status) : t.dim)
       .hover((s) => s.bg(t.hover).text_color(t.foreground))
       .cursor_pointer()
-      .tooltip(folded ? `Show ${what} · ${hidden.label}` : `Hide ${what}`)
-      .accessibility_label(folded ? `Show ${what}` : `Hide ${what}`)
+      .tooltip(tip)
+      .accessibility_label({ agents: "Show only worktrees with agents", collapsed: "Collapse worktrees", expanded: "Show all worktrees" }[next])
       // A press here must neither select the repo nor start dragging it.
       .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
       .on_click((_e, cx) => {
         cx.stop_propagation();
-        folded ? this.foldedRepos.delete(repo) : this.foldedRepos.add(repo);
-        localStorage.setItem("repos.folded", JSON.stringify([...this.foldedRepos]));
+        if (next === "expanded") delete this.repoFold[repo];
+        else this.repoFold[repo] = next;
+        localStorage.setItem("repos.fold", JSON.stringify(this.repoFold));
         cx.notify();
       })
       .child(svg(icon).size(12).when(hidden.status === "working" && folded, (el) => el.spin(900)));
