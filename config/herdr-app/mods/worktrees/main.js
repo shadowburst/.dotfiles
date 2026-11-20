@@ -22,7 +22,7 @@ import { h_flex, v_flex, h_resizable, resizable_panel, Button, Combobox, Input, 
 import { closeOverlay, focused, panes, props, run, settings, shared, spaces, theme } from "herdr";
 import {
   AGENT_KINDS, PREVIEW_MODES, attach, detectRepo, git, loadBranches,
-  commit, generateCommit, lastFetch, loadConfig, loadFileDiff, loadOpencodeModels, loadPreview, loadRows, mergeBase, pull, push, rowKey, rowName, rowRef, uniqueName,
+  commit, generateCommit, lastFetch, loadConfig, loadFileDiff, loadOpencodeModels, loadPreview, loadRows, mergeBase, prColor, pull, push, rowKey, rowName, rowRef, uniqueName,
 } from "./data.js";
 import { Job } from "./job.js";
 import { Graph } from "./graph.js";
@@ -226,7 +226,7 @@ export default class Worktrees extends View {
       const locals = new Map(this.rows.filter((r) => !r.remote).map((r) => [r.branch, r]));
       for (const r of full.rows ?? []) {
         const mine = !r.remote && locals.get(r.branch);
-        if (mine) mine.pr = r.pr;
+        if (mine) Object.assign(mine, { pr: r.pr, review: r.review });
       }
       cx.notify();
     });
@@ -400,8 +400,11 @@ export default class Worktrees extends View {
   // Keeps the selected row when it is still there, else selects the caller's checkout.
   setRows(def, rows) {
     const current = this.current();
-    const prs = new Map(this.rows.map((r) => [rowKey(r), r.pr]));
-    for (const r of rows) r.pr ||= prs.get(rowKey(r)) ?? 0;
+    const prs = new Map(this.rows.map((r) => [rowKey(r), r]));
+    for (const r of rows) {
+      const old = prs.get(rowKey(r));
+      if (!r.pr && old?.pr) Object.assign(r, { pr: old.pr, review: old.review });
+    }
     this.def = def;
     this.rows = rows;
     this.rowsLoaded = true;
@@ -1389,7 +1392,7 @@ export default class Worktrees extends View {
       .when(r.ahead > 0, (el) => el.child(ui.badge(`↑${r.ahead}`, t.ansi2)))
       .when(r.behind > 0, (el) => el.child(ui.badge(`↓${r.behind}`, t.ansi1)))
       .when(r.dirty, (el) => el.child(svg("mods/worktrees/pencil.svg").size(14).flex_none().text_color(t.ansi3).accessibility_label("Uncommitted changes")))
-      .when(r.pr > 0, (el) => el.child(ui.badge(`#${r.pr}`, t.ansi5, "git-compare")));
+      .when(r.pr > 0, (el) => el.child(ui.badge(`#${r.pr}`, prColor(r, t), "git-compare")));
   }
 
   // ---------------------------------------------------------------- new view
@@ -1511,7 +1514,7 @@ export default class Worktrees extends View {
       .when(r.ahead > 0, (el) => el.child(ui.badge(`↑${r.ahead}`, t.ansi2)))
       .when(r.behind > 0, (el) => el.child(ui.badge(`↓${r.behind}`, t.ansi1)))
       .when(r.dirty, (el) => el.child(ui.badge("uncommitted", t.ansi3, "square-pen")))
-      .when(r.pr > 0, (el) => el.child(ui.badge(`#${r.pr}`, t.ansi5, "git-compare")));
+      .when(r.pr > 0, (el) => el.child(ui.badge(`#${r.pr}`, prColor(r, t), "git-compare")));
   }
 
   note(t, [text, color]) {

@@ -66,6 +66,9 @@ export async function detectRepo(cwd, machine = null) {
 
 export const rowName = (r) => r.remote ? `${r.remote}/${r.branch}` : r.branch || "(detached)";
 export const rowRef = (r) => r.branch ? `refs/${r.remote ? `remotes/${r.remote}` : "heads"}/${r.branch}` : r.sha;
+// A PR badge's color, as GitHub's PR states and the Spaces mod (spaces-pr/pr.js):
+// open green, draft gray. wt lists open PRs only, so merged (purple) never shows.
+export const prColor = (r, t) => r.review === "draft" ? t.dim : t.ansi2;
 export const rowKey = (r) => r.branch ? JSON.stringify([rowRef(r), r.path || ""]) : r.path;
 
 function rowData(it) {
@@ -82,6 +85,7 @@ function rowData(it) {
     ahead: d?.ahead ?? 0,
     behind: d?.behind ?? 0,
     pr: it.pr?.number ?? 0,
+    review: it.pr?.review ?? "",
     busy: false,
     spaces: [],
   };

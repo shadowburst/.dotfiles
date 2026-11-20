@@ -49,14 +49,15 @@ export class PullRequests {
     }
   }
 
-  // The badge for a place, or null. Colors follow the TUI's sidebar rules.
+  // The badge for a place, or null. Colors follow GitHub's PR states: open green,
+  // draft gray, merged purple (the theme's magenta). The icons show the review.
   badge(key, t) {
     const pr = this.pr[key];
     if (!pr || pr.state === "CLOSED") return null;
     const draft = pr.isDraft && pr.state === "OPEN";
     const approved = pr.reviewDecision === "APPROVED";
     const changes = pr.reviewDecision === "CHANGES_REQUESTED";
-    const color = changes ? t.ansi1 : approved ? t.ansi2 : draft ? t.dim : pr.state === "MERGED" ? t.ansi5 : t.ansi2;
+    const color = pr.state === "MERGED" ? t.ansi5 : draft ? t.dim : t.ansi2;
     return h_flex()
       .flex_none()
       .gap(2)
