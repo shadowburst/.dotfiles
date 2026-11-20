@@ -35,12 +35,12 @@ From `git diff --stat <base>` (or the plan); the user can override it ("deliver 
 - **Risky:** migrations, auth, permissions, money, queues or concurrency, lock files, or more than 400 changed lines or 15 files.
 - **Normal:** everything else.
 
-**Base:** the PR's base, then an existing `git config branch.<head>.gh-merge-base`, then this repo's `branches.integration` in `.clickup.json`, then the default branch. Store it in `branch.<head>.gh-merge-base`; the other skills and `scripts/verify.sh` read that key.
+**Base:** the PR's base, then an existing `git config branch.<head>.gh-merge-base`, then this repo's `branches.integration` in `.clickup.json`, then the default branch. Store it in `branch.<head>.gh-merge-base`; the other skills and `scripts/verify.sh` read that key. In a stack, the base is the PR directly below; store it again when the stack changes.
 
 ## Steps
 
-1. **Start** in the current checkout, on the task's branch; all steps run there. Read the ClickUp task once with `clickup_get_task`; its ID comes from the branch name, the prompt, or the PR's `- ClickUp:` line.
-2. **Plan** (normal, risky) in 5–10 lines: goal, approach, the existing pattern you follow (`file:line`), what stays out. Use the shape the code already has; add a layer, abstraction, or registry only when the task needs one, in its smallest version, listed under Decisions taken (auto mode: the PR stays draft). Interactive, risky or design-level: the user confirms the plan. Auto: the plan goes at the top of the PR body.
+1. **Start** in the current checkout, on the task's branch; all steps run there. Read the ClickUp task once with `clickup_get_task`; its ID comes from the branch name, the session's messages, or the PR's `- ClickUp:` line.
+2. **Plan** (normal, risky) in 5–10 lines: goal, approach, the existing pattern you follow (`file:line`), what stays out. Use the shape the code already has; add a layer, abstraction, or registry only when the task needs one, in its smallest version, listed under Decisions taken (auto mode: the PR stays draft). Interactive, risky or design-level: the user confirms the plan once; a plan or design already confirmed in this session (grilling, a summary) counts. Auto: the plan goes at the top of the PR body.
 3. **Before capture** (UI change), before the first edit: [EVIDENCE.md](EVIDENCE.md).
 4. **Build.** Normal and risky: first a test that fails without the change; keep its red and green output as the behaviour evidence. `composer test -- tests/<path>Test.php` while coding. Before each commit: `composer fix` and `pnpm run fix` (those the repo has). Conventional commits.
 5. **Review** (normal, risky): the `cross-review` skill, with the tier and the plan.
@@ -48,7 +48,7 @@ From `git diff --stat <base>` (or the plan); the user can override it ("deliver 
 7. **Verify.** UI change: capture the after state ([EVIDENCE.md](EVIDENCE.md)). Then `scripts/verify.sh --full` (normal, risky) or `scripts/verify.sh` (trivial), per [Tests](#tests). On failure: fix, commit, push, `scripts/verify.sh`.
 8. **PR.** Write the [body](#pr-body). Title: a conventional commit that the repo's `.github/workflows/pr-title.yml` accepts. New PR, once: `gh pr create --base <base> --body-file <file> [--attach '<path>#<description>' …]`, ready unless blocked. Existing PR: `gh pr edit --body-file` only when the content changed.
 9. **ClickUp**, once at the end: [ClickUp](#clickup).
-10. **Report:** PR link, ready or draft, decisions, risks.
+10. **Report:** PR link, ready or draft, decisions, risks. In a stack, the stack is the task: go on to the next PR, and report once, after the top PR.
 
 **Ready to merge:** `local/verify` success on the head (plus the one `full:` run of this PR for normal and risky), no open review blocker or should, and GitHub reports the PR mergeable.
 
@@ -58,8 +58,8 @@ Four test commands, run on the host, and no other:
 
 1. `composer test -- tests/<path>Test.php [--filter=<name>]` while coding.
 2. `vendor/bin/pest --agent='<code>'` for a one-off check without a test file (only where `pestphp/pest-plugin-agent` is installed).
-3. `scripts/verify.sh` before the PR is ready and after every later change: static checks, then the test files changed since the base. Status `changed: …`.
-4. `scripts/verify.sh --full` once per PR (normal, risky), never a second time. Status `full: …`.
+3. `scripts/verify.sh` on each head you push, after the push: static checks, then the test files changed since the base. Status `changed: …`. Between review rounds, run item 1 on the files the fix touches.
+4. `scripts/verify.sh --full` once per PR (normal, risky), never a second time. In a stack, run it once, on the top PR after the stack's review: it covers every PR below. Status `full: …`.
 
 - Run verify as the harness's background command (`timeout 90m scripts/verify.sh --full` for the full run) and act on its exit; no "still waiting" turns, no `sleep` loops. Exit 124 is a blocker to report (auto: draft with `Needs you:`), not a reason to run it again.
 - A failing step prints its end. Read `storage/logs/verify.log` only when that is not enough, and only the lines you need (`grep`, `tail`).
@@ -72,7 +72,7 @@ Four test commands, run on the host, and no other:
 
 - **Why:** problem and outcome, 1–2 sentences.
 - **What changed:** user-visible behaviour first, then what a reviewer needs.
-- **How verified:** tier; red-then-green test output; the commit of the `full:` run; tests marked flaky; review rounds and reviewer; UI assets as `![<description>](<path>)`, or "before not captured".
+- **How verified:** tier; red-then-green test output; the commit of the `full:` run (in a stack, the top PR's run); tests marked flaky; review rounds and reviewer; UI assets as `![<description>](<path>)`, or "before not captured".
 - **Decisions taken.**
 - **Risks:** rollback (two-way, or one-way and what is lost), blast radius, flaky tests, base failures.
 
