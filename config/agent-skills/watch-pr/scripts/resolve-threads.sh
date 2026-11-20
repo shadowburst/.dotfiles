@@ -26,7 +26,7 @@ jq -e '
   type == "array" and length > 0 and
   all(.[];
     (.thread_id | type == "string" and length > 0) and
-    (.disposition == "addressed" or .disposition == "obsolete") and
+    (.disposition == "addressed" or .disposition == "obsolete" or .disposition == "declined") and
     (.evidence | type == "string" and length > 0))
 ' "$plan" >/dev/null || { echo 'Invalid resolution plan' >&2; exit 2; }
 
@@ -44,6 +44,7 @@ check_head() {
     [[ $current == "$pinned" ]] || { echo 'PR head moved during resolution' >&2; return 5; }
 }
 
+# shellcheck disable=SC2016 # GraphQL variables, not shell ones.
 query='mutation($thread: ID!) { resolveReviewThread(input: {threadId: $thread}) { thread { id isResolved } } }'
 failed=0 count=$(jq length "$plan")
 for ((i = 0; i < count; i++)); do
@@ -58,12 +59,15 @@ for ((i = 0; i < count; i++)); do
     evidence=$(jq -r ".[${i}].evidence" "$plan")
     digest=$(jq -cnS --arg head "$pinned" --arg thread "$thread_id" --arg disposition "$disposition" --arg evidence "$evidence" \
         '{head:$head,thread:$thread,disposition:$disposition,evidence:$evidence}' | "${hash_command[@]}" | cut -c1-16)
-    marker="<!-- github-pr-resolution:$pinned:$digest -->"
+    marker="<!-- watch-pr-resolution:$pinned:$digest -->"
 
     if ! jq -e --arg id "$thread_id" --arg marker "$marker" \
         'any(.feedback[]; .kind == "comment" and .thread_id == $id and ((.body // "") | contains($marker)))' <<<"$data" >/dev/null; then
-        label=Addressed
-        [[ $disposition != obsolete ]] || label=Obsolete
+        case $disposition in
+        obsolete) label=Obsolete ;;
+        declined) label=Declined ;;
+        *) label=Addressed ;;
+        esac
         body="> [!NOTE]
 > 🤖 **$attribution**
 
@@ -78,6 +82,7 @@ $marker"
         fi
     fi
 
+    [[ $disposition != declined ]] || continue
     check_head || exit $?
     if ! response=$(gh api graphql -f query="$query" -f thread="$thread_id") ||
        ! jq -e '.errors == null and .data.resolveReviewThread.thread.isResolved == true' <<<"$response" >/dev/null; then
@@ -86,4 +91,4 @@ $marker"
     fi
 done
 ((failed == 0)) || exit 1
-printf 'Replied to and resolved %s thread(s).\n' "$count"
+printf 'Replied to %s thread(s); resolved the addressed and obsolete ones.\n' "$count"

@@ -1,62 +1,99 @@
 ---
 name: deliver-pr
-description: Use when the user says "deliver" or "deliver-pr".
+description: Use when the user says "deliver" or "publish", or asks to open or refresh a PR or its evidence.
 ---
 
 # Deliver PR
 
-The user is not watching this thread. Updates and the final message go unread until long after you stop, so own the work from its current state to a PR that is **ready to merge**, then hand it over. The merge stays with the user.
+Take the task to a PR that is ready to merge; the merge stays with the user. "Publish" on a branch with a PR refreshes it (steps 6–9) without new implementation.
 
-## Grant
+## Mode
 
-A "deliver" request gives permission to:
+- **Interactive** (default). Ask only: (1) plan confirmation before risky or design-level work, in one batched call; (2) a product or UX choice that changes what users see and has no clear default; (3) money, or a step outside the grant. Ask with the harness's question tool (`AskUserQuestion` in Claude Code, `request_user_input` in Codex).
+- **Auto**: `deliver auto`, or "auto" or "don't ask" in the request. Call no question tool. Blocked: publish a draft PR whose body starts with `Needs you:`, one line per item, then stop.
 
-- Create a branch, commit, push, rebase, fix conflicts, and use `--force-with-lease` on this task's branch.
-- Use the test methods that evidence needs without asking first: the evidence agent, running the app or a dev server, browser automation, screenshots, and visual checks. Rules that name _how_ to test (the command, fixture, or check) still apply; only the ask-first step is lifted, and only for this task.
+Both modes take these defaults and list each under Decisions taken. Running or rerunning tests, review rounds within budget, ready state, and replacing screenshots are yours to decide.
 
-Outside the grant, always: merging, auto-merge, merge queues, pushes to the default branch, branch-protection bypasses, deleting data, touching production, changing things outside the repo, closing a PR, force-pushing any other branch. Disable auto-merge and leave any merge queue before work begins and before each push; report it. When automatic merging cannot be prevented, report the blocker first.
+| Situation | Default |
+|---|---|
+| Product or UX choice (auto) | the recommended option |
+| Change you could not verify | `not verified: <what>` in How verified |
+| Failure the base also has | a note in Risks; no fix here |
+| No ClickUp task found | skip ClickUp |
+| Unrelated changes in the checkout | commit only your paths |
+| Paid API call, missing prerequisite | spend and install nothing |
+| Review budget ends, finding open | list it in Risks; open blocker: draft |
+| Another session works in this checkout | stop |
+
+**Grant:** commit, push, rebase on the base, `git push --force-with-lease` on this task's branch, run any test or capture, create and edit this PR, write to its ClickUp task. Merging, auto-merge, other branches, closing a PR, deleting data, production, and anything outside the repo stay with the user.
+
+## Tier
+
+From `git diff --stat <base>` (or the plan); the user can override it ("deliver risky").
+
+- **Trivial:** only docs, translations, comments, formatting, CI scripts, or test deletions; or a conflict-only rebase.
+- **Risky:** migrations, auth, permissions, money, queues or concurrency, lock files, or more than 400 changed lines or 15 files.
+- **Normal:** everything else.
+
+**Base:** the PR's base, then an existing `git config branch.<head>.gh-merge-base`, then this repo's `branches.integration` in `.clickup.json`, then the default branch. Store it in `branch.<head>.gh-merge-base`; the other skills and `scripts/verify.sh` read that key.
 
 ## Steps
 
-1. **Finish the change.** Work in the current checkout with all its uncommitted changes. Resolve the base from the user's choice, existing PR, then `branch.<head>.gh-merge-base`; ask if unknown. Record the base there and align any existing PR. Remove the helpers that a stopped run left for this branch (see [Evidence](#evidence)). Make the smallest change that meets the request.
-2. **Start evidence.** Commit the change. In one batch, make the helpers and run step 1 of the `cross-review` skill in the PR's worktree. Then start the evidence agent in the background; see [Evidence](#evidence).
-3. **Cross-review.** Continue `cross-review` from its step 2 while the agent runs, until it agrees or asks the user, committing each fix on top. Then join the evidence agent, check its report, and gather evidence for the commits cross-review added.
-4. **Publish.** Before every `publish-pr` run, here and in step 5, fetch the recorded base and rebase onto it when it moved, then gather evidence again for what the rebase touched. Run the `publish-pr` skill and ask it for ready for review, so review bots see code that cross-review already approved. Keep the cross-review line in the PR body.
-5. **Watch.** Run the `watch-pr` skill until the PR is ready to merge or blocked. Gather evidence for each fix before it is pushed.
-6. **Hand off.** See [Handoff](#handoff).
+1. **Start** in the current checkout, on the task's branch; all steps run there. Read the ClickUp task once with `clickup_get_task`; its ID comes from the branch name, the prompt, or the PR's `- ClickUp:` line.
+2. **Plan** (normal, risky) in 5–10 lines: goal, approach, the existing pattern you follow (`file:line`), what stays out. Use the shape the code already has; add a layer, abstraction, or registry only when the task needs one, in its smallest version, listed under Decisions taken (auto mode: the PR stays draft). Interactive, risky or design-level: the user confirms the plan. Auto: the plan goes at the top of the PR body.
+3. **Before capture** (UI change), before the first edit: [EVIDENCE.md](EVIDENCE.md).
+4. **Build.** Normal and risky: first a test that fails without the change; keep its red and green output as the behaviour evidence. `composer test -- tests/<path>Test.php` while coding. Before each commit: `composer fix` and `pnpm run fix` (those the repo has). Conventional commits.
+5. **Review** (normal, risky): the `cross-review` skill, with the tier and the plan.
+6. **Push.** `git fetch`; when the base moved, rebase on `origin/<base>`; `git push --force-with-lease`.
+7. **Verify.** UI change: capture the after state ([EVIDENCE.md](EVIDENCE.md)). Then `scripts/verify.sh --full` (normal, risky) or `scripts/verify.sh` (trivial), per [Tests](#tests). On failure: fix, commit, push, `scripts/verify.sh`.
+8. **PR.** Write the [body](#pr-body). Title: a conventional commit that the repo's `.github/workflows/pr-title.yml` accepts. New PR, once: `gh pr create --base <base> --body-file <file> [--attach '<path>#<description>' …]`, ready unless blocked. Existing PR: `gh pr edit --body-file` only when the content changed.
+9. **ClickUp**, once at the end: [ClickUp](#clickup).
+10. **Report:** PR link, ready or draft, decisions, risks.
 
-Stay active from step 1 to step 6. Ending the turn while checks or bots are pending stops the work, because nobody will prompt you again; `watch-pr`'s waiter is what wakes you.
+**Ready to merge:** `local/verify` success on the head (plus the one `full:` run of this PR for normal and risky), no open review blocker or should, and GitHub reports the PR mergeable.
 
-## Evidence
+## Tests
 
-Gather evidence with steps 2–4 of `publish-pr`'s `EVIDENCE.md`, on the committed head and the recorded base: the evidence agent captures it, and you check it. The agent runs in that file's helper worktrees: the check helper at the commit it proves, and a base helper when its step 2 needs a base checkout. Move the helpers to each new commit, and pass the check helper to every `publish-pr` run. Edits, fixes, and focused tests stay in the PR's worktree. `publish-pr` reuses the checked report for the same head and runs the agent again only for the claims that later commits touch. Every change has evidence before it is pushed. Two additions hold here:
+Four test commands, run on the host, and no other:
 
-- When the behavior has no test and the repo has a test setup, add one focused test that fails without the change, as part of the change.
-- Put UI and runtime behavior in the brief's intent as results to observe in the running app; green mocked tests show nothing about the user experience.
+1. `composer test -- tests/<path>Test.php [--filter=<name>]` while coding.
+2. `vendor/bin/pest --agent='<code>'` for a one-off check without a test file (only where `pestphp/pest-plugin-agent` is installed).
+3. `scripts/verify.sh` before the PR is ready and after every later change: static checks, then the test files changed since the base. Status `changed: …`.
+4. `scripts/verify.sh --full` once per PR (normal, risky), never a second time. Status `full: …`.
 
-A `failed` claim is a defect in the change: fix it, commit, and gather evidence again. A change without evidence is a change without full confidence: ask the user.
+- Run verify as the harness's background command (`timeout 90m scripts/verify.sh --full` for the full run) and act on its exit; no "still waiting" turns, no `sleep` loops. Exit 124 is a blocker to report (auto: draft with `Needs you:`), not a reason to run it again.
+- A failing step prints its end. Read `storage/logs/verify.log` only when that is not enough, and only the lines you need (`grep`, `tail`).
+- **Flaky:** a test that fails in the `--full` run and passes alone with `composer test -- <file>`. Add Pest's `->flaky()` to it with `// Flaky under parallel load (found <YYYY-MM-DD>).`, commit, run `scripts/verify.sh`, and name it in How verified.
+- A repo without `scripts/verify.sh`: run its documented checks, then `gh api repos/{owner}/{repo}/statuses/<sha> -f state=success -f context=local/verify -f description="full: <result>"`.
 
-## Merge gate
+## PR body
 
-Ready to merge means all of these hold on the latest head:
+`Needs you:` first, only when blocked. Then `##` sections:
 
-- Evidence covers every change in the final diff, including conflict fixes.
-- The validation report names the head and passes, including its `full-suite` row when the repository has one; required checks are green.
-- Review bots finished, and each finding is fixed or answered with a written reason.
-- No review thread is open and no human review requests changes.
-- The branch is up to date with its base, and GitHub reports it mergeable.
+- **Why:** problem and outcome, 1–2 sentences.
+- **What changed:** user-visible behaviour first, then what a reviewer needs.
+- **How verified:** tier; red-then-green test output; the commit of the `full:` run; tests marked flaky; review rounds and reviewer; UI assets as `![<description>](<path>)`, or "before not captured".
+- **Decisions taken.**
+- **Risks:** rollback (two-way, or one-way and what is lost), blast radius, flaky tests, base failures.
 
-## Asking the user
+Last lines, when a task is linked (`ship-release` and ClickUp's GitHub link read them):
 
-A question in a normal message goes unseen and the thread looks done. Ask with the harness's question tool (`AskUserQuestion` in Claude Code, `request_user_input` in Codex), putting the PR link, the blocker, and the options with your recommendation first. Ask only when you cannot continue alone: a change without evidence, the full suite (`watch-pr` asks it), a merge gate you cannot fix, a step outside the grant, an ambiguous goal that changes the result, or another PR that makes this one obsolete. Decide everything else with sensible defaults and list those decisions in the handoff. Without a question tool, or without an answer, take the safe path: leave the PR open and start the final message with the question.
+```markdown
+- ClickUp: [<task name>](<task URL>)
+<!-- #<task ID>[<statuses.roadmap.review>] -->
+```
 
-## Handoff
+## ClickUp
 
-Remove the helpers until the run is clean. Fetch the base and check the live PR's head, base, checks, reviews, and mergeability. Confirm it is open, not a draft, and not set to merge without the user; when someone else merged it, report that instead. Classify it:
+Skip without a task. IDs: `.clickup.json` (format: the `ship-release` skill's CONFIG.md).
 
-- **Ready to merge:** the merge gate passes.
-- **Waiting for the full suite:** only the user's yes to the full suite remains.
-- **Waiting for approval:** only a required human approval remains, and that is the actual blocker.
-- **Blocked:** what prevents readiness, what you tried, and what is needed.
+- **One `clickup_update_task`:** an empty `fields.release_note` gets a [release note](#release-note); `fields.deploy_actions` gets each missing line: `ENV+ KEY=<à renseigner>` for a new environment key, `ENV- KEY` for a removed one, `RUN <command>` for a one-time command. Migrations need no line. Keep lines people wrote; write a value only when the repo holds it in plain text and it is no secret.
+- **Assets** the task does not have yet: [EVIDENCE.md](EVIDENCE.md#clickup).
+- **One comment** `PR summary · <owner>/<repo>#<n>`: PR link; **Problem**, **Solution**, **Conclusion** in plain domain words, no code; asset names. On a refresh, edit it (`clickup_update_comment`) only when its content changed.
 
-Report the PR link, final head, classification, evidence, cross-review outcome, decisions made for the user, remaining risks, and the helper cleanup. State that the PR is open and unmerged.
+### Release note
+
+One sentence for the client, in the space's language: what changes for the user, in product words, no technical term. A security fix reads « Sécurité renforcée de … » and never describes the flaw.
+
+> ❌ Fix du z-index sur les dropdowns
+> ✅ Correction : les menus déroulants s'ouvrent de nouveau normalement.

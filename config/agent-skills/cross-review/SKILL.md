@@ -1,69 +1,52 @@
 ---
 name: cross-review
-description: Use when the user says "cross-review".
+description: Use when the user says "cross-review", or another skill asks for a review of a local change.
 ---
 
 # Cross-review
 
-Make the change more correct before it is published: one reviewer from the other provider reads the diff, and you answer each finding until you both agree. Hold the change to its intent. Push back on scope creep with evidence.
+Make the change more correct before it is published: a reviewer from the other provider reads the diff, and you answer each finding. Hold the change to its intent and its plan.
 
 ## Budget
 
-- 3 rounds. Round 1 is full; later rounds check only changed code and open findings.
-- Extend to 5 only for security, permissions, auth, data loss, or concurrency, while a blocker or should stays open with evidence, or when the user asks.
-- Stop early when a round returns only nits. Declined nits and comment, doc, or format-only fixes need no new round.
-- One reviewer per round. Keep a **ledger**: id, severity, outcome (`fixed`, `disagree`, `declined`), evidence.
+- **Normal tier:** 1 round; a 2nd only while a blocker or should stays open. **Risky:** up to 3 rounds. Direct use without a tier: normal.
+- Stop early when a round returns only nits. Fixes to comments, docs, or format need no new round.
+- Keep a **ledger**: id, severity, outcome (`fixed`, `disagree`, `declined`), evidence.
 
-## 1. Scope
+## Round
 
-Run `git status --short`. Keep unrelated changes out: limit the review to the change paths when they separate cleanly; otherwise ask. After `git fetch origin`, select the base from the PR, `branch.<head>.gh-merge-base`, or the default branch, in that order. Review from `git merge-base HEAD origin/<base>` through the working tree in those paths, including untracked files; use one diff command in every round. Run the focused tests that cover the change, by the repository's test rules, and note missing or pre-failing ones in the brief.
+1. **Scope.** The base is `git config branch.<head>.gh-merge-base` (deliver-pr sets it), else the PR's base, else the default branch. Diff from `git merge-base HEAD origin/<base>` through the working tree, untracked files included. Keep paths you did not change out of the diff. Run `composer test -- <file>` for each test file of the change.
+2. **Brief**, in a temporary file:
 
-## 2. Pick the reviewer
+   ```
+   Review only. Do not edit, commit, push, comment on PRs, or start agents.
+   Repo: <abs path> Base: <sha> Intent: <intent> Out of scope: <scope> Checks: <results>
+   Plan: <the plan, or none>
+   See: git diff <base> [-- <paths>]; git status --short (read untracked files).
+   Read surrounding code. Find bugs, broken callers, and mismatch with intent.
+   Compare the change with the plan. Flag any pattern the project does not
+   already use, and name the existing pattern it should follow.
+   Before you report a finding, try to disprove it: name the trigger, the
+   reachable path, and the impact. Skip style unless it hides a bug. Flag code,
+   tests, or guards the intent does not need.
+   blocker = intended case wrong. should = real bug callers will hit. nit = rest.
+   Reply:
+   VERDICT: APPROVE or CHANGES
+   S1 [blocker|should|nit] <file>:<line> <claim>. Fix: <suggestion>
+   ```
 
-The reviewer is the other provider's model: Sol for a Claude model, Opus for an OpenAI model, or the model and effort the user names.
+   Later rounds add the ledger and the diff since the last round, and ask for the open ids and changed code only, each old id marked `resolved` or `still open: <reason>`.
+3. **Run** as a background command: `<skill-directory>/scripts/run-reviewer.sh <codex|claude> <repo> <brief> <output>`: `codex` when you are a Claude model, `claude` when you are an OpenAI model. It stops the reviewer after 600 s. `CROSS_REVIEW_CODEX_MODEL`, `CROSS_REVIEW_CLAUDE_MODEL`, and `CROSS_REVIEW_EFFORT` carry a model or effort the user names. On any non-zero exit, give the same brief to a fresh sub-agent on your own model, and write `fallback: same model (<reason>)` on the PR's review line. Leave the diffed files alone while a round runs.
+4. **Answer** each finding after you check it and its severity yourself:
+   - Agree: the smallest fix. Before you copy a suggested fix, find how the project already solves the same problem, and follow that pattern. Prefer delete or narrow over a new lock, cache, helper, or option.
+   - Disagree: say why with evidence (`file:line`, test, output).
+   - Out of scope or nit: decline in one line; list it as a follow-up.
 
-- When your harness can start a subagent on that model, run each round as a read-only subagent.
-- Otherwise run `<skill-directory>/scripts/run-reviewer.sh PROVIDER REPO_DIR BRIEF_FILE OUTPUT_FILE`, with PROVIDER `codex` or `claude`, and a 1800-second timeout. The script keeps the reviewer read-only and, for Claude, sets the `CLAUDE_CODE_ENTRYPOINT` label that keeps headless usage at the interactive rate. `CROSS_REVIEW_CLAUDE_MODEL`, `CROSS_REVIEW_CODEX_MODEL`, and `CROSS_REVIEW_EFFORT` carry the user's model and effort.
+   Rerun `composer test -- <file>` for the tests of the changed code. When the review grew the diff, cut first.
 
-When the reviewer cannot start or fails twice, report the blocker. A same-provider model is no substitute, and a timeout or a reply without a `VERDICT:` line is no approval. Leave scoped files untouched while a round runs.
+## Stop
 
-Round 1 brief, written to a temporary file:
+- **Agreed:** `VERDICT: APPROVE` on the current diff, and no blocker or should open.
+- **Budget end:** list the open findings with both sides in one line each. The caller decides (`deliver-pr`: Risks, and draft for an open blocker). Direct use: report them.
 
-```
-Review only. Do not edit, commit, push, comment on PRs, or start subagents.
-Repo: <abs path> Base: <sha> Intent: <intent> Out of scope: <scope> Checks: <results>
-See: git diff <base> [-- <paths>]; git status --short (read untracked files).
-Read surrounding code. Find bugs, broken callers, and mismatch with intent.
-Before you report a finding, try to disprove it: name the trigger, the
-reachable path, and the impact, and check caller guarantees and tests.
-Skip style unless it hides a bug. Hold to the smallest change. Flag code,
-tests, or guards the intent does not need. Other paths, rare cases, small
-perf, extra compat: nits.
-blocker = intended case wrong. should = real bug callers will hit, in intent. nit = rest.
-Reply:
-VERDICT: APPROVE or CHANGES
-S1 [blocker|should|nit] <file>:<line> <claim>. Fix: <suggestion> (stable ids)
-```
-
-## 3. Answer findings
-
-Check each finding and its severity yourself; another path, rare case, or small cost is a nit whatever its label.
-
-- Agree: smallest fix. Prefer delete or narrow over a new lock, cache, helper, or option. Add one focused test that fails without the fix when the intent needs it.
-- Disagree: say why with evidence (file:line, test, output).
-- Out of scope or nit: decline in one line and list it as a follow-up.
-
-Update the ledger, re-run the focused tests of the code that changed, and run `git diff --shortstat <base>`. When review grew the diff, cut first.
-
-## 4. Next round
-
-Start one only while budget remains and a blocker or should is open, behavior code changed, or approval does not cover the current behavior diff. Each round is a fresh reviewer: send the round 1 brief, the ledger, the same base diff, and the change since the last round. Ask it to check open ids and changed code only, and to mark each old id `resolved` or `still open: <reason>`.
-
-## 5. Stop
-
-- **Agreed:** `VERDICT: APPROVE` on the current behavior diff, no blocker or should open, no concern of your own.
-- **Stuck:** an item stays disputed after two replies, or the budget ends. Ask the user with the question tool (`AskUserQuestion` in Claude Code, `request_user_input` in Codex), showing both sides in 2-3 lines each and your recommendation first. Budget end is no approval.
-
-Push only when the user or a calling skill asked to publish. On a PR, add one line to the PR body above any model line: `Cross-reviewed: <N> rounds with <model>. Verdict: approved`.
-
-Report rounds, reviewer model, what the review changed, diff size before and after, fixed and declined findings with reasons, and whether anything was pushed.
+For a PR, add to How verified: `Cross-reviewed: <N> rounds with <model>. Verdict: <approved | open: ids>`. Report the rounds, the reviewer, what changed, and the declined findings with reasons.

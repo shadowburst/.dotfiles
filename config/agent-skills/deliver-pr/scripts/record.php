@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PublishPr;
+namespace DeliverPr;
 
 use Closure;
 use InvalidArgumentException;

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Run one read-only cross-review round on the other provider's model.
+# Run one read-only review round on the other provider's CLI, with a time limit.
+# Exit 0 with a VERDICT line in OUTPUT_FILE; any other exit means: use the fallback.
 set -euo pipefail
 
 usage() {
@@ -10,6 +11,8 @@ usage() {
 (($# == 4)) || usage
 provider=$1 repo=$2 brief=$3 output=$4
 [[ -d $repo && -f $brief ]] || usage
+limit=${CROSS_REVIEW_TIMEOUT:-600}
+command -v timeout >/dev/null || { echo 'timeout is unavailable' >&2; exit 3; }
 
 case $provider in
 claude)
@@ -18,7 +21,7 @@ claude)
     # more against subscription limits. An explicit, honest label replaces it
     # and any value inherited from a parent session; settings.json cannot set it.
     cd -- "$repo"
-    CLAUDE_CODE_ENTRYPOINT=lynx-cross-review claude -p \
+    CLAUDE_CODE_ENTRYPOINT=lynx-cross-review timeout -k 10 "$limit" claude -p \
         --model "${CROSS_REVIEW_CLAUDE_MODEL:-opus}" \
         ${CROSS_REVIEW_EFFORT:+--effort "$CROSS_REVIEW_EFFORT"} \
         --strict-mcp-config \
@@ -30,15 +33,13 @@ claude)
     ;;
 codex)
     command -v codex >/dev/null || { echo 'codex CLI is unavailable' >&2; exit 3; }
-    # Skip config.toml, like --strict-mcp-config above: its MCP servers read
-    # OAuth tokens from the keyring, and a locked keyring hangs codex until
-    # the timeout. Without the config the effort defaults to none, so set it.
-    codex exec --ignore-user-config \
+    # --ignore-user-config skips MCP servers: they read OAuth tokens from the
+    # keyring, and a locked keyring hangs codex. Effort then needs a value.
+    timeout -k 10 "$limit" codex exec --ignore-user-config \
         ${CROSS_REVIEW_CODEX_MODEL:+-m "$CROSS_REVIEW_CODEX_MODEL"} \
         -c "model_reasoning_effort=\"${CROSS_REVIEW_EFFORT:-high}\"" \
         -C "$repo" -s read-only --ephemeral \
-        -o "$output" - <"$brief" >/dev/null 2>"$output.log" ||
-        { printf 'codex exec failed; see %s\n' "$output.log" >&2; exit 4; }
+        -o "$output" - <"$brief" >/dev/null 2>"$output.log"
     ;;
 *) usage ;;
 esac

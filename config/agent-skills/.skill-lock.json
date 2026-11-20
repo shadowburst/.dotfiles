@@ -106,61 +106,41 @@
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "07cb17526bca33872efd9ea2412a63a356a0249a",
+      "commit": "6274d671a7daa65edb030669635b9de3ddc1da16",
       "skillPath": "skills/review-pr/SKILL.md",
-      "skillFolderHash": "ba54bf163b392ae7244539f4cb44b8523849796f",
+      "skillFolderHash": "45908ae2cd5a63ec2fb4d4179395c518fcb31f28",
       "installedAt": "2026-09-23T12:49:33.294Z",
-      "updatedAt": "2026-11-19T08:40:11.066Z"
-    },
-    "publish-pr": {
-      "source": "Lynx-Business/skills",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "6c3a160739dba666780cef6aa42518361638ab57",
-      "skillPath": "skills/publish-pr/SKILL.md",
-      "skillFolderHash": "2449075f26e93de0cec5239aaf9d613f3222d5dd",
-      "installedAt": "2026-09-29T13:09:13.926Z",
-      "updatedAt": "2026-11-19T10:50:10.529Z"
+      "updatedAt": "2026-11-20T09:15:37.338Z"
     },
     "cross-review": {
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "07cb17526bca33872efd9ea2412a63a356a0249a",
+      "commit": "6274d671a7daa65edb030669635b9de3ddc1da16",
       "skillPath": "skills/cross-review/SKILL.md",
-      "skillFolderHash": "e9d04130d99a0d848d9d3336b355b82c11e4c711",
+      "skillFolderHash": "faeebc60e43ea3881b5105fb16f9688f80eefeec",
       "installedAt": "2026-11-03T10:35:25.645Z",
-      "updatedAt": "2026-11-19T08:40:11.107Z"
+      "updatedAt": "2026-11-20T09:15:37.353Z"
     },
     "deliver-pr": {
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "6c3a160739dba666780cef6aa42518361638ab57",
+      "commit": "6274d671a7daa65edb030669635b9de3ddc1da16",
       "skillPath": "skills/deliver-pr/SKILL.md",
-      "skillFolderHash": "29418e6c4b4cdcbcaa004750c2a27cf1668f1623",
+      "skillFolderHash": "12dfdfb7106c4a6ea584b79bdb5a15dd749ee5cd",
       "installedAt": "2026-11-03T10:35:25.647Z",
-      "updatedAt": "2026-11-19T10:50:10.547Z"
-    },
-    "github-pr": {
-      "source": "Lynx-Business/skills",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "21d916e4936be44a20478871bfddac66cb212997",
-      "skillPath": "skills/github-pr/SKILL.md",
-      "skillFolderHash": "9559af1e2b05e5ecd8850a40c1b0d9b10aceda90",
-      "installedAt": "2026-11-03T10:35:25.655Z",
-      "updatedAt": "2026-11-17T14:53:17.410Z"
+      "updatedAt": "2026-11-20T09:15:37.374Z"
     },
     "watch-pr": {
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "07cb17526bca33872efd9ea2412a63a356a0249a",
+      "commit": "6274d671a7daa65edb030669635b9de3ddc1da16",
       "skillPath": "skills/watch-pr/SKILL.md",
-      "skillFolderHash": "14af2862a93825fbab68fd5435423b46ab803343",
+      "skillFolderHash": "f255ab36bfa0c29a77474a99d59a327fb5a5af85",
       "installedAt": "2026-11-03T10:35:25.656Z",
-      "updatedAt": "2026-11-19T08:40:11.126Z"
+      "updatedAt": "2026-11-20T09:15:37.390Z"
     },
     "herdr-core": {
       "source": "herdrdev/herdr-core",
@@ -184,11 +164,11 @@
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "b1d85241fd27c6320efcf9b65db69204d95ba423",
+      "commit": "6274d671a7daa65edb030669635b9de3ddc1da16",
       "skillPath": "skills/ship-release/SKILL.md",
-      "skillFolderHash": "b7152c71d91bcdb343de17f143b7ce33b76f1afc",
+      "skillFolderHash": "2fc57e679f48e67b383a6ce4ddbfb1feede9c362",
       "installedAt": "2026-11-16T14:41:32.085Z",
-      "updatedAt": "2026-11-16T14:41:32.085Z"
+      "updatedAt": "2026-11-20T09:15:37.405Z"
     }
   },
   "dismissed": {
