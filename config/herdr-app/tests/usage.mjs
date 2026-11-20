@@ -154,8 +154,8 @@ for (const usedPercent of [10, 50, 90]) {
 testMachines = [{ name: null, layout: "ready" }, { name: "server", layout: "ready" }, { name: "offline", layout: "unavailable" }, { name: "sandbox", temporary: true }];
 const discovered = await sources.namespace.discoverAccounts();
 assert.equal(discovered.accounts.length, 2, "Keep distinct remote accounts and deduplicate shared accounts across machines");
-assert.equal(discovered.errors.length, 1, "Report an unreachable machine without losing other accounts");
-assert.match(discovered.errors[0], /offline/);
+assert.equal(discovered.errors.length, 0, "Skip unreachable machines without any error");
+assert(!ioCalls.some((c) => c.on === "offline"), "Never run a program on an unreachable machine");
 const codex = discovered.accounts.find((a) => a.provider === "chatgpt");
 assert.deepEqual(Array.from(codex.sources), ["Codex (local)", "Codex (server)"]);
 assert.equal((await codex.load()).email, "remote@example.invalid", "Try the other machine when a shared account's first login fails");

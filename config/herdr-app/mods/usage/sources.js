@@ -281,7 +281,8 @@ async function discoverMachine(on) {
 
 /** Every account once, across this machine and the connected machines. */
 export async function discoverAccounts() {
-  const targets = [null, ...machines().filter((m) => m.name && !m.temporary).map((m) => m.name)];
+  // Only machines whose core answers: a failed exec on an unreachable one pops an error toast.
+  const targets = [null, ...machines().filter((m) => m.name && !m.temporary && m.layout === "ready").map((m) => m.name)];
   const results = await Promise.allSettled(targets.map(discoverMachine));
   const accounts = [];
   const errors = [];
