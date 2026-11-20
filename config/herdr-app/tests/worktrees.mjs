@@ -897,7 +897,7 @@ try {
   fetchPopup.fetchAll(graphCx); fetchPopup.fetchAll(graphCx); await settle();
   const fetches = gitCalls.filter((call) => call.args[0] === "fetch");
   assert.equal(fetches.length, beforeFetch + 1, "Ignore repeated Fetch presses while one fetch runs");
-  assert.deepEqual(Array.from(fetches.at(-1).args), ["fetch", "--all", "--no-prune", "--no-prune-tags"]);
+  assert.deepEqual(Array.from(fetches.at(-1).args), ["fetch", "--all", "--prune"]);
   gitCalls.length = 0;
   g.configure(fixtureRoot, refs.rows, mainRef, graphCx, true, "server"); await settle();
   g.inspect(m, graphCx); await settle();
@@ -1224,7 +1224,7 @@ try {
   Object.assign(removing, {
     repo: { root: "/repo", top: "/wt", machine: null }, handle, view: "remove", removeBranch: true,
     rows: [{ branch: "main", path: "/repo", main: true, spaces: ["main-space"] }],
-    sel: { branch: "topic", path: "/wt", spaces: ["wt-space"] }, close() { closed++; },
+    sel: { branch: "topic", path: "/wt", spaces: ["wt-space"] }, close() { closed++; }, reload() {},
   });
   removing.setMessage("", false);
   const removeTasks = [];
@@ -1232,7 +1232,11 @@ try {
   removing.confirm(removeCx);
   await Promise.all(removeTasks.splice(0));
   assert.equal(jobs.length, 0, "Removal no longer runs inside the popup");
-  assert.equal(closed, 1, "The popup closes once the removal is queued");
+  assert.equal(closed, 0, "The popup stays open once the removal is queued");
+  assert.equal(removing.view, "list", "The popup goes back to the list once the removal is queued");
+  assert.equal(watched.at(-1), "t99", "The list follows the queued removal");
+  watched.length = 0;
+  assert.match(removing.message, /Removed topic/, "The list says when the removal ends");
   const run = hcCalls.at(-1);
   assert(run.includes("--outlive-parent") && run.includes("task.kind=worktree-remove") && run.includes("task.state=running"));
   assert.deepEqual(Array.from(run.slice(run.indexOf("--") + 1)), ["wt", "-C", "/repo", "remove", "topic", "--yes", "--foreground", "--force-delete"]);
@@ -1244,6 +1248,7 @@ try {
   assert.equal(record.overlay.props.task, "t99");
 
   failTaskStart = true; closed = 0;
+  removing.view = "remove";
   removing.confirm(removeCx);
   await Promise.all(removeTasks.splice(0));
   failTaskStart = false;
@@ -1275,7 +1280,7 @@ try {
   Object.assign(removing, { view: "remove", failed: false, running: false, removeBranch: false, sel: { branch: "topic", remote: "origin", spaces: [] } });
   removing.confirm(removeCx);
   await Promise.all(removeTasks.splice(0));
-  assert.equal(closed, 1, "Removing a remote-only branch is allowed");
+  assert(!removing.failed && removing.view === "list", "Removing a remote-only branch is allowed");
   const remoteRun = hcCalls.at(-1);
   assert.deepEqual(Array.from(remoteRun.slice(remoteRun.indexOf("--") + 1)), ["git", "-C", "/repo", "push", "origin", "--delete", "topic"]);
   assert(remoteRun.includes("task.title=Delete remote branch · origin/topic"));

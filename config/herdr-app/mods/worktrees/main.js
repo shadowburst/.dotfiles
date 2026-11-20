@@ -10,8 +10,8 @@
 // Neovim does), and Tab moves keyboard focus.
 //
 // New queues setup and naming in herdr-core; Tasks opens the ready agent on request.
-// Remove is a background task too: the popup closes, and the task's Open button
-// shows the Remove view again (props.task) until wt (or git push --delete) ends.
+// Remove is a background task too: the popup goes back to the list, and the task's
+// Open button shows the Remove view again (props.task) until wt (or git push --delete) ends.
 // Merge runs `wt` in a hidden herdr-core terminal; its output shows here.
 //
 // In the New form, Tab and Shift+Tab go to the next or previous control.
@@ -279,7 +279,7 @@ export default class Worktrees extends View {
     this.fetching = true;
     const repo = this.repo;
     cx.spawn(async (cx) => {
-      const r = await git(repo.root, ["fetch", "--all", "--no-prune", "--no-prune-tags"], repo.machine);
+      const r = await git(repo.root, ["fetch", "--all", "--prune"], repo.machine);
       if (this.repo !== repo) { this.fetching = false; return; }
       this.fetching = false;
       this.setMessage(r.ok ? "Fetched all remotes." : `Fetch failed: ${r.err}`, r.ok);
@@ -973,9 +973,9 @@ export default class Worktrees extends View {
     });
   }
 
-  // The removal goes to the background and the popup closes. After wt succeeds,
-  // the removed checkout's spaces close; if the popup came from that checkout,
-  // the main checkout is shown first.
+  // The removal goes to the background and the popup goes back to the list. After
+  // wt succeeds, the removed checkout's spaces close; if the popup came from that
+  // checkout, the main checkout is shown first.
   remove(cx) {
     const r = this.sel, repo = this.repo;
     const after = [];
@@ -989,9 +989,16 @@ export default class Worktrees extends View {
     cx.notify();
     cx.spawn(async (cx) => {
       try {
-        await startRemoval(r, repo, this.removeBranch, after);
+        const task = await startRemoval(r, repo, this.removeBranch, after);
         this.running = false;
-        this.close();
+        this.back(cx);
+        this.setMessage(`Removing ${rowName(r)} in the background…`, true);
+        cx.notify();
+        const code = await Job.watch(task, () => {}).catch(() => 1);
+        if (this.repo !== repo) return;
+        this.setMessage(code === 0 ? `Removed ${rowName(r)}.` : `Cannot remove ${rowName(r)} (exit code ${code}). See Tasks.`, code === 0);
+        await this.reload(cx);
+        cx.notify();
       } catch (e) {
         this.running = false;
         this.failed = true;
