@@ -1,4 +1,4 @@
-config_version = 16
+config_version = 20
 
 [bar.main]
 background_opacity = 0.89999997988343239
@@ -398,12 +398,7 @@ alarm_duration = 0
 
 [plugins]
 auto_update = "all"
-enabled = [
-    "noctalia/screen_recorder",
-    "noctalia/translator",
-    "noctalia/wallpaper_depth",
-    "noctalia/timer"
-]
+enabled = [ "noctalia/screen_recorder", "noctalia/translator", "noctalia/wallpaper_depth", "noctalia/timer" ]
 
     [[plugins.source]]
     kind = "git"
