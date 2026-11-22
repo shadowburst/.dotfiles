@@ -2,7 +2,6 @@ _: {
   flake.homeModules.cli =
     { pkgs, ... }:
     {
-      # Resume restores saved permissions unless the CLI overrides them.
       home.shellAliases.codex = "codex --no-daemon --yolo";
 
       programs.codex = {
@@ -21,7 +20,6 @@ _: {
         # A store-path string lets Home Manager read the plugin name and version from its manifest.
         plugins = [
           "${pkgs.ponytail.src}"
-          "${pkgs.herdr-resume}/codex"
         ];
       };
     };

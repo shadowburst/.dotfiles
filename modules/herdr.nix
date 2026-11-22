@@ -17,7 +17,7 @@ in
   flake.homeModules.cli =
     { pkgs, ... }:
     {
-      home.packages = [ pkgs.herdr-core-resume ]; # hc, including one-shot conversation recovery
+      home.packages = [ pkgs.herdr-core ];
     };
 
   flake.homeModules.gui =
@@ -46,7 +46,7 @@ in
 
       # Read-only: the settings screen and the zoom keys cannot save changes.
       home.file.${appFile "settings.json"}.source = json.generate "herdr-app-settings.json" {
-        core = lib.getExe' pkgs.herdr-core-resume "hc";
+        core = lib.getExe' pkgs.herdr-core "hc";
         font = config.stylix.fonts.monospace.name;
         font_size = 11;
         ui_font = config.stylix.fonts.sansSerif.name;

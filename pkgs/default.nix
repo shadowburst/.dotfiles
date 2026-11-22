@@ -6,10 +6,6 @@ let
 
   mkPackages = { lib, pkgs }: rec {
     ponytail = mkPonytail { inherit pkgs; };
-    herdr-core-resume = import ./herdr-core-resume { inherit pkgs; };
-    herdr-resume = import ./herdr-resume {
-      inherit pkgs;
-    };
     db-export = mkDbExport { inherit pkgs; };
     browse = mkBrowse { inherit pkgs; };
   };
