@@ -1,6 +1,6 @@
 # UI evidence
 
-For a change to pages or components: before screenshots, after screenshots, and a WebM recording of each changed interaction. A sub-agent captures them and looks at them; you work from its asset list only. You open no image or video file yourself: each one stays in your context for the rest of the session.
+For a change to pages or components: before screenshots, after screenshots, and a WebM recording of each changed interaction. A sub-agent captures them and looks at them, and you work from its asset list: an image you open yourself stays in your context for the rest of the session. When the environment offers no sub-agent, do its brief yourself.
 
 ## When
 
@@ -9,7 +9,7 @@ For a change to pages or components: before screenshots, after screenshots, and 
 
 ## Sub-agent
 
-Any isolated agent the harness offers, on any model. Brief:
+Brief:
 
 ```
 Capture UI evidence. Change no tracked file; no commit or push.

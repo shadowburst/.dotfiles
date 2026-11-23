@@ -9,8 +9,8 @@ Take the task to a PR that is ready to merge; the merge stays with the user. "Pu
 
 ## Mode
 
-- **Interactive** (default). Ask only: (1) plan confirmation before risky or design-level work, in one batched call; (2) a product or UX choice that changes what users see and has no clear default; (3) money, or a step outside the grant. Ask with the harness's question tool (`AskUserQuestion` in Claude Code, `request_user_input` in Codex).
-- **Auto**: `deliver auto`, or "auto" or "don't ask" in the request. Call no question tool. Blocked: publish a draft PR whose body starts with `Needs you:`, one line per item, then stop.
+- **Interactive** (default). Ask only: (1) plan confirmation before risky or design-level work, in one batched call; (2) a product or UX choice that changes what users see and has no clear default; (3) money, or a step outside the grant.
+- **Auto**: `deliver auto`, or "auto" or "don't ask" in the request. Ask nothing. Blocked: publish a draft PR whose body starts with `Needs you:`, one line per item, then stop.
 
 Both modes take these defaults and list each under Decisions taken. Running or rerunning tests, review rounds within budget, ready state, and replacing screenshots are yours to decide.
 
@@ -42,7 +42,7 @@ From `git diff --stat <base>` (or the plan); the user can override it ("deliver 
 1. **Start** in the current checkout, on the task's branch; all steps run there. Read the ClickUp task once with `clickup_get_task`; its ID comes from the branch name, the session's messages, or the PR's `- ClickUp:` line.
 2. **Plan** (normal, risky) in 5–10 lines: goal, approach, the existing pattern you follow (`file:line`), what stays out. Use the shape the code already has; add a layer, abstraction, or registry only when the task needs one, in its smallest version, listed under Decisions taken (auto mode: the PR stays draft). Interactive, risky or design-level: the user confirms the plan once; a plan or design already confirmed in this session (grilling, a summary) counts. Auto: the plan goes at the top of the PR body.
 3. **Before capture** (UI change), before the first edit: [EVIDENCE.md](EVIDENCE.md).
-4. **Build.** Normal and risky: first a test that fails without the change; keep its red and green output as the behaviour evidence. `composer test -- tests/<path>Test.php` while coding. Before each commit: `composer fix` and `pnpm run fix` (those the repo has). Conventional commits.
+4. **Build.** Normal and risky: first a test that fails without the change; keep its red and green output as the behaviour evidence. Before each commit: `composer fix` and `pnpm run fix` (those the repo has). Conventional commits.
 5. **Review** (normal, risky): the `cross-review` skill, with the tier and the plan.
 6. **Push.** `git fetch`; when the base moved, rebase on `origin/<base>`; `git push --force-with-lease`.
 7. **Verify.** UI change: capture the after state ([EVIDENCE.md](EVIDENCE.md)). Then `scripts/verify.sh --full` (normal, risky) or `scripts/verify.sh` (trivial), per [Tests](#tests). On failure: fix, commit, push, `scripts/verify.sh`.
@@ -50,20 +50,17 @@ From `git diff --stat <base>` (or the plan); the user can override it ("deliver 
 9. **ClickUp**, once at the end: [ClickUp](#clickup).
 10. **Report:** PR link, ready or draft, decisions, risks. In a stack, the stack is the task: go on to the next PR, and report once, after the top PR.
 
-**Ready to merge:** `local/verify` success on the head (plus the one `full:` run of this PR for normal and risky), no open review blocker or should, and GitHub reports the PR mergeable.
+**Ready to merge:** `local/verify` success on the head (plus, for normal and risky, the one full run of this PR or its stack top, with each failed test fixed and passing alone), no open review blocker or should, and GitHub reports the PR mergeable.
 
 ## Tests
 
-Four test commands, run on the host, and no other:
+While coding and between review rounds, run the tests the change needs. Under Composer, options need `--`: `composer test -- <file> --filter=<name>`. Verify runs on the host, after the push:
 
-1. `composer test -- tests/<path>Test.php [--filter=<name>]` while coding.
-2. `vendor/bin/pest --agent='<code>'` for a one-off check without a test file (only where `pestphp/pest-plugin-agent` is installed).
-3. `scripts/verify.sh` on each head you push, after the push: static checks, then the test files changed since the base. Status `changed: …`. Between review rounds, run item 1 on the files the fix touches.
-4. `scripts/verify.sh --full` once per PR (normal, risky), never a second time. In a stack, run it once, on the top PR after the stack's review: it covers every PR below. Status `full: …`.
-
-- Run verify as the harness's background command (`timeout 90m scripts/verify.sh --full` for the full run) and act on its exit; no "still waiting" turns, no `sleep` loops. Exit 124 is a blocker to report (auto: draft with `Needs you:`), not a reason to run it again.
+- **`scripts/verify.sh`** on each head you push: static checks, then the test files changed since the stack's base. Status `changed: …`. In a stack, run it on the top PR only: its success marks every PR below (`… (via stack top <sha>)`).
+- **`scripts/verify.sh --full`** once per PR (normal, risky); in a stack, once on the top PR after the stack's review. That run stays valid, pass or fail: run it again only when the user asks. It runs both test steps, so it lists every failure. After a failure: fix each failed test, run its file, push, and run `scripts/verify.sh`. Status `full: …`.
+- Run verify in the background (`timeout 90m scripts/verify.sh --full` for the full run) and act on its exit; no "still waiting" turns, no `sleep` loops. Exit 124 is a blocker to report (auto: draft with `Needs you:`), not a reason to run it again.
 - A failing step prints its end. Read `storage/logs/verify.log` only when that is not enough, and only the lines you need (`grep`, `tail`).
-- **Flaky:** a test that fails in the `--full` run and passes alone with `composer test -- <file>`. Add Pest's `->flaky()` to it with `// Flaky under parallel load (found <YYYY-MM-DD>).`, commit, run `scripts/verify.sh`, and name it in How verified.
+- **Flaky:** a test that fails in the `--full` run and passes alone. Add Pest's `->flaky()` to it with `// Flaky under parallel load (found <YYYY-MM-DD>).`, commit, run `scripts/verify.sh`, and name it in How verified.
 - A repo without `scripts/verify.sh`: run its documented checks, then `gh api repos/{owner}/{repo}/statuses/<sha> -f state=success -f context=local/verify -f description="full: <result>"`.
 
 ## PR body
@@ -72,7 +69,7 @@ Four test commands, run on the host, and no other:
 
 - **Why:** problem and outcome, 1–2 sentences.
 - **What changed:** user-visible behaviour first, then what a reviewer needs.
-- **How verified:** tier; red-then-green test output; the commit of the `full:` run (in a stack, the top PR's run); tests marked flaky; review rounds and reviewer; UI assets as `![<description>](<path>)`, or "before not captured".
+- **How verified:** tier; red-then-green test output; the commit of the full run (in a stack, the top PR's run) and its result; after a failure, each failed test with its fix; tests marked flaky; review rounds and reviewer model; UI assets as `![<description>](<path>)`, or "before not captured".
 - **Decisions taken.**
 - **Risks:** rollback (two-way, or one-way and what is lost), blast radius, flaky tests, base failures.
 

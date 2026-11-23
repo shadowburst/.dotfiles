@@ -106,41 +106,41 @@
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "f56d0eb50437169abbab341af801eb1b2946fded",
+      "commit": "70867627c46ce655d2706b42aa7c35882b73ff50",
       "skillPath": "skills/review-pr/SKILL.md",
-      "skillFolderHash": "b6b0dc8ab6220bb9232f9f6b43600b382cdc2bb7",
+      "skillFolderHash": "67a7d1cc1aff318b53a4f345d538923dc15316c3",
       "installedAt": "2026-09-23T12:49:33.294Z",
-      "updatedAt": "2026-11-20T10:21:13.747Z"
+      "updatedAt": "2026-11-23T19:36:50.413Z"
     },
     "cross-review": {
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "6274d671a7daa65edb030669635b9de3ddc1da16",
+      "commit": "70867627c46ce655d2706b42aa7c35882b73ff50",
       "skillPath": "skills/cross-review/SKILL.md",
-      "skillFolderHash": "faeebc60e43ea3881b5105fb16f9688f80eefeec",
+      "skillFolderHash": "717ba84799b8d6a94a84ae2ae25eb35e93dcd835",
       "installedAt": "2026-11-03T10:35:25.645Z",
-      "updatedAt": "2026-11-20T09:15:37.353Z"
+      "updatedAt": "2026-11-23T19:36:50.483Z"
     },
     "deliver-pr": {
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "c9d910234e5f8cee89703a4e0969a1f32622c160",
+      "commit": "70867627c46ce655d2706b42aa7c35882b73ff50",
       "skillPath": "skills/deliver-pr/SKILL.md",
-      "skillFolderHash": "62bf133e18a03351e979a5a13ad3287ca514c411",
+      "skillFolderHash": "310df2d49b3b6b120e6a99ef52aa84f62142de65",
       "installedAt": "2026-11-03T10:35:25.647Z",
-      "updatedAt": "2026-11-20T13:10:23.445Z"
+      "updatedAt": "2026-11-23T19:36:50.531Z"
     },
     "watch-pr": {
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "6274d671a7daa65edb030669635b9de3ddc1da16",
+      "commit": "70867627c46ce655d2706b42aa7c35882b73ff50",
       "skillPath": "skills/watch-pr/SKILL.md",
-      "skillFolderHash": "f255ab36bfa0c29a77474a99d59a327fb5a5af85",
+      "skillFolderHash": "20ff2e39f8c38f2feff5e0989d1d14c021e2ca8c",
       "installedAt": "2026-11-03T10:35:25.656Z",
-      "updatedAt": "2026-11-20T09:15:37.390Z"
+      "updatedAt": "2026-11-23T19:36:50.566Z"
     },
     "herdr-core": {
       "source": "herdrdev/herdr-core",
