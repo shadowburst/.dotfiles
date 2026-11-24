@@ -27,6 +27,7 @@ const module = values => new vm.SyntheticModule(Object.keys(values), function ()
   for (const [key, value] of Object.entries(values)) this.setExport(key, value);
 }, { context });
 let sp = [], allAgents = [], calls = [];
+const overlays = [];
 const shared = {};
 const t = { foreground: "#eeeeee", muted: "#aaaaaa", dim: "#777777", selected: "#333333", hover: "#222222", accent: "#abcdef", blocked: "#ffaaaa", done: "#aaffaa", working: "#aaaaff", idle: "#aaaaaa", unknown: "#777777" };
 const kit = module({ View: class {}, div: () => element("div"), svg: path => element(path), image: path => element(path) });
@@ -36,7 +37,7 @@ const herdr = module({
   shared: key => shared[key], setShared: (key, value) => { shared[key] = value; },
   run: (command, args) => calls.push({ command, args }),
   layout: () => ({ id: "sidebar", size: { px: 340 } }),
-  openOverlay() {}, exec() {}, hc() {}, watchFolder() {}, window() {},
+  openOverlay: spec => overlays.push(spec), closeOverlay() {}, props() {}, exec() {}, hc() {}, watchFolder() {}, window() {},
 });
 const pr = module({ PullRequests: class {} });
 const main = new vm.SourceTextModule(await readFile(new URL("../mods/spaces-pr/main.js", import.meta.url), "utf8"), { context });
@@ -211,4 +212,26 @@ for (const state of ["OPEN", "MERGED", "CLOSED"]) {
     assert(nodes(badge).some(n => n.kind === "mods/workspace-chrome/check.svg"), "Keep review status marks");
   }
 }
+// The space menu: worktree items open the worktrees popup (wt), never Herdr's git dialog.
+const menuModule = new vm.SourceTextModule(await readFile(new URL("../mods/space-menu/main.js", import.meta.url), "utf8"), { context });
+await menuModule.link(name => ({ "gpui-kit": kit, "gpui-base": base, herdr })[name]);
+await menuModule.evaluate();
+const labels = git => Array.from(menuModule.namespace.items({ id: "root", git }), item => item.label);
+assert.deepEqual(labels(null), ["Rename", "Close"]);
+assert.deepEqual(labels("main"), ["Rename", "New worktree", "Open worktree", "Close"]);
+assert.deepEqual(labels("linked"), ["Rename", "New worktree", "Open worktree", "Remove worktree", "Close"]);
+overlays.length = 0;
+for (const item of menuModule.namespace.items({ id: "root", git: "linked" })) if (item.label.includes("worktree")) item.act();
+assert.deepEqual(overlays.map(o => [o.mod, o.props.space, o.props.action]), [["worktrees", "root", "new"], ["worktrees", "root", "open"], ["worktrees", "root", "remove"]]);
+for (const [g, git] of [[{ linked: true }, "linked"], [{ linked: false }, "main"], [null, null]]) {
+  overlays.length = 0;
+  const menuView = new Spaces();
+  const target = { id: "root", folder: "/repo", machine: null, tabs: [] };
+  menuView.git = new Proxy({}, { get: () => g });
+  menuView.menu(target);
+  assert.equal(overlays[0].mod, "space-menu");
+  assert.equal(overlays[0].props.git, git);
+}
+console.log("Space menu: Git-aware items and wt worktree actions passed.");
+
 console.log("Spaces: status, tasks, one branch icon per row, worktree folding, visible-only alt+tab, plain PR numbers, Git details, grouping, compact mode, selection and drag passed.");

@@ -7,6 +7,9 @@ export async function startCreation(spec, repo, cfg) {
   if (!source) throw new Error("The worktree task runner is missing.");
   const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const title = `New worktree · ${repo.name || repo.root.split("/").pop()}`;
+  // Tasks shows "Naming the branch…" until this label exists.
+  const labels = { "task.kind": "worktree", "task.title": title, "task.state": "running",
+    ...(spec.branch ? { "task.branch": spec.branch } : {}) };
   const task = { ...spec, root: repo.root,
     naming: repo.machine ? ["textgen"] : cfg?.naming_command,
     agent: spec.prompt ? agentArgv(spec.agent, spec.sel) : [] };
@@ -16,14 +19,13 @@ export async function startCreation(spec, repo, cfg) {
   try {
     const result = await hc(["run", ...(repo.machine ? ["--on", repo.machine] : []), "--bg", "--json", "--outlive-parent", "--no-notify",
       "--name", `worktree-${id}`, "--cwd", repo.root,
-      "--label", "task.kind=worktree", "--label", `task.title=${title}`,
-      "--label", "task.state=running", "--", "python3", "-c", source, file]);
+      ...Object.entries(labels).flatMap(([key, value]) => ["--label", `${key}=${value}`]), "--", "python3", "-c", source, file]);
     if (result.code !== 0) throw new Error(result.stderr || result.stdout || "Cannot start the background task.");
     const started = JSON.parse(result.stdout);
     if (!started.address) throw new Error("Cannot start the background task.");
     const address = repo.machine && !started.address.startsWith(`${repo.machine}/`) ? `${repo.machine}/${started.address}` : started.address;
     setShared("tasks.records", { ...(shared("tasks.records") || {}), [address]: {
-      address, created_ms: Date.now(), state: "live", labels: { "task.kind": "worktree", "task.title": title, "task.state": "running" },
+      address, created_ms: Date.now(), state: "live", labels,
     } });
     return address;
   } catch (error) {

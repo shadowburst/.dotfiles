@@ -49,7 +49,11 @@ export class Graph {
 
   configure(repo, refs, selected, cx, reveal = false, on = null) {
     const catalogKey = JSON.stringify([on, repo, refs.map(rowKey).sort()]);
-    if (catalogKey !== this.catalogKey) this.details = null;
+    if (catalogKey !== this.catalogKey) {
+      // Closed details cannot keep the keyboard: the popup would get no keys.
+      if (this.details && this.detailsHandle.is_focused()) this.handle.focus();
+      this.details = null;
+    }
     this.catalogKey = catalogKey;
     this.refs = refs;
     this.selected = selected;
@@ -178,7 +182,6 @@ export class Graph {
       if (next >= this.rows.length - 5) this.load(cx);
     } else if (key === "enter") this.inspect(this.cursor || this.rows[at]?.sha, cx);
     else if (key === "r") this.reveal(cx);
-    else if (key === "c" && this.loading) this.cancel(cx);
     else return false;
     cx.notify();
     return true;

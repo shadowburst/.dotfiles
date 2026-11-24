@@ -8,7 +8,7 @@ const root = "/repo";
 let failTaskStart, calls, jobs;
 let testSpaces = [], testPanes = [], testFocus = null;
 let testAgents = [], fixtureRoot, fixtureItems, historyGate, remoteGate;
-let testTerminals = [];
+let testTerminals = [], testProps;
 let testPanel, testPanelBody, testLayout;
 const taskNotices = [];
 const taskFinalStates = {};
@@ -56,7 +56,7 @@ const herdr = module({
   agents() { return testAgents; }, appHome() { return "/config/herdr-app"; }, home() { return "/home/test"; }, panes() { return testPanes; },
   terminals() { return testTerminals; }, notify(notice) { taskNotices.push(notice); },
   async readTextFile(path) { for (const name of ["create.py", "codediff.lua"]) if (path.endsWith(`/${name}`)) return readFile(new URL(`../mods/worktrees/${name}`, import.meta.url), "utf8"); }, spaces() { return testSpaces; },
-  closeOverlay() {}, focused() { return testFocus; }, props() {}, settings() { return {}; }, theme() { return {}; },
+  closeOverlay() {}, focused() { return testFocus; }, props() { return testProps; }, settings() { return {}; }, theme() { return {}; },
   shared(key) { return testShared[key]; }, setShared(key, value) { testShared[key] = value; },
   machines() { return []; }, openOverlay(spec) { overlays.push(spec); }, async hc(args) {
     hcCalls.push(Array.from(args));
@@ -148,6 +148,8 @@ assert.equal(jobs.length, 0, "Setup no longer belongs to the popup's task lifeti
 assert(!calls.some((c) => ["space.new", "tab.new", "space.select"].includes(c.command)), "Queuing a task must not steal focus");
 assert(hcCalls.at(-1).includes("--outlive-parent"), "The task must survive the popup closing");
 assert(hcCalls.at(-1).includes("task.state=running"));
+assert(hcCalls.at(-1).includes("task.branch=fix/test"), "A known branch never shows as being named");
+assert.equal(testShared["tasks.records"]["t99"]?.labels["task.branch"], "fix/test");
 assert.equal(JSON.parse(execCalls.at(-1).args.at(-1)).prompt, "Fix this");
 failTaskStart = true;
 const failedSubmission = await launch("Keep this draft");
@@ -158,6 +160,7 @@ assert.equal(execCalls.at(-1).command, "rm", "Remove the private submission file
 await creation.namespace.startCreation({ branch: "", base: "main", prompt: "An automatic name", agent: "codex" }, { root }, {});
 const automaticTask = JSON.parse(execCalls.at(-1).args.at(-1));
 assert.equal(automaticTask.branch, "", "An empty branch lets the worker name it");
+assert(!hcCalls.at(-1).some((arg) => arg.startsWith("task.branch=")), "An automatic name has no branch label yet");
 console.log("Worktree submission: background checkout and agent tasks, background naming, retained focus, and failed submission passed.");
 
 const view = new main.namespace.default();
@@ -558,6 +561,23 @@ launchSpec = null;
 branchView.submitNew(branchCx);
 assert.equal(launchSpec, null, "Base must still be an existing branch");
 assert.match(branchView.message, /existing base branch/);
+branchView.base.set_value("main");
+branchView.prompt.set_value("  ");
+branchView.prompt.emit("change", branchCx);
+branchView.branch.set_value("");
+branchView.branch.emit("change", branchCx);
+assert(!branchView.fields().includes("launch"));
+branchView.submitNew(branchCx);
+assert.equal(launchSpec, null, "Without a task and a branch there is nothing to start");
+branchView.setField(branchView.fields().indexOf("branch"));
+branchView.branch.set_value("f");
+branchView.branch.emit("change", branchCx);
+assert(branchView.fields().includes("launch"), "A branch alone can start");
+assert.equal(branchView.fields()[branchView.field], "branch", "Start's arrival does not move the cursor");
+assert.equal(branchView.dropdown, "branch");
+branchView.submitNew(branchCx);
+assert.equal(launchSpec.prompt, "", "A blank task starts no agent");
+assert.equal(launchSpec.branch, "f");
 console.log("Editable branch: matching, free input, explicit selection, cancellation, automatic naming, and action-button Tab stops passed.");
 
 await launch("", "origin");
@@ -672,6 +692,16 @@ try {
   assert(progressive.names.names.includes("refs/remotes/origin/feature"), "Update remote base choices too");
   assert(!progressive.loadingRemotes, "Clear remote loading after completion");
   assert(progressive.rows.every((r) => !r.pending), "Replace pending local identities with real status data");
+
+  for (const [action, expected] of [["open", "list"], ["new", "new"], ["remove", "remove"]]) {
+    testProps = { space: "progressive", action };
+    const asked = new main.namespace.default();
+    asked.init({}, progressiveCx);
+    while (progressiveTasks.length) await Promise.all(progressiveTasks.splice(0));
+    assert.equal(asked.view, expected, `The space menu's ${action} action starts in its view`);
+    if (action === "remove") assert.equal(asked.sel.path, fixtureRoot, "Remove targets the space's own checkout");
+  }
+  testProps = undefined;
 
   const failedRemote = holdRemotes("remote list unavailable");
   const loadedRows = progressive.rows;
@@ -844,6 +874,33 @@ try {
   assert(popup.graph.detailsHandle.is_focused(), "Tab reaches open commit details");
   popup.graph.detailsHandle.focus(); popup.tabKey(-1, graphCx);
   assert(popup.graph.handle.is_focused());
+  popup.graph.details = { sha: m, parents: [], message: "" };
+  const paneKeys = [], press = (key) => popup.key({ key_char: key.length === 1 ? key : undefined, modifiers: {}, keystroke: key }, graphCx);
+  const listMethods = { openNew: "n", pullCurrent: "p", pushCurrent: "P", openCommit: "c", fetchAll: "f", startFilter: "/", close: "q" };
+  popup.openAction = (view) => paneKeys.push(popup.removeBranch && view === "remove" ? "X" : { merge: "m", remove: "x" }[view]);
+  for (const [method, key] of Object.entries(listMethods)) popup[method] = () => paneKeys.push(key);
+  const everyKey = [...Object.values(listMethods), "m", "x", "X"];
+  const wasLoading = popup.graph.loading;
+  popup.graph.loading = true; // c commits while history loads, too
+  for (const focusPane of [() => popup.handle.focus(), () => popup.graph.handle.focus(), () => popup.graph.detailsHandle.focus(), () => { popup.preview = 1; popup.previewHandle.focus(); }]) {
+    focusPane();
+    paneKeys.length = 0;
+    everyKey.forEach(press);
+    assert.deepEqual(paneKeys, everyKey, "List commands work from every pane");
+  }
+  const listCursor = popup.cursor, opensBefore = openedOnClick;
+  popup.preview = 0;
+  popup.graph.detailsHandle.focus();
+  ["enter", "j", "G"].forEach(press);
+  assert.equal(openedOnClick, opensBefore, "Enter in a pane does not open the selected checkout");
+  assert.equal(popup.cursor, listCursor, "A pane's navigation does not move the list");
+  popup.graph.loading = wasLoading;
+  for (const method of ["openAction", ...Object.keys(listMethods)]) delete popup[method];
+  popup.graph.details = { sha: m };
+  popup.graph.detailsHandle.focus();
+  popup.graph.catalogKey = "changed";
+  popup.graph.configure(popup.graph.repo, popup.graph.refs, popup.graph.selected, graphCx);
+  assert(!popup.graph.details && popup.graph.handle.is_focused(), "Details closed by a refresh give the keyboard back to the graph");
   popup.rows[0].pr = 123;
   popup.setRows("main", popup.rows.map((r) => ({ ...r, pr: 0 })));
   assert.equal(popup.rows[0].pr, 123, "Local-only polling keeps forge metadata already loaded");
@@ -1337,6 +1394,11 @@ const taskCx = { ...initCx, notify() {}, spawn(fn) { taskJobs.push(fn(taskCx)); 
 taskView.init({}, taskCx);
 text.length = 0;
 taskView.render();
+assert(text.includes("Naming the branch…"), "Only a task without a branch is being named");
+testTerminals.find((t) => t.address === "running").labels["task.branch"] = "fix/existing";
+text.length = 0;
+taskView.render();
+assert(text.includes("Setting up fix/existing…") && !text.includes("Naming the branch…"));
 assert(text.includes("Failed (exit 7)"), "Do not label a failed process as Ready");
 taskView.open(entries.find((t) => t.address === "ready"), taskCx);
 await Promise.all(taskJobs.splice(0));

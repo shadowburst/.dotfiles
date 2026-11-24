@@ -12,9 +12,11 @@
 // New queues setup and naming in herdr-core; Tasks opens the ready agent on request.
 // Remove is a background task too: the popup goes back to the list, and the task's
 // Open button shows the Remove view again (props.task) until wt (or git push --delete) ends.
+// props.action (the space menu): "new" and "remove" start in that view.
 // Merge runs `wt` in a hidden herdr-core terminal; its output shows here.
 //
 // In the New form, Tab and Shift+Tab go to the next or previous control.
+// Without a task, Start sets up the branch's worktree and starts no agent.
 // Choices open with Enter, Space or an arrow; Up/Down select, Enter confirms.
 
 import { View, div, image, svg } from "gpui-kit";
@@ -139,11 +141,12 @@ export default class Worktrees extends View {
     });
     this.filtering = false;
 
-    this.prompt = TextareaState.new({ placeholder: "What should the agent do?" });
+    this.prompt = TextareaState.new({ placeholder: "What should the agent do? Leave empty to only set up the branch's worktree." });
     this.prompt.on("submit", (event, cx) => {
       if (event.secondary && !event.shift && this.view === "new") this.submitNew(cx);
     });
     this.promptEmpty = true;
+    this.branchEmpty = true;
     this.prompt.on("change", (_e, cx) => {
       this.draftSave?.cancel();
       this.draftSave = cx.timer.after(200, () => this.saveDraft());
@@ -162,6 +165,7 @@ export default class Worktrees extends View {
     this.target = InputState.new({});
     this.base.on("change", (_e, cx) => { this.saveDraft(); cx.notify(); });
     this.branch.on("change", (_e, cx) => {
+      this.syncBranch();
       this.saveDraft();
       if (this.view === "new" && !this.busy && this.fields()[this.field] === "branch" && this.branch.value() !== this.branchPicked) {
         return this.showChoice("branch", true, cx);
@@ -218,8 +222,10 @@ export default class Worktrees extends View {
       if (this.repo !== repo) return;
       this.restoreForm();
       this.refreshOpencode(cx);
+      if (props()?.action === "new" && this.view === "list") this.openNew(cx);
       await this.reload(cx);
       if (this.repo !== repo) return;
+      if (props()?.action === "remove" && this.view === "list") this.openRemove(cx);
       // PR numbers need the network: after the first draw.
       const full = await loadRows(repo.root, true, repo.machine);
       if (this.repo !== repo) return;
@@ -751,7 +757,7 @@ export default class Worktrees extends View {
   // Tab follows the composer, then the branch settings below it.
   fields() {
     const shown = (f) => f === "agent" || (this.agent === "opencode" && f === "model") || this.options(f).length > 0;
-    return ["workspace", "prompt", ...CHOICES.filter((f) => !["workspace", "branch", "base"].includes(f) && shown(f)), ...(!this.promptEmpty ? ["launch"] : []), "branch", "base", "back"];
+    return ["workspace", "prompt", ...CHOICES.filter((f) => !["workspace", "branch", "base"].includes(f) && shown(f)), ...(this.canStart() ? ["launch"] : []), "branch", "base", "back"];
   }
 
   setField(i) {
@@ -886,11 +892,25 @@ export default class Worktrees extends View {
     }
   }
 
+  // Without a task, the branch alone makes a worktree without an agent.
+  canStart() {
+    return !this.promptEmpty || !this.branchEmpty;
+  }
+
+  // Start comes before Branch in fields(): keep the cursor on its field when Start comes or goes.
+  syncBranch() {
+    const empty = !this.branch.value().trim();
+    if (empty === this.branchEmpty) return;
+    const name = this.fields()[this.field];
+    this.branchEmpty = empty;
+    this.field = Math.max(this.fields().indexOf(name), 0);
+  }
+
   submitNew(cx) {
     if (this.busy) return;
-    const prompt = this.prompt.value();
+    const prompt = this.prompt.value().trim() ? this.prompt.value() : "";
     const base = this.base.value().trim();
-    if (!prompt.trim()) return this.fail("The task is empty.", cx);
+    if (!prompt && !this.branch.value().trim()) return this.fail("Enter a task or a branch.", cx);
     if (!base) return this.fail("The base is empty.", cx);
     if (!this.names.names.includes(base)) return this.fail("Select an existing base branch.", cx);
     if (this.createFromBase && this.names.local.has(this.branch.value().trim())) return this.fail("Choose an unused local branch name.", cx);
@@ -945,6 +965,14 @@ export default class Worktrees extends View {
       });
     } else this.handle.focus();
     cx.notify();
+  }
+
+  // The Remove view of the checkout that the popup was asked from.
+  openRemove(cx) {
+    const at = this.visible().findIndex((r) => r.path === this.repo.top);
+    if (at < 0) return;
+    this.cursor = at;
+    this.openAction("remove", cx);
   }
 
   confirm(cx) {
@@ -1057,23 +1085,18 @@ export default class Worktrees extends View {
     const typed = e.key_char?.length === 1 && e.key_char > " " && !m.control && !m.alt && !m.platform;
     const key = typed ? e.key_char : e.keystroke;
     if (this.busy || key === "tab" || key === "shift-tab" || key === "escape") return;
-    if (graphFocus || previewFocus) {
-      if (graphFocus && this.graph.key(key, cx)) return;
-      if (previewFocus && ["j", "down"].includes(key)) this.moveFile(1, cx);
-      else if (previewFocus && ["k", "up"].includes(key)) this.moveFile(-1, cx);
-      else if (previewFocus && ["enter", "space", "o"].includes(key)) this.toggleFile(this.fileCursor, cx);
-      else if (previewFocus && key === "ctrl-d") { this.scrollPreview(10); cx.notify(); }
-      else if (previewFocus && key === "ctrl-u") { this.scrollPreview(-10); cx.notify(); }
-      else if (this.view !== "list") return;
-      else if (key === "L") this.setPreview(this.preview + 1, cx);
-      else if (key === "H") this.setPreview(this.preview - 1, cx);
-      else if (key === "p") this.pullCurrent(cx);
-      else if (key === "P") this.pushCurrent(cx);
-      else if (key === "c") this.openCommit(cx);
-      else if (key === "f") this.fetchAll(cx);
-      else if (key === "/") this.startFilter(cx);
-      return;
+    // A focused pane keeps its navigation keys; every other key acts as in the list.
+    if (graphFocus && this.graph.key(key, cx)) return;
+    if (previewFocus) {
+      if (["j", "down"].includes(key)) return this.moveFile(1, cx);
+      if (["k", "up"].includes(key)) return this.moveFile(-1, cx);
+      if (["enter", "space", "o"].includes(key)) return this.toggleFile(this.fileCursor, cx);
+      if (["ctrl-d", "ctrl-u"].includes(key)) {
+        this.scrollPreview(key === "ctrl-d" ? 10 : -10);
+        return cx.notify();
+      }
     }
+    if ((graphFocus || previewFocus) && (this.view !== "list" || ["enter", "g", "G", "home", "end"].includes(key))) return;
     if (this.message && !this.failed) this.message = "";
     const field = this.fields()[this.field];
     if (this.view === "new" && CHOICES.includes(field) && typed && !this.dropdown) {
@@ -1465,6 +1488,7 @@ export default class Worktrees extends View {
 
   formView(t, ui) {
     this.promptEmpty = !this.prompt.value().trim();
+    this.syncBranch();
     const fields = this.fields();
     const on = (f) => fields[this.field] === f;
     const row = (f, control) => v_flex().flex_1().min_w(0).gap(6)
@@ -1481,7 +1505,7 @@ export default class Worktrees extends View {
         .child(h_flex().flex_none().p(10).gap(8).items_center().children(choices.map((f) =>
           div().flex_1().min_w(0).when(f !== "model", (el) => el.flex_none().w(f === "agent" ? 160 : 120))
             .child(this.choiceView(f, on(f), t))))
-          .child(ui.button("launch", "Start", "Ctrl ↵", (cx) => this.submitNew(cx), "primary", Boolean(this.busy) || this.promptEmpty))))
+          .child(ui.button("launch", "Start", "Ctrl ↵", (cx) => this.submitNew(cx), "primary", Boolean(this.busy) || !this.canStart()))))
       .when(Boolean(opencodeNote), (el) => el.child(div().text_size(11.5).text_color(t.blocked).child(opencodeNote)))
       .child(h_flex().flex_none().gap(16)
         .child(row("branch", this.choiceView("branch", on("branch"), t)))
