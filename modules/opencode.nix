@@ -34,6 +34,10 @@ _: {
         };
         cli = {
           animations = true;
+          prompt = {
+            paste = "full";
+            image_preview = true;
+          };
           session = {
             sidebar = "auto";
             image_preview = true;
