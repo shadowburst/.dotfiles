@@ -77,7 +77,9 @@ The type is a Conventional Commit type. The summary has at most 72 characters.]]
 local function generate_commit()
   local neogit = require("neogit")
   local cwd = neogit.status.instance().cwd
-  local diff = vim.system({ "git", "diff", "--cached", "--no-color", "--no-ext-diff" }, { cwd = cwd, text = true }):wait()
+  local diff = vim
+    .system({ "git", "diff", "--cached", "--no-color", "--no-ext-diff" }, { cwd = cwd, text = true })
+    :wait()
   if diff.code ~= 0 or vim.trim(diff.stdout or "") == "" then
     Snacks.notify.warn("Nothing is staged.", { title = "Neogit" })
     return
@@ -91,7 +93,10 @@ local function generate_commit()
       local message = vim.trim(((result.stdout or ""):gsub("^%s*```%w*\n", ""):gsub("\n```%s*$", "")))
       if result.code ~= 0 or message == "" then
         local err = vim.trim(result.stderr or "")
-        Snacks.notify.error(err ~= "" and err:sub(-500) or "textgen exited with code " .. result.code, { title = "textgen" })
+        Snacks.notify.error(
+          err ~= "" and err:sub(-500) or "textgen exited with code " .. result.code,
+          { title = "textgen" }
+        )
         return
       end
       local path = vim.fn.tempname()
@@ -121,7 +126,7 @@ end
 require("neogit").setup({
   process_spinner = true,
   disable_hint = true,
-  graph_style = "kitty",
+  graph_style = "unicode",
   remember_settings = false,
   auto_refresh = false,
   commit_editor = {
