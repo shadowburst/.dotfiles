@@ -156,6 +156,8 @@ export default class Automations extends View {
   async announce(automation, result) {
     const failed = FAILED.includes(result.state);
     if (!failed && result.state !== "done") return;
+    // The top bar's mark (tabs-tasks), until the panel is open.
+    if (failed || !shared("automations.ended")) setShared("automations.ended", failed ? "blocked" : "done");
     if (automation.notify === "never" || (automation.notify === "failure" && !failed)) return;
     const { answer, log } = await loadOutput(automation.id, result.id);
     const body = result.error || (!failed && answer) || log.split("\n").at(-1) || `Run time: ${duration(result.finished - result.started)}`;

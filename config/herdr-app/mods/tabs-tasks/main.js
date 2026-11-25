@@ -11,6 +11,17 @@ function find(node, id) {
   return null;
 }
 
+// A tab's status mark, also used by the panel buttons.
+function statusMark(t, status) {
+  if (status === "working") return svg("mods/workspace-chrome/spinner.svg").size(12).flex_none().text_color(t.working).spin(900);
+  if (status === "blocked" || status === "done") return div().size(6).flex_none().rounded(3).bg(t[status]);
+  return null;
+}
+
+// What ended in a panel since it was last open: shared "<panel>.ended", "done" or "blocked" (failed).
+const PANELS = ["tasks", "automations"];
+const openPanel = (panel, body) => (panel && !panel.hidden ? body?.active ?? null : null);
+
 export default class Tabs extends View {
   init(_props, cx) {
     this.pressed = null;
@@ -21,6 +32,8 @@ export default class Tabs extends View {
   }
 
   syncTasks(cx) {
+    const root = layout(), open = openPanel(find(root, "panel"), find(root, "panel-body"));
+    if (PANELS.includes(open) && shared(`${open}.ended`)) setShared(`${open}.ended`, null);
     if (this.syncingTasks) return;
     this.syncingTasks = true;
     cx.spawn(async (cx) => {
@@ -45,13 +58,14 @@ export default class Tabs extends View {
         }
         const next = { ...(shared("tasks.records") || {}), ...records };
         if (JSON.stringify(next) !== JSON.stringify(shared("tasks.records") || {})) setShared("tasks.records", next);
-        // The Tasks panel never opens or closes by itself: the Tasks (n) counter shows progress.
+        // The Tasks panel never opens or closes by itself: the mark on its button shows progress.
         for (const task of Object.values(next)) {
           const labels = task.labels || {};
           if (!labels["task.kind"] || this.taskSeen[task.address] || (!["ready", "failed"].includes(labels["task.state"]) && task.state !== "finished")) continue;
           const failed = labels["task.state"] === "failed" || (task.state === "finished" && task.exit_code !== 0);
           this.taskSeen[task.address] = true;
           localStorage.setItem("task-notices", JSON.stringify(this.taskSeen));
+          if (failed || !shared("tasks.ended")) setShared("tasks.ended", failed ? "blocked" : "done");
           // A launcher's follow-up commands (e.g. close the removed worktree's spaces) run once, on success.
           if (task.onSuccess) {
             if (!failed) for (const c of task.onSuccess) run(c.name, c.args);
@@ -72,7 +86,7 @@ export default class Tabs extends View {
   // (closed if it never had one), and opening or closing it records it.
   syncPanel(space, panel, body, enabled) {
     if (!space || !panel) return;
-    const now = panel.hidden ? null : body?.active ?? null;
+    const now = openPanel(panel, body);
     if (space.id !== this.space) {
       const first = this.space === undefined;
       this.space = space.id; this.pending = null;
@@ -118,8 +132,7 @@ export default class Tabs extends View {
         .on_mouse_down("right", (_e, cx) => { cx.stop_propagation(); openOverlay({ mod: "menu", kind: "popup", width: 200, props: { tab: "tab", target: { id: c.id, space: space.id } } }); })
         .when(Boolean(program?.icon), el => el.child(program.tint ? svg(program.icon).size(14).text_color(t.muted) : image(program.icon).size(14)))
         .child(div().max_w(170).truncate().child(c.zoomed ? `${name} Z` : name))
-        .when(c.status === "working", el => el.child(svg("mods/workspace-chrome/spinner.svg").size(12).flex_none().text_color(t.working).spin(900)))
-        .when(c.status === "blocked" || c.status === "done", el => el.child(div().size(6).rounded(3).bg(t[c.status])))
+        .when(["working", "blocked", "done"].includes(c.status), el => el.child(statusMark(t, c.status)))
         .when(c.active, el => el.child(div().id(`close-${c.id}`).text_color(t.dim).on_mouse_down("left", stop).on_click((_e, cx) => { cx.stop_propagation(); run("tab.close", { id: c.id }); }).child(svg("mods/pane/close.svg").size(12))));
     };
     const root = layout(), sidebar = find(root, "sidebar"), w = window();
@@ -136,8 +149,14 @@ export default class Tabs extends View {
     const active = new Set(automations.map((x) => `${x.labels["automation.id"] ?? x.labels["automation.agent"]}/${x.labels["automation.run"]}`)).size;
     const asking = automations.filter((x) => x.labels["automation.agent"] && x.status === "blocked").length;
     this.syncPanel(space, panel, body, enabled);
-    const panelButton = (id, label, icon) => {
-      const on = panel && !panel.hidden && body?.active === id;
+    // Most urgent first, as in Spaces: needs the person, finished, working.
+    const state = (id, working, blocked = 0) => {
+      const ended = openPanel(panel, body) === id ? null : shared(`${id}.ended`);
+      const words = [blocked && `${blocked} needs input`, ended && { done: "Finished", blocked: "Failed" }[ended], working && `${working} working`];
+      return { status: blocked ? "blocked" : ended ?? (working ? "working" : null), words: words.filter(Boolean).join(" · ") };
+    };
+    const panelButton = (id, label, icon, { status, words } = {}) => {
+      const on = openPanel(panel, body) === id;
       return h_flex().id(`panel-${id}`).h(26).px(8).gap(5).flex_none().items_center().rounded(6)
         .text_size(12).bg(on ? t.selected : t.chrome).text_color(on ? t.foreground : t.muted)
         .hover(s => s.bg(t.hover)).on_mouse_down("left", stop)
@@ -148,7 +167,8 @@ export default class Tabs extends View {
             run("layout.select", { stack: "panel-body", child: id });
             run("layout.show", { id: "panel" });
           }
-        }).child(svg(icon).size(14)).child(label);
+        }).child(svg(icon).size(14)).child(label)
+        .when(Boolean(status), el => el.accessibility_label(`${label}: ${words}`).tooltip(words).child(statusMark(t, status)));
     };
     return h_flex().size_full().min_w(0).px(10).pl(lightsPadding).gap(3).items_center().bg(t.chrome).border_b(1).border_color(t.border)
       .on_mouse_up("left", () => { this.pressed = null; })
@@ -157,8 +177,8 @@ export default class Tabs extends View {
       .child(button("tab-new", "+", () => openOverlay({ mod: "new-menu", kind: "popup", width: 250, height: 512 })))
       .when(enabled.includes("files"), el => el.child(panelButton("files", "Files", "mods/files/file.svg")))
       .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/changes/changes.svg")))
-      .child(panelButton("tasks", `Tasks${running ? ` (${running})` : ""}`, "mods/workspace-chrome/layers.svg"))
-      .child(panelButton("automations", `Automations${asking ? ` (${asking} needs you)` : active ? ` (${active})` : ""}`, "mods/automations/timer.svg"))
+      .child(panelButton("tasks", "Tasks", "mods/workspace-chrome/layers.svg", state("tasks", running)))
+      .child(panelButton("automations", "Automations", "mods/automations/timer.svg", state("automations", active - asking, asking)))
       .when(w?.buttons, el => el.child(button("minimize", w.platform === "windows" ? svg("mods/tabs-tasks/win-min.svg").size(16) : "−", () => run("window.minimize")))
         .child(button("maximize", w.platform === "windows" ? svg(`mods/tabs-tasks/${w.maximized ? "win-restore" : "win-max"}.svg`).size(16) : "□", () => run("window.maximize")))
         .child(button("close-window", w.platform === "windows" ? svg("mods/tabs-tasks/win-close.svg").size(16) : svg("mods/pane/close.svg").size(13), () => run("window.close"))));
