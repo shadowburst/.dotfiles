@@ -55,9 +55,9 @@ assert.equal(when(local(2026, 10, 24, 9, 0), noon), "Yesterday 09:00");
 assert.equal(when(local(2026, 11, 25, 9, 0), noon), "25 Dec 09:00");
 
 // ---- the mod, with a fake Herdr ----
-let files, runsList, terminalList, state, notices, calls, testProps, spaceList;
+let files, runsList, terminalList, state, notices, calls, testProps, spaceList, outputs, sounds;
 const reset = () => {
-  files = new Map(); runsList = {}; terminalList = []; state = {}; notices = []; calls = []; testProps = {};
+  files = new Map(); outputs = {}; sounds = []; runsList = {}; terminalList = []; state = {}; notices = []; calls = []; testProps = {};
   spaceList = [{ id: "s1", name: "Repo", folder: "/home/me/repo", machine: null, tabs: [] }, { id: "s2", name: "Remote", folder: "/srv", machine: "vps", tabs: [] }];
 };
 reset();
@@ -66,7 +66,7 @@ let failWrite = 0;
 const herdr = module({
   appHome: () => "/app", home: () => "/home/me", panes: () => [], spaces: () => spaceList, terminals: () => terminalList, focused: () => null,
   props: () => testProps, settings: () => ({}), theme: () => ({}), shared: (key) => state[key], setShared(key, value) { state[key] = value; },
-  notify(n) { notices.push(plain(n)); }, run(name, args) { calls.push(plain({ command: name, ...args })); }, nextCommand: () => new Promise(() => {}), pickFolder: async () => null,
+  notify(n) { notices.push(plain(n)); }, playSound(name) { sounds.push(name); }, run(name, args) { calls.push(plain({ command: name, ...args })); }, nextCommand: () => new Promise(() => {}), pickFolder: async () => null,
   async readTextFile(path) { return files.get(path) ?? null; },
   async writeTextFile(path, body, expected) {
     if (failWrite-- > 0) throw new Error("stale");
@@ -76,6 +76,7 @@ const herdr = module({
   async exec(command, args) {
     calls.push(plain({ command, args }));
     if (command === "python3" && args.at(-1) === "list") return { code: 0, stdout: JSON.stringify(runsList), stderr: "" };
+    if (command === "python3" && args.includes("output")) return { code: 0, stdout: JSON.stringify(outputs[args.at(-1)] ?? { answer: "", log: "" }), stderr: "" };
     return { code: 0, stdout: "", stderr: "" };
   },
   async hc(args) {
@@ -255,10 +256,10 @@ await click("auto-save");
 saved = JSON.parse(files.get(`${dir}/automations.json`)).automations;
 assert.deepEqual([saved.length, saved[0].id, saved[0].name, saved[0].active], [1, id, "Renamed", true]);
 await click(`results-${id}`);
-has(/Succeeded · Schedule · 1 min 5 s/);
+has(/Finished · Schedule · 1 min 5 s/);
 has(/Skipped: a run was active/);
 assert(!by("result-s1").on_click, "A skipped run has no output");
-files.set(`${dir}/runs/${id}/m8/answer.md`, "# Answer");
+outputs.m8 = { answer: "# Answer", log: "→ Read" };
 await click("result-m8");
 assert(tree().some((el) => el.made[1] === "# Answer"), "A prompt shows its answer as Markdown");
 await click("run-log");
@@ -292,6 +293,86 @@ assert.deepEqual(plain(view.form.options("folder").map((o) => o.value)), ["~/rep
 await click("auto-save");
 saved = JSON.parse(files.get(`${dir}/automations.json`)).automations[0];
 assert.deepEqual([saved.harness, saved.model, saved.effort, saved.provider], ["codex", "gpt", "low", undefined]);
+
+await click("auto-new");
+assert.equal(view.form.value.notify, "always", "A new agent notifies as other agents do");
+await click("auto-kind-script");
+assert.equal(view.form.value.notify, "failure");
+await click("auto-kind-prompt");
+view.form.inputs.name.set_value("Home");
+view.form.inputs.text.set_value("do");
+view.form.inputs.folder.set_value("~");
+await click("auto-save");
+has(/always asks to trust the home folder/);
+
+// A prompt run is an agent: its live status, in the words of Spaces.
+reset();
+define(automation({ id: "a1", kind: "prompt", harness: "claude", notify: "failure" }));
+const agent = (status, o = {}) => ({ address: "t4", state: "live", status, turn: 1, labels: { "automation.agent": "a1", "automation.run": "m1", ...o.labels }, report: o.report });
+runsList = { a1: [{ id: "s9", state: "skipped", started: clock + 1, kind: "prompt" }, { id: "m1", state: "done", started: clock, finished: clock + 1000, kind: "prompt", harness: "claude", folder: "/home/me/repo", session: "ses-1" }] };
+outputs.m1 = { answer: "First", log: "First" };
+await open();
+terminalList = [agent("working")];
+has(/^Working · /);
+assert(by("stop-a1"), "A continued agent can be stopped");
+await click("stop-a1");
+assert.deepEqual(calls.filter((c) => c.args?.[0] === "kill").map((c) => c.args), [["kill", "t4"]]);
+terminalList = [agent("blocked", { report: { msg: "Red or blue?" } })];
+has(/^Needs input · Red or blue\?$/);
+await click("answer-a1");
+assert.deepEqual(calls.at(-1), { command: "terminal.peek", terminal: "t4" }, "The answer is given to the agent itself");
+terminalList = [agent("blocked", { labels: { "herdr.space": "s1" } })];
+await click("answer-a1");
+assert.deepEqual(calls.at(-1), { command: "agent.focus", terminal: "t4" }, "One kept as a tab is shown there");
+tree();
+assert(by("run-a1"), "A kept tab does not count as a run");
+terminalList = [agent(null, {})];
+await click("results-a1");
+has(/^Starting · /);
+for (const word of ["idle", "done"]) {
+  terminalList = [agent(word)];
+  has(/^Finished · /);
+  terminalList = [agent(word, { labels: { "herdr.seen": "1" } })];
+  has(/^Idle · /);
+}
+terminalList = [agent("idle")];
+await click("result-m1");
+assert(calls.some((c) => c.command === "hc" && c.args.join(" ") === "label t4 herdr.seen=1"), "Reading the result is a look at the agent");
+assert(tree().some((el) => el.made[1] === "First"));
+outputs.m1 = { answer: "Second", log: "Second" };
+terminalList = [{ ...agent("idle"), turn: 2, labels: { ...agent("idle").labels, "herdr.seen": "2" } }];
+await tick();
+assert(tree().some((el) => el.made[1] === "Second"), "A continued agent's new answer shows");
+terminalList = [];
+spaceList = [{ id: "s1", name: "Repo", folder: "/home/me/repo", machine: null, tabs: [] }];
+await click("run-open");
+assert.deepEqual(calls.at(-1).argv, ["claude", "--resume", "ses-1"], "One that ended resumes its session");
+
+// An agent that needs the person notifies once for each question, unless never.
+for (const [choice, count] of [["failure", 1], ["always", 1], ["never", 0]]) {
+  reset();
+  define(automation({ kind: "prompt", harness: "claude", notify: choice, active: false }));
+  await open({ poll: true });
+  terminalList = [agent("blocked", { report: { msg: "Red or blue?" } })];
+  await tick();
+  await tick();
+  assert.equal(notices.length, count, choice);
+}
+reset();
+define(automation({ kind: "prompt", harness: "claude", active: false }));
+await open({ poll: true });
+terminalList = [agent("blocked", { report: { msg: "Red or blue?" } })];
+await tick();
+assert.deepEqual(notices[0], { title: "Nightly: Needs input", body: "Red or blue?", level: "warning", action: { name: "terminal.peek", args: { terminal: "t4" } } });
+assert.deepEqual(sounds, ["blocked"]);
+terminalList = [agent("working")];
+await tick();
+terminalList = [agent("blocked")];
+await tick();
+assert.equal(notices.length, 2, "A second question notifies again");
+terminalList = [agent("blocked", { labels: { "herdr.space": "s1" } })];
+await tick();
+assert.equal(notices.length, 2, "Herdr itself notifies for a tab");
 
 // An unreadable file is reported and never overwritten.
 reset();

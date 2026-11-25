@@ -16,6 +16,11 @@ class Automations(unittest.TestCase):
     def setUp(self):
         temp = tempfile.TemporaryDirectory(prefix="automations-")
         self.addCleanup(temp.cleanup)
+        # The real runner, with shorter waits.
+        self.runner = Path(temp.name) / "runner.py"
+        source = RUNNER.read_text()
+        self.assertTrue("\nPOLL = 1\n" in source and "\nSETTLE = 3 " in source)
+        self.runner.write_text(source.replace("\nPOLL = 1\n", "\nPOLL = 0.2\n").replace("\nSETTLE = 3 ", "\nSETTLE = 0.3 "))
         self.base = Path(temp.name) / "state"
         self.bin = Path(temp.name) / "bin"
         self.work = Path(temp.name) / "work"
@@ -27,26 +32,8 @@ class Automations(unittest.TestCase):
         automation = {"id": "a1", "name": "Test", "kind": kind, "text": text, "folder": str(self.work), "cron": "", "active": True, "limit": 60, **extra}
         (self.base / "automations.json").write_text(json.dumps({"automations": [automation]}))
 
-    def agent(self, name, *lines, code=0, stderr=""):
-        # Records its arguments and input, then prints the events of the real program.
-        events = self.bin / f"{name}.events"
-        events.write_text("".join((line if isinstance(line, str) else json.dumps(line)) + "\n" for line in lines))
-        file = self.bin / name
-        file.write_text(f"""#!{sys.executable}
-import json, os, sys
-call = {{"argv": sys.argv[1:], "stdin": sys.stdin.read(), "env": sorted(os.environ), "cwd": os.getcwd()}}
-json.dump(call, open({str(self.work / "call")!r}, "w"))
-print(open({str(events)!r}).read(), end="", flush=True)
-sys.stderr.write({stderr!r})
-sys.exit({code})
-""")
-        file.chmod(0o755)
-
-    def call(self):
-        return json.loads((self.work / "call").read_text())
-
     def command(self, *args):
-        return [sys.executable, "-I", str(RUNNER), str(self.base), *args]
+        return [sys.executable, "-I", str(self.runner), str(self.base), *args]
 
     def run_(self, name="m1", trigger="manual"):
         return subprocess.run(self.command("run", "a1", name, trigger), env=self.env, capture_output=True, text=True, timeout=30)
@@ -94,73 +81,228 @@ sys.exit({code})
         self.assertEqual(self.runs()[0]["state"], "failed")
         self.assertIn("does not exist", self.runs()[0]["error"])
 
-    def test_missing_program(self):
-        self.define("hello", "prompt", harness="claude")
+    # ---- prompts: a fake hc plays the agent's statuses, one for each `get` ----
+
+    def core(self, *statuses, turn=1, **last):
+        """The agent's terminal: (state) words, then `last` fields on the final one."""
+        frames = [{"state": "live", "turn": 0, "status": {"state": w} if w else None} for w in statuses]
+        frames.append({"state": "live", "turn": turn, "status": {"state": "idle"}, **last})
+        (self.bin / "frames").write_text(json.dumps(frames))
+        self.program("hc", """
+calls = open(f"{here}/calls", "a"); calls.write(json.dumps([sys.argv[1:], "HC_TERMINAL_ID" in os.environ]) + "\\n"); calls.close()
+labels = f"{here}/labels-"
+if sys.argv[1] == "run":
+    address = f"t{sum(1 for _ in open(f'{here}/calls'))}"
+    json.dump(dict(a.split("=", 1) for a in sys.argv if a.startswith("automation.")), open(labels + address, "w"))
+    print(json.dumps({"address": address}))
+elif sys.argv[1] == "get":
+    if not os.path.exists(labels + sys.argv[2]):
+        print(json.dumps({"error": {"kind": "not_found", "message": "gone"}}), file=sys.stderr); sys.exit(3)
+    frames = json.load(open(f"{here}/frames"))
+    if len(frames) > 1: json.dump(frames[1:], open(f"{here}/frames", "w"))
+    print(json.dumps({"labels": json.load(open(labels + sys.argv[2])), **frames[0]}))
+elif sys.argv[1] == "rm":
+    os.path.exists(labels + sys.argv[2]) and os.unlink(labels + sys.argv[2])
+    print("{}")
+else: print("{}")
+""")
+
+    def program(self, name, body):
+        file = self.bin / name
+        file.write_text(f"#!{sys.executable}\nimport json, os, sys\nhere = {str(self.bin)!r}\n{body}")
+        file.chmod(0o755)
+
+    def calls(self, name):
+        return [c for c, _ in map(json.loads, (self.bin / "calls").read_text().splitlines()) if c[0] == name]
+
+    def agent_argv(self):
+        call = self.calls("run")[0]
+        return call[call.index("--") + 1:]
+
+    def prompt(self, harness, text="-do it", **extra):
+        self.env["HOME"] = str(self.work)
+        (self.work / ".claude.json").write_text(json.dumps({"keep": 1, "projects": {"/other": {"x": 1}}}))
+        self.define(text, "prompt", harness=harness, **extra)
+
+    def output(self, name="m1"):
+        done = subprocess.run(self.command("output", "a1", name), env=self.env, capture_output=True, text=True, check=True)
+        return json.loads(done.stdout)
+
+    def test_prompt_is_an_ordinary_hidden_agent(self):
+        self.core(None, "idle", "working")
+        self.prompt("claude", model="opus", effort="high")
+        self.run_()
+        run = self.runs()[0]
+        self.assertEqual(run["state"], "done")
+        self.assertEqual(self.agent_argv(), ["claude", "--session-id", run["session"], "--model", "opus", "--effort", "high", "--", "-do it"])
+        start = self.calls("run")[0]
+        self.assertIn("automation.agent=a1", start)
+        self.assertNotIn("automation.id=a1", start)
+        self.assertIn("--outlive-parent", start)
+        self.assertEqual(self.calls("kill"), [], "The agent stays, for the person to continue")
+        self.assertFalse(any(inside for _, inside in map(json.loads, (self.bin / "calls").read_text().splitlines())), "Nobody's sub-agent")
+
+    def test_idle_before_the_first_turn_is_not_the_end(self):
+        self.core("idle", "idle", "idle", "idle", "idle", "idle", "working")
+        self.prompt("codex")
+        self.run_()
+        self.assertEqual((self.runs()[0]["state"], json.loads((self.bin / "frames").read_text())[0]["turn"]), ("done", 1))
+
+    def test_waiting_for_a_person_does_not_use_the_time_limit(self):
+        self.core("working", *["blocked"] * 20)
+        self.prompt("codex", limit=2.5 / 60)
+        self.run_()
+        self.assertEqual(self.runs()[0]["state"], "done")
+
+    def test_time_limit_ends_the_agent(self):
+        self.core(*["working"] * 20)
+        self.prompt("codex", limit=1.5 / 60)
+        self.run_()
+        self.assertEqual(self.runs()[0]["state"], "timeout")
+        self.assertEqual(len(self.calls("kill")), 1)
+
+    def test_stop_ends_the_agent(self):
+        self.core(*["working"] * 50)
+        self.prompt("codex")
+        proc = self.start()
+        self.wait_for(self.bin / "calls")
+        time.sleep(1.5)
+        proc.send_signal(signal.SIGHUP)
+        proc.wait(10)
+        self.assertEqual(self.runs()[0]["state"], "stopped")
+        self.assertEqual(len(self.calls("kill")), 1)
+
+    def test_agent_error_and_early_exit(self):
+        self.core("working", status={"state": "error", "msg": "Usage limit reached"})
+        self.prompt("codex")
+        self.run_()
+        self.assertEqual((self.runs()[0]["state"], self.runs()[0]["error"]), ("failed", "Usage limit reached"))
+        for label in self.bin.glob("labels-*"):
+            label.unlink()
+        self.core("idle", state="finished", turn=0, exit_code=0, status=None)
+        self.run_("m2")
+        self.assertEqual(self.runs()[0]["state"], "failed")
+        for label in self.bin.glob("labels-*"):
+            label.unlink()
+        self.core("working", state="finished", exit_code=None, reason="killed", status=None)
+        self.run_("m3")
+        self.assertEqual(self.runs()[0]["state"], "stopped")
+
+    def test_missing_core(self):
+        self.prompt("codex")
         self.env["PATH"] = str(self.bin)
         self.run_()
         self.assertEqual(self.runs()[0]["state"], "failed")
-        self.assertIn("claude", self.runs()[0]["error"])
 
-    def test_claude(self):
-        self.agent("claude", {"type": "system", "subtype": "init"},
-                   {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Bash", "input": {"command": "ls"}}, {"type": "text", "text": "Looking"}]}},
-                   {"type": "assistant", "parent_tool_use_id": "x", "message": {"content": [{"type": "text", "text": "subagent"}]}},
-                   {"type": "result", "is_error": False, "result": "The **answer**", "permission_denials": [{"tool_name": "Write"}]})
-        self.define("-do it", "prompt", harness="claude", model="opus", effort="high")
+    def test_an_agent_that_waits_or_works_blocks_the_next_run(self):
+        self.core("working")
+        self.prompt("codex")
         self.run_()
-        run, call = self.runs()[0], self.call()
-        self.assertEqual((run["state"], self.answer()), ("done", "The **answer**"))
-        self.assertEqual(call["stdin"], "-do it")
-        self.assertEqual(call["argv"][:3], ["-p", "--session-id", run["session"]])
-        self.assertEqual(call["argv"][-4:], ["--model", "opus", "--effort", "high"])
-        self.assertNotIn("--dangerously-skip-permissions", call["argv"])
-        self.assertEqual(call["cwd"], str(self.work))
-        self.assertFalse([k for k in call["env"] if k.startswith(("HC_", "HERDR_"))])
-        self.assertEqual(self.log(), '→ Bash {"command": "ls"}\nLooking\nPermission denied: Write\n')
-        self.assertFalse((self.base / "runs/a1/m1/prompt").exists())
+        for word in ("blocked", "working"):
+            (self.bin / "frames").write_text(json.dumps([{"state": "live", "turn": 1, "status": {"state": word}}]))
+            self.run_(f"s{word[0]}", "schedule")
+            self.assertEqual(self.runs()[0]["state"], "skipped")
+        self.assertEqual(len(self.calls("run")), 1)
 
-    def test_claude_error_result(self):
-        self.agent("claude", {"type": "result", "is_error": True, "result": "Usage limit reached"})
-        self.define("x", "prompt", harness="claude")
+    def test_the_next_run_ends_a_finished_agent_but_not_one_in_a_tab(self):
+        self.core("working")
+        self.prompt("codex")
         self.run_()
-        self.assertEqual((self.runs()[0]["state"], self.runs()[0]["error"]), ("failed", "Usage limit reached"))
+        first = self.runs()[0]["agent"]
+        self.core("idle", "working")
+        (self.bin / "frames").write_text(json.dumps([{"state": "live", "turn": 1, "status": {"state": "idle"}}]))
+        self.run_("m2")
+        self.assertEqual([c[1] for c in self.calls("kill")], [first])
+        second = self.runs()[0]["agent"]
+        labels = self.bin / f"labels-{second}"
+        labels.write_text(json.dumps({**json.loads(labels.read_text()), "herdr.space": "sp1"}))
+        (self.bin / "frames").write_text(json.dumps([{"state": "live", "turn": 2, "status": {"state": "working"}}] * 2 + [{"state": "live", "turn": 1, "status": {"state": "idle"}}]))
+        self.run_("m3")
+        self.assertEqual(self.runs()[0]["state"], "done", "A tab does not block the schedule")
+        self.assertEqual([c[1] for c in self.calls("kill")], [first])
+        subprocess.run(self.command("delete", "a1"), env=self.env, check=True)
+        self.assertTrue(labels.exists(), "Deletion leaves the tab too")
 
-    def test_codex(self):
-        self.agent("codex", {"type": "thread.started", "thread_id": "th-1"},
-                   {"type": "item.completed", "item": {"type": "command_execution", "command": "ls -la"}},
-                   {"type": "item.completed", "item": {"type": "agent_message", "text": "first"}},
-                   {"type": "item.completed", "item": {"type": "agent_message", "text": "last"}}, stderr="warned\n")
-        self.define("go", "prompt", harness="codex", model="gpt", effort="low")
+    def test_claude_folder_is_trusted_before_the_start(self):
+        self.core("working")
+        self.prompt("claude")
         self.run_()
-        self.assertEqual((self.runs()[0]["session"], self.runs()[0]["state"], self.answer()), ("th-1", "done", "last"))
-        self.assertEqual(self.call()["argv"], ["--no-daemon", "exec", "--json", "--skip-git-repo-check", "-m", "gpt", "-c", "model_reasoning_effort=low", "-"])
-        self.assertIn("→ command_execution ls -la\n", self.log())
-        self.assertIn("warned\n", self.log())
+        config = json.loads((self.work / ".claude.json").read_text())
+        self.assertEqual(config, {"keep": 1, "projects": {"/other": {"x": 1}, str(self.work): {"hasTrustDialogAccepted": True}}})
+        self.assertEqual((self.work / ".claude.json").stat().st_mode & 0o077, 0)
+        self.assertFalse((self.work / ".claude.json.lock").exists())
+        before = (self.work / ".claude.json").stat().st_mtime_ns
+        self.run_("m2")
+        self.assertEqual((self.work / ".claude.json").stat().st_mtime_ns, before, "No write when it is trusted")
 
-    def test_opencode(self):
-        self.agent("opencode", {"type": "step_start", "sessionID": "ses_1", "part": {}}, {"type": "text", "sessionID": "ses_1", "part": {"text": "working"}},
-                   {"type": "tool_use", "sessionID": "ses_1", "part": {"tool": "read", "state": {"input": {"path": "a"}}}},
-                   {"type": "step_start", "sessionID": "ses_1", "part": {}}, {"type": "text", "sessionID": "ses_1", "part": {"text": "one"}},
-                   {"type": "text", "sessionID": "ses_1", "part": {"text": "two"}})
-        self.define("-go", "prompt", harness="opencode", provider="openai", model="gpt", effort="high")
+    def test_unreadable_claude_configuration_is_never_overwritten(self):
+        self.core("working")
+        self.prompt("claude")
+        (self.work / ".claude.json").write_text("{ broken")
         self.run_()
-        self.assertEqual((self.runs()[0]["session"], self.runs()[0]["state"], self.answer()), ("ses_1", "done", "one\n\ntwo"))
-        self.assertEqual(self.call()["argv"], ["run", "--format", "json", "--title", "Test", "-m", "openai/gpt#high", "--", "-go"])
+        self.assertEqual(self.runs()[0]["state"], "failed")
+        self.assertEqual((self.work / ".claude.json").read_text(), "{ broken")
+        self.assertFalse((self.work / ".claude.json.lock").exists())
 
-    def test_opencode_error_event(self):
-        # OpenCode can exit with 0 after an error event.
-        self.agent("opencode", {"type": "error", "sessionID": "ses_1", "error": {"message": "Model unavailable"}})
-        self.define("go", "prompt", harness="opencode", provider="p", model="m")
+    def test_codex_trusts_the_folder_for_this_run(self):
+        self.core("working")
+        self.prompt("codex", model="gpt", effort="low")
         self.run_()
-        self.assertEqual((self.runs()[0]["state"], self.runs()[0]["error"]), ("failed", "Model unavailable"))
+        self.assertEqual(self.agent_argv(), ["codex", "--no-daemon", "-c", f'projects={{"{self.work}"={{trust_level="trusted"}}}}',
+                                             "-m", "gpt", "-c", "model_reasoning_effort=low", "--", "-do it"])
+        self.assertNotIn(str(self.work), (self.work / ".claude.json").read_text())
 
-    def test_unknown_events_stay_in_the_log(self):
-        self.agent("codex", "plain text", {"type": "item.completed", "item": {"type": "agent_message"}})
-        self.define("go", "prompt", harness="codex")
+    def test_claude_transcript(self):
+        self.core("working")
+        self.prompt("claude")
         self.run_()
-        self.assertEqual(self.runs()[0]["state"], "done")
-        self.assertIn("plain text\n", self.log())
-        self.assertIn("agent_message", self.log())
+        folder = self.work / ".claude/projects/x"
+        folder.mkdir(parents=True)
+        events = [("user", "Go"), ("assistant", [{"type": "text", "text": "Looking"}]), ("assistant", [{"type": "tool_use", "name": "Bash", "input": {"command": "ls"}}]),
+                  ("user", [{"type": "tool_result", "content": "x"}]), ("assistant", [{"type": "text", "text": "One"}]), ("assistant", [{"type": "text", "text": "**Two**"}])]
+        lines = [{"type": kind, "message": {"content": content}} for kind, content in events]
+        lines.insert(2, {"type": "assistant", "isSidechain": True, "message": {"content": [{"type": "text", "text": "sub-agent"}]}})
+        file = folder / f"{self.runs()[0]['session']}.jsonl"
+        file.write_text("".join(json.dumps(line) + "\n" for line in lines) + "not json\n")
+        expected = {"answer": "One\n\n**Two**", "log": '> Go\nLooking\n→ Bash {"command": "ls"}\nOne\n**Two**'}
+        self.assertEqual(self.output(), expected)
+        with file.open("a") as more:  # the person continued the agent
+            more.write(json.dumps({"type": "user", "message": {"content": "And?"}}) + "\n" + json.dumps({"type": "assistant", "message": {"content": [{"type": "text", "text": "Three"}]}}) + "\n")
+        self.assertEqual(self.output()["answer"], "Three")
+        file.unlink()
+        self.assertEqual(self.output()["answer"], "Three", "The saved text stays when the transcript is gone")
+
+    def test_codex_session_and_transcript(self):
+        session = "01a212fc-c8e5-7942-aa1e-d3bcc827bae2"
+        folder = self.work / ".codex/sessions/2026/11/25"
+        folder.mkdir(parents=True)
+        items = [{"type": "message", "role": "user", "content": [{"text": "instructions"}]}, {"type": "function_call", "name": "shell", "arguments": "ls"},
+                 {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "Done"}]}]
+        file = folder / f"rollout-2026-11-25T14-54-46-{session}.jsonl"
+        file.write_text("".join(json.dumps({"type": "response_item", "payload": item}) + "\n" for item in items))
+        # The session is the file that the agent's process keeps open.
+        with file.open() as handle:
+            holder = subprocess.Popen(["sleep", "30"], pass_fds=[handle.fileno()])
+        self.addCleanup(lambda: (holder.kill(), holder.wait()))
+        self.core("working", foreground={"pid": holder.pid})
+        self.prompt("codex")
+        self.run_()
+        self.assertEqual(self.runs()[0]["session"], session)
+        self.assertEqual(self.output(), {"answer": "Done", "log": "→ shell ls\nDone"})
+
+    def test_opencode_session_and_transcript(self):
+        self.core("working")
+        self.program("opencode", """
+open(f"{here}/api", "a").write(json.dumps(sys.argv[1:]) + "\\n")
+if sys.argv[2] == "post": print(json.dumps({"data": {"id": "ses_1"}}))
+else: print(json.dumps({"data": [{"type": "assistant", "content": [{"type": "tool", "name": "read", "state": {"input": {"path": "a"}}}, {"type": "text", "text": "Two"}]}, {"type": "user", "text": "Go"}]}))
+""")
+        self.prompt("opencode", provider="openai", model="gpt", effort="high")
+        self.run_()
+        self.assertEqual(self.agent_argv(), ["opencode", "--session", "ses_1", "--prompt=-do it"])
+        body = json.loads(json.loads((self.bin / "api").read_text().splitlines()[0])[-1])
+        self.assertEqual(body, {"model": {"providerID": "openai", "id": "gpt", "variant": "high"}, "location": {"directory": str(self.work)}})
+        self.assertEqual(self.output(), {"answer": "Two", "log": '> Go\n→ read {"path": "a"}\nTwo'})
 
     def test_overlap_is_skipped(self):
         self.define("touch started; sleep 20")

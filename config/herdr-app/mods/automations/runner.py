@@ -2,12 +2,18 @@
 
     runner.py DIR run ID RUN TRIGGER    run automation ID as run RUN (schedule or manual)
     runner.py DIR list                  print every run, newest first, by automation
+    runner.py DIR output ID RUN         print a run's answer and log
     runner.py DIR delete ID             delete the runs of an automation
 
 DIR holds automations.json (written by the mod) and runs/<automation>/<run>/:
 run.json (state), log.txt (full output), answer.md (an agent's final answer).
 A run holds its automation's lock file until it ends, so a second one is skipped
 and a run that died without a final state is known to be interrupted.
+
+A script is a child process. A prompt is an ordinary interactive agent in a hidden
+terminal of its own, with the status that it reports to herdr-core (OSC 7501). The run
+ends with the agent's first turn, but the agent stays until the automation's next run,
+so a person can open and continue it. What it said comes from its own transcript.
 """
 
 import fcntl
@@ -22,8 +28,11 @@ import sys
 import threading
 import time
 import uuid
+from urllib.parse import quote
 
 KEEP = 20
+POLL = 1
+SETTLE = 3  # seconds that a turn's end must last: an agent can go on by itself
 LOG_LIMIT = 5_000_000
 
 
@@ -72,12 +81,108 @@ def runs_of(folder):
     return sorted([r for r in runs if r[1]], key=lambda r: r[1]["started"], reverse=True)
 
 
+def drop(path):
+    try:
+        retire(load(path / "run.json") or {})
+    except (CoreError, OSError, subprocess.SubprocessError):
+        pass
+    shutil.rmtree(path, ignore_errors=True)
+
+
 def prune(folder):
     # Skipped entries have their own limit: they must not push out real results.
     for skipped in (False, True):
         group = [path for path, meta in runs_of(folder) if (meta["state"] == "skipped") == skipped]
         for path in group[KEEP:]:
-            shutil.rmtree(path, ignore_errors=True)
+            drop(path)
+
+
+def hc(*args, timeout=60):
+    # Without the caller's terminal, the agent is nobody's sub-agent.
+    env = {k: v for k, v in os.environ.items() if not k.startswith("HC_TERMINAL")}
+    done = subprocess.run(["hc", *args], env=env, capture_output=True, text=True, timeout=timeout)
+    try:
+        answer = json.loads(done.stdout or done.stderr)
+    except ValueError:
+        answer = {}
+    if done.returncode:
+        error = answer.get("error", {}) if isinstance(answer, dict) else {}
+        raise CoreError(error.get("message") or done.stderr.strip() or f"hc {args[0]} failed.", error.get("kind"))
+    return answer
+
+
+class CoreError(Exception):
+    def __init__(self, message, kind=None):
+        super().__init__(message)
+        self.kind = kind
+
+
+def agent_of(meta):
+    """A run's live agent terminal, or None."""
+    if not meta.get("agent"):
+        return None
+    try:
+        terminal = hc("get", meta["agent"], "--json")
+    except CoreError as error:
+        if error.kind == "not_found":
+            return None
+        raise
+    # Addresses are not used again, but the label proves it.
+    ours = (terminal.get("labels") or {}).get("automation.run") == meta["id"]
+    return terminal if ours and terminal["state"] != "finished" else None
+
+
+def status_of(terminal):
+    return (terminal.get("status") or {}).get("state")
+
+
+def placed(terminal):
+    return "herdr.space" in (terminal.get("labels") or {})
+
+
+def retire(meta):
+    """Ends a run's hidden agent. One that a person gave a tab is theirs."""
+    if not meta.get("agent"):
+        return
+    terminal = agent_of(meta)
+    if terminal and placed(terminal):
+        return
+    try:
+        if terminal:
+            hc("kill", meta["agent"])
+        hc("rm", meta["agent"])
+    except CoreError:
+        pass  # it ended by itself
+
+
+def trust(harness, folder):
+    """Claude Code asks once for each folder, and nobody is there to answer."""
+    if harness != "claude":
+        return
+    # The folder of the home directory cannot be trusted this way (the form refuses it).
+    file, key = Path.home() / ".claude.json", os.path.realpath(folder)
+    lock = Path(f"{file}.lock")  # Claude Code's own lock
+    if ((load(file) or {}).get("projects", {}).get(key) or {}).get("hasTrustDialogAccepted"):
+        return
+    for _ in range(50):
+        try:
+            lock.mkdir()
+            break
+        except FileExistsError:
+            time.sleep(0.2)
+    else:
+        raise RuntimeError("Cannot trust the folder: Claude Code's configuration is locked.")
+    try:
+        config = load(file)
+        if not isinstance(config, dict):
+            raise RuntimeError("Cannot trust the folder: ~/.claude.json is not readable. Start Claude Code one time.")
+        config.setdefault("projects", {}).setdefault(key, {})["hasTrustDialogAccepted"] = True
+        temp = file.with_name(f".claude.json.automations-{os.getpid()}")
+        temp.touch(0o600)
+        temp.write_text(json.dumps(config, indent=2, ensure_ascii=False))
+        temp.replace(file.resolve())
+    finally:
+        lock.rmdir()
 
 
 class Stopped(Exception):
@@ -96,7 +201,6 @@ class Run:
         self.log = open(path / "log.txt", "w", encoding="utf-8")
         self.logged = 0
         self.lock = threading.Lock()
-        self.answer = ""
         self.error = ""
 
     def write(self, text):
@@ -111,129 +215,114 @@ class Run:
             except OSError:
                 pass  # the terminal is gone: the log stays
 
-    def command(self):
-        """The argv, the stdin text (None: no input) and the line parser."""
-        spec, text = self.spec, self.spec["text"]
-        if spec["kind"] == "script":
-            file = self.path / "script"
-            file.write_text(text if text.endswith("\n") else text + "\n")
-            file.chmod(0o700)
-            return ([str(file)] if text.startswith("#!") else ["zsh", str(file)]), None, self.write
-        model, effort = spec.get("model"), spec.get("effort")
-        if spec["harness"] == "claude":
-            self.session(str(uuid.uuid4()))
-            argv = ["claude", "-p", "--session-id", self.meta["session"], "--output-format", "stream-json", "--verbose"]
-            argv += [*(["--model", model] if model else []), *(["--effort", effort] if effort else [])]
-            return argv, text, self.events(self.claude)
-        if spec["harness"] == "codex":
-            argv = ["codex", "--no-daemon", "exec", "--json", "--skip-git-repo-check"]
-            argv += [*(["-m", model] if model else []), *(["-c", f"model_reasoning_effort={effort}"] if effort else []), "-"]
-            return argv, text, self.events(self.codex)
-        if spec["harness"] == "opencode":
-            argv = ["opencode", "run", "--format", "json", "--title", spec["name"]]
-            if spec.get("provider") and model:
-                argv += ["-m", f"{spec['provider']}/{model}" + (f"#{effort}" if effort else "")]
-            return [*argv, "--", text], None, self.events(self.opencode)
-        raise RuntimeError(f"Unknown harness: {spec['harness']}")
-
-    def session(self, value):
-        if value and self.meta.get("session") != value:
-            self.meta["session"] = value
-            save(self.path / "run.json", self.meta)
-
-    def events(self, handle):
-        def parse(line):
-            try:
-                event = json.loads(line)
-            except ValueError:
-                event = None
-            if not isinstance(event, dict):
-                return self.write(line) if line.strip() else None
-            try:
-                handle(event)
-            except (AttributeError, KeyError, TypeError):
-                self.write(line)  # an event with a new shape: keep it as it is
-        return parse
-
-    def tool(self, name, details):
-        details = details if isinstance(details, str) else json.dumps(details, ensure_ascii=False) if details else ""
-        self.write(f"→ {name} {' '.join(details.split())[:300]}".rstrip())
-
-    def claude(self, event):
-        if event.get("type") == "assistant" and not event.get("parent_tool_use_id"):
-            for block in event["message"]["content"]:
-                if block["type"] == "text":
-                    self.write(block["text"])
-                elif block["type"] == "tool_use":
-                    self.tool(block["name"], block.get("input"))
-        elif event.get("type") == "result":
-            self.answer = event.get("result") or self.answer
-            for denial in event.get("permission_denials") or []:
-                self.write(f"Permission denied: {denial.get('tool_name')}")
-            if event.get("is_error"):
-                self.error = event.get("result") or event.get("subtype") or "Claude Code reported an error."
-
-    def codex(self, event):
-        kind, item = event.get("type"), event.get("item") or {}
-        if kind == "thread.started":
-            self.session(event.get("thread_id"))
-        elif kind == "item.completed" and item.get("type") == "agent_message":
-            self.answer = item["text"]
-            self.write(item["text"])
-        elif kind == "item.completed" and item.get("type") != "reasoning":
-            self.tool(item["type"], item.get("command") or item.get("tool") or item.get("message") or item.get("changes"))
-        elif kind in ("turn.failed", "error"):
-            self.error = (event.get("error") or {}).get("message") or event.get("message") or "Codex reported an error."
-            self.write(self.error)
-
-    def opencode(self, event):
-        kind, part = event.get("type"), event.get("part") or {}
-        self.session(event.get("sessionID"))
-        if kind == "step_start":
-            self.step = ""
-        elif kind == "text":
-            self.step = "\n\n".join(filter(None, [getattr(self, "step", ""), part["text"]]))
-            self.answer = self.step
-            self.write(part["text"])
-        elif kind == "tool_use":
-            self.tool(part["tool"], (part.get("state") or {}).get("input"))
-        elif kind == "error":
-            error = event.get("error") or {}
-            self.error = error.get("message") or (error.get("data") or {}).get("message") or "OpenCode reported an error."
-            self.write(self.error)
-
     def execute(self):
         folder = os.path.expanduser(self.spec["folder"])
         if not os.path.isdir(folder):
             raise RuntimeError(f"The folder does not exist: {folder}")
-        argv, text, parse = self.command()
-        stdin = subprocess.DEVNULL
-        if text is not None:
-            (self.path / "prompt").write_text(text)
-            stdin = open(self.path / "prompt", "rb")
-        script = self.spec["kind"] == "script"
-        # Without Herdr's variables, the agent's hooks cannot report this run as a terminal agent.
+        return self.script(folder) if self.spec["kind"] == "script" else self.prompt(folder)
+
+    def script(self, folder):
+        text = self.spec["text"]
+        file = self.path / "script"
+        file.write_text(text if text.endswith("\n") else text + "\n")
+        file.chmod(0o700)
+        argv = [str(file)] if text.startswith("#!") else ["zsh", str(file)]
         env = {k: v for k, v in os.environ.items() if not k.startswith(("HC_", "HERDR_"))}
         # Its own session: no terminal to ask questions on, and one group to end.
-        proc = subprocess.Popen(argv, cwd=folder, env=env, stdin=stdin, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT if script else subprocess.PIPE, start_new_session=True)
-        try:
-            def read(pipe, handle):
-                for line in pipe:
-                    handle(line.decode("utf-8", "replace").rstrip("\r\n"))
+        proc = subprocess.Popen(argv, cwd=folder, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT, start_new_session=True)
 
-            threads = [threading.Thread(target=read, args=(proc.stdout, parse), daemon=True)]
-            if proc.stderr:
-                threads.append(threading.Thread(target=read, args=(proc.stderr, self.write), daemon=True))
-            for thread in threads:
-                thread.start()
-            code = proc.wait(timeout=float(self.spec.get("limit") or 60) * 60)
-            for thread in threads:
-                thread.join(2)  # a process left behind can keep the pipe open
+        def read():
+            for line in proc.stdout:
+                self.write(line.decode("utf-8", "replace").rstrip("\r\n"))
+
+        try:
+            thread = threading.Thread(target=read, daemon=True)
+            thread.start()
+            code = proc.wait(timeout=self.limit())
+            thread.join(2)  # a process left behind can keep the pipe open
             self.meta["exit_code"] = code
-            return code
+            return "failed" if code else "done"
         finally:
             self.end(proc)
+
+    def limit(self):
+        return float(self.spec.get("limit") or 60) * 60
+
+    def argv(self, folder):
+        """The interactive agent, and its session when it is known before the start."""
+        spec, text = self.spec, self.spec["text"]
+        model, effort = spec.get("model"), spec.get("effort")
+        if spec["harness"] == "claude":
+            session = str(uuid.uuid4())
+            return ["claude", "--session-id", session, *(["--model", model] if model else []),
+                    *(["--effort", effort] if effort else []), "--", text], session
+        if spec["harness"] == "codex":
+            # The folder is trusted for this run only.
+            return ["codex", "--no-daemon", "-c", codex_trust(folder), *(["-m", model] if model else []),
+                    *(["-c", f"model_reasoning_effort={effort}"] if effort else []), "--", text], None
+        if spec["harness"] == "opencode":
+            # Its TUI has no model option: the session gets it.
+            body = {"model": {"providerID": spec.get("provider"), "id": model, **({"variant": effort} if effort else {})}} if model else {}
+            session = opencode("post", "/api/session", "-d", json.dumps({**body, "location": {"directory": os.path.realpath(folder)}}))["id"]
+            return ["opencode", "--session", session, f"--prompt={text}"], session
+        raise RuntimeError(f"Unknown harness: {spec['harness']}")
+
+    def prompt(self, folder):
+        trust(self.spec["harness"], folder)
+        argv, session = self.argv(folder)
+        started = hc("run", "--bg", "--json", "--outlive-parent", "--no-notify", "--cwd", folder,
+                     "--label", f"automation.agent={self.spec['id']}", "--label", f"automation.run={self.meta['id']}", "--", *argv)
+        self.keep(agent=started["address"], session=session)
+        try:
+            return self.follow()
+        except (Stopped, subprocess.TimeoutExpired):
+            retire(self.meta)
+            raise
+
+    def keep(self, **values):
+        self.meta.update({k: v for k, v in values.items() if v})
+        save(self.path / "run.json", self.meta)
+
+    def follow(self):
+        """Waits for the end of the agent's first turn."""
+        spent, last, ended, failures = 0.0, time.monotonic(), None, 0
+        while True:
+            try:
+                terminal, failures = hc("get", self.meta["agent"], "--json"), 0
+            except (CoreError, subprocess.TimeoutExpired) as error:
+                # The core restarts for an update, and its terminals stay.
+                failures += 1
+                if getattr(error, "kind", None) == "not_found" or failures > 30:
+                    raise RuntimeError(f"Lost the agent's terminal: {error}") from None
+                time.sleep(POLL)
+                continue
+            status, now_ = status_of(terminal), time.monotonic()
+            # The time that a person takes to answer does not count.
+            spent += 0 if status == "blocked" else now_ - last
+            last = now_
+            if not self.meta.get("session") and self.spec["harness"] == "codex":
+                self.keep(session=codex_session(terminal))
+            if terminal["state"] == "finished":
+                self.meta["exit_code"] = terminal.get("exit_code")
+                if terminal.get("reason") == "killed":
+                    return "stopped"
+                if not terminal.get("turn"):
+                    self.error = "The agent ended before it did the work."
+                return "failed" if terminal.get("exit_code") or self.error else "done"
+            if status == "error":
+                self.error = terminal["status"].get("msg") or "The agent reported an error."
+                return "failed"
+            # Before its first turn an agent is idle too.
+            if status in ("idle", "done") and terminal.get("turn"):
+                ended = ended or now_
+                if now_ - ended >= SETTLE:
+                    return "done"
+            else:
+                ended = None
+            if spent >= self.limit():
+                raise subprocess.TimeoutExpired("agent", self.limit())
+            time.sleep(POLL)
 
     @staticmethod
     def end(proc):
@@ -249,11 +338,119 @@ class Run:
 
     def finish(self, state, error=""):
         self.meta.update(state=state, finished=now(), error=error[-500:])
-        if self.answer:
-            (self.path / "answer.md").write_text(self.answer)
-        for name in ("script", "prompt"):
-            (self.path / name).unlink(missing_ok=True)
+        if self.spec["kind"] == "prompt":
+            read_transcript(self.path, self.meta)
+        (self.path / "script").unlink(missing_ok=True)
         save(self.path / "run.json", self.meta)
+
+
+# ---- what an agent said, from its own transcript ---------------------------------------
+
+
+def opencode(method, path, *args):
+    done = subprocess.run(["opencode", "api", method, path, *args], capture_output=True, text=True, timeout=30)
+    try:
+        return json.loads(done.stdout)["data"]
+    except (ValueError, KeyError, TypeError):
+        raise RuntimeError(f"OpenCode: {(done.stdout or done.stderr).strip()[:300]}") from None
+
+
+def codex_trust(folder):
+    return f"projects={{{json.dumps(os.path.realpath(folder))}={{trust_level=\"trusted\"}}}}"
+
+
+def codex_session(terminal):
+    """Codex keeps its session's file open."""
+    pid = (terminal.get("foreground") or {}).get("pid")
+    try:
+        links = [os.readlink(link) for link in Path(f"/proc/{pid}/fd").iterdir()]
+    except OSError:
+        return None
+    found = [re.search(r"/rollout-.*-([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\.jsonl$", link) for link in links]
+    return next((match.group(1) for match in found if match), None)
+
+
+def json_lines(file):
+    for line in file.read_text(errors="replace").splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(event, dict):
+            yield event
+
+
+# Each yields ("user" | "text" | "tool", text) in order.
+def claude_items(session):
+    for file in (Path.home() / ".claude/projects").glob(f"*/{session}.jsonl"):
+        for event in json_lines(file):
+            if event.get("isSidechain") or event.get("isMeta") or event.get("type") not in ("user", "assistant"):
+                continue
+            content = (event.get("message") or {}).get("content") or []
+            for block in [{"type": "text", "text": content}] if isinstance(content, str) else content:
+                if block.get("type") == "text":
+                    yield ("text" if event["type"] == "assistant" else "user"), block["text"]
+                elif block.get("type") == "tool_use":
+                    yield "tool", f"{block['name']} {json.dumps(block.get('input'), ensure_ascii=False)}"
+
+
+def codex_items(session):
+    for file in (Path.home() / ".codex/sessions").glob(f"*/*/*/rollout-*-{session}.jsonl"):
+        for event in json_lines(file):
+            item = event.get("payload") or {}
+            if event.get("type") != "response_item":
+                continue
+            if item.get("type") == "message" and item.get("role") == "assistant":
+                yield "text", "\n".join(part.get("text", "") for part in item.get("content") or [])
+            elif item.get("type") in ("function_call", "custom_tool_call"):
+                yield "tool", f"{item.get('name')} {item.get('arguments') or item.get('input') or ''}"
+
+
+def opencode_items(session):
+    for message in reversed(opencode("get", f"/api/session/{quote(session)}/message")):
+        if message.get("type") == "user":
+            yield "user", message.get("text") or ""
+        for part in message.get("content") or [] if message.get("type") == "assistant" else []:
+            if part.get("type") == "text":
+                yield "text", part["text"]
+            elif part.get("type") == "tool":
+                yield "tool", f"{part['name']} {json.dumps((part.get('state') or {}).get('input'), ensure_ascii=False)}"
+
+
+def read_transcript(path, meta):
+    """Saves the log and the answer: the text after the last tool or message of the person."""
+    read = {"claude": claude_items, "codex": codex_items, "opencode": opencode_items}.get(meta.get("harness"))
+    if not read or not meta.get("session"):
+        return
+    log, answer, texts = [], "", []
+    try:
+        for kind, text in read(meta["session"]):
+            if kind == "text":
+                texts.append(text)
+                answer = "\n\n".join(texts)
+                log.append(text)
+            else:
+                texts = []
+                log.append(f"{'→' if kind == 'tool' else '>'} {' '.join(text.split())[:300]}")
+    except (OSError, RuntimeError, AttributeError, KeyError, TypeError, subprocess.SubprocessError):
+        return  # a transcript that is gone or has a new shape: the saved text stays
+    if log:
+        (path / "log.txt").write_text("\n".join(log)[-LOG_LIMIT:] + "\n")
+        (path / "answer.md").write_text(answer)
+
+
+def output(path):
+    meta = load(path / "run.json") or {}
+    if meta.get("kind") == "prompt":
+        read_transcript(path, meta)
+
+    def text(name):
+        try:
+            return (path / name).read_text(errors="replace")
+        except OSError:
+            return ""
+
+    return {"answer": text("answer.md"), "log": "\n".join(text("log.txt").rstrip().split("\n")[-500:])}
 
 
 def run(base, automation, name, trigger):
@@ -271,11 +468,18 @@ def run(base, automation, name, trigger):
         path.rmdir()
         return 1
     lock = acquire(folder)
-    if not lock:
+    # An agent of an earlier run that works again, or that waits for a person, is a run too.
+    busy = not lock
+    for _, old in runs_of(folder) if lock else ():
+        terminal = agent_of(old)
+        if terminal and not placed(terminal) and status_of(terminal) in ("working", "blocked"):
+            busy = True
+    if busy:
         save(path / "run.json", {**meta, "finished": now()})
         prune(folder)
         return 0
     for other, old in runs_of(folder):
+        retire(old)
         if old["state"] == "running":
             save(other / "run.json", {**old, "state": "interrupted"})
     meta["state"] = "running"
@@ -284,9 +488,8 @@ def run(base, automation, name, trigger):
         signal.signal(number, on_signal)
     job = Run(spec, path, meta)
     try:
-        code = job.execute()
-        failed = code != 0 or job.error
-        job.finish("failed" if failed else "done", job.error)
+        state = job.execute()
+        job.finish(state, job.error)
     except Stopped:
         job.finish("stopped")
     except subprocess.TimeoutExpired:
@@ -321,10 +524,16 @@ def main():
         return run(base, *args)
     if action == "list":
         print(json.dumps(listing(base)))
+    elif action == "output":
+        if not re.fullmatch(r"[a-z0-9]+", args[1]):
+            sys.exit("Invalid run.")
+        print(json.dumps(output(base / "runs" / args[0] / args[1])))
     elif action == "delete":
         folder = base / "runs" / args[0]
         if locked(folder):
             sys.exit("This automation is running.")
+        for path in list(folder.glob("*/")):
+            drop(path)
         shutil.rmtree(folder, ignore_errors=True)
     return 0
 

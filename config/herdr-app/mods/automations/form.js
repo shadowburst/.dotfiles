@@ -11,7 +11,7 @@ const ICON = (name) => `mods/workspace-chrome/${name}.svg`;
 const LABELS = { name: "Name", text: "Prompt", harness: "Harness", model: "Model", effort: "Effort", folder: "Folder", preset: "Schedule",
   every: "Interval", weekday: "Day", minute: "Minute", time: "Time", cron: "Cron expression", notify: "Notify", limit: "Time limit (minutes)" };
 const INPUTS = ["name", "folder", "minute", "time", "cron", "limit"];
-const NOTIFY = [["failure", "When a run fails"], ["always", "After each run"], ["never", "Never"]];
+const NOTIFY = (kind) => [["always", "After each run"], ["failure", kind === "prompt" ? "If it needs me or fails" : "If it fails"], ["never", "Never"]];
 const CHOICES = ["harness", "model", "effort", "preset", "every", "weekday", "notify"];
 
 // The models of the last OpenCode answer, at once; then the service's.
@@ -47,7 +47,7 @@ export class Form {
 
   // automation: null for a new one.
   open(automation, cx) {
-    const a = automation ?? { name: "", kind: "prompt", text: "", harness: "claude", folder: home(), cron: "0 9 * * *", notify: "failure", limit: 60 };
+    const a = automation ?? { name: "", kind: "prompt", text: "", harness: "claude", folder: this.options("folder")[0]?.value ?? home(), cron: "0 9 * * *", notify: "always", limit: 60 };
     this.automation = automation;
     this.error = "";
     this.dropdown = null;
@@ -97,6 +97,7 @@ export class Form {
     if (!text("text")) throw new Error(`Write a ${kind}.`);
     const folder = text("folder").replace(/^~(?=\/|$)/, home());
     if (!folder.startsWith("/")) throw new Error("The folder must start with / or ~.");
+    if (kind === "prompt" && harness === "claude" && folder.replace(/\/+$/, "") === home()) throw new Error("Claude Code always asks to trust the home folder. Select another folder.");
     const limit = Number(text("limit"));
     if (!Number.isInteger(limit) || limit < 1 || limit > 1440) throw new Error("The time limit must be from 1 to 1440 minutes.");
     if (kind === "prompt" && harness === "opencode" && !model) throw new Error("Select a model.");
@@ -118,12 +119,12 @@ export class Form {
     const pairs = (list) => list.map(([value, label]) => ({ value, label }));
     if (field === "harness") return pairs(Object.entries(HARNESSES));
     if (field === "preset") return pairs(PRESETS);
-    if (field === "notify") return pairs(NOTIFY);
+    if (field === "notify") return pairs(NOTIFY(v.kind));
     if (field === "every") return INTERVALS.map((n) => ({ value: n, label: `${n} minutes` }));
     if (field === "weekday") return [1, 2, 3, 4, 5, 6, 0].map((d) => ({ value: d, label: DAYS[d] }));
     if (field === "folder") {
       const seen = new Set();
-      return spaces().filter((s) => !s.machine).map((s) => {
+      return spaces().filter((s) => !s.machine).sort((a, b) => Number(b.active) - Number(a.active)).map((s) => {
         const tabs = new Set(s.tabs.map((t) => t.id));
         return { value: tilde(panes().find((p) => tabs.has(p.tab) && p.cwd)?.cwd || s.folder), label: s.name };
       }).filter((o) => o.value && !seen.has(o.value) && seen.add(o.value)).map((o) => ({ ...o, group: o.value }));
@@ -291,7 +292,13 @@ export class Form {
       .children([["prompt", "Prompt", "mods/worktrees/sparkles.svg"], ["script", "Script", ICON("terminal")]].map(([kind, label, icon]) =>
         Button.new(`auto-kind-${kind}`).flex().flex_1().h(26).gap(6).items_center().justify_center().rounded(5).text_size(12).cursor_pointer()
           .selected(v.kind === kind).bg(v.kind === kind ? t.selected : t.background).text_color(v.kind === kind ? t.foreground : t.muted)
-          .on_click((_e, cx) => { v.kind = kind; this.error = ""; cx.notify(); })
+          .on_click((_e, cx) => {
+            v.kind = kind;
+            // A new one notifies as other agents do; a script only if it fails.
+            if (!this.automation) v.notify = kind === "prompt" ? "always" : "failure";
+            this.error = "";
+            cx.notify();
+          })
           .child(svg(icon).size(13)).child(label)));
     const fields = this.fields();
     const times = fields.slice(fields.indexOf("preset") + 1, fields.indexOf("notify"));
@@ -303,7 +310,7 @@ export class Form {
         .child(Textarea.new(this.inputs.text).size_full().accessibility_label(LABELS.text).text_color(t.foreground))))
       .child(div().text_size(11).text_color(t.dim).child(v.kind === "script"
         ? "Runs in zsh. A #! first line selects another interpreter."
-        : "Runs without a person: a request for a permission is denied."))
+        : "Runs as an agent in the background. When it needs you, open it to answer."))
       .when(v.kind === "prompt", (el) => el.child(line("harness"))
         .child(line("model", ...(fields.includes("effort") ? ["effort"] : [])))
         .when(v.harness === "opencode" && Boolean(this.modelsError), (el) => el.child(div().text_size(11).text_color(t.blocked).child(this.modelsError))))

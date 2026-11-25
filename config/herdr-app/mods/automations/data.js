@@ -52,14 +52,11 @@ export async function deleteAutomation(id) {
   return changeAutomations((list) => list.filter((a) => a.id !== id));
 }
 
-const runPath = (id, name) => `${folder()}/runs/${id}/${name}`;
-
+// { answer, log }: for a prompt, read again from the agent's transcript.
 export async function loadOutput(id, name) {
-  const [answer, log] = await Promise.all([
-    readTextFile(`${runPath(id, name)}/answer.md`),
-    exec("tail", ["-n", "500", "--", `${runPath(id, name)}/log.txt`]),
-  ]);
-  return { answer: answer ?? "", log: log.code === 0 ? log.stdout.trimEnd() : "" };
+  const r = await exec("python3", runner("output", id, name));
+  if (r.code !== 0) throw new Error(r.stderr.trim() || "Cannot read the output.");
+  return JSON.parse(r.stdout);
 }
 
 // hc prints its errors as JSON.
@@ -91,21 +88,39 @@ export async function start(automation, trigger, at = Date.now()) {
 // does not matter: the terminal can be gone already.
 export const removeTerminal = (address) => hc(["rm", address]).catch(() => null);
 
+// ---- agents: a prompt run's hidden terminal, with the status that its program reports ----
+
+export const agentTerminals = () => terminals().filter((t) => t.state !== "finished" && t.labels?.["automation.agent"]);
+export const agentTerminal = (id, name) => agentTerminals().find((t) => t.labels["automation.agent"] === id && t.labels["automation.run"] === name);
+// One that the person gave a tab is theirs: it does not count as a run.
+export const busyAgent = (id) => agentTerminals().find((t) => t.labels["automation.agent"] === id && !t.labels["herdr.space"] && ["working", "blocked"].includes(t.status));
+// As Herdr does for agents in tabs: finished until a person looks, then idle.
+export function agentStatus(t) {
+  if (!["idle", "done"].includes(t.status)) return t.status ?? "starting";
+  if (!t.turn) return "starting";
+  return t.turn > Number(t.labels["herdr.seen"] ?? 0) ? "done" : "idle";
+}
+export const markSeen = (t) => hc(["label", t.address, `herdr.seen=${t.turn}`]).catch(() => null);
+export const agentSignature = () => agentTerminals().map((t) => [t.address, agentStatus(t)]);
+
 // The runner ends its program and records the run as stopped.
 export async function stop(id, name) {
-  const terminal = liveRuns().find((t) => terminalKey(t) === runKey(id, name));
+  const terminal = liveRuns().find((t) => terminalKey(t) === runKey(id, name)) ?? agentTerminal(id, name);
   if (!terminal) throw new Error("This run is not active.");
   await core(["kill", terminal.address]);
 }
 
-// Continues a prompt run's session in a tab of the space that shows its folder, else a new one.
-export function openSession(automation, meta) {
+// Shows a prompt run's live agent, over the tab (its window can keep it as a tab). One that
+// ended continues its session in a tab of the space that shows its folder, else a new one.
+export function openAgent(automation, meta) {
+  const terminal = agentTerminal(automation.id, meta.id);
+  if (terminal) return run(terminal.labels["herdr.space"] ? "agent.focus" : "terminal.peek", { terminal: terminal.address });
+  const path = meta.folder.replace(/^~(?=\/|$)/, home());
   const argv = {
     claude: ["claude", "--resume", meta.session],
-    codex: ["codex", "--no-daemon", "resume", meta.session],
+    codex: ["codex", "--no-daemon", "-c", `projects={${JSON.stringify(path)}={trust_level="trusted"}}`, "resume", meta.session],
     opencode: ["opencode", "--session", meta.session],
   }[meta.harness];
-  const path = meta.folder.replace(/^~(?=\/|$)/, home());
   const space = spaces().find((s) => {
     if (s.machine) return false;
     const tabs = new Set(s.tabs.map((t) => t.id));

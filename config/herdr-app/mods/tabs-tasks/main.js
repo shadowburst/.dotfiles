@@ -130,7 +130,11 @@ export default class Tabs extends View {
     const panel = find(root, "panel"), body = find(root, "panel-body");
     const enabled = [...(shared("workspace.panels") ?? ["files", "changes"]), "tasks", "automations"];
     const running = Object.values(shared("tasks.records") || {}).filter((task) => !["ready", "failed"].includes(task.labels["task.state"]) && task.state !== "finished").length;
-    const automations = terminals().filter((x) => x.state !== "finished" && x.labels?.["automation.id"]).length;
+    // A prompt's run has a runner and an agent; the agent can also work after its run ended.
+    const automations = terminals().filter((x) => x.state !== "finished" && (x.labels?.["automation.id"]
+      || (x.labels?.["automation.agent"] && !x.labels["herdr.space"] && ["working", "blocked"].includes(x.status))));
+    const active = new Set(automations.map((x) => `${x.labels["automation.id"] ?? x.labels["automation.agent"]}/${x.labels["automation.run"]}`)).size;
+    const asking = automations.filter((x) => x.labels["automation.agent"] && x.status === "blocked").length;
     this.syncPanel(space, panel, body, enabled);
     const panelButton = (id, label, icon) => {
       const on = panel && !panel.hidden && body?.active === id;
@@ -150,7 +154,7 @@ export default class Tabs extends View {
       .when(enabled.includes("files"), el => el.child(panelButton("files", "Files", "mods/files/file.svg")))
       .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/changes/changes.svg")))
       .child(panelButton("tasks", `Tasks${running ? ` (${running})` : ""}`, "mods/workspace-chrome/layers.svg"))
-      .child(panelButton("automations", `Automations${automations ? ` (${automations})` : ""}`, "mods/automations/timer.svg"))
+      .child(panelButton("automations", `Automations${asking ? ` (${asking} needs you)` : active ? ` (${active})` : ""}`, "mods/automations/timer.svg"))
       .when(w?.buttons, el => el.child(button("minimize", w.platform === "windows" ? svg("mods/tabs-tasks/win-min.svg").size(16) : "−", () => run("window.minimize")))
         .child(button("maximize", w.platform === "windows" ? svg(`mods/tabs-tasks/${w.maximized ? "win-restore" : "win-max"}.svg`).size(16) : "□", () => run("window.maximize")))
         .child(button("close-window", w.platform === "windows" ? svg("mods/tabs-tasks/win-close.svg").size(16) : svg("mods/pane/close.svg").size(13), () => run("window.close"))));
