@@ -103,7 +103,7 @@
                 "pane": {
                   "header": {
                     "content": {
-                      "mod": "pane"
+                      "mod": "pane-agents"
                     },
                     "reveal": "always",
                     "height": 30,
@@ -198,6 +198,17 @@
         "mod": "sidebar-switch",
         "props": {
           "keys": true
+        }
+      },
+      "edge": "bottom",
+      "align": "end"
+    },
+    {
+      "id": "pane-agents-poll",
+      "content": {
+        "mod": "pane-agents",
+        "props": {
+          "poll": true
         }
       },
       "edge": "bottom",
