@@ -55,6 +55,7 @@ assert.equal(when(local(2026, 10, 24, 9, 0), noon), "Yesterday 09:00");
 assert.equal(when(local(2026, 11, 25, 9, 0), noon), "25 Dec 09:00");
 
 // ---- the mod, with a fake Herdr ----
+let commands = [], testLayout = null;
 let files, runsList, terminalList, state, notices, calls, testProps, spaceList, outputs, sounds;
 const reset = () => {
   files = new Map(); outputs = {}; sounds = []; runsList = {}; terminalList = []; state = {}; notices = []; calls = []; testProps = {};
@@ -64,9 +65,9 @@ reset();
 const dir = "/home/me/.local/state/herdr-automations";
 let failWrite = 0;
 const herdr = module({
-  appHome: () => "/app", home: () => "/home/me", panes: () => [], spaces: () => spaceList, terminals: () => terminalList, focused: () => null,
+  appHome: () => "/app", home: () => "/home/me", panes: () => [], spaces: () => spaceList, terminals: () => terminalList, focused: () => null, layout: () => testLayout,
   props: () => testProps, settings: () => ({}), theme: () => ({}), shared: (key) => state[key], setShared(key, value) { state[key] = value; },
-  notify(n) { notices.push(plain(n)); }, playSound(name) { sounds.push(name); }, run(name, args) { calls.push(plain({ command: name, ...args })); }, nextCommand: () => new Promise(() => {}), pickFolder: async () => null,
+  notify(n) { notices.push(plain(n)); }, playSound(name) { sounds.push(name); }, run(name, args) { calls.push(plain({ command: name, ...args })); }, nextCommand: () => (commands.length ? Promise.resolve(commands.shift()) : new Promise(() => {})), pickFolder: async () => null,
   async readTextFile(path) { return files.get(path) ?? null; },
   async writeTextFile(path, body, expected) {
     if (failWrite-- > 0) throw new Error("stale");
@@ -373,6 +374,36 @@ assert.equal(notices.length, 2, "A second question notifies again");
 terminalList = [agent("blocked", { labels: { "herdr.space": "s1" } })];
 await tick();
 assert.equal(notices.length, 2, "Herdr itself notifies for a tab");
+
+// Opening the card again starts at its list, from each page. Other redraws keep the page.
+reset();
+await open();
+for (const page of ["runs", "run", "form"]) {
+  Object.assign(view, { id: "a1", name: "m1", back: "runs", error: "old" });
+  if (page === "form") view.openForm(null, cx); else view.go(page, cx);
+  tree();
+  assert.equal(view.page, page, "A redraw keeps the page");
+  state["automations.opened"] = `${page} opened`;
+  tree();
+  assert.deepEqual([view.page, view.back, view.error], ["list", "list", ""], `Opening leaves ${page}`);
+}
+view.go("runs", cx);
+tree();
+assert.equal(view.page, "runs", "One opening resets one time");
+await open();
+tree();
+assert.equal(view.page, "list");
+
+// A notification opens the card at its list too, but keeps the page of a card that shows.
+const shownCard = (hidden, active) => ({ id: "root", children: [{ id: "panel", hidden, children: [{ id: "panel-body", active }] }] });
+for (const [layout, resets] of [[shownCard(true, "automations"), true], [shownCard(false, "files"), true], [shownCard(false, "automations"), false]]) {
+  reset();
+  testLayout = layout;
+  commands = ["show"];
+  await open({ poll: true });
+  assert.equal("automations.opened" in state, resets);
+  assert(calls.some((c) => c.command === "layout.show"));
+}
 
 // An unreadable file is reported and never overwritten.
 reset();

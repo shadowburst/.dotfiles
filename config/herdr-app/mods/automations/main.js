@@ -6,7 +6,7 @@
 
 import { View, div, svg } from "gpui-kit";
 import { Button, Switch, TextView, h_flex, v_flex } from "gpui-base";
-import { focused, nextCommand, notify, playSound, props, run, setShared, settings, shared, theme } from "herdr";
+import { focused, layout, nextCommand, notify, playSound, props, run, setShared, settings, shared, theme } from "herdr";
 import { describe, matches, parse, upcoming, when } from "./cron.js";
 import { HARNESSES, agentSignature, agentStatus, agentTerminal, agentTerminals, busyAgent, changeAutomations, deleteAutomation, liveRuns, loadAutomations, loadOutput, loadRuns, markSeen, openAgent, removeTerminal, start, stop, terminalKey, tilde } from "./data.js";
 import { Form, harnessIcon } from "./form.js";
@@ -37,11 +37,21 @@ function stateText(r) {
   }[r.state] ?? r.state;
 }
 
+function find(node, id) {
+  if (node?.id === id) return node;
+  for (const child of node?.children ?? []) {
+    const found = find(child, id);
+    if (found) return found;
+  }
+  return null;
+}
+
 export default class Automations extends View {
   init(_props, cx) {
     this.polls = Boolean(props()?.poll);
     if (this.polls) return this.initPoll(cx);
     this.page = "list"; // "list", "form", "runs" or "run"
+    this.opened = shared("automations.opened");
     this.list = null;
     this.runs = {};
     this.error = "";
@@ -67,6 +77,8 @@ export default class Automations extends View {
     cx.spawn(async () => {
       for (;;) {
         if (await nextCommand() !== "show") continue;
+        const panel = find(layout(), "panel");
+        if (panel?.hidden || find(panel, "panel-body")?.active !== "automations") setShared("automations.opened", Date.now());
         run("layout.select", { stack: "panel-body", child: "automations" });
         run("layout.show", { id: "panel" });
       }
@@ -223,6 +235,13 @@ export default class Automations extends View {
     this.page = page;
     this.error = "";
     cx.notify();
+  }
+
+  // The card lives on while it is hidden: opening it again starts at the list.
+  restart() {
+    const opened = shared("automations.opened");
+    if (opened === this.opened) return;
+    Object.assign(this, { opened, page: "list", back: "list", error: "" });
   }
 
   showRun(result, cx) {
@@ -468,6 +487,7 @@ export default class Automations extends View {
 
   render() {
     if (this.polls) return div();
+    this.restart();
     const t = theme();
     const body = this.page === "form" ? [this.form.view(t)] : this.page === "runs" ? this.runsPage(t) : this.page === "run" ? this.runPage(t) : this.listPage(t);
     return v_flex().id("automations").key_context("Automations").size_full().min_h(0).rounded(10).overflow_hidden()
