@@ -1,6 +1,6 @@
 # ClickUp space config
 
-`.clickup.json` at a repository's root caches the static ClickUp setup of the space the repository delivers to, so the skills skip lookups that cost rate-limited MCP calls. Every repository of the space carries the same file.
+`.clickup.json` at a repository's root caches the static ClickUp setup of the space the repository delivers to, so the skills skip lookups. Every repository of the space carries the same file.
 
 ```json
 {
@@ -49,12 +49,12 @@
 
 ## Build or refresh
 
-Build the file when it is missing; refresh only the part a ClickUp call rejects (an unknown field, option, or status) and report what changed.
+Build the file when it is missing; refresh only the part ClickUp rejects (an unknown field, option, or status) and report what changed.
 
-1. `clickup_get_workspace_hierarchy` for the space: the Roadmap and Livraisons list IDs.
-2. `clickup_get_custom_fields` for each list: field IDs by name, and the Environnement option IDs.
-3. `clickup_get_list` for each list: status names, mapped to the roles above.
-4. `clickup_execute_operator` `task_type.list`: the Retour bug and Hotfix IDs.
+1. The space's Roadmap and Livraisons list IDs.
+2. Each list's custom fields: field IDs by name, and the Environnement option IDs.
+3. Each list's status names, mapped to the roles above.
+4. The workspace's task types: the Retour bug and Hotfix IDs.
 5. Ask the user for the space's repositories and branches when the current repository cannot tell them.
 
 Write the file, then ask the user to commit it to every repository of the space.

@@ -126,11 +126,11 @@
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "70867627c46ce655d2706b42aa7c35882b73ff50",
+      "commit": "37bbce960d06bd212c04ceff1a5c53846c05f4fc",
       "skillPath": "skills/deliver-pr/SKILL.md",
-      "skillFolderHash": "310df2d49b3b6b120e6a99ef52aa84f62142de65",
+      "skillFolderHash": "8f7b1333485e8fa06e7987071a46c19629f95d71",
       "installedAt": "2026-11-03T10:35:25.647Z",
-      "updatedAt": "2026-11-23T19:36:50.531Z"
+      "updatedAt": "2026-11-25T11:45:01.316Z"
     },
     "watch-pr": {
       "source": "Lynx-Business/skills",
@@ -164,11 +164,11 @@
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "6274d671a7daa65edb030669635b9de3ddc1da16",
+      "commit": "37bbce960d06bd212c04ceff1a5c53846c05f4fc",
       "skillPath": "skills/ship-release/SKILL.md",
-      "skillFolderHash": "2fc57e679f48e67b383a6ce4ddbfb1feede9c362",
+      "skillFolderHash": "fc2ec5f1fc25618aaec95d71ee300866dd16bba3",
       "installedAt": "2026-11-16T14:41:32.085Z",
-      "updatedAt": "2026-11-20T09:15:37.405Z"
+      "updatedAt": "2026-11-25T11:45:01.406Z"
     }
   },
   "dismissed": {

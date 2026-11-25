@@ -62,8 +62,4 @@ Reference each asset in How verified as `![<description>](<path>)` and pass it t
 
 ## ClickUp
 
-Once, at the end. Name each file `<stem>-<first 12 hex of its SHA-256><ext>`; skip names that the task's attachments (from `clickup_get_task`) already have. For each other file, call `clickup_request_attachment_upload` with the task ID and that name, write the ticket to a mode-600 file with a file-writing tool (never on a command line), then run:
-
-```sh
-<skill-directory>/scripts/clickup-upload.sh <upload URL> <ticket file> <multipart field> <file> <name>
-```
+Once, at the end. Copy each file to `<stem>-<first 12 hex of its SHA-256><ext>`, and attach to the task each copy whose name is not among its attachments.

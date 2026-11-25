@@ -39,7 +39,7 @@ From `git diff --stat <base>` (or the plan); the user can override it ("deliver 
 
 ## Steps
 
-1. **Start** in the current checkout, on the task's branch; all steps run there. Read the ClickUp task once with `clickup_get_task`; its ID comes from the branch name, the session's messages, or the PR's `- ClickUp:` line.
+1. **Start** in the current checkout, on the task's branch; all steps run there. Read the ClickUp task once; its ID comes from the branch name, the session's messages, or the PR's `- ClickUp:` line.
 2. **Plan** (normal, risky) in 5–10 lines: goal, approach, the existing pattern you follow (`file:line`), what stays out. Use the shape the code already has; add a layer, abstraction, or registry only when the task needs one, in its smallest version, listed under Decisions taken (auto mode: the PR stays draft). Interactive, risky or design-level: the user confirms the plan once; a plan or design already confirmed in this session (grilling, a summary) counts. Auto: the plan goes at the top of the PR body.
 3. **Before capture** (UI change), before the first edit: [EVIDENCE.md](EVIDENCE.md).
 4. **Build.** Normal and risky: first a test that fails without the change; keep its red and green output as the behaviour evidence. Before each commit: `composer fix` and `pnpm run fix` (those the repo has). Conventional commits.
@@ -84,9 +84,9 @@ Last lines, when a task is linked (`ship-release` and ClickUp's GitHub link read
 
 Skip without a task. IDs: `.clickup.json` (format: the `ship-release` skill's CONFIG.md).
 
-- **One `clickup_update_task`:** an empty `fields.release_note` gets a [release note](#release-note); `fields.deploy_actions` gets each missing line: `ENV+ KEY=<à renseigner>` for a new environment key, `ENV- KEY` for a removed one, `RUN <command>` for a one-time command. Migrations need no line. Keep lines people wrote; write a value only when the repo holds it in plain text and it is no secret.
+- **Fields:** an empty `fields.release_note` gets a [release note](#release-note); `fields.deploy_actions` gets each missing line: `ENV+ KEY=<à renseigner>` for a new environment key, `ENV- KEY` for a removed one, `RUN <command>` for a one-time command. Migrations need no line. Keep lines people wrote; write a value only when the repo holds it in plain text and it is no secret.
 - **Assets** the task does not have yet: [EVIDENCE.md](EVIDENCE.md#clickup).
-- **One comment** `PR summary · <owner>/<repo>#<n>`: PR link; **Problem**, **Solution**, **Conclusion** in plain domain words, no code; asset names. On a refresh, edit it (`clickup_update_comment`) only when its content changed.
+- **One comment** `PR summary · <owner>/<repo>#<n>`: PR link; **Problem**, **Solution**, **Conclusion** in plain domain words, no code; asset names. On a refresh, edit it only when its content changed.
 
 ### Release note
 
