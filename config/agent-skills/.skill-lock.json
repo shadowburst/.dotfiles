@@ -169,6 +169,17 @@
       "skillFolderHash": "fc2ec5f1fc25618aaec95d71ee300866dd16bba3",
       "installedAt": "2026-11-16T14:41:32.085Z",
       "updatedAt": "2026-11-25T11:45:01.406Z"
+    },
+    "clickup-cli": {
+      "source": "isaacrowntree/clickup-cli",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/isaacrowntree/clickup-cli.git",
+      "commit": "423257ad4fbaffcfa3036f796e56efa809ffb0d0",
+      "skillPath": "skills/clickup-cli/SKILL.md",
+      "skillFolderHash": "7c95c5b174cbcff55ec9e13ff956d7e84dd39800",
+      "pluginName": "clickup-cli",
+      "installedAt": "2026-11-25T11:47:23.791Z",
+      "updatedAt": "2026-11-25T11:47:23.791Z"
     }
   },
   "dismissed": {

@@ -3,11 +3,13 @@ let
   mkPonytail = import ./ponytail.nix;
   mkDbExport = import ./db-export.nix;
   mkBrowse = import ./browse.nix;
+  mkClickupCli = import ./clickup-cli.nix;
 
   mkPackages = { lib, pkgs }: rec {
     ponytail = mkPonytail { inherit pkgs; };
     db-export = mkDbExport { inherit pkgs; };
     browse = mkBrowse { inherit pkgs; };
+    clickup-cli = mkClickupCli { inherit pkgs; };
   };
 in
 {
