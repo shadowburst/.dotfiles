@@ -213,6 +213,17 @@
       },
       "edge": "bottom",
       "align": "end"
+    },
+    {
+      "id": "tasks-poll",
+      "content": {
+        "mod": "tasks",
+        "props": {
+          "poll": true
+        }
+      },
+      "edge": "bottom",
+      "align": "end"
     }
   ],
   "titlebar": "none",

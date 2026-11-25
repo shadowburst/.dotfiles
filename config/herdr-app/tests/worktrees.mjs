@@ -1380,6 +1380,33 @@ await Promise.all(taskSyncJobs.splice(0));
 assert.equal(taskNotices.length, 3, "Notify once for each ready or failed task, even with the Tasks panel closed");
 assert.equal(calls.length, 0, "Notifications do not change spaces or keyboard focus");
 assert(taskNotices.some((n) => n.level === "error"));
+// Placement must not need the Tasks panel: its copy starts only when first shown.
+{
+  const floats = JSON.parse(await readFile(new URL("../layouts/inbox.json", import.meta.url), "utf8")).floating;
+  const float = floats.find((f) => f.content.mod === "tasks");
+  assert(float?.content.props?.poll, "The layout always runs the copy that places worktrees");
+  const placed = () => hcCalls.filter((args) => args[0] === "label" && args.some((arg) => arg.startsWith("herdr.space="))).map((args) => args[1]);
+  const before = placed().length, timers = [], jobs = [];
+  const cx = { ...initCx, notify() {}, timer: { every(_ms, fn) { timers.push(fn); } }, spawn(fn) { jobs.push(fn(cx)); } };
+  const tick = async () => { for (const fn of timers) fn(cx); await Promise.all(jobs.splice(0)); };
+  const savedProps = testProps;
+  testProps = undefined;
+  new tasksMod.namespace.default().init({}, cx);
+  await tick();
+  assert.equal(placed().length, before, "The panel's copy does not place worktrees");
+  timers.length = 0;
+  testProps = float.content.props;
+  const poll = new tasksMod.namespace.default();
+  poll.init({}, cx);
+  await tick();
+  assert.deepEqual(placed().slice(before), ["ready"], "Place only a live, ready worktree");
+  await tick();
+  assert.equal(placed().length, before + 1, "Place a worktree once: a tab that the person closes stays closed");
+  text.length = 0;
+  poll.render();
+  assert.equal(text.length, 0, "The poll copy draws nothing");
+  testProps = savedProps;
+}
 testTerminals = testTerminals.filter((t) => t.state !== "finished");
 testShared["tasks.records"].short = { address: "short", created_ms: 6, state: "live", labels: { "task.kind": "worktree", "task.state": "running" } };
 taskFinalStates.short = { state: "finished", exit_code: 7, labels: { "task.kind": "worktree", "task.state": "failed" } };

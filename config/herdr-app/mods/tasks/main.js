@@ -1,23 +1,28 @@
 import { View, div, svg } from "gpui-kit";
 import { Button, h_flex, v_flex } from "gpui-base";
-import { exec, hc, openOverlay, panes, run, spaces, terminals, theme } from "herdr";
+import { exec, hc, notify, openOverlay, panes, props, run, spaces, terminals, theme } from "herdr";
 import { placeTask, taskEntries } from "./data.js";
 
+// The copy with props.poll floats over the window, draws nothing and places ready worktrees:
+// a copy starts only when first shown, and the panel can stay closed.
 export default class Tasks extends View {
   init(_props, cx) {
+    this.polls = Boolean(props()?.poll);
+    if (this.polls) {
+      this.placed = JSON.parse(localStorage.getItem("placed") || "{}");
+      cx.timer.every(2000, (cx) => this.placeReady(cx));
+      return;
+    }
     this.hidden = JSON.parse(localStorage.getItem("hidden") || "[]");
     this.logs = {};
     this.sources = {};
-    this.placed = JSON.parse(localStorage.getItem("placed") || "{}");
     cx.timer.every(2000, (cx) => {
       const task = taskEntries().find((t) => t.address === this.selected);
       if (task && (task.active || this.sources[task.address] !== (task.log || task.state))) this.readLog(task.address, cx);
-      this.placeReady(cx);
     });
   }
 
   // A ready worktree's agent goes into a tab by itself, once: closing that tab later is the person's choice.
-  // The tabs mod shows this panel when a task starts, so this copy runs before the task is ready.
   placeReady(cx) {
     const live = new Set(terminals().filter((t) => t.state !== "finished").map((t) => t.address));
     const ready = taskEntries().filter((t) => t.labels["task.kind"] === "worktree" && live.has(t.address)
@@ -25,12 +30,11 @@ export default class Tasks extends View {
     if (!ready.length) return;
     for (const task of ready) this.placed[task.address] = true;
     localStorage.setItem("placed", JSON.stringify(this.placed));
-    cx.spawn(async (cx) => {
+    cx.spawn(async () => {
       for (const task of ready) {
         try { await placeTask(task); }
-        catch (error) { this.logs[task.address] = String(error); this.selected = task.address; }
+        catch (error) { notify({ title: "Cannot open the worktree's space", body: String(error), level: "error" }); }
       }
-      cx.notify();
     });
   }
 
@@ -82,6 +86,7 @@ export default class Tasks extends View {
   }
 
   render() {
+    if (this.polls) return div();
     // Adoption arrives through live app data, not necessarily with the label reply.
     if (this.opening && panes().some((p) => p.terminal === this.opening)) {
       run("agent.focus", { terminal: this.opening });
