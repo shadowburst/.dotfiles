@@ -116,8 +116,10 @@ def main():
         if not task["agent"]:
             return 0
         os.chdir(path)
-        argv = [*task["agent"], task["prompt"]]
-        os.execvp(argv[0], argv)
+        # As Herdr starts its own agents: the shell stays when the agent quits, so the space does too.
+        # The trap keeps the shell when Ctrl+C kills the agent.
+        shell = os.environ.get("SHELL") or "sh"
+        os.execvp(shell, [shell, "-ic", 'trap : INT; "$@"; trap - INT; exec "$0" -i', shell, *task["agent"], task["prompt"]])
     except Exception as error:
         message = str(error)
         print(f"Worktree task failed: {message}", file=sys.stderr, flush=True)

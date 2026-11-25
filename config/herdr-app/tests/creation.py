@@ -20,7 +20,7 @@ class Creation(unittest.TestCase):
         self.bin = self.base / "bin"
         self.bin.mkdir()
         self.env = {**os.environ, "PATH": f"{self.bin}:{os.environ['PATH']}", "FIXTURE": str(self.base),
-                    "HC_TERMINAL_ID": "test-task", "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1",
+                    "HC_TERMINAL_ID": "test-task", "SHELL": "/bin/sh", "ENV": "", "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1",
                     "GIT_AUTHOR_NAME": "Task Test", "GIT_AUTHOR_EMAIL": "test@example.invalid",
                     "GIT_COMMITTER_NAME": "Task Test", "GIT_COMMITTER_EMAIL": "test@example.invalid"}
         self.git("init", "--initial-branch=main")
@@ -77,13 +77,14 @@ b = Path(os.environ["FIXTURE"])
         return subprocess.run(["git", "-C", str(self.repo), *args], env=self.env, text=True, capture_output=True, check=True).stdout.strip()
 
     # Runs the worker; by default it must succeed. Returns the task and what the agent saw.
-    def run_task(self, ok=True, **changes):
+    # `input` is what the person types in the shell that the agent leaves.
+    def run_task(self, ok=True, input="", **changes):
         task = {"root": str(self.repo), "branch": "", "base": "main",
                 "prompt": 'Fix "quotes"; $(touch injected)\n{{ task }}', "naming": [self.naming], "agent": [self.agent], **changes}
         spec = self.base / "spec.json"
         spec.write_text(json.dumps(task))
         spec.chmod(0o600)
-        result = subprocess.run([sys.executable, str(RUNNER), str(spec)], env=self.env, cwd=self.repo, text=True, capture_output=True, timeout=10)
+        result = subprocess.run([sys.executable, str(RUNNER), str(spec)], env=self.env, cwd=self.repo, text=True, capture_output=True, timeout=10, input=input, start_new_session=True)
         self.assertEqual(result.returncode == 0, ok, result.stderr)
         self.assertFalse(spec.exists(), "Remove the private submission file after reading it")
         self.labels = (self.base / "labels").read_text() if (self.base / "labels").exists() else ""
@@ -102,6 +103,15 @@ b = Path(os.environ["FIXTURE"])
         self.assertEqual(log.stat().st_mode & 0o777, 0o600)
         self.assertIn("Saved setup output", log.read_text())
         self.assertEqual(self.git("config", "branch.feat/voice-worktree.gh-merge-base"), "main")
+
+    def test_shell_stays_in_worktree_after_agent(self):
+        # The shell reads this when the agent has quit (sh, so no personal rc file runs).
+        agent = self.run_task(input="echo left > shell-cwd\n")[1]
+        self.assertTrue((Path(agent["cwd"]) / "shell-cwd").exists(), "Quitting the agent leaves a shell in the worktree")
+
+    def test_failed_agent_leaves_shell(self):
+        self.run_task(agent=["missing-agent"], input="echo left > shell-cwd\n")
+        self.assertTrue((self.base / "feat-voice-worktree/shell-cwd").exists())
 
     def test_name_has_at_most_four_words(self):
         self.env["NAME"] = "Sure: fix/login-button-breaks-on-mobile-safari"
