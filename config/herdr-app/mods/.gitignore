@@ -10,6 +10,7 @@
 !/worktrees/
 !/tasks/
 !/tabs-tasks/
+!/automations/
 # Type files the app writes into every mod folder.
 *.d.ts
 jsconfig.json

@@ -152,6 +152,13 @@
                       "content": {
                         "mod": "tasks"
                       }
+                    },
+                    {
+                      "id": "automations",
+                      "type": "block",
+                      "content": {
+                        "mod": "automations"
+                      }
                     }
                   ],
                   "active": "files"
@@ -218,6 +225,17 @@
       "id": "tasks-poll",
       "content": {
         "mod": "tasks",
+        "props": {
+          "poll": true
+        }
+      },
+      "edge": "bottom",
+      "align": "end"
+    },
+    {
+      "id": "automations-poll",
+      "content": {
+        "mod": "automations",
         "props": {
           "poll": true
         }
