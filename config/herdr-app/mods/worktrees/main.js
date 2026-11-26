@@ -1,6 +1,8 @@
 // Worktrees: a native popup for worktrees and branches. The list of
-// worktrees and branches is the home view; n, m and x open the New, Merge and
+// worktrees and branches is the home view; n, m, a and x open the New, Merge, Adopt and
 // Remove views for the selected row (on a remote row, x deletes that remote branch). Every view has its buttons at the bottom.
+// Adopt is for a finished task: the worktree goes, and the main checkout switches to its
+// branch, with its uncommitted changes.
 // / filters both panes, H and L change the preview, p pulls the selected branch,
 // Diff and Changes list the files, closed: a click, or Enter and Space with j and k in
 // the focused preview, opens a file's CodeDiff side-by-side diff (codediff.lua). The
@@ -10,8 +12,8 @@
 // Neovim does), and Tab moves keyboard focus.
 //
 // New queues setup and naming in herdr-core; Tasks opens the ready agent on request.
-// Remove is a background task too: the popup goes back to the list, and the task's
-// Open button shows the Remove view again (props.task) until wt (or git push --delete) ends.
+// Remove and Adopt are background tasks too: the popup goes back to the list, and the task's
+// Open button shows the view again (props.task) until wt (or git push --delete) ends.
 // props.action (the space menu): "new" and "remove" start in that view.
 // Merge runs `wt` in a hidden herdr-core terminal; its output shows here.
 //
@@ -29,7 +31,7 @@ import {
 import { Job } from "./job.js";
 import { Graph } from "./graph.js";
 import { startCreation } from "./create.js";
-import { startRemoval } from "./remove.js";
+import { startAdoption, startRemoval } from "./remove.js";
 
 const CHOICES = ["workspace", "agent", "model", "effort", "branch", "base"];
 const CHOICE_KEYS = ["up", "down", "enter", "escape", "tab", "shift-tab"];
@@ -83,7 +85,7 @@ function refusal(r, view) {
   if (r.main) return "This is the main checkout.";
   // Remove on a remote row deletes that branch on the remote, and nothing else.
   if (r.remote) return view === "remove" ? "" : `This branch is only on ${r.remote}.`;
-  if (view === "merge" && !r.path) return "This branch has no worktree.";
+  if ((view === "merge" || view === "adopt") && !r.path) return "This branch has no worktree.";
   if (!r.branch) return "This worktree has no branch.";
   if (r.busy) return "An agent is working here.";
   return "";
@@ -599,6 +601,7 @@ export default class Worktrees extends View {
       case "enter": return this.open(cx);
       case "n": return this.openNew(cx);
       case "m": return this.openAction("merge", cx);
+      case "a": return this.openAction("adopt", cx);
       case "x": case "d": case "X":
         this.removeBranch = key === "X";
         return this.openAction("remove", cx);
@@ -978,7 +981,7 @@ export default class Worktrees extends View {
   confirm(cx) {
     const r = this.sel;
     if (this.running || this.busy || refusal(r, this.view)) return;
-    if (this.view === "remove") return this.remove(cx);
+    if (this.view === "remove" || this.view === "adopt") return this.remove(cx);
     if (this.view === "push") return this.runPush(r, true, cx);
     const target = this.target.value().trim();
     if (!target) return this.fail("The target is empty.", cx);
@@ -1004,30 +1007,31 @@ export default class Worktrees extends View {
     });
   }
 
-  // The removal goes to the background and the popup goes back to the list. After
-  // wt succeeds, the removed checkout's spaces close; if the popup came from that
-  // checkout, the main checkout is shown first.
+  // The removal (or adoption) goes to the background and the popup goes back to the
+  // list. After it succeeds, the removed checkout's spaces close; the main checkout is
+  // shown first if the popup came from the removed checkout, or always for an adoption.
   remove(cx) {
-    const r = this.sel, repo = this.repo;
+    const r = this.sel, repo = this.repo, adopt = this.view === "adopt";
+    const main = this.rows.find((m) => m.main);
     const after = [];
-    if (r.path && r.path === repo.top) {
-      const main = this.rows.find((m) => m.main);
+    if (adopt || (r.path && r.path === repo.top)) {
       after.push(main?.spaces.length ? { name: "space.select", args: { id: main.spaces[0] } }
         : { name: "space.new", args: { folder: main?.path ?? repo.root, machine: repo.machine ?? "" } });
     }
     for (const id of r.spaces) after.push({ name: "space.close", args: { id, confirmed: true } });
+    const [doing, done, verb] = adopt ? ["Adopting", "Adopted", "adopt"] : ["Removing", "Removed", "remove"];
     this.running = true;
     cx.notify();
     cx.spawn(async (cx) => {
       try {
-        const task = await startRemoval(r, repo, this.removeBranch, after);
+        const task = await (adopt ? startAdoption(r, repo, main?.path ?? repo.root, after) : startRemoval(r, repo, this.removeBranch, after));
         this.running = false;
         this.back(cx);
-        this.setMessage(`Removing ${rowName(r)} in the background…`, true);
+        this.setMessage(`${doing} ${rowName(r)} in the background…`, true);
         cx.notify();
         const code = await Job.watch(task, () => {}).catch(() => 1);
         if (this.repo !== repo) return;
-        this.setMessage(code === 0 ? `Removed ${rowName(r)}.` : `Cannot remove ${rowName(r)} (exit code ${code}). See Tasks.`, code === 0);
+        this.setMessage(code === 0 ? `${done} ${rowName(r)}.` : `Cannot ${verb} ${rowName(r)} (exit code ${code}). See Tasks.`, code === 0);
         await this.reload(cx);
         cx.notify();
       } catch (e) {
@@ -1038,10 +1042,10 @@ export default class Worktrees extends View {
     });
   }
 
-  // Shows the Remove view of a background removal and follows its output.
+  // Shows the Remove (or Adopt) view of a background task and follows its output.
   // The tabs mod runs the commands that come after it; this view only shows it.
-  follow({ task, row, removeBranch }, cx) {
-    Object.assign(this, { view: "remove", sel: row, removeBranch: Boolean(removeBranch), out: [], running: true, failed: false, following: true });
+  follow({ task, row, removeBranch, adopt }, cx) {
+    Object.assign(this, { view: adopt ? "adopt" : "remove", sel: row, removeBranch: Boolean(removeBranch), out: [], running: true, failed: false, following: true });
     this.setMessage("", false);
     this.handle.focus();
     cx.notify();
@@ -1055,10 +1059,10 @@ export default class Worktrees extends View {
       Object.assign(this, { running: false, following: false });
       if (code !== 0) {
         this.failed = true;
-        return this.fail(`${row.remote ? "git push" : "wt"} failed with exit code ${code}.`, cx);
+        return this.fail(`${row.remote ? "git push" : adopt ? "Adopt" : "wt"} failed with exit code ${code}.`, cx);
       }
       this.back(cx);
-      this.setMessage(`Removed ${rowName(row)}`, true);
+      this.setMessage(`${adopt ? "Adopted" : "Removed"} ${rowName(row)}`, true);
     });
   }
 
@@ -1110,8 +1114,9 @@ export default class Worktrees extends View {
     else if (this.failed) { if (key === "enter") this.back(cx); }
     else if (this.running) return;
     else if (this.view === "remove" && ["enter", "y", "x", "d", "X"].includes(key)) this.confirm(cx);
+    else if (this.view === "adopt" && ["enter", "y", "a"].includes(key)) this.confirm(cx);
     else if (this.view === "push" && ["enter", "y"].includes(key)) this.confirm(cx);
-    else if (["remove", "push"].includes(this.view) && key === "n") this.back(cx);
+    else if (["remove", "adopt", "push"].includes(this.view) && key === "n") this.back(cx);
     cx.notify();
   }
 
@@ -1230,8 +1235,8 @@ export default class Worktrees extends View {
   }
 
   header(t, ui) {
-    const title = { list: "Worktrees", new: "New worktree", merge: "Merge worktree", remove: "Remove worktree", commit: "Commit", push: "Push rejected" }[this.view] ?? "Worktrees";
-    const icon = { new: ICON("plus"), merge: ICON("git-compare"), remove: ICON("archive"), commit: OWN("git-commit"), push: OWN("upload") }[this.view] ?? ICON("git-branch");
+    const title = { list: "Worktrees", new: "New worktree", merge: "Merge worktree", adopt: "Adopt worktree", remove: "Remove worktree", commit: "Commit", push: "Push rejected" }[this.view] ?? "Worktrees";
+    const icon = { new: ICON("plus"), merge: ICON("git-compare"), adopt: ICON("circle-check"), remove: ICON("archive"), commit: OWN("git-commit"), push: OWN("upload") }[this.view] ?? ICON("git-branch");
     return h_flex().flex_none().h(60).px(20).gap(12).items_center().border_b(1).border_color(t.border)
       .child(div().flex_none().size(34).rounded(9).bg(alpha(t.accent, 0.16)).flex().items_center().justify_center()
         .child(svg(icon).size(17).text_color(t.accent)))
@@ -1279,6 +1284,7 @@ export default class Worktrees extends View {
     return [
       ui.button("remove", "Remove", "x", (cx) => this.openAction("remove", cx), "", none || r.pending),
       ui.button("merge", "Merge", "m", (cx) => this.openAction("merge", cx), "", none || r.pending),
+      ui.button("adopt", "Adopt", "a", (cx) => this.openAction("adopt", cx), "", none || r.pending),
       ui.button("commit", "Commit", "c", (cx) => this.openCommit(cx), "", none || Boolean(refusal(r, "commit"))),
       ui.button("pull", "Pull", "p", (cx) => this.pullCurrent(cx), "", none || r.pending || Boolean(r.remote) || !r.branch),
       ui.button("push", "Push", "⇧P", (cx) => this.pushCurrent(cx), "", none || Boolean(refusal(r, "push"))),
@@ -1522,6 +1528,7 @@ export default class Worktrees extends View {
       ui.button("back", "Cancel", "n", (cx) => this.back(cx), "", Boolean(this.busy)),
       ui.button("force", "Force push with lease", "↵", (cx) => this.confirm(cx), "danger", Boolean(this.busy)),
     ];
+    if (this.view === "adopt") return [ui.button("back", "Cancel", "n", (cx) => this.back(cx)), ui.button("adopt", "Adopt", "↵", (cx) => this.confirm(cx), "primary")];
     return this.view === "merge"
       ? [ui.button("back", "Cancel", "Esc", (cx) => this.back(cx)), ui.button("merge", "Merge", "↵", (cx) => this.confirm(cx), "primary")]
       : [ui.button("back", "Cancel", "n", (cx) => this.back(cx)), ui.button("remove", this.sel.remote ? `Delete from ${this.sel.remote}` : this.removeBranch ? "Remove with branch" : "Remove", "↵", (cx) => this.confirm(cx), "danger")];
@@ -1566,6 +1573,13 @@ export default class Worktrees extends View {
       notes.push([this.removeBranch ? `The worktree and the local branch will be removed. The branch on the remote stays.` : "The worktree will be removed. The branch stays.", t.muted]);
       if (r.dirty) notes.push(["Uncommitted changes will be lost.", t.blocked]);
       if ((!r.path && !r.remote && !r.merged) || (this.removeBranch && !r.merged)) notes.push(["Unmerged commits will be lost.", t.blocked]);
+    } else if (this.view === "adopt") {
+      const main = this.rows.find((m) => m.main);
+      const from = main?.branch && main.branch !== r.branch ? `, which leaves ${main.branch}` : "";
+      notes.push([`The worktree will be removed. The main checkout (${main?.path ?? this.repo.root}) will switch to ${r.branch}${from}.`, t.muted]);
+      if (r.dirty) notes.push(["Uncommitted changes go with the branch: they are stashed, then applied in the main checkout.", t.muted]);
+      if (main?.dirty) notes.push(["The main checkout has uncommitted changes. Git switches only if they do not conflict.", t.ansi3]);
+      if (main?.busy) notes.push(["An agent is working in the main checkout.", t.ansi3]);
     } else if (this.view === "push") {
       notes.push([`The remote has commits that ${rowName(r)} does not have.`, t.blocked]);
       notes.push(["A force push with lease replaces them, but only if the remote did not change since your last fetch.", t.muted]);

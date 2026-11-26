@@ -877,9 +877,9 @@ try {
   popup.graph.details = { sha: m, parents: [], message: "" };
   const paneKeys = [], press = (key) => popup.key({ key_char: key.length === 1 ? key : undefined, modifiers: {}, keystroke: key }, graphCx);
   const listMethods = { openNew: "n", pullCurrent: "p", pushCurrent: "P", openCommit: "c", fetchAll: "f", startFilter: "/", close: "q" };
-  popup.openAction = (view) => paneKeys.push(popup.removeBranch && view === "remove" ? "X" : { merge: "m", remove: "x" }[view]);
+  popup.openAction = (view) => paneKeys.push(popup.removeBranch && view === "remove" ? "X" : { merge: "m", adopt: "a", remove: "x" }[view]);
   for (const [method, key] of Object.entries(listMethods)) popup[method] = () => paneKeys.push(key);
-  const everyKey = [...Object.values(listMethods), "m", "x", "X"];
+  const everyKey = [...Object.values(listMethods), "m", "a", "x", "X"];
   const wasLoading = popup.graph.loading;
   popup.graph.loading = true; // c commits while history loads, too
   for (const focusPane of [() => popup.handle.focus(), () => popup.graph.handle.focus(), () => popup.graph.detailsHandle.focus(), () => { popup.preview = 1; popup.previewHandle.focus(); }]) {
@@ -1342,6 +1342,99 @@ try {
   assert.deepEqual(Array.from(remoteRun.slice(remoteRun.indexOf("--") + 1)), ["git", "-C", "/repo", "push", "origin", "--delete", "topic"]);
   assert(remoteRun.includes("task.title=Delete remote branch · origin/topic"));
   console.log("Worktree removal: background task, follow-up commands, failed start, the followed Remove view, and remote-only branch deletion passed.");
+}
+
+{
+  calls = []; hcCalls.length = 0; watched.length = 0;
+  delete testShared["tasks.records"];
+  const adopting = new main.namespace.default();
+  const mainRow = { branch: "main", path: "/repo", main: true, spaces: [] };
+  Object.assign(adopting, {
+    repo: { root: "/repo", top: "/repo", machine: null }, handle: { focus() {}, is_focused: () => true }, view: "list", cursor: 1, out: [], cfg: { agents: {} }, names: { local: new Set(), names: [] }, filter: state(),
+    rows: [mainRow, { branch: "topic", path: "/wt", dirty: true, spaces: ["wt-space"] }], close() {}, reload() {},
+  });
+  const adoptTasks = [];
+  const adoptCx = { notify() {}, spawn(fn) { adoptTasks.push(fn(adoptCx)); } };
+  for (const [row, why] of [[mainRow, /main checkout/], [{ branch: "topic", remote: "origin", spaces: [] }, /only on origin/],
+    [{ branch: "topic", spaces: [] }, /no worktree/], [{ branch: "topic", path: "/wt", busy: true, spaces: [] }, /agent is working/]]) {
+    Object.assign(adopting, { view: "adopt", sel: row, running: false, failed: false });
+    adopting.confirm(adoptCx);
+    assert(!adopting.running && hcCalls.length === 0, "Adopt refuses this row");
+    text.length = 0;
+    adopting.actionView({}, adopting.ui({}));
+    assert(text.some((s) => why.test(s)), `Adopt says why it refuses: ${why}`);
+  }
+  adopting.view = "list";
+  adopting.listKey("a", adoptCx);
+  assert.equal(adopting.view, "adopt", "a opens the Adopt view");
+  assert.equal(adopting.sel.branch, "topic");
+  text.length = 0;
+  adopting.actionView({}, adopting.ui({}));
+  assert(text.some((s) => /main checkout \(\/repo\) will switch to topic/.test(s)), "Adopt says what happens to the main checkout");
+  assert(text.some((s) => /stashed, then applied/.test(s)), "Adopt says that uncommitted changes go with the branch");
+  adopting.key({ key_char: "a", modifiers: {}, keystroke: "a" }, adoptCx);
+  await Promise.all(adoptTasks.splice(0));
+  assert.equal(adopting.view, "list", "The popup goes back to the list once the adoption is queued");
+  assert.match(adopting.message, /Adopted topic/);
+  const run = hcCalls.at(-1);
+  assert(run.includes("task.kind=worktree-adopt") && run.includes("task.title=Adopt worktree · topic"));
+  const argv = run.slice(run.indexOf("--") + 1);
+  assert.deepEqual([argv[0], argv[1], ...argv.slice(3)], ["sh", "-c", "sh", "/repo", "/wt", "topic"]);
+  const record = testShared["tasks.records"].t99;
+  assert.deepEqual(JSON.parse(JSON.stringify(record.onSuccess)), [{ name: "space.new", args: { folder: "/repo", machine: "" } }, { name: "space.close", args: { id: "wt-space", confirmed: true } }],
+    "Adopt always shows the main checkout, then closes the worktree's spaces");
+  assert.equal(record.overlay.props.adopt, true);
+  const follower = new main.namespace.default();
+  Object.assign(follower, { repo: { root: "/repo", machine: null }, handle, rows: [], close() {}, reload() {} });
+  follower.follow(record.overlay.props, adoptCx);
+  assert.equal(follower.view, "adopt", "The task's Open button shows the Adopt view");
+  await Promise.all(adoptTasks.splice(0));
+  assert.match(follower.message, /Adopted topic/);
+
+  // The script itself, in real repositories. A small wt stands in for worktrunk.
+  const dir = await mkdtemp("/tmp/opencode/herdr-adopt-");
+  try {
+    const sh = (cwd, cmd, env = {}) => spawnSync("sh", ["-c", cmd], { cwd, encoding: "utf8", env: { ...process.env, ...env } });
+    await writeFile(`${dir}/wt`, `#!/bin/sh
+# wt -C <main> remove <branch> --no-delete-branch ...
+[ "$5" = --no-delete-branch ] || exit 9
+p=$(git -C "$2" worktree list --porcelain | awk -v b="branch refs/heads/$4" '/^worktree /{w=substr($0,10)} $0==b{print w}')
+exec git -C "$2" worktree remove "$p"
+`, { mode: 0o755 });
+    const env = { PATH: `${dir}:${process.env.PATH}`, GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@t", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@t" };
+    const adoptRun = (main, wt, branch) => spawnSync("sh", ["-c", argv[2], "sh", main, wt, branch], { encoding: "utf8", env: { ...process.env, ...env } });
+    const setup = (name) => {
+      const m = `${dir}/${name}`;
+      assert.equal(sh(dir, `git init -q -b main ${name} && cd ${name} && echo a > a && git add a && git commit -qm a && git worktree add -q -b topic ../${name}-wt`, env).status, 0);
+      return [m, `${dir}/${name}-wt`];
+    };
+    // Changes go with the branch: staged, unstaged and untracked.
+    let [m, w] = setup("dirty");
+    sh(w, "echo b > a && echo new > new && echo s > s && git add s", env);
+    let r = adoptRun(m, w, "topic");
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(sh(m, "git branch --show-current").stdout.trim(), "topic", "The main checkout is on the branch");
+    assert.equal(sh(dir, `test -e ${w} && echo yes || echo no`).stdout.trim(), "no", "The worktree is gone");
+    assert.equal(sh(m, "cat a new s").stdout, "b\nnew\ns\n", "The worktree's changes are in the main checkout");
+    assert.equal(sh(m, "git stash list").stdout, "", "The stash entry is dropped");
+    // A clean worktree needs no stash.
+    [m, w] = setup("clean");
+    r = adoptRun(m, w, "topic");
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(sh(m, "git branch --show-current").stdout.trim(), "topic");
+    // When git cannot switch, the changes stay in the stash and the script says so.
+    [m, w] = setup("conflict");
+    sh(w, "echo b > a && git commit -qam b && echo c > a", env);
+    sh(m, "echo x > a");
+    r = adoptRun(m, w, "topic");
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /stay in the stash: [0-9a-f]{40}/, "A failed switch names the stash");
+    assert.equal(sh(m, "git branch --show-current").stdout.trim(), "main");
+    assert.match(sh(m, "git stash list").stdout, /adopt topic/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+  console.log("Worktree adoption: refusals, a key and Adopt view, background task, follow-up commands, followed view, and the script in real repositories passed.");
 }
 
 const taskData = new vm.SourceTextModule(await readFile(new URL("../mods/tasks/data.js", import.meta.url), "utf8"), { context });
