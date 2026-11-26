@@ -4,7 +4,7 @@ For a change to pages or components: before screenshots, after screenshots, and 
 
 ## When
 
-- **Before:** before the first edit, while the checkout is still at the base. Start the sub-agent and wait for it before you edit. When the before state was not captured, write "before not captured" in How verified; the checkout stays on the task's branch.
+- **Before:** before the first edit, while the checkout is still at the base. Start the sub-agent and wait for it before you edit. When the before state was not captured, write "before not captured" in Evidence; the checkout stays on the task's branch.
 - **After:** on the pushed head after review, before `scripts/verify.sh`. No test runs during a capture: the test database is shared.
 
 ## Sub-agent
@@ -58,7 +58,7 @@ $page->resize(1280, 720)->assertSee("Notifications");
 
 ## GitHub
 
-Reference each asset in How verified as `![<description>](<path>)` and pass it to `gh pr create` or `gh pr edit` as `--attach '<path>#<description>'`; `gh` uploads it and rewrites the reference. A refresh with new assets replaces the old references.
+Reference each asset in Evidence as `![<description>](<path>)` and pass it to `gh pr create` or `gh pr edit` as `--attach '<path>#<description>'`; `gh` uploads it and rewrites the reference. A refresh with new assets replaces the old references.
 
 ## ClickUp
 

@@ -12,17 +12,17 @@ Take the task to a PR that is ready to merge; the merge stays with the user. "Pu
 - **Interactive** (default). Ask only: (1) plan confirmation before risky or design-level work, in one batched call; (2) a product or UX choice that changes what users see and has no clear default; (3) money, or a step outside the grant.
 - **Auto**: `deliver auto`, or "auto" or "don't ask" in the request. Ask nothing. Blocked: publish a draft PR whose body starts with `Needs you:`, one line per item, then stop.
 
-Both modes take these defaults and list each under Decisions taken. Running or rerunning tests, review rounds within budget, ready state, and replacing screenshots are yours to decide.
+Both modes take these defaults and list each under Decisions taken in What Changed. Running or rerunning tests, review rounds within budget, ready state, and replacing screenshots are yours to decide.
 
 | Situation | Default |
 |---|---|
 | Product or UX choice (auto) | the recommended option |
-| Change you could not verify | `not verified: <what>` in How verified |
-| Failure the base also has | a note in Risks; no fix here |
+| Change you could not verify | `not verified: <what>` in Evidence |
+| Failure the base also has | `Base failure:` in Merge Danger; no fix here |
 | No ClickUp task found | skip ClickUp |
 | Unrelated changes in the checkout | commit only your paths |
 | Paid API call, missing prerequisite | spend and install nothing |
-| Review budget ends, finding open | list it in Risks; open blocker: draft |
+| Review budget ends, finding open | `Open finding:` in Merge Danger; open blocker: draft |
 | Another session works in this checkout | stop |
 
 **Grant:** commit, push, rebase on the base, `git push --force-with-lease` on this task's branch, run any test or capture, create and edit this PR, write to its ClickUp task. Merging, auto-merge, other branches, closing a PR, deleting data, production, and anything outside the repo stay with the user.
@@ -60,33 +60,20 @@ While coding and between review rounds, run the tests the change needs. Under Co
 - **`scripts/verify.sh --full`** once per PR (normal, risky); in a stack, once on the top PR after the stack's review. That run stays valid, pass or fail: run it again only when the user asks. It runs both test steps, so it lists every failure. After a failure: fix each failed test, run its file, push, and run `scripts/verify.sh`. Status `full: …`.
 - Run verify in the background (`timeout 90m scripts/verify.sh --full` for the full run) and act on its exit; no "still waiting" turns, no `sleep` loops. Exit 124 is a blocker to report (auto: draft with `Needs you:`), not a reason to run it again.
 - A failing step prints its end. Read `storage/logs/verify.log` only when that is not enough, and only the lines you need (`grep`, `tail`).
-- **Flaky:** a test that fails in the `--full` run and passes alone. Add Pest's `->flaky()` to it with `// Flaky under parallel load (found <YYYY-MM-DD>).`, commit, run `scripts/verify.sh`, and name it in How verified.
+- **Flaky:** a test that fails in the `--full` run and passes alone. Add Pest's `->flaky()` to it with `// Flaky under parallel load (found <YYYY-MM-DD>).`, commit, run `scripts/verify.sh`, and name it in Evidence.
 - A repo without `scripts/verify.sh`: run its documented checks, then `gh api repos/{owner}/{repo}/statuses/<sha> -f state=success -f context=local/verify -f description="full: <result>"`.
 
 ## PR body
 
-`Needs you:` first, only when blocked. Then `##` sections:
-
-- **Why:** problem and outcome, 1–2 sentences.
-- **What changed:** user-visible behaviour first, then what a reviewer needs.
-- **How verified:** tier; red-then-green test output; the commit of the full run (in a stack, the top PR's run) and its result; after a failure, each failed test with its fix; tests marked flaky; review rounds and reviewer model; UI assets as `![<description>](<path>)`, or "before not captured".
-- **Decisions taken.**
-- **Risks:** rollback (two-way, or one-way and what is lost), blast radius, flaky tests, base failures.
-
-Last lines, when a task is linked (`ship-release` and ClickUp's GitHub link read them):
-
-```markdown
-- ClickUp: [<task name>](<task URL>)
-<!-- #<task ID>[<statuses.roadmap.review>] -->
-```
+`Needs you:` (only when blocked), then `##` What Changed (ending with Decisions taken), Why, Evidence, References, Merge Danger. Format and examples: [PR-BODY.md](PR-BODY.md).
 
 ## ClickUp
 
 Skip without a task. IDs: `.clickup.json` (format: the `ship-release` skill's CONFIG.md).
 
-- **Fields:** an empty `fields.release_note` gets a [release note](#release-note); `fields.deploy_actions` gets each missing line: `ENV+ KEY=<à renseigner>` for a new environment key, `ENV- KEY` for a removed one, `RUN <command>` for a one-time command. Migrations need no line. Keep lines people wrote; write a value only when the repo holds it in plain text and it is no secret.
+- **Fields:** an empty `fields.release_note` gets a [release note](#release-note); `fields.deploy_actions` gets each missing line: `ENV+ KEY=<à renseigner>` for a new environment key, `ENV~ KEY=<à renseigner>` for a key whose value changes, `ENV- KEY` for a removed one, `RUN <command>` for a one-time command. Migrations need no line. Keep lines people wrote; write a value only when the repo holds it in plain text and it is no secret.
 - **Assets** the task does not have yet: [EVIDENCE.md](EVIDENCE.md#clickup).
-- **One comment** `PR summary · <owner>/<repo>#<n>`: PR link; **Problem**, **Solution**, **Conclusion** in plain domain words, no code; asset names. On a refresh, edit it only when its content changed.
+- **One comment** `PR summary · <owner>/<repo>#<n>`: [PR-BODY.md](PR-BODY.md#clickup-summary), plus the asset names. On a refresh, edit it only when its content changed.
 
 ### Release note
 

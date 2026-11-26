@@ -7,7 +7,7 @@ description: Use when the user says "cross-review", or another skill asks for a 
 
 Make the change more correct before it is published: another agent reads the diff, and you answer each finding. Hold the change to its intent and its plan.
 
-**Reviewer:** a fresh agent, started with any tool the environment offers. Model: the one the user or their instructions name, else another provider's, else your own. When a reviewer fails, try another one. When you can start none, skip the review and report the reason; on a PR, write it in Risks, and a risky change stays draft.
+**Reviewer:** a fresh agent, started with any tool the environment offers. Model: the one the user or their instructions name, else another provider's, else your own. When a reviewer fails, try another one. When you can start none, skip the review and report the reason; on a PR, write it in Merge Danger, and a risky change stays draft.
 
 **Rounds:** normal tier, or direct use without a tier: 1; a 2nd only while a blocker or should stays open. Risky: up to 3. Stop early when a round returns only nits. Fixes to comments, docs, or format need no new round.
 
@@ -34,6 +34,6 @@ Make the change more correct before it is published: another agent reads the dif
 ## Stop
 
 - **Agreed:** the reviewer approves the current diff, and no blocker or should is open.
-- **Rounds used:** list the open findings with both sides in one line each. The caller decides (`deliver-pr`: Risks, and draft for an open blocker). Direct use: report them.
+- **Rounds used:** list the open findings with both sides in one line each. The caller decides (`deliver-pr`: `Open finding:` lines in Merge Danger, and draft for an open blocker). Direct use: report them.
 
-For a PR, add to How verified: `Cross-reviewed: <N> rounds with <model>. Verdict: <approved | open findings>`. Report the rounds, the reviewer, what changed, and the declined findings with reasons.
+For a PR, add to Evidence: `Cross-reviewed: <N> rounds with <model>. Verdict: <approved | open findings>`. Report the rounds, the reviewer, what changed, and the declined findings with reasons.

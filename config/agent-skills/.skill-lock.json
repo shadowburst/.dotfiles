@@ -106,41 +106,41 @@
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "70867627c46ce655d2706b42aa7c35882b73ff50",
+      "commit": "1305093e45c24a15bdf650dbab5fcc8c3fe5bbc3",
       "skillPath": "skills/review-pr/SKILL.md",
-      "skillFolderHash": "67a7d1cc1aff318b53a4f345d538923dc15316c3",
+      "skillFolderHash": "adf49b3c92be0317ec108663e57b809ca6779a45",
       "installedAt": "2026-09-23T12:49:33.294Z",
-      "updatedAt": "2026-11-23T19:36:50.413Z"
+      "updatedAt": "2026-11-26T07:56:24.428Z"
     },
     "cross-review": {
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "70867627c46ce655d2706b42aa7c35882b73ff50",
+      "commit": "1305093e45c24a15bdf650dbab5fcc8c3fe5bbc3",
       "skillPath": "skills/cross-review/SKILL.md",
-      "skillFolderHash": "717ba84799b8d6a94a84ae2ae25eb35e93dcd835",
+      "skillFolderHash": "cd4ac0a02c3388681078d5a976498413d158b949",
       "installedAt": "2026-11-03T10:35:25.645Z",
-      "updatedAt": "2026-11-23T19:36:50.483Z"
+      "updatedAt": "2026-11-26T07:56:24.486Z"
     },
     "deliver-pr": {
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "37bbce960d06bd212c04ceff1a5c53846c05f4fc",
+      "commit": "a3002091dcdb1acb7a7ad96c154ced767b8277c6",
       "skillPath": "skills/deliver-pr/SKILL.md",
-      "skillFolderHash": "8f7b1333485e8fa06e7987071a46c19629f95d71",
+      "skillFolderHash": "70af71bf4603ec4be067c95eea44bc5945c14230",
       "installedAt": "2026-11-03T10:35:25.647Z",
-      "updatedAt": "2026-11-25T11:45:01.316Z"
+      "updatedAt": "2026-11-26T09:47:39.948Z"
     },
     "watch-pr": {
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "70867627c46ce655d2706b42aa7c35882b73ff50",
+      "commit": "1305093e45c24a15bdf650dbab5fcc8c3fe5bbc3",
       "skillPath": "skills/watch-pr/SKILL.md",
-      "skillFolderHash": "20ff2e39f8c38f2feff5e0989d1d14c021e2ca8c",
+      "skillFolderHash": "86e38200822d648c92c9f841dc7fc3217fa8c919",
       "installedAt": "2026-11-03T10:35:25.656Z",
-      "updatedAt": "2026-11-23T19:36:50.566Z"
+      "updatedAt": "2026-11-26T07:56:24.623Z"
     },
     "herdr-core": {
       "source": "herdrdev/herdr-core",
@@ -164,11 +164,11 @@
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "37bbce960d06bd212c04ceff1a5c53846c05f4fc",
+      "commit": "a3002091dcdb1acb7a7ad96c154ced767b8277c6",
       "skillPath": "skills/ship-release/SKILL.md",
-      "skillFolderHash": "fc2ec5f1fc25618aaec95d71ee300866dd16bba3",
+      "skillFolderHash": "52de0d7eb19275ad80b0614a98a1c5c8d7a5f3c5",
       "installedAt": "2026-11-16T14:41:32.085Z",
-      "updatedAt": "2026-11-25T11:45:01.406Z"
+      "updatedAt": "2026-11-26T09:47:39.984Z"
     },
     "clickup-cli": {
       "source": "isaacrowntree/clickup-cli",

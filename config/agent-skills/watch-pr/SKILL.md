@@ -17,7 +17,7 @@ Take an open PR's review feedback and failed checks to a ready-to-merge PR; the 
 4. **Rebase** on `origin/<base>` (`git config branch.<head>.gh-merge-base`, else the PR's base) when the PR is behind, has conflicts, or the base touched its files; then `git push --force-with-lease`.
 5. **Verify** the new head with `scripts/verify.sh` (it reruns the changed test files; in a stack, run it on the top PR), per deliver-pr's Tests. Never `--full` here.
 6. **Reply and resolve.** Refetch the [review threads](#review-threads); when the head is not the one you verified, go back to step 1. Reply once per triaged thread, `**Addressed**`, `**Obsolete**`, or `**Declined**` with the evidence, then resolve the addressed and obsolete threads and leave the others open. After a failure, refetch, and skip what is already done.
-7. **Refresh the PR.** Edit the body (`gh pr edit --body-file`) only when What changed, How verified, or Risks changed.
+7. **Refresh the PR.** Edit the body (`gh pr edit --body-file`) only when What Changed, Evidence, or Merge Danger changed.
 8. **Wait** only when the repo has checks (`gh pr checks <n> --required` lists some): `gh pr checks <n> --watch --required --fail-fast` as a background command, then go back to step 1 on a failure. Without checks, stop.
 
 ## Review threads

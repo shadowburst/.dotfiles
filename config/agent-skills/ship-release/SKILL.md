@@ -54,7 +54,7 @@ A task in `review` whose PR is merged counts as ready. A hotfix (`task_types.hot
    - `fields.environment`, the description per [Release notes](#release-notes), and `fields.deploy_checklist`;
    - the relation field: add the new task IDs; the relation sets both sides, and earlier links stay.
 8. **Confirm.** When confirming, move every ready task to the shipped status and add the user to `fields.deployed_by`; once every write of steps 7 and 8 succeeded, set the delivery to deployed. After a failed write it stays open for the next run. When every repository is deployed but lines are unticked, report them by key and task and ask the user to say "ship" again once they are played. When some repositories are deployed and others pending, report which.
-9. **Report.** The delivery link and status; per repository the range, the compare URL, and deployed or pending; tasks by sort; release notes written; untracked PRs and commits; unticked lines; blocked tasks; and each failed call.
+9. **Report** per [Report](#report).
 
 ## Release notes
 
@@ -71,9 +71,37 @@ The delivery description is the client's view: rebuild it on each run from the n
 # compare https://github.com/Owner/app/compare/<base>...<target>
 # untracked #2828 test: trim suite, a409cb7 chore: update lerd file
 [ ] ENV+ QONTO_API_KEY=sandbox-xxxx — Bannette de factures PA Qonto
+[ ] ENV- LEGACY_PDF_URL — Bannette de factures PA Qonto
 [x] RUN php artisan cityscan:secure-webhooks — Sécuriser le webhook Cityscan
 ```
 
 - One `# repo` line per repository with tasks, with full SHAs: it is the base of the next run.
 - Action lines come from each linked task's `fields.deploy_actions`: keep untagged lines and lines tagged for this environment (`[préprod]` or `[preprod]`, `[prod]`), and drop the tag. Write each as `[ ] <action> — <task name>`.
 - Keep every existing action line and its tick; append only new ones. Report an action whose value reads `<à renseigner>` as missing.
+
+## Report
+
+Write the report in this order, and leave out an empty section:
+
+1. **Delivery:** link and status; whether it was confirmed, or whether a "ship" run would confirm.
+2. **Repositories:** per repository, the range, the compare URL, and deployed or pending.
+3. **Environment variables:** one checklist line for each `ENV+`, `ENV~`, and `ENV-` action line, with the tick from the delivery's checklist, grouped as Add, Update, then Remove. Name the key and the task, and never the value; mark a line whose value reads `<à renseigner>` as "value missing".
+4. **Commands:** one checklist line for each `RUN` action line, in checklist order, with its tick, the full command in a code span, and the task.
+5. **Other actions:** action lines of any other form, by task.
+6. **Tasks:** by sort (ready, done, blocked with its status); tasks outside `lists.roadmap`.
+7. **Release notes written**, by task.
+8. **Untracked** PRs and commits.
+9. **Failed calls.**
+
+Sections 3 to 5 list every action line, ticked or not, so the user sees what is left:
+
+```markdown
+### Environment variables
+**Add**
+- [ ] `QONTO_API_KEY` — Bannette de factures PA Qonto
+**Remove**
+- [ ] `LEGACY_PDF_URL` — Bannette de factures PA Qonto
+
+### Commands
+- [x] `php artisan cityscan:secure-webhooks` — Sécuriser le webhook Cityscan
+```
