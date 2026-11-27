@@ -1,5 +1,5 @@
 // Pins, one set for the Inbox, the agents list and the tab bar, read and written only here (docs/internals/storage.md), so a
-// pin made anywhere does the same. scripts/sync.sh copies this to the mods that use it.
+// pin made anywhere does the same.
 import { shared, setShared, terminals } from "herdr";
 import { KEY } from "./store.js";
 import { writeLabel } from "./labels.js";

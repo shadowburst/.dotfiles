@@ -1,4 +1,4 @@
-// The one way a popup's list moves. scripts/sync.sh copies this to the mods that use it.
+// The one way a popup's list moves.
 import { div } from "gpui-kit";
 import { settings } from "herdr";
 

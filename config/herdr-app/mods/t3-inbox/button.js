@@ -1,6 +1,6 @@
 // The layout's buttons, as T3's Button (`ui/button.tsx`): a variant for its colors, a size for its box, the theme for every color.
 // docs/internals/t3-tokens.md「按钮」 is the table this draws. The caller adds what a button does: on_click (unless `act` is
-// given), hover tracking for `hot`, stop() for the keyboard and tip() for a label. scripts/sync.sh copies this to each mod.
+// given), hover tracking for `hot`, stop() for the keyboard and tip() for a label.
 import { svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
 

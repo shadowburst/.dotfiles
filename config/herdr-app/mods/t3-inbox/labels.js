@@ -1,5 +1,4 @@
-// A terminal's labels, the one way the layout writes them (docs/internals/storage.md). scripts/sync.sh copies this to the
-// mods that use it.
+// A terminal's labels, the one way the layout writes them (docs/internals/storage.md).
 import { hc, notify } from "herdr";
 
 // True once written. A refusal says so, unless `quiet`: for a write tried again on later passes, which says it only once.

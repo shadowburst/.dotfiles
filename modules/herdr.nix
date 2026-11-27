@@ -161,6 +161,7 @@ in
             "alt-s" = "pane.split:down";
             "alt-r" = "sidebar-switch.changes";
             "alt-w" = "mod.open:worktrees";
+            "alt-o" = "mod.open:history";
 
             # The inbox layout: Spaces or Inbox in the sidebar, and settle the agent in view.
             "alt-i" = "sidebar-switch.sidebar";

@@ -1,3 +1,4 @@
+// Based on herdr-t3-inbox by JinJieBeWater (https://github.com/JinJieBeWater/herdr-t3-inbox), Apache-2.0: see LICENSE.
 // The inbox: no spaces, only the agents still asking for attention, as cards, latest news first.
 // Below, as in T3: Working (busy agents, folded) and Settled (put away by hand until new work brings them back).
 // Settled lives on the agent's own terminal as `settled=<ms>:<turn>`: it ends with the terminal, every mod

@@ -1,4 +1,4 @@
-// A thing's details as T3's thread card, with its timing: for Inbox rows and tabs. scripts/sync.sh copies this to the mods that use it.
+// A thing's details as T3's thread card, with its timing: for Inbox rows and tabs.
 import { div } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { POINTER_WATCH, pointerAt, pointerGone, pointerMoved } from "./tip.js";

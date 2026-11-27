@@ -1,4 +1,4 @@
-// The Snooze menu's times, for an Inbox card's and the tab bar breadcrumb's (t3-menu). scripts/sync.sh copies this to the mods that use it.
+// The Snooze menu's times, for an Inbox card's and the tab bar breadcrumb's (t3-menu).
 
 // T3's default snooze menu, in local time: soonest first, one row per wake minute, tonight's gone once it's past.
 export function presets(now) {

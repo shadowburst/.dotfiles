@@ -1,5 +1,4 @@
-// A right-click opens the menu of what's under it (docs/research/context-menu-plan.md). scripts/sync.sh copies this to the
-// mods that use it.
+// A right-click opens the menu of what's under it (docs/research/context-menu-plan.md).
 import { openOverlay } from "herdr";
 
 // At the pointer, as T3's. A popup's height is only its most: the menu is as tall as its rows.

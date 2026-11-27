@@ -1,5 +1,5 @@
 // The layout's own settings (docs/adr/0009): one key in shared.json, written by t3-chrome's dialog and read where each acts,
-// every time, so a change holds at once and an update never touches it. scripts/sync.sh copies this to the mods that use it.
+// every time, so a change holds at once and an update never touches it.
 import { shared } from "herdr";
 import { KEY } from "./store.js";
 

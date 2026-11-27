@@ -11,6 +11,7 @@
 !/tasks/
 !/tabs-tasks/
 !/automations/
+!/history/
 # Type files the app writes into every mod folder.
 *.d.ts
 jsconfig.json
