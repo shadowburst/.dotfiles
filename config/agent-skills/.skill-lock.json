@@ -164,11 +164,11 @@
       "source": "Lynx-Business/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/Lynx-Business/skills.git",
-      "commit": "a3002091dcdb1acb7a7ad96c154ced767b8277c6",
+      "commit": "46b5082987109fd99d47ee1f985dd30da1114781",
       "skillPath": "skills/ship-release/SKILL.md",
-      "skillFolderHash": "52de0d7eb19275ad80b0614a98a1c5c8d7a5f3c5",
+      "skillFolderHash": "3dbf6ceba7a75650ccea476d472106c02af54d18",
       "installedAt": "2026-11-16T14:41:32.085Z",
-      "updatedAt": "2026-11-26T09:47:39.984Z"
+      "updatedAt": "2026-11-27T14:35:03.034Z"
     },
     "clickup-cli": {
       "source": "isaacrowntree/clickup-cli",
